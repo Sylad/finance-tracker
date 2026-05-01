@@ -1,0 +1,34 @@
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
+import * as path from 'path';
+
+@Injectable()
+export class BudgetService implements OnModuleInit {
+  private readonly logger = new Logger(BudgetService.name);
+  private filepath: string;
+
+  constructor(private readonly config: ConfigService) {}
+
+  onModuleInit() {
+    this.filepath = path.resolve(this.config.get<string>('dataDir')!, 'budgets.json');
+  }
+
+  async getBudgets(): Promise<Record<string, number>> {
+    try {
+      const content = await fs.promises.readFile(this.filepath, 'utf8');
+      return JSON.parse(content) as Record<string, number>;
+    } catch {
+      return {};
+    }
+  }
+
+  async saveBudgets(budgets: Record<string, number>): Promise<Record<string, number>> {
+    const filtered = Object.fromEntries(
+      Object.entries(budgets).filter(([, v]) => typeof v === 'number' && v >= 0),
+    );
+    await fs.promises.writeFile(this.filepath, JSON.stringify(filtered, null, 2), 'utf8');
+    this.logger.log('Budgets saved');
+    return filtered;
+  }
+}

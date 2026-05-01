@@ -1,0 +1,48 @@
+# Dépendances
+node_modules/
+*.lock.bak
+
+# Builds
+dist/
+.angular/
+.vite/
+*.tsbuildinfo
+
+# Données runtime (relevés bancaires perso, snapshots, claude usage)
+data/
+backend/data/
+
+# Environnement (secrets)
+.env
+.env.local
+*.env.local
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+backend.log
+
+# Sauvegarde frontend Angular pré-refonte React (à supprimer manuellement)
+frontend.angular.bak/
+
+# Coverage / tests
+coverage/
+*.lcov
+
+# Uploads en local dev (PDFs bancaires)
+uploads/
+backend/uploads/
+
+# Outils Windows / IDE
+launch.vbs
+start.bat
+start-bg.ps1
+*.code-workspace
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+@eaDir/

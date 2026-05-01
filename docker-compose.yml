@@ -1,0 +1,28 @@
+name: finance-tracker
+
+services:
+  finance-backend:
+    build:
+      context: ./backend
+    ports:
+      - "3000:3000"
+    env_file: ./backend/.env
+    environment:
+      NODE_ENV: production
+      CORS_ORIGIN: "http://nas:4200"
+      DATA_DIR: /app/data
+      UPLOAD_DIR: /app/data/uploads
+      SHARED_DATA_DIR: /app/shared-data
+    volumes:
+      - /volume2/docker/developpeur/data/finance:/app/data
+      - /volume2/docker/developpeur/data/shared:/app/shared-data
+    restart: unless-stopped
+
+  finance-frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - finance-backend
+    restart: unless-stopped

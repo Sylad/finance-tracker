@@ -1,0 +1,293 @@
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import Anthropic from '@anthropic-ai/sdk';
+import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
+
+export class AnthropicParseError extends Error {
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message);
+    this.name = 'AnthropicParseError';
+  }
+}
+
+export interface ClaudeAnalysisResult {
+  bankName: string;
+  accountHolder: string;
+  statementMonth: number;
+  statementYear: number;
+  currency: string;
+  openingBalance: number;
+  closingBalance: number;
+  transactions: ClaudeTransaction[];
+  recurringCredits: ClaudeRecurringCredit[];
+  scoreFactors: ClaudeScoreFactors;
+  analysisNarrative: string;
+  claudeHealthComment: string;
+}
+
+export interface ClaudeTransaction {
+  date: string;
+  description: string;
+  normalizedDescription: string;
+  amount: number;
+  category: string;
+  subcategory: string;
+  isRecurring: boolean;
+  recurringCreditEndDate: string | null;
+  confidence: number;
+}
+
+export interface ClaudeRecurringCredit {
+  description: string;
+  normalizedDescription: string;
+  monthlyAmount: number;
+  frequency: string;
+  firstSeenDate: string;
+  lastSeenDate: string;
+  contractEndDate: string | null;
+  endDateConfidence: string;
+  category: string;
+}
+
+export interface ClaudeScoreFactors {
+  estimatedSavingsRate: number;
+  discretionaryRatio: number;
+  recurringObligationRatio: number;
+  balanceTrend: number;
+  spendingVarianceScore: number;
+}
+
+// Phase 1 tool: compact transaction extraction
+const EXTRACT_TRANSACTIONS_TOOL: Anthropic.Tool = {
+  name: 'extract_transactions',
+  description: 'Extract all transactions and account info from the bank statement',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      bankName: { type: 'string' },
+      accountHolder: { type: 'string' },
+      currency: { type: 'string', description: 'ISO 4217 e.g. EUR' },
+      openingBalance: { type: 'number' },
+      closingBalance: { type: 'number' },
+      transactions: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            date: { type: 'string', description: 'YYYY-MM-DD' },
+            label: { type: 'string', description: 'Cleaned readable label, max 60 chars' },
+            amount: { type: 'number', description: 'Positive=credit, negative=debit' },
+            category: {
+              type: 'string',
+              enum: ['income', 'housing', 'transport', 'food', 'health', 'entertainment', 'subscriptions', 'savings', 'transfers', 'taxes', 'other'],
+            },
+            isRecurring: { type: 'boolean' },
+          },
+          required: ['date', 'label', 'amount', 'category', 'isRecurring'],
+        },
+      },
+    },
+    required: ['bankName', 'accountHolder', 'currency', 'openingBalance', 'closingBalance', 'transactions'],
+  },
+};
+
+// Phase 2 tool: financial analysis
+const ANALYZE_TOOL: Anthropic.Tool = {
+  name: 'analyze_finances',
+  description: 'Analyze the financial health based on transaction data',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      recurringCredits: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            description: { type: 'string' },
+            normalizedDescription: { type: 'string' },
+            monthlyAmount: { type: 'number' },
+            frequency: { type: 'string', enum: ['monthly', 'bimonthly', 'quarterly', 'irregular'] },
+            firstSeenDate: { type: 'string' },
+            lastSeenDate: { type: 'string' },
+            contractEndDate: { type: ['string', 'null'] },
+            endDateConfidence: { type: 'string', enum: ['high', 'medium', 'low', 'none'] },
+            category: { type: 'string', enum: ['salary', 'rental', 'pension', 'subsidy', 'investment', 'other'] },
+          },
+          required: ['description', 'normalizedDescription', 'monthlyAmount', 'frequency', 'firstSeenDate', 'lastSeenDate', 'endDateConfidence', 'category'],
+        },
+      },
+      scoreFactors: {
+        type: 'object',
+        properties: {
+          estimatedSavingsRate: { type: 'number', description: '0-1' },
+          discretionaryRatio: { type: 'number', description: '0-1' },
+          recurringObligationRatio: { type: 'number', description: '0-1' },
+          balanceTrend: { type: 'number', description: '-1 to 1' },
+          spendingVarianceScore: { type: 'number', description: '0-1, 1=very consistent' },
+        },
+        required: ['estimatedSavingsRate', 'discretionaryRatio', 'recurringObligationRatio', 'balanceTrend', 'spendingVarianceScore'],
+      },
+      analysisNarrative: { type: 'string', description: '2-3 sentence summary' },
+      claudeHealthComment: { type: 'string', description: 'Strengths and concerns' },
+    },
+    required: ['recurringCredits', 'scoreFactors', 'analysisNarrative', 'claudeHealthComment'],
+  },
+};
+
+function isQuotaError(err: unknown): boolean {
+  if (err instanceof Anthropic.RateLimitError) return true;
+  if (err instanceof Anthropic.AuthenticationError) return true;
+  if (err instanceof Anthropic.APIError) {
+    const msg = (err.message ?? '').toLowerCase();
+    return err.status === 402 || msg.includes('credit') || msg.includes('quota');
+  }
+  return false;
+}
+
+@Injectable()
+export class AnthropicService {
+  private readonly client: Anthropic;
+  private readonly logger = new Logger(AnthropicService.name);
+
+  constructor(
+    private config: ConfigService,
+    private usage: ClaudeUsageService,
+  ) {
+    this.client = new Anthropic({
+      apiKey: this.config.get<string>('anthropicApiKey'),
+    });
+  }
+
+  async analyzeBankStatement(pdfBuffer: Buffer): Promise<ClaudeAnalysisResult> {
+    const base64Pdf = pdfBuffer.toString('base64');
+    this.logger.log(`Sending PDF to Anthropic (${Math.round(pdfBuffer.length / 1024)} KB)`);
+
+    try {
+    // Phase 1: extract transactions from PDF
+    const phase1 = await this.client.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 8192,
+      system: 'You are a financial data extraction specialist. Extract all transactions from the bank statement PDF by calling the extract_transactions tool. Be exhaustive — include every transaction. Use short labels (max 60 chars).',
+      tools: [EXTRACT_TRANSACTIONS_TOOL],
+      tool_choice: { type: 'tool', name: 'extract_transactions' },
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Pdf } },
+          { type: 'text', text: 'Extract all transactions from this bank statement. Include every debit and credit. Use short cleaned labels.' },
+        ],
+      }],
+    });
+
+    this.usage.recordUsage(phase1.usage.input_tokens, phase1.usage.output_tokens);
+    this.logger.log(`Phase 1: stop_reason=${phase1.stop_reason}`);
+    if (phase1.stop_reason === 'max_tokens') {
+      throw new AnthropicParseError('Statement has too many transactions for a single analysis. Try a shorter period.');
+    }
+
+    const p1Block = phase1.content.find((b) => b.type === 'tool_use');
+    if (!p1Block || p1Block.type !== 'tool_use') {
+      throw new AnthropicParseError('Phase 1: no tool_use block returned');
+    }
+    const p1 = p1Block.input as Record<string, unknown>;
+    const transactions = p1.transactions as Array<{ date: string; label: string; amount: number; category: string; isRecurring: boolean }>;
+    this.logger.log(`Phase 1: extracted ${transactions.length} transactions`);
+
+    // Derive period from transaction dates (mode of YYYY-MM, earliest wins ties).
+    // We deliberately don't trust the AI for statementMonth/Year — bank PDFs are often
+    // named/dated by issue date (J+9 of next month for LBP), and the AI was conflating
+    // issue month with period month, causing two distinct PDFs to collide on the same id.
+    const period = this.derivePeriodFromTransactions(transactions);
+    if (!period) {
+      throw new AnthropicParseError('Cannot determine statement period: no valid transaction dates extracted');
+    }
+
+    // Phase 2: analyze finances based on the extracted transaction summary
+    const txSummary = transactions
+      .map((t) => `${t.date} | ${t.category} | ${t.amount > 0 ? '+' : ''}${t.amount} | ${t.label}`)
+      .join('\n');
+
+    const phase2 = await this.client.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 4096,
+      system: 'You are a financial health analyst. Analyze the provided transaction data and call the analyze_finances tool.',
+      tools: [ANALYZE_TOOL],
+      tool_choice: { type: 'tool', name: 'analyze_finances' },
+      messages: [{
+        role: 'user',
+        content: `Bank: ${p1.bankName}\nPeriod: ${period.month}/${period.year}\nCurrency: ${p1.currency}\nOpening: ${p1.openingBalance}\nClosing: ${p1.closingBalance}\n\nTransactions:\n${txSummary}\n\nIdentify recurring credits, compute score factors, and write a financial health assessment.`,
+      }],
+    });
+
+    this.usage.recordUsage(phase2.usage.input_tokens, phase2.usage.output_tokens);
+    this.logger.log(`Phase 2: stop_reason=${phase2.stop_reason}`);
+
+    const p2Block = phase2.content.find((b) => b.type === 'tool_use');
+    if (!p2Block || p2Block.type !== 'tool_use') {
+      throw new AnthropicParseError('Phase 2: no tool_use block returned');
+    }
+    const p2 = p2Block.input as Record<string, unknown>;
+
+    // Merge results
+    return this.mergeResults(p1, p2, transactions, period);
+    } catch (err) {
+      if (isQuotaError(err)) {
+        throw new HttpException('CLAUDE_QUOTA_EXCEEDED', HttpStatus.PAYMENT_REQUIRED);
+      }
+      throw err;
+    }
+  }
+
+  private mergeResults(
+    p1: Record<string, unknown>,
+    p2: Record<string, unknown>,
+    rawTransactions: Array<{ date: string; label: string; amount: number; category: string; isRecurring: boolean }>,
+    period: { year: number; month: number },
+  ): ClaudeAnalysisResult {
+    const transactions: ClaudeTransaction[] = rawTransactions.map((t) => ({
+      date: t.date,
+      description: t.label,
+      normalizedDescription: t.label,
+      amount: t.amount,
+      category: t.category,
+      subcategory: '',
+      isRecurring: t.isRecurring ?? false,
+      recurringCreditEndDate: null,
+      confidence: 0.85,
+    }));
+
+    return {
+      bankName: p1.bankName as string,
+      accountHolder: p1.accountHolder as string,
+      statementMonth: period.month,
+      statementYear: period.year,
+      currency: p1.currency as string,
+      openingBalance: p1.openingBalance as number,
+      closingBalance: p1.closingBalance as number,
+      transactions,
+      recurringCredits: (p2.recurringCredits as ClaudeRecurringCredit[]) ?? [],
+      scoreFactors: p2.scoreFactors as ClaudeScoreFactors,
+      analysisNarrative: p2.analysisNarrative as string,
+      claudeHealthComment: p2.claudeHealthComment as string,
+    };
+  }
+
+  private derivePeriodFromTransactions(
+    txs: Array<{ date: string }>,
+  ): { year: number; month: number } | null {
+    const counts = new Map<string, number>();
+    for (const t of txs) {
+      const m = t.date.match(/^(\d{4})-(0[1-9]|1[0-2])-/);
+      if (!m) continue;
+      const key = `${m[1]}-${m[2]}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    if (!counts.size) return null;
+    const [topKey] = [...counts.entries()].sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1];
+      return a[0].localeCompare(b[0]); // earlier YYYY-MM wins ties
+    })[0];
+    const [year, month] = topKey.split('-').map(Number);
+    return { year, month };
+  }
+}
