@@ -173,3 +173,19 @@ export function useDeleteStatement() {
     },
   });
 }
+
+export function useReanalyzeStatement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, file }: { id: string; file: File }) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api.postForm<MonthlyStatement>(`/statements/${id}/reanalyze`, form);
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: qk.statement(vars.id) });
+      qc.invalidateQueries({ queryKey: qk.statements() });
+      qc.invalidateQueries({ queryKey: qk.scoreHistory() });
+    },
+  });
+}
