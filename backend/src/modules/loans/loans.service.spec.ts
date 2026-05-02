@@ -1,10 +1,10 @@
 import { Test } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { LoansService } from './loans.service';
 import { EventBusService } from '../events/event-bus.service';
+import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 describe('LoansService', () => {
   let svc: LoansService;
@@ -15,12 +15,11 @@ describe('LoansService', () => {
     const mod = await Test.createTestingModule({
       providers: [
         LoansService,
-        { provide: ConfigService, useValue: { get: (k: string) => k === 'dataDir' ? tmpDir : null } },
+        { provide: RequestDataDirService, useValue: { getDataDir: () => tmpDir, isDemoMode: () => false, runWith: (_ctx: any, fn: any) => fn() } },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
     svc = mod.get(LoansService);
-    await svc.onModuleInit();
   });
 
   afterEach(() => fs.rmSync(tmpDir, { recursive: true, force: true }));

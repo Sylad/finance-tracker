@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
+import { DemoCoreModule } from './modules/demo/demo-core.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { AnalysisModule } from './modules/analysis/analysis.module';
 import { StatementsModule } from './modules/statements/statements.module';
@@ -19,6 +20,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ load: [configuration], isGlobal: true }),
+    DemoCoreModule,
     EventsModule,
     ClaudeUsageModule,
     SnapshotsModule,

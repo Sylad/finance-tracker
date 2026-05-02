@@ -1,23 +1,22 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 import { Loan, LoanInput, LoanOccurrence } from '../../models/loan.model';
 import { EventBusService } from '../events/event-bus.service';
+import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 @Injectable()
-export class LoansService implements OnModuleInit {
+export class LoansService {
   private readonly logger = new Logger(LoansService.name);
-  private filepath!: string;
 
   constructor(
-    private readonly config: ConfigService,
+    private readonly dataDir: RequestDataDirService,
     private readonly bus: EventBusService,
   ) {}
 
-  onModuleInit() {
-    this.filepath = path.resolve(this.config.get<string>('dataDir')!, 'loans.json');
+  private get filepath(): string {
+    return path.resolve(this.dataDir.getDataDir(), 'loans.json');
   }
 
   async getAll(): Promise<Loan[]> {

@@ -1,5 +1,4 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
@@ -11,19 +10,19 @@ import {
   SavingsMovementSource,
 } from '../../models/savings-account.model';
 import { EventBusService } from '../events/event-bus.service';
+import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 @Injectable()
-export class SavingsService implements OnModuleInit {
+export class SavingsService {
   private readonly logger = new Logger(SavingsService.name);
-  private filepath!: string;
 
   constructor(
-    private readonly config: ConfigService,
+    private readonly dataDir: RequestDataDirService,
     private readonly bus: EventBusService,
   ) {}
 
-  onModuleInit() {
-    this.filepath = path.resolve(this.config.get<string>('dataDir')!, 'savings-accounts.json');
+  private get filepath(): string {
+    return path.resolve(this.dataDir.getDataDir(), 'savings-accounts.json');
   }
 
   async getAll(): Promise<SavingsAccount[]> {
