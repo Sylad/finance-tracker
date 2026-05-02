@@ -27,7 +27,7 @@ const CONFIDENCE_TONE: Record<string, string> = {
   none: 'badge-neutral',
 };
 
-export function RecurringPage() {
+export function IncomePage() {
   const { data, isLoading } = useRecurringCredits();
   if (isLoading) return <LoadingState />;
 
@@ -37,9 +37,9 @@ export function RecurringPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Crédits récurrents"
+        eyebrow="Revenus"
         title={`${formatEUR(total)} / mois`}
-        subtitle={`${items.filter((c) => c.isActive).length} crédits actifs détectés sur l'ensemble des relevés.`}
+        subtitle={`${items.filter((c) => c.isActive).length} revenu${items.length > 1 ? 's' : ''} récurrent${items.length > 1 ? 's' : ''} détecté${items.length > 1 ? 's' : ''}.`}
       />
 
       {items.length === 0 ? (

@@ -7,6 +7,7 @@ import { ScoreHistoryEntry } from '../../models/financial-health-score.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
 import { YearlySummary } from '../../models/yearly-summary.model';
 import { TransactionCategory } from '../../models/transaction.model';
+import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 const FILENAME_REGEX = /^\d{4}-(0[1-9]|1[0-2])\.json$/;
 const YEARLY_REGEX = /^\d{4}\.json$/;
@@ -14,21 +15,32 @@ const YEARLY_REGEX = /^\d{4}\.json$/;
 @Injectable()
 export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
-  private statementsDir: string;
-  private archiveDir: string;
-  private yearlyDir: string;
 
-  constructor(private config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly dataDir: RequestDataDirService,
+  ) {}
 
   onModuleInit() {
-    const dataDir = this.config.get<string>('dataDir')!;
-    this.statementsDir = path.resolve(dataDir, 'statements');
-    this.archiveDir = path.resolve(this.statementsDir, 'archive');
-    this.yearlyDir = path.resolve(dataDir, 'yearly');
-    fs.mkdirSync(this.statementsDir, { recursive: true });
-    fs.mkdirSync(this.archiveDir, { recursive: true });
-    fs.mkdirSync(path.resolve(dataDir, 'uploads'), { recursive: true });
-    fs.mkdirSync(this.yearlyDir, { recursive: true });
+    // Ensure base dirs exist for both normal AND demo locations.
+    const real = this.config.get<string>('dataDir')!;
+    for (const root of [real, path.join(real, 'demo')]) {
+      fs.mkdirSync(path.join(root, 'statements', 'archive'), { recursive: true });
+      fs.mkdirSync(path.join(root, 'uploads'), { recursive: true });
+      fs.mkdirSync(path.join(root, 'yearly'), { recursive: true });
+    }
+  }
+
+  private get statementsDir(): string {
+    return path.resolve(this.dataDir.getDataDir(), 'statements');
+  }
+
+  private get archiveDir(): string {
+    return path.resolve(this.statementsDir, 'archive');
+  }
+
+  private get yearlyDir(): string {
+    return path.resolve(this.dataDir.getDataDir(), 'yearly');
   }
 
   async saveStatement(statement: MonthlyStatement): Promise<void> {

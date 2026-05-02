@@ -12,6 +12,15 @@ import type {
   StatementSummary,
   UploadResult,
   YearlySummary,
+  SavingsAccount,
+  SavingsAccountInput,
+  BalanceHistoryEntry,
+  Loan,
+  LoanInput,
+  LoanSuggestion,
+  NetWorth,
+  DashboardAlert,
+  YearlyOverview,
 } from '@/types/api';
 
 export const qk = {
@@ -172,4 +181,173 @@ export function useDeleteStatement() {
       qc.invalidateQueries({ queryKey: qk.scoreHistory() });
     },
   });
+}
+
+export function useReanalyzeStatement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, file }: { id: string; file: File }) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api.postForm<MonthlyStatement>(`/statements/${id}/reanalyze`, form);
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: qk.statement(vars.id) });
+      qc.invalidateQueries({ queryKey: qk.statements() });
+      qc.invalidateQueries({ queryKey: qk.scoreHistory() });
+    },
+  });
+}
+
+export const qkSavings = {
+  all: () => ['savings'] as const,
+  one: (id: string) => ['savings', id] as const,
+  history: (id: string, months: number) => ['savings', id, 'history', months] as const,
+};
+
+export function useSavingsAccounts() {
+  return useQuery({ queryKey: qkSavings.all(), queryFn: () => api.get<SavingsAccount[]>('/savings-accounts') });
+}
+
+export function useSavingsAccount(id: string | undefined) {
+  return useQuery({
+    queryKey: qkSavings.one(id ?? ''),
+    queryFn: () => api.get<SavingsAccount>(`/savings-accounts/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useSavingsHistory(id: string | undefined, months = 12) {
+  return useQuery({
+    queryKey: qkSavings.history(id ?? '', months),
+    queryFn: () => api.get<BalanceHistoryEntry[]>(`/savings-accounts/${id}/balance-history?months=${months}`),
+    enabled: !!id,
+  });
+}
+
+export function useCreateSavingsAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SavingsAccountInput) => api.post<SavingsAccount>('/savings-accounts', input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSavings.all() }),
+  });
+}
+
+export function useUpdateSavingsAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: SavingsAccountInput }) =>
+      api.put<SavingsAccount>(`/savings-accounts/${id}`, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSavings.all() }),
+  });
+}
+
+export function useDeleteSavingsAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/savings-accounts/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSavings.all() }),
+  });
+}
+
+export function useAddSavingsMovement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: { date: string; amount: number; note?: string } }) =>
+      api.post<SavingsAccount>(`/savings-accounts/${id}/movements`, body),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: qkSavings.all() });
+      qc.invalidateQueries({ queryKey: qkSavings.one(vars.id) });
+    },
+  });
+}
+
+export const qkLoans = {
+  all: () => ['loans'] as const,
+  one: (id: string) => ['loans', id] as const,
+};
+
+export function useLoans() {
+  return useQuery({ queryKey: qkLoans.all(), queryFn: () => api.get<Loan[]>('/loans') });
+}
+
+export function useCreateLoan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: LoanInput) => api.post<Loan>('/loans', input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+  });
+}
+
+export function useUpdateLoan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: LoanInput }) =>
+      api.put<Loan>(`/loans/${id}`, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+  });
+}
+
+export function useDeleteLoan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/loans/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+  });
+}
+
+export function useResetRevolving() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, usedAmount }: { id: string; usedAmount: number }) =>
+      api.post<Loan>(`/loans/${id}/reset-revolving`, { usedAmount }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+  });
+}
+
+export const qkSuggestions = { all: () => ['loan-suggestions'] as const };
+
+export function useLoanSuggestions() {
+  return useQuery({
+    queryKey: qkSuggestions.all(),
+    queryFn: () => api.get<LoanSuggestion[]>('/loan-suggestions'),
+  });
+}
+
+export function useAcceptSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, loanId }: { id: string; loanId: string }) =>
+      api.post<LoanSuggestion>(`/loan-suggestions/${id}/accept`, { loanId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkSuggestions.all() });
+      qc.invalidateQueries({ queryKey: qkLoans.all() });
+    },
+  });
+}
+
+export function useRejectSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<LoanSuggestion>(`/loan-suggestions/${id}/reject`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
+  });
+}
+
+export function useSnoozeSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<LoanSuggestion>(`/loan-suggestions/${id}/snooze`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
+  });
+}
+
+export function useNetWorth() {
+  return useQuery({ queryKey: ['dashboard', 'net-worth'], queryFn: () => api.get<NetWorth>('/dashboard/net-worth') });
+}
+export function useAlerts() {
+  return useQuery({ queryKey: ['dashboard', 'alerts'], queryFn: () => api.get<DashboardAlert[]>('/dashboard/alerts') });
+}
+export function useYearlyOverview(months = 12) {
+  return useQuery({ queryKey: ['dashboard', 'yearly', months], queryFn: () => api.get<YearlyOverview>(`/dashboard/yearly-overview?months=${months}`) });
 }

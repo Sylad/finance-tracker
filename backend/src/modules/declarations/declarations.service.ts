@@ -1,23 +1,22 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 import { Declaration, DeclarationInput } from '../../models/declaration.model';
 import { EventBusService } from '../events/event-bus.service';
+import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 @Injectable()
-export class DeclarationsService implements OnModuleInit {
+export class DeclarationsService {
   private readonly logger = new Logger(DeclarationsService.name);
-  private filepath!: string;
 
   constructor(
-    private readonly config: ConfigService,
+    private readonly dataDir: RequestDataDirService,
     private readonly bus: EventBusService,
   ) {}
 
-  onModuleInit() {
-    this.filepath = path.resolve(this.config.get<string>('dataDir')!, 'declarations.json');
+  private get filepath(): string {
+    return path.resolve(this.dataDir.getDataDir(), 'declarations.json');
   }
 
   async getAll(): Promise<Declaration[]> {

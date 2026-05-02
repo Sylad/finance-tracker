@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { AnthropicService, ClaudeAnalysisResult } from './anthropic.service';
 import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
+import { AutoSyncService } from '../auto-sync/auto-sync.service';
 import { MonthlyStatement, AnalysisResponse } from '../../models/monthly-statement.model';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
@@ -16,7 +17,32 @@ export class AnalysisService {
     private readonly anthropic: AnthropicService,
     private readonly storage: StorageService,
     private readonly snapshots: SnapshotService,
+    private readonly autoSync: AutoSyncService,
   ) {}
+
+  async reanalyzeStatement(id: string, pdfBuffer: Buffer): Promise<AnalysisResponse> {
+    // Re-traite un statement existant avec le prompt FR actuel.
+    // Utilisé pour migrer les anciens commentaires anglais vers le français.
+    const existing = await this.storage.getStatement(id);
+    if (!existing) throw new NotFoundException(`Relevé ${id} introuvable`);
+    const result = await this.anthropic.analyzeBankStatement(pdfBuffer);
+    const candidate = this.buildStatement(result);
+    if (candidate.id !== id) {
+      throw new BadRequestException(
+        `Le PDF fourni correspond au relevé ${candidate.id}, pas au relevé ${id} demandé. Re-upload le bon PDF.`,
+      );
+    }
+    await this.snapshots.takeSnapshot(`before-reanalyze-${id}`);
+    await this.storage.saveStatement(candidate);
+    try {
+      await this.autoSync.syncStatement(candidate, result.suggestedRecurringExpenses ?? []);
+    } catch (e) {
+      this.logger.error(`AutoSync failed for ${candidate.id}`, e as Error);
+      // Don't block persistence — log and continue.
+    }
+    this.logger.log(`Re-analyzed statement ${id}`);
+    return { statement: candidate, replaced: true };
+  }
 
   async analyzeAndPersist(pdfBuffer: Buffer): Promise<AnalysisResponse> {
     const result = await this.anthropic.analyzeBankStatement(pdfBuffer);
@@ -27,12 +53,18 @@ export class AnalysisService {
 
     await this.snapshots.takeSnapshot(replaced ? `before-replace-${statement.id}` : `before-save-${statement.id}`);
     await this.storage.saveStatement(statement);
+    try {
+      await this.autoSync.syncStatement(statement, result.suggestedRecurringExpenses ?? []);
+    } catch (e) {
+      this.logger.error(`AutoSync failed for ${statement.id}`, e as Error);
+      // Don't block persistence — log and continue.
+    }
     this.logger.log(`${replaced ? 'Replaced' : 'Saved'} statement ${statement.id} (score: ${statement.healthScore.total})`);
 
     return { statement, replaced };
   }
 
-  private buildStatement(result: ClaudeAnalysisResult): MonthlyStatement {
+  buildStatement(result: ClaudeAnalysisResult): MonthlyStatement {
     const month = result.statementMonth;
     const year = result.statementYear;
     const id = `${year}-${String(month).padStart(2, '0')}`;

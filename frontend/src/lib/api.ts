@@ -1,4 +1,5 @@
 import { authStore } from './auth';
+import { demoStore } from './demo';
 
 const BASE = '/api';
 
@@ -15,6 +16,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...(init.headers as Record<string, string> | undefined),
   };
   if (pin) headers.Authorization = `Bearer ${pin}`;
+  if (demoStore.isActive()) headers['X-Demo-Mode'] = 'true';
   if (init.body && !(init.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }

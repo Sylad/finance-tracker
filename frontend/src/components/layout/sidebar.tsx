@@ -10,6 +10,8 @@ import {
   Upload,
   Info,
   LogOut,
+  PiggyBank,
+  Banknote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BrandMark } from '../brand-mark';
@@ -19,7 +21,9 @@ export const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { to: '/history', label: 'Historique', icon: History, exact: false },
   { to: '/budget', label: 'Budget', icon: Wallet, exact: false },
-  { to: '/recurring', label: 'Crédits récurrents', icon: Repeat, exact: false },
+  { to: '/savings', label: 'Comptes épargne', icon: PiggyBank, exact: false },
+  { to: '/loans', label: 'Crédits', icon: Banknote, exact: false },
+  { to: '/income', label: 'Revenus', icon: Repeat, exact: false },
   { to: '/declarations', label: 'Déclarations', icon: ListChecks, exact: false },
   { to: '/forecast', label: 'Prévisions', icon: CalendarRange, exact: false },
   { to: '/yearly', label: 'Bilan annuel', icon: CalendarDays, exact: false },
