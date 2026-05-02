@@ -311,3 +311,21 @@ export interface Loan {
 }
 
 export type LoanInput = Omit<Loan, 'id' | 'occurrencesDetected' | 'createdAt' | 'updatedAt'>;
+
+export type LoanSuggestionStatus = 'pending' | 'accepted' | 'rejected' | 'snoozed';
+
+export interface LoanSuggestion {
+  id: string;
+  label: string;
+  monthlyAmount: number;
+  occurrencesSeen: number;
+  firstSeenStatementId: string;
+  firstSeenDate: string;
+  lastSeenDate: string;
+  suggestedType: 'loan' | 'subscription' | 'utility';
+  matchPattern: string;
+  status: LoanSuggestionStatus;
+  createdAt: string;
+  resolvedAt?: string;
+  acceptedAsLoanId?: string;
+}

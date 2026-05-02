@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Plus, CreditCard, Pencil, Trash2, X, Banknote } from 'lucide-react';
-import { useLoans, useCreateLoan, useUpdateLoan, useDeleteLoan, useResetRevolving } from '@/lib/queries';
+import { useLoans, useCreateLoan, useUpdateLoan, useDeleteLoan, useResetRevolving, useLoanSuggestions, useAcceptSuggestion, useRejectSuggestion, useSnoozeSuggestion } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
-import { type Loan, type LoanInput, type LoanType, type LoanCategory, LOAN_CATEGORY_LABELS } from '@/types/api';
+import { type Loan, type LoanInput, type LoanType, type LoanCategory, LOAN_CATEGORY_LABELS, type LoanSuggestion } from '@/types/api';
 import { formatEUR, cn } from '@/lib/utils';
 
 const CATEGORIES: LoanCategory[] = ['mortgage', 'consumer', 'auto', 'student', 'other'];
@@ -24,8 +24,11 @@ export function LoansPage() {
   const create = useCreateLoan();
   const update = useUpdateLoan();
   const remove = useDeleteLoan();
+  const acceptSugg = useAcceptSuggestion();
   const [editing, setEditing] = useState<Loan | null>(null);
   const [creating, setCreating] = useState(false);
+  const [suggestionToAccept, setSuggestionToAccept] = useState<string | null>(null);
+  const [prefilled, setPrefilled] = useState<LoanInput | null>(null);
 
   if (isLoading) return <LoadingState />;
   const items = data ?? [];
@@ -34,10 +37,20 @@ export function LoansPage() {
   const totalMonthly = items.filter((l) => l.isActive).reduce((s, l) => s + l.monthlyPayment, 0);
 
   const handleSave = async (input: LoanInput) => {
-    if (editing) await update.mutateAsync({ id: editing.id, input });
-    else await create.mutateAsync(input);
+    let saved: Loan;
+    if (editing) saved = await update.mutateAsync({ id: editing.id, input });
+    else saved = await create.mutateAsync(input);
+    if (suggestionToAccept) {
+      try {
+        await acceptSugg.mutateAsync({ id: suggestionToAccept, loanId: saved.id });
+      } catch (e) {
+        console.error('Accept suggestion failed', e);
+      }
+      setSuggestionToAccept(null);
+    }
     setEditing(null);
     setCreating(false);
+    setPrefilled(null);
   };
 
   return (
@@ -51,6 +64,23 @@ export function LoansPage() {
             <Plus className="h-4 w-4" /> Nouveau crédit
           </button>
         }
+      />
+
+      <SuggestionsBanner
+        onAccept={(s) => {
+          setEditing(null);
+          setCreating(true);
+          setPrefilled({
+            name: s.label,
+            type: 'classic',
+            category: 'consumer',
+            monthlyPayment: s.monthlyAmount,
+            matchPattern: s.matchPattern,
+            isActive: true,
+            startDate: s.firstSeenDate,
+          });
+          setSuggestionToAccept(s.id);
+        }}
       />
 
       {items.length === 0 ? (
@@ -87,9 +117,14 @@ export function LoansPage() {
 
       {(creating || editing) && (
         <LoanForm
-          init={editing ? toInput(editing) : DEFAULT}
+          init={prefilled ?? (editing ? toInput(editing) : DEFAULT)}
           onSave={handleSave}
-          onCancel={() => { setCreating(false); setEditing(null); }}
+          onCancel={() => {
+            setCreating(false);
+            setEditing(null);
+            setPrefilled(null);
+            setSuggestionToAccept(null);
+          }}
           busy={create.isPending || update.isPending}
         />
       )}
@@ -258,4 +293,36 @@ function LoanForm({ init, onSave, onCancel, busy }: { init: LoanInput; onSave: (
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="block"><span className="stat-label block mb-1.5">{label}</span>{children}</label>;
+}
+
+function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) => void }) {
+  const { data } = useLoanSuggestions();
+  const reject = useRejectSuggestion();
+  const snooze = useSnoozeSuggestion();
+  const items = (data ?? []).filter((s) => s.status === 'pending');
+  if (items.length === 0) return null;
+  return (
+    <div className="card p-4 mb-6 border-l-4 border-l-warning">
+      <div className="font-display font-semibold text-fg-bright mb-2">
+        Suggestions de Claude ({items.length})
+      </div>
+      <div className="space-y-2">
+        {items.map((s) => (
+          <div key={s.id} className="flex items-center justify-between gap-3 p-2 bg-surface-2/40 rounded flex-wrap">
+            <div className="flex-1 min-w-0">
+              <div className="text-sm text-fg-bright truncate">{s.label}</div>
+              <div className="text-xs text-fg-dim tabular">
+                {formatEUR(s.monthlyAmount)}/mois · vu {s.occurrencesSeen} fois · type {s.suggestedType}
+              </div>
+            </div>
+            <div className="flex gap-1 shrink-0">
+              <button onClick={() => onAccept(s)} className="btn-primary text-xs">C'est un crédit</button>
+              <button onClick={() => snooze.mutate(s.id)} className="btn-ghost text-xs">Plus tard</button>
+              <button onClick={() => reject.mutate(s.id)} className="btn-ghost text-xs hover:text-negative">Pas un crédit</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

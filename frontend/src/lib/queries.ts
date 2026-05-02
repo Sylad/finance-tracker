@@ -17,6 +17,7 @@ import type {
   BalanceHistoryEntry,
   Loan,
   LoanInput,
+  LoanSuggestion,
 } from '@/types/api';
 
 export const qk = {
@@ -298,5 +299,42 @@ export function useResetRevolving() {
     mutationFn: ({ id, usedAmount }: { id: string; usedAmount: number }) =>
       api.post<Loan>(`/loans/${id}/reset-revolving`, { usedAmount }),
     onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+  });
+}
+
+export const qkSuggestions = { all: () => ['loan-suggestions'] as const };
+
+export function useLoanSuggestions() {
+  return useQuery({
+    queryKey: qkSuggestions.all(),
+    queryFn: () => api.get<LoanSuggestion[]>('/loan-suggestions'),
+  });
+}
+
+export function useAcceptSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, loanId }: { id: string; loanId: string }) =>
+      api.post<LoanSuggestion>(`/loan-suggestions/${id}/accept`, { loanId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkSuggestions.all() });
+      qc.invalidateQueries({ queryKey: qkLoans.all() });
+    },
+  });
+}
+
+export function useRejectSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<LoanSuggestion>(`/loan-suggestions/${id}/reject`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
+  });
+}
+
+export function useSnoozeSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<LoanSuggestion>(`/loan-suggestions/${id}/snooze`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
   });
 }
