@@ -1,12 +1,15 @@
-import { Controller, Get, Param, Delete, NotFoundException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, NotFoundException, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
+import { AnalysisService } from '../analysis/analysis.service';
 
 @Controller('statements')
 export class StatementsController {
   constructor(
     private readonly storage: StorageService,
     private readonly snapshots: SnapshotService,
+    private readonly analysis: AnalysisService,
   ) {}
 
   @Get()
@@ -49,5 +52,12 @@ export class StatementsController {
     const deleted = await this.storage.deleteStatement(id);
     if (!deleted) throw new NotFoundException(`Relevé ${id} introuvable`);
     return { message: `Relevé ${id} supprimé` };
+  }
+
+  @Post(':id/reanalyze')
+  @UseInterceptors(FileInterceptor('file'))
+  async reanalyze(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new NotFoundException('PDF requis pour re-analyser');
+    return this.analysis.reanalyzeStatement(id, file.buffer);
   }
 }

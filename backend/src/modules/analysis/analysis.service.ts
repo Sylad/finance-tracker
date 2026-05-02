@@ -18,6 +18,14 @@ export class AnalysisService {
     private readonly snapshots: SnapshotService,
   ) {}
 
+  async reanalyzeStatement(id: string, pdfBuffer: Buffer): Promise<AnalysisResponse> {
+    // Re-traite un statement existant avec le prompt FR actuel.
+    // Utilisé pour migrer les anciens commentaires anglais vers le français.
+    const existing = await this.storage.getStatement(id);
+    if (!existing) throw new Error(`Statement ${id} introuvable`);
+    return this.analyzeAndPersist(pdfBuffer);
+  }
+
   async analyzeAndPersist(pdfBuffer: Buffer): Promise<AnalysisResponse> {
     const result = await this.anthropic.analyzeBankStatement(pdfBuffer);
     const statement = this.buildStatement(result);

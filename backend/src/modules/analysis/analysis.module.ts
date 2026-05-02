@@ -6,5 +6,6 @@ import { AnthropicService } from './anthropic.service';
 @Module({
   controllers: [AnalysisController],
   providers: [AnalysisService, AnthropicService],
+  exports: [AnalysisService],
 })
 export class AnalysisModule {}
