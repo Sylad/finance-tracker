@@ -11,8 +11,8 @@ import {
   PiggyBank,
   CreditCard,
 } from 'lucide-react';
-import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, AreaChart, Area } from 'recharts';
-import { useStatements, useScoreHistory, useBudget, useStatement, useClaudeUsage, useSavingsAccounts, useLoans } from '@/lib/queries';
+import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, AreaChart, Area, BarChart, Bar } from 'recharts';
+import { useStatements, useScoreHistory, useBudget, useStatement, useClaudeUsage, useSavingsAccounts, useLoans, useNetWorth, useAlerts, useYearlyOverview } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
 import { ScoreRing, ScoreBadge } from '@/components/score-ring';
@@ -26,6 +26,9 @@ export function DashboardPage() {
   const claude = useClaudeUsage();
   const savings = useSavingsAccounts();
   const loans = useLoans();
+  const netWorth = useNetWorth();
+  const alerts = useAlerts();
+  const yearly = useYearlyOverview(12);
 
   const totalSavings = (savings.data ?? []).reduce((s, a) => s + a.currentBalance, 0);
   const activeLoans = (loans.data ?? []).filter((l) => l.isActive);
@@ -97,6 +100,46 @@ export function DashboardPage() {
           </Link>
         }
       />
+
+      {netWorth.data && (
+        <div className="card p-6 mb-6 bg-gradient-to-r from-surface to-surface-2/40">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <div className="stat-label">Patrimoine net</div>
+              <div className="font-display text-display-lg font-bold tabular text-fg-bright mt-1">
+                {formatEUR(netWorth.data.netWorth)}
+              </div>
+              <div className="text-xs text-fg-dim mt-1">
+                {formatEUR(netWorth.data.closingBalance)} compte courant + {formatEUR(netWorth.data.totalSavings)} épargne − {formatEUR(netWorth.data.estimatedDebt)} dettes estimées
+              </div>
+            </div>
+            {netWorth.data.ignoredLoanIds.length > 0 && (
+              <div className="text-xs text-warning max-w-xs">
+                ⚠ {netWorth.data.ignoredLoanIds.length} crédit(s) ignoré(s) (date de fin manquante)
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {(alerts.data?.length ?? 0) > 0 && (
+        <div className="card p-4 mb-6 border-l-4 border-l-warning">
+          <div className="font-display font-semibold text-fg-bright mb-2">Alertes ({alerts.data!.length})</div>
+          <div className="space-y-1.5">
+            {alerts.data!.map((a, i) => (
+              <div key={i} className={cn(
+                'text-sm flex items-center gap-2',
+                a.severity === 'critical' && 'text-negative',
+                a.severity === 'warning' && 'text-warning',
+                a.severity === 'info' && 'text-fg-muted',
+              )}>
+                <span>{a.severity === 'critical' ? '🔴' : a.severity === 'warning' ? '🟠' : 'ℹ️'}</span>
+                {a.link ? <Link to={a.link} className="hover:underline">{a.message}</Link> : <span>{a.message}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         {/* Hero score card */}
@@ -278,6 +321,36 @@ export function DashboardPage() {
       {claude.data && (
         <section className="mt-6">
           <ClaudeUsageCard usage={claude.data} />
+        </section>
+      )}
+
+      {yearly.data && yearly.data.monthly.length >= 2 && (
+        <section className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="card p-5">
+            <div className="stat-label mb-3">Entrées / sorties (12 mois glissants)</div>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={yearly.data.monthly}>
+                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }} />
+                  <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                  <Tooltip contentStyle={{ background: 'hsl(var(--surface-2))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 }} />
+                  <Bar dataKey="credits" fill="hsl(160 84% 50%)" />
+                  <Bar dataKey="debits" fill="hsl(0 70% 55%)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="card p-5">
+            <div className="stat-label mb-3">Top 5 postes de dépense (12 mois)</div>
+            <div className="space-y-2">
+              {yearly.data.topCategories.map((c) => (
+                <div key={c.category} className="flex items-center justify-between text-sm">
+                  <span className="text-fg-muted">{CATEGORY_LABELS[c.category as TransactionCategory] ?? c.category}</span>
+                  <span className="font-display tabular text-fg-bright">{formatEUR(c.total)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
       )}
     </>

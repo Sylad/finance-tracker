@@ -14,6 +14,7 @@ import { SavingsModule } from './modules/savings/savings.module';
 import { LoansModule } from './modules/loans/loans.module';
 import { AutoSyncModule } from './modules/auto-sync/auto-sync.module';
 import { LoanSuggestionsModule } from './modules/loan-suggestions/loan-suggestions.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { LoanSuggestionsModule } from './modules/loan-suggestions/loan-suggestio
     LoansModule,
     AutoSyncModule,
     LoanSuggestionsModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}

@@ -329,3 +329,17 @@ export interface LoanSuggestion {
   resolvedAt?: string;
   acceptedAsLoanId?: string;
 }
+
+export interface NetWorth {
+  closingBalance: number;
+  totalSavings: number;
+  estimatedDebt: number;
+  netWorth: number;
+  ignoredLoanIds: string[];
+}
+export type AlertSeverity = 'info' | 'warning' | 'critical';
+export interface DashboardAlert { severity: AlertSeverity; message: string; link?: string }
+export interface YearlyOverview {
+  monthly: { month: string; credits: number; debits: number; net: number }[];
+  topCategories: { category: string; total: number }[];
+}

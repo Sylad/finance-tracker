@@ -18,6 +18,9 @@ import type {
   Loan,
   LoanInput,
   LoanSuggestion,
+  NetWorth,
+  DashboardAlert,
+  YearlyOverview,
 } from '@/types/api';
 
 export const qk = {
@@ -337,4 +340,14 @@ export function useSnoozeSuggestion() {
     mutationFn: (id: string) => api.post<LoanSuggestion>(`/loan-suggestions/${id}/snooze`),
     onSuccess: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
   });
+}
+
+export function useNetWorth() {
+  return useQuery({ queryKey: ['dashboard', 'net-worth'], queryFn: () => api.get<NetWorth>('/dashboard/net-worth') });
+}
+export function useAlerts() {
+  return useQuery({ queryKey: ['dashboard', 'alerts'], queryFn: () => api.get<DashboardAlert[]>('/dashboard/alerts') });
+}
+export function useYearlyOverview(months = 12) {
+  return useQuery({ queryKey: ['dashboard', 'yearly', months], queryFn: () => api.get<YearlyOverview>(`/dashboard/yearly-overview?months=${months}`) });
 }
