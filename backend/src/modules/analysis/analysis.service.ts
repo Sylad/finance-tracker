@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { AnthropicService, ClaudeAnalysisResult } from './anthropic.service';
 import { StorageService } from '../storage/storage.service';
@@ -22,8 +22,18 @@ export class AnalysisService {
     // Re-traite un statement existant avec le prompt FR actuel.
     // Utilisé pour migrer les anciens commentaires anglais vers le français.
     const existing = await this.storage.getStatement(id);
-    if (!existing) throw new Error(`Statement ${id} introuvable`);
-    return this.analyzeAndPersist(pdfBuffer);
+    if (!existing) throw new NotFoundException(`Relevé ${id} introuvable`);
+    const result = await this.anthropic.analyzeBankStatement(pdfBuffer);
+    const candidate = this.buildStatement(result);
+    if (candidate.id !== id) {
+      throw new BadRequestException(
+        `Le PDF fourni correspond au relevé ${candidate.id}, pas au relevé ${id} demandé. Re-upload le bon PDF.`,
+      );
+    }
+    await this.snapshots.takeSnapshot(`before-reanalyze-${id}`);
+    await this.storage.saveStatement(candidate);
+    this.logger.log(`Re-analyzed statement ${id}`);
+    return { statement: candidate, replaced: true };
   }
 
   async analyzeAndPersist(pdfBuffer: Buffer): Promise<AnalysisResponse> {
@@ -40,7 +50,7 @@ export class AnalysisService {
     return { statement, replaced };
   }
 
-  private buildStatement(result: ClaudeAnalysisResult): MonthlyStatement {
+  buildStatement(result: ClaudeAnalysisResult): MonthlyStatement {
     const month = result.statementMonth;
     const year = result.statementYear;
     const id = `${year}-${String(month).padStart(2, '0')}`;

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Controller, Delete, Get, NotFoundException, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
@@ -55,7 +55,15 @@ export class StatementsController {
   }
 
   @Post(':id/reanalyze')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', {
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype !== 'application/pdf') {
+        return cb(new BadRequestException('Seuls les fichiers PDF sont acceptés'), false);
+      }
+      cb(null, true);
+    },
+    limits: { fileSize: 20 * 1024 * 1024 },
+  }))
   async reanalyze(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new NotFoundException('PDF requis pour re-analyser');
     return this.analysis.reanalyzeStatement(id, file.buffer);
