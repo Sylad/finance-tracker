@@ -155,6 +155,20 @@ export class SavingsService {
     if (dirty) await this.persist(all);
   }
 
+  async clearDetectedMovements(id: string): Promise<void> {
+    const all = await this.getAll();
+    const idx = all.findIndex((a) => a.id === id);
+    if (idx === -1) throw new NotFoundException(`Compte épargne ${id} introuvable`);
+    const acc = all[idx];
+    const detected = acc.movements.filter((m) => m.source === 'detected' || m.source === 'interest');
+    if (detected.length === 0) return;
+    const delta = detected.reduce((s, m) => s + m.amount, 0);
+    acc.movements = acc.movements.filter((m) => m.source !== 'detected' && m.source !== 'interest');
+    acc.currentBalance = Math.round((acc.currentBalance - delta) * 100) / 100;
+    acc.updatedAt = new Date().toISOString();
+    await this.persist(all);
+  }
+
   private async persist(all: SavingsAccount[]): Promise<void> {
     await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
     this.bus.emit('savings-changed');

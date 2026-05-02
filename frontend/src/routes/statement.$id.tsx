@@ -17,7 +17,7 @@ import {
   type Transaction,
   type TransactionCategory,
 } from '@/types/api';
-import { formatEUR, formatMonth, formatDate, cn } from '@/lib/utils';
+import { formatEUR, formatMonth, formatDate, cn, chartTooltipProps } from '@/lib/utils';
 
 const CATEGORY_COLOR: Record<TransactionCategory, string> = {
   income: 'hsl(160 84% 50%)',
@@ -195,12 +195,7 @@ export function StatementDetailPage() {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        background: 'hsl(var(--surface-2))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: 6,
-                        fontSize: 12,
-                      }}
+                      {...chartTooltipProps}
                       formatter={(v: number) => [formatEUR(v), '']}
                     />
                   </PieChart>

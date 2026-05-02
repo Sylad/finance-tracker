@@ -102,7 +102,7 @@ const EXTRACT_TRANSACTIONS_TOOL: Anthropic.Tool = {
 // Phase 2 tool: financial analysis
 const ANALYZE_TOOL: Anthropic.Tool = {
   name: 'analyze_finances',
-  description: 'Analyze the financial health based on transaction data',
+  description: 'Analyse la santé financière à partir des données de transactions et propose des suggestions de charges récurrentes en français.',
   input_schema: {
     type: 'object' as const,
     properties: {
