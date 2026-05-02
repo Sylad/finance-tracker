@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Plus, CreditCard, Pencil, Trash2, X, Banknote } from 'lucide-react';
-import { useLoans, useCreateLoan, useUpdateLoan, useDeleteLoan, useResetRevolving, useLoanSuggestions, useAcceptSuggestion, useRejectSuggestion, useSnoozeSuggestion } from '@/lib/queries';
+import { Plus, CreditCard, Pencil, Trash2, X, Banknote, RefreshCw } from 'lucide-react';
+import { useLoans, useCreateLoan, useUpdateLoan, useDeleteLoan, useResetRevolving, useLoanSuggestions, useAcceptSuggestion, useRejectSuggestion, useSnoozeSuggestion, useResyncLoan } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
 import { type Loan, type LoanInput, type LoanType, type LoanCategory, LOAN_CATEGORY_LABELS, type LoanSuggestion } from '@/types/api';
@@ -139,6 +139,7 @@ function toInput(l: Loan): LoanInput {
 }
 
 function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
+  const resync = useResyncLoan();
   const start = loan.startDate ? new Date(loan.startDate).getTime() : 0;
   const end = loan.endDate ? new Date(loan.endDate).getTime() : 0;
   const now = Date.now();
@@ -147,6 +148,16 @@ function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => voi
   const pct = total > 0 ? Math.round((elapsed / total) * 100) : 0;
   const monthsRemaining = end > now ? Math.ceil((end - now) / (1000 * 60 * 60 * 24 * 30.44)) : 0;
   const occurrences = loan.occurrencesDetected.length;
+
+  const handleResync = async () => {
+    if (!confirm(`Re-scanner tous les relevés pour ${loan.name} ?`)) return;
+    try {
+      const res = await resync.mutateAsync({ id: loan.id });
+      alert(`Re-synchronisé sur ${res.rescanned} relevé(s)`);
+    } catch (e) {
+      alert(`Erreur : ${(e as Error).message}`);
+    }
+  };
 
   return (
     <div className="card p-5">
@@ -179,12 +190,21 @@ function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => voi
       ) : (
         <p className="text-xs text-fg-dim italic">Renseigne les dates de début et fin pour activer le suivi.</p>
       )}
+      <button
+        onClick={handleResync}
+        disabled={resync.isPending}
+        className="btn-ghost text-xs mt-3 flex items-center gap-1"
+      >
+        <RefreshCw className={`h-3 w-3 ${resync.isPending ? 'animate-spin' : ''}`} />
+        {resync.isPending ? 'Re-scan en cours…' : 'Re-scanner les relevés'}
+      </button>
     </div>
   );
 }
 
 function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
   const reset = useResetRevolving();
+  const resync = useResyncLoan();
   const max = loan.maxAmount ?? 0;
   const used = loan.usedAmount ?? 0;
   const pct = max > 0 ? Math.round((used / max) * 100) : 0;
@@ -196,6 +216,22 @@ function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => v
     const n = Number(v);
     if (!Number.isFinite(n)) return alert('Valeur invalide');
     await reset.mutateAsync({ id: loan.id, usedAmount: n });
+  };
+
+  const handleResync = async () => {
+    const baseline = prompt(
+      `Pour re-scanner ${loan.name}, indique le solde utilisé AVANT les remboursements détectés dans tes relevés (ex : si ton revolving était à 1500€ avant les 3 mensualités importées, mets 1500) :`,
+      String(loan.usedAmount ?? 0),
+    );
+    if (baseline === null) return;
+    const n = Number(baseline);
+    if (!Number.isFinite(n) || n < 0) return alert('Valeur invalide');
+    try {
+      const res = await resync.mutateAsync({ id: loan.id, baselineUsedAmount: n });
+      alert(`Re-synchronisé sur ${res.rescanned} relevé(s)`);
+    } catch (e) {
+      alert(`Erreur : ${(e as Error).message}`);
+    }
   };
 
   return (
@@ -222,6 +258,14 @@ function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => v
       </div>
       <div className="text-xs text-fg-muted tabular mt-1">{formatEUR(max - used)} disponibles</div>
       <button onClick={handleReset} className="btn-ghost text-xs mt-3">Recaler le solde</button>
+      <button
+        onClick={handleResync}
+        disabled={resync.isPending}
+        className="btn-ghost text-xs mt-2 flex items-center gap-1"
+      >
+        <RefreshCw className={`h-3 w-3 ${resync.isPending ? 'animate-spin' : ''}`} />
+        {resync.isPending ? 'Re-scan en cours…' : 'Re-scanner les relevés'}
+      </button>
     </div>
   );
 }

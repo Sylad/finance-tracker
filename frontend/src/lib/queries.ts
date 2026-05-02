@@ -342,6 +342,30 @@ export function useSnoozeSuggestion() {
   });
 }
 
+export function useResyncSavings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<{ rescanned: number }>(`/auto-sync/savings/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkSavings.all() });
+    },
+  });
+}
+
+export function useResyncLoan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, baselineUsedAmount }: { id: string; baselineUsedAmount?: number }) =>
+      api.post<{ rescanned: number }>(
+        `/auto-sync/loans/${id}`,
+        baselineUsedAmount !== undefined ? { baselineUsedAmount } : undefined,
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkLoans.all() });
+    },
+  });
+}
+
 export function useNetWorth() {
   return useQuery({ queryKey: ['dashboard', 'net-worth'], queryFn: () => api.get<NetWorth>('/dashboard/net-worth') });
 }
