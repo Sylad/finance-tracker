@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, PiggyBank, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, PiggyBank, Pencil, Trash2, X, RefreshCw } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import {
   useSavingsAccounts,
@@ -7,6 +7,7 @@ import {
   useUpdateSavingsAccount,
   useDeleteSavingsAccount,
   useSavingsHistory,
+  useResyncSavings,
 } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
@@ -101,9 +102,21 @@ function toInput(a: SavingsAccount): SavingsAccountInput {
 
 function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; onEdit: () => void; onDelete: () => void }) {
   const { data: hist } = useSavingsHistory(account.id, 12);
+  const resync = useResyncSavings();
   const lastDelta = account.movements.length >= 2
     ? account.movements[account.movements.length - 1].amount
     : 0;
+
+  const handleResync = async () => {
+    if (!confirm(`Re-scanner tous les relevés pour ${account.name} ? Les mouvements détectés et intérêts seront recalculés.`)) return;
+    try {
+      const res = await resync.mutateAsync(account.id);
+      alert(`Re-synchronisé sur ${res.rescanned} relevé(s)`);
+    } catch (e) {
+      alert(`Erreur : ${(e as Error).message}`);
+    }
+  };
+
   return (
     <div className="card p-5 flex flex-col">
       <div className="flex items-start justify-between gap-2">
@@ -140,6 +153,14 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
           </ResponsiveContainer>
         </div>
       )}
+      <button
+        onClick={handleResync}
+        disabled={resync.isPending}
+        className="btn-ghost text-xs mt-3 self-start flex items-center gap-1"
+      >
+        <RefreshCw className={`h-3 w-3 ${resync.isPending ? 'animate-spin' : ''}`} />
+        {resync.isPending ? 'Re-scan en cours…' : 'Re-scanner les relevés'}
+      </button>
     </div>
   );
 }
