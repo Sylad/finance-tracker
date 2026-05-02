@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLin
 import { useForecast } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
-import { formatEUR, cn } from '@/lib/utils';
+import { formatEUR, cn, chartTooltipProps } from '@/lib/utils';
 import { DECLARATION_TYPE_LABELS } from '@/types/api';
 
 const HORIZONS = [3, 6, 12] as const;
@@ -68,12 +68,7 @@ export function ForecastPage() {
                 tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
               />
               <Tooltip
-                contentStyle={{
-                  background: 'hsl(var(--surface-2))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: 6,
-                  fontSize: 12,
-                }}
+                {...chartTooltipProps}
                 formatter={(v: number, name: string) => [formatEUR(Math.abs(v)), name]}
               />
               <ReferenceLine y={0} stroke="hsl(var(--border-strong))" />
