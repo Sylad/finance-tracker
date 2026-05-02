@@ -140,6 +140,22 @@ export class SavingsService implements OnModuleInit {
     return result;
   }
 
+  async removeMovementsForStatement(statementId: string): Promise<void> {
+    const all = await this.getAll();
+    let dirty = false;
+    for (const acc of all) {
+      const removed = acc.movements.filter((m) => m.statementId === statementId);
+      if (removed.length === 0) continue;
+      acc.movements = acc.movements.filter((m) => m.statementId !== statementId);
+      const delta = removed.reduce((s, m) => s + m.amount, 0);
+      acc.currentBalance = Math.round((acc.currentBalance - delta) * 100) / 100;
+      acc.updatedAt = new Date().toISOString();
+      dirty = true;
+      this.logger.log(`Removed ${removed.length} movements for statement ${statementId} on ${acc.id}`);
+    }
+    if (dirty) await this.persist(all);
+  }
+
   private async persist(all: SavingsAccount[]): Promise<void> {
     await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
     this.bus.emit('savings-changed');

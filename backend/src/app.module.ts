@@ -12,6 +12,7 @@ import { EventsModule } from './modules/events/events.module';
 import { DeclarationsModule } from './modules/declarations/declarations.module';
 import { SavingsModule } from './modules/savings/savings.module';
 import { LoansModule } from './modules/loans/loans.module';
+import { AutoSyncModule } from './modules/auto-sync/auto-sync.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { LoansModule } from './modules/loans/loans.module';
     DeclarationsModule,
     SavingsModule,
     LoansModule,
+    AutoSyncModule,
   ],
 })
 export class AppModule {}
