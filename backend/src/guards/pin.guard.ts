@@ -13,8 +13,9 @@ export class PinGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest<Request>();
 
-    // Laisser passer le health check et le flux SSE (events portent uniquement le type, pas de données sensibles)
+    // Laisser passer le health check, le flux SSE et les routes demo publiques
     if (req.path === '/api/health' || req.path === '/api/events') return true;
+    if (req.path.startsWith('/api/demo')) return true;
 
     const auth = req.headers['authorization'] ?? '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';

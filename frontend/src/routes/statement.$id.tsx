@@ -8,7 +8,7 @@ import {
   Search,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { useStatement, useDeleteStatement } from '@/lib/queries';
+import { useStatement, useDeleteStatement, useReanalyzeStatement } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
 import { ScoreRing } from '@/components/score-ring';
@@ -37,6 +37,7 @@ export function StatementDetailPage() {
   const { id } = useParams({ from: '/history/$id' });
   const { data, isLoading } = useStatement(id);
   const del = useDeleteStatement();
+  const reanalyze = useReanalyzeStatement();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'credit' | 'debit'>('all');
@@ -82,6 +83,24 @@ export function StatementDetailPage() {
     if (!confirm('Supprimer définitivement ce relevé ?')) return;
     await del.mutateAsync(id);
     navigate({ to: '/history' });
+  };
+
+  const handleReanalyze = () => {
+    if (!id) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        try {
+          await reanalyze.mutateAsync({ id, file });
+        } catch (err) {
+          alert((err as Error).message ?? 'Erreur lors de la ré-analyse');
+        }
+      }
+    };
+    input.click();
   };
 
   return (
@@ -133,6 +152,13 @@ export function StatementDetailPage() {
             <div className="text-xs text-fg-muted mt-1.5 leading-relaxed line-clamp-3">
               {data.healthScore.claudeComment}
             </div>
+            <button
+              onClick={handleReanalyze}
+              disabled={reanalyze.isPending}
+              className="btn-ghost text-xs mt-2"
+            >
+              {reanalyze.isPending ? 'Re-analyse en cours…' : 'Re-analyser ce relevé en français'}
+            </button>
           </div>
         </div>
       </section>

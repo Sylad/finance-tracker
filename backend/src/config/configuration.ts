@@ -6,4 +6,5 @@ export default () => ({
   uploadDir: process.env.UPLOAD_DIR ?? './data/uploads',
   maxFileSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB ?? '20', 10),
   appPin: process.env.APP_PIN ?? '',
+  demoModeAvailable: process.env.DEMO_MODE_AVAILABLE !== 'false',
 });

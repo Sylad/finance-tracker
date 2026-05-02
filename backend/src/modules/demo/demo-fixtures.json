@@ -1,0 +1,148 @@
+{
+  "statements": [
+    {
+      "id": "2026-04",
+      "month": 4,
+      "year": 2026,
+      "uploadedAt": "2026-05-01T10:00:00Z",
+      "bankName": "Banque Démo",
+      "accountHolder": "Alex Démo",
+      "currency": "EUR",
+      "openingBalance": 1240.55,
+      "closingBalance": 1187.20,
+      "totalCredits": 2867.00,
+      "totalDebits": 2920.35,
+      "transactions": [
+        { "id": "demo-tx-001", "date": "2026-04-02", "description": "VIR SALAIRE ENTREPRISE DEMO", "normalizedDescription": "vir salaire entreprise demo", "amount": 2800, "currency": "EUR", "category": "income", "subcategory": "salary", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-002", "date": "2026-04-05", "description": "VIR PEL DEMO", "normalizedDescription": "vir pel demo", "amount": -100, "currency": "EUR", "category": "savings", "subcategory": "", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-003", "date": "2026-04-10", "description": "PRELEVT CETELEM AUTO", "normalizedDescription": "prelevt cetelem auto", "amount": -240, "currency": "EUR", "category": "subscriptions", "subcategory": "loan", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-004", "date": "2026-04-15", "description": "PRELEVT COFIDIS", "normalizedDescription": "prelevt cofidis", "amount": -80, "currency": "EUR", "category": "subscriptions", "subcategory": "loan", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-005", "date": "2026-04-08", "description": "EDF FACTURE", "normalizedDescription": "edf facture", "amount": -65, "currency": "EUR", "category": "housing", "subcategory": "utilities", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-006", "date": "2026-04-12", "description": "COURSES CARREFOUR", "normalizedDescription": "courses carrefour", "amount": -120.50, "currency": "EUR", "category": "food", "subcategory": "", "isRecurring": false, "confidence": 1 },
+        { "id": "demo-tx-007", "date": "2026-04-20", "description": "RESTAURANT LE PAVILLON", "normalizedDescription": "restaurant le pavillon", "amount": -42.30, "currency": "EUR", "category": "entertainment", "subcategory": "", "isRecurring": false, "confidence": 1 },
+        { "id": "demo-tx-008", "date": "2026-04-25", "description": "VIR LIVRET A DEMO", "normalizedDescription": "vir livret a demo", "amount": -50, "currency": "EUR", "category": "savings", "subcategory": "", "isRecurring": true, "confidence": 1 }
+      ],
+      "healthScore": { "total": 74, "breakdown": { "savingsRate": 70, "expenseControl": 75, "debtBurden": 65, "cashFlowBalance": 80, "irregularSpending": 80 }, "trend": "stable", "claudeComment": "Bonne maîtrise globale du budget. Attention au revolving qui approche 40% du plafond — pense à le rembourser plus vite si possible." },
+      "recurringCredits": [],
+      "analysisNarrative": "Mois équilibré, épargne régulière maintenue avec 150€ vers les comptes épargne et 320€ de remboursements crédits."
+    },
+    {
+      "id": "2026-03",
+      "month": 3,
+      "year": 2026,
+      "uploadedAt": "2026-04-01T10:00:00Z",
+      "bankName": "Banque Démo",
+      "accountHolder": "Alex Démo",
+      "currency": "EUR",
+      "openingBalance": 1180.00,
+      "closingBalance": 1240.55,
+      "totalCredits": 2810.00,
+      "totalDebits": 2749.45,
+      "transactions": [
+        { "id": "demo-tx-101", "date": "2026-03-02", "description": "VIR SALAIRE ENTREPRISE DEMO", "normalizedDescription": "vir salaire entreprise demo", "amount": 2800, "currency": "EUR", "category": "income", "subcategory": "salary", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-102", "date": "2026-03-05", "description": "VIR PEL DEMO", "normalizedDescription": "vir pel demo", "amount": -100, "currency": "EUR", "category": "savings", "subcategory": "", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-103", "date": "2026-03-10", "description": "PRELEVT CETELEM AUTO", "normalizedDescription": "prelevt cetelem auto", "amount": -240, "currency": "EUR", "category": "subscriptions", "subcategory": "loan", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-104", "date": "2026-03-15", "description": "PRELEVT COFIDIS", "normalizedDescription": "prelevt cofidis", "amount": -80, "currency": "EUR", "category": "subscriptions", "subcategory": "loan", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-105", "date": "2026-03-08", "description": "EDF FACTURE", "normalizedDescription": "edf facture", "amount": -65, "currency": "EUR", "category": "housing", "subcategory": "utilities", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-106", "date": "2026-03-25", "description": "VIR LIVRET A DEMO", "normalizedDescription": "vir livret a demo", "amount": -50, "currency": "EUR", "category": "savings", "subcategory": "", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-107", "date": "2026-03-18", "description": "PRIME ENTREPRISE", "normalizedDescription": "prime entreprise", "amount": 10, "currency": "EUR", "category": "income", "subcategory": "", "isRecurring": false, "confidence": 1 }
+      ],
+      "healthScore": { "total": 78, "breakdown": { "savingsRate": 75, "expenseControl": 80, "debtBurden": 65, "cashFlowBalance": 85, "irregularSpending": 80 }, "trend": "improving", "claudeComment": "Excellente épargne ce mois-ci grâce à la prime. Le crédit revolving reste à surveiller." },
+      "recurringCredits": [],
+      "analysisNarrative": "Mois positif avec un net de +60€ et la prime exceptionnelle qui a boosté l'épargne."
+    },
+    {
+      "id": "2026-02",
+      "month": 2,
+      "year": 2026,
+      "uploadedAt": "2026-03-01T10:00:00Z",
+      "bankName": "Banque Démo",
+      "accountHolder": "Alex Démo",
+      "currency": "EUR",
+      "openingBalance": 1320.45,
+      "closingBalance": 1180.00,
+      "totalCredits": 2800.00,
+      "totalDebits": 2940.45,
+      "transactions": [
+        { "id": "demo-tx-201", "date": "2026-02-02", "description": "VIR SALAIRE ENTREPRISE DEMO", "normalizedDescription": "vir salaire entreprise demo", "amount": 2800, "currency": "EUR", "category": "income", "subcategory": "salary", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-202", "date": "2026-02-05", "description": "VIR PEL DEMO", "normalizedDescription": "vir pel demo", "amount": -100, "currency": "EUR", "category": "savings", "subcategory": "", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-203", "date": "2026-02-10", "description": "PRELEVT CETELEM AUTO", "normalizedDescription": "prelevt cetelem auto", "amount": -240, "currency": "EUR", "category": "subscriptions", "subcategory": "loan", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-204", "date": "2026-02-15", "description": "PRELEVT COFIDIS", "normalizedDescription": "prelevt cofidis", "amount": -80, "currency": "EUR", "category": "subscriptions", "subcategory": "loan", "isRecurring": true, "confidence": 1 },
+        { "id": "demo-tx-205", "date": "2026-02-22", "description": "VOYAGE WEEKEND BARCELONE", "normalizedDescription": "voyage weekend barcelone", "amount": -480, "currency": "EUR", "category": "entertainment", "subcategory": "travel", "isRecurring": false, "confidence": 1 }
+      ],
+      "healthScore": { "total": 65, "breakdown": { "savingsRate": 50, "expenseControl": 55, "debtBurden": 65, "cashFlowBalance": 60, "irregularSpending": 70 }, "trend": "declining", "claudeComment": "Mois en perte (-140€) à cause du voyage. Compense le mois prochain en limitant les sorties." },
+      "recurringCredits": [],
+      "analysisNarrative": "Net négatif ce mois-ci (-140€), principalement à cause d'un voyage weekend. À surveiller."
+    }
+  ],
+  "savings-accounts": [
+    {
+      "id": "demo-pel-1",
+      "name": "PEL Démo",
+      "type": "pel",
+      "initialBalance": 12000,
+      "initialBalanceDate": "2018-03-15",
+      "matchPattern": "VIR.*PEL",
+      "interestRate": 0.02,
+      "interestAnniversaryMonth": 3,
+      "currentBalance": 12450,
+      "lastSyncedStatementId": "2026-04",
+      "movements": [
+        { "id": "m-1", "date": "2018-03-15", "amount": 12000, "source": "initial", "statementId": null, "transactionId": null, "note": "Solde initial déclaré" }
+      ],
+      "createdAt": "2026-05-01T00:00:00Z",
+      "updatedAt": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "demo-livreta-1",
+      "name": "Livret A Démo",
+      "type": "livret-a",
+      "initialBalance": 6000,
+      "initialBalanceDate": "2025-12-01",
+      "matchPattern": "VIR.*LIVRET",
+      "interestRate": 0.015,
+      "interestAnniversaryMonth": 12,
+      "currentBalance": 6200,
+      "lastSyncedStatementId": "2026-04",
+      "movements": [
+        { "id": "m-2", "date": "2025-12-01", "amount": 6000, "source": "initial", "statementId": null, "transactionId": null, "note": "Solde initial déclaré" }
+      ],
+      "createdAt": "2026-05-01T00:00:00Z",
+      "updatedAt": "2026-05-01T00:00:00Z"
+    }
+  ],
+  "loans": [
+    {
+      "id": "demo-loan-auto",
+      "name": "Crédit auto Démo",
+      "type": "classic",
+      "category": "auto",
+      "monthlyPayment": 240,
+      "matchPattern": "PRELEVT.*CETELEM.*AUTO",
+      "isActive": true,
+      "startDate": "2025-03-01",
+      "endDate": "2028-03-01",
+      "initialPrincipal": 8640,
+      "occurrencesDetected": [],
+      "createdAt": "2026-05-01T00:00:00Z",
+      "updatedAt": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "demo-loan-revolving",
+      "name": "Carte magasin Démo",
+      "type": "revolving",
+      "category": "consumer",
+      "monthlyPayment": 80,
+      "matchPattern": "PRELEVT.*COFIDIS",
+      "isActive": true,
+      "maxAmount": 3000,
+      "usedAmount": 1200,
+      "occurrencesDetected": [],
+      "createdAt": "2026-05-01T00:00:00Z",
+      "updatedAt": "2026-05-01T00:00:00Z"
+    }
+  ],
+  "loan-suggestions": [],
+  "declarations": [],
+  "budgets": { "food": 400, "entertainment": 100 }
+}

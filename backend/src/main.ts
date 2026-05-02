@@ -13,7 +13,7 @@ async function bootstrap() {
   app.enableCors({
     origin: config.get<string>('corsOrigin'),
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'X-Demo-Mode'],
   });
 
   const port = config.get<number>('port') ?? 3000;

@@ -4,18 +4,21 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router';
+import { Navigate } from '@tanstack/react-router';
 import { Root } from './components/layout/root';
 import { LoginPage } from './routes/login';
 import { DashboardPage } from './routes/index';
 import { HistoryPage } from './routes/history';
 import { StatementDetailPage } from './routes/statement.$id';
 import { BudgetPage } from './routes/budget';
-import { RecurringPage } from './routes/recurring';
+import { IncomePage } from './routes/income';
 import { DeclarationsPage } from './routes/declarations';
 import { ForecastPage } from './routes/forecast';
 import { YearlyPage } from './routes/yearly';
 import { UploadPage } from './routes/upload';
 import { AboutPage } from './routes/about';
+import { SavingsPage } from './routes/savings';
+import { LoansPage } from './routes/loans';
 
 const rootRoute = createRootRoute({ component: Root });
 
@@ -49,10 +52,16 @@ const budgetRoute = createRoute({
   component: BudgetPage,
 });
 
-const recurringRoute = createRoute({
+const incomeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/income',
+  component: IncomePage,
+});
+
+const recurringRedirectRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/recurring',
-  component: RecurringPage,
+  component: () => <Navigate to="/income" replace />,
 });
 
 const declarationsRoute = createRoute({
@@ -85,18 +94,33 @@ const aboutRoute = createRoute({
   component: AboutPage,
 });
 
+const savingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/savings',
+  component: SavingsPage,
+});
+
+const loansRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/loans',
+  component: LoansPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   historyRoute,
   statementRoute,
   budgetRoute,
-  recurringRoute,
+  incomeRoute,
+  recurringRedirectRoute,
   declarationsRoute,
   forecastRoute,
   yearlyRoute,
   uploadRoute,
   aboutRoute,
+  savingsRoute,
+  loansRoute,
 ]);
 
 export const router = createRouter({

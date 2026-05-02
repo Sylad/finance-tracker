@@ -1,7 +1,12 @@
 import { Module } from '@nestjs/common';
 import { StatementsController } from './statements.controller';
+import { AnalysisModule } from '../analysis/analysis.module';
+import { StorageModule } from '../storage/storage.module';
+import { SnapshotsModule } from '../snapshots/snapshots.module';
+import { AutoSyncModule } from '../auto-sync/auto-sync.module';
 
 @Module({
+  imports: [AnalysisModule, StorageModule, SnapshotsModule, AutoSyncModule],
   controllers: [StatementsController],
 })
 export class StatementsModule {}

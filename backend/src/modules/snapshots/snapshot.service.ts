@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 const MAX_SNAPSHOTS = 30;
 // Excluded from snapshots: `snapshots/` to avoid recursion, `uploads/` because
@@ -11,15 +12,26 @@ const EXCLUDED = new Set(['snapshots', 'uploads']);
 @Injectable()
 export class SnapshotService implements OnModuleInit {
   private readonly logger = new Logger(SnapshotService.name);
-  private dataDir: string;
-  private snapshotsDir: string;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly requestDataDir: RequestDataDirService,
+  ) {}
 
   onModuleInit() {
-    this.dataDir = path.resolve(this.config.get<string>('dataDir')!);
-    this.snapshotsDir = path.join(this.dataDir, 'snapshots');
-    fs.mkdirSync(this.snapshotsDir, { recursive: true });
+    // Ensure snapshots dir exists for both normal and demo locations.
+    const real = this.config.get<string>('dataDir')!;
+    for (const root of [real, path.join(real, 'demo')]) {
+      fs.mkdirSync(path.join(root, 'snapshots'), { recursive: true });
+    }
+  }
+
+  private get dataDir(): string {
+    return path.resolve(this.requestDataDir.getDataDir());
+  }
+
+  private get snapshotsDir(): string {
+    return path.join(this.dataDir, 'snapshots');
   }
 
   async takeSnapshot(reason: string): Promise<string> {

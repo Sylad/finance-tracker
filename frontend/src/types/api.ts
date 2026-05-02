@@ -224,3 +224,122 @@ export interface ClaudeUsage {
   configuredBalanceEur: number | null;
   remainingPercent: number | null;
 }
+
+export type SavingsAccountType = 'livret-a' | 'pel' | 'cel' | 'ldds' | 'pea' | 'other';
+
+export const SAVINGS_TYPE_LABELS: Record<SavingsAccountType, string> = {
+  'livret-a': 'Livret A',
+  pel: 'PEL',
+  cel: 'CEL',
+  ldds: 'LDDS',
+  pea: 'PEA',
+  other: 'Autre',
+};
+
+export interface SavingsMovement {
+  id: string;
+  date: string;
+  amount: number;
+  source: 'initial' | 'detected' | 'manual' | 'interest';
+  statementId: string | null;
+  transactionId: string | null;
+  note?: string;
+}
+
+export interface SavingsAccount {
+  id: string;
+  name: string;
+  type: SavingsAccountType;
+  initialBalance: number;
+  initialBalanceDate: string;
+  matchPattern: string;
+  interestRate: number;
+  interestAnniversaryMonth: number;
+  currentBalance: number;
+  lastSyncedStatementId: string | null;
+  movements: SavingsMovement[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SavingsAccountInput = Omit<
+  SavingsAccount,
+  'id' | 'currentBalance' | 'lastSyncedStatementId' | 'movements' | 'createdAt' | 'updatedAt'
+>;
+
+export interface BalanceHistoryEntry {
+  month: string;
+  balance: number;
+}
+
+export type LoanType = 'classic' | 'revolving';
+export type LoanCategory = 'mortgage' | 'consumer' | 'auto' | 'student' | 'other';
+
+export const LOAN_CATEGORY_LABELS: Record<LoanCategory, string> = {
+  mortgage: 'Immobilier',
+  consumer: 'Conso',
+  auto: 'Auto',
+  student: 'Étudiant',
+  other: 'Autre',
+};
+
+export interface LoanOccurrence {
+  id: string;
+  statementId: string;
+  date: string;
+  amount: number;
+  transactionId: string | null;
+}
+
+export interface Loan {
+  id: string;
+  name: string;
+  type: LoanType;
+  category: LoanCategory;
+  monthlyPayment: number;
+  matchPattern: string;
+  isActive: boolean;
+  startDate?: string;
+  endDate?: string;
+  initialPrincipal?: number;
+  maxAmount?: number;
+  usedAmount?: number;
+  lastManualResetAt?: string;
+  occurrencesDetected: LoanOccurrence[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type LoanInput = Omit<Loan, 'id' | 'occurrencesDetected' | 'createdAt' | 'updatedAt'>;
+
+export type LoanSuggestionStatus = 'pending' | 'accepted' | 'rejected' | 'snoozed';
+
+export interface LoanSuggestion {
+  id: string;
+  label: string;
+  monthlyAmount: number;
+  occurrencesSeen: number;
+  firstSeenStatementId: string;
+  firstSeenDate: string;
+  lastSeenDate: string;
+  suggestedType: 'loan' | 'subscription' | 'utility';
+  matchPattern: string;
+  status: LoanSuggestionStatus;
+  createdAt: string;
+  resolvedAt?: string;
+  acceptedAsLoanId?: string;
+}
+
+export interface NetWorth {
+  closingBalance: number;
+  totalSavings: number;
+  estimatedDebt: number;
+  netWorth: number;
+  ignoredLoanIds: string[];
+}
+export type AlertSeverity = 'info' | 'warning' | 'critical';
+export interface DashboardAlert { severity: AlertSeverity; message: string; link?: string }
+export interface YearlyOverview {
+  monthly: { month: string; credits: number; debits: number; net: number }[];
+  topCategories: { category: string; total: number }[];
+}
