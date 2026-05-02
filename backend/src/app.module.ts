@@ -10,6 +10,7 @@ import { ClaudeUsageModule } from './modules/claude-usage/claude-usage.module';
 import { SnapshotsModule } from './modules/snapshots/snapshots.module';
 import { EventsModule } from './modules/events/events.module';
 import { DeclarationsModule } from './modules/declarations/declarations.module';
+import { SavingsModule } from './modules/savings/savings.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { DeclarationsModule } from './modules/declarations/declarations.module';
     HealthModule,
     BudgetModule,
     DeclarationsModule,
+    SavingsModule,
   ],
 })
 export class AppModule {}
