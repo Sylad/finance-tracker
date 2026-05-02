@@ -11,6 +11,7 @@ import { SnapshotsModule } from './modules/snapshots/snapshots.module';
 import { EventsModule } from './modules/events/events.module';
 import { DeclarationsModule } from './modules/declarations/declarations.module';
 import { SavingsModule } from './modules/savings/savings.module';
+import { LoansModule } from './modules/loans/loans.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { SavingsModule } from './modules/savings/savings.module';
     BudgetModule,
     DeclarationsModule,
     SavingsModule,
+    LoansModule,
   ],
 })
 export class AppModule {}

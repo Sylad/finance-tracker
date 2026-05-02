@@ -17,6 +17,7 @@ import { YearlyPage } from './routes/yearly';
 import { UploadPage } from './routes/upload';
 import { AboutPage } from './routes/about';
 import { SavingsPage } from './routes/savings';
+import { LoansPage } from './routes/loans';
 
 const rootRoute = createRootRoute({ component: Root });
 
@@ -92,6 +93,12 @@ const savingsRoute = createRoute({
   component: SavingsPage,
 });
 
+const loansRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/loans',
+  component: LoansPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -105,6 +112,7 @@ const routeTree = rootRoute.addChildren([
   uploadRoute,
   aboutRoute,
   savingsRoute,
+  loansRoute,
 ]);
 
 export const router = createRouter({

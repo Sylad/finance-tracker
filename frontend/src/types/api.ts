@@ -271,3 +271,43 @@ export interface BalanceHistoryEntry {
   month: string;
   balance: number;
 }
+
+export type LoanType = 'classic' | 'revolving';
+export type LoanCategory = 'mortgage' | 'consumer' | 'auto' | 'student' | 'other';
+
+export const LOAN_CATEGORY_LABELS: Record<LoanCategory, string> = {
+  mortgage: 'Immobilier',
+  consumer: 'Conso',
+  auto: 'Auto',
+  student: 'Étudiant',
+  other: 'Autre',
+};
+
+export interface LoanOccurrence {
+  id: string;
+  statementId: string;
+  date: string;
+  amount: number;
+  transactionId: string | null;
+}
+
+export interface Loan {
+  id: string;
+  name: string;
+  type: LoanType;
+  category: LoanCategory;
+  monthlyPayment: number;
+  matchPattern: string;
+  isActive: boolean;
+  startDate?: string;
+  endDate?: string;
+  initialPrincipal?: number;
+  maxAmount?: number;
+  usedAmount?: number;
+  lastManualResetAt?: string;
+  occurrencesDetected: LoanOccurrence[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type LoanInput = Omit<Loan, 'id' | 'occurrencesDetected' | 'createdAt' | 'updatedAt'>;

@@ -15,6 +15,8 @@ import type {
   SavingsAccount,
   SavingsAccountInput,
   BalanceHistoryEntry,
+  Loan,
+  LoanInput,
 } from '@/types/api';
 
 export const qk = {
@@ -253,5 +255,48 @@ export function useAddSavingsMovement() {
       qc.invalidateQueries({ queryKey: qkSavings.all() });
       qc.invalidateQueries({ queryKey: qkSavings.one(vars.id) });
     },
+  });
+}
+
+export const qkLoans = {
+  all: () => ['loans'] as const,
+  one: (id: string) => ['loans', id] as const,
+};
+
+export function useLoans() {
+  return useQuery({ queryKey: qkLoans.all(), queryFn: () => api.get<Loan[]>('/loans') });
+}
+
+export function useCreateLoan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: LoanInput) => api.post<Loan>('/loans', input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+  });
+}
+
+export function useUpdateLoan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: LoanInput }) =>
+      api.put<Loan>(`/loans/${id}`, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+  });
+}
+
+export function useDeleteLoan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/loans/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+  });
+}
+
+export function useResetRevolving() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, usedAmount }: { id: string; usedAmount: number }) =>
+      api.post<Loan>(`/loans/${id}/reset-revolving`, { usedAmount }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
   });
 }
