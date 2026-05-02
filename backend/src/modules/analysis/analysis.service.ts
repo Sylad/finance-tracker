@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { AnthropicService, ClaudeAnalysisResult } from './anthropic.service';
 import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
+import { AutoSyncService } from '../auto-sync/auto-sync.service';
 import { MonthlyStatement, AnalysisResponse } from '../../models/monthly-statement.model';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
@@ -16,6 +17,7 @@ export class AnalysisService {
     private readonly anthropic: AnthropicService,
     private readonly storage: StorageService,
     private readonly snapshots: SnapshotService,
+    private readonly autoSync: AutoSyncService,
   ) {}
 
   async reanalyzeStatement(id: string, pdfBuffer: Buffer): Promise<AnalysisResponse> {
@@ -32,6 +34,12 @@ export class AnalysisService {
     }
     await this.snapshots.takeSnapshot(`before-reanalyze-${id}`);
     await this.storage.saveStatement(candidate);
+    try {
+      await this.autoSync.syncStatement(candidate);
+    } catch (e) {
+      this.logger.error(`AutoSync failed for ${candidate.id}`, e as Error);
+      // Don't block persistence — log and continue.
+    }
     this.logger.log(`Re-analyzed statement ${id}`);
     return { statement: candidate, replaced: true };
   }
@@ -45,6 +53,12 @@ export class AnalysisService {
 
     await this.snapshots.takeSnapshot(replaced ? `before-replace-${statement.id}` : `before-save-${statement.id}`);
     await this.storage.saveStatement(statement);
+    try {
+      await this.autoSync.syncStatement(statement);
+    } catch (e) {
+      this.logger.error(`AutoSync failed for ${statement.id}`, e as Error);
+      // Don't block persistence — log and continue.
+    }
     this.logger.log(`${replaced ? 'Replaced' : 'Saved'} statement ${statement.id} (score: ${statement.healthScore.total})`);
 
     return { statement, replaced };

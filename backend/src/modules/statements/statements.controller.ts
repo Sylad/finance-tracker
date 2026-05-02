@@ -3,6 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
 import { AnalysisService } from '../analysis/analysis.service';
+import { AutoSyncService } from '../auto-sync/auto-sync.service';
 
 @Controller('statements')
 export class StatementsController {
@@ -10,6 +11,7 @@ export class StatementsController {
     private readonly storage: StorageService,
     private readonly snapshots: SnapshotService,
     private readonly analysis: AnalysisService,
+    private readonly autoSync: AutoSyncService,
   ) {}
 
   @Get()
@@ -49,6 +51,7 @@ export class StatementsController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     await this.snapshots.takeSnapshot(`before-delete-${id}`);
+    await this.autoSync.removeForStatement(id);
     const deleted = await this.storage.deleteStatement(id);
     if (!deleted) throw new NotFoundException(`Relevé ${id} introuvable`);
     return { message: `Relevé ${id} supprimé` };
