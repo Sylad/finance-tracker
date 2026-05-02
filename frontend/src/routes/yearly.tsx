@@ -5,7 +5,7 @@ import { useYearlySummaries, useYearlySummary } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
 import { ScoreBadge } from '@/components/score-ring';
-import { formatEUR, formatMonth, formatMonthShort, cn } from '@/lib/utils';
+import { formatEUR, formatMonth, formatMonthShort, cn, chartTooltipProps } from '@/lib/utils';
 
 export function YearlyPage() {
   const list = useYearlySummaries();
@@ -140,9 +140,7 @@ export function YearlyPage() {
                     </defs>
                     <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
-                    <Tooltip
-                      contentStyle={{ background: 'hsl(var(--surface-2))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 }}
-                    />
+                    <Tooltip {...chartTooltipProps} />
                     <Area type="monotone" dataKey="score" stroke="hsl(160 84% 50%)" strokeWidth={2} fill="url(#yscore-grad)" />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -187,7 +185,7 @@ export function YearlyPage() {
                 }))} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
                   <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
-                  <Tooltip contentStyle={{ background: 'hsl(var(--surface-2))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 }} />
+                  <Tooltip {...chartTooltipProps} />
                   <Line type="monotone" dataKey="score" stroke="hsl(217 91% 60%)" strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
