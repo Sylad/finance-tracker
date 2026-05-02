@@ -224,3 +224,50 @@ export interface ClaudeUsage {
   configuredBalanceEur: number | null;
   remainingPercent: number | null;
 }
+
+export type SavingsAccountType = 'livret-a' | 'pel' | 'cel' | 'ldds' | 'pea' | 'other';
+
+export const SAVINGS_TYPE_LABELS: Record<SavingsAccountType, string> = {
+  'livret-a': 'Livret A',
+  pel: 'PEL',
+  cel: 'CEL',
+  ldds: 'LDDS',
+  pea: 'PEA',
+  other: 'Autre',
+};
+
+export interface SavingsMovement {
+  id: string;
+  date: string;
+  amount: number;
+  source: 'initial' | 'detected' | 'manual' | 'interest';
+  statementId: string | null;
+  transactionId: string | null;
+  note?: string;
+}
+
+export interface SavingsAccount {
+  id: string;
+  name: string;
+  type: SavingsAccountType;
+  initialBalance: number;
+  initialBalanceDate: string;
+  matchPattern: string;
+  interestRate: number;
+  interestAnniversaryMonth: number;
+  currentBalance: number;
+  lastSyncedStatementId: string | null;
+  movements: SavingsMovement[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SavingsAccountInput = Omit<
+  SavingsAccount,
+  'id' | 'currentBalance' | 'lastSyncedStatementId' | 'movements' | 'createdAt' | 'updatedAt'
+>;
+
+export interface BalanceHistoryEntry {
+  month: string;
+  balance: number;
+}

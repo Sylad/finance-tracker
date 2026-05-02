@@ -12,6 +12,9 @@ import type {
   StatementSummary,
   UploadResult,
   YearlySummary,
+  SavingsAccount,
+  SavingsAccountInput,
+  BalanceHistoryEntry,
 } from '@/types/api';
 
 export const qk = {
@@ -186,6 +189,69 @@ export function useReanalyzeStatement() {
       qc.invalidateQueries({ queryKey: qk.statement(vars.id) });
       qc.invalidateQueries({ queryKey: qk.statements() });
       qc.invalidateQueries({ queryKey: qk.scoreHistory() });
+    },
+  });
+}
+
+export const qkSavings = {
+  all: () => ['savings'] as const,
+  one: (id: string) => ['savings', id] as const,
+  history: (id: string, months: number) => ['savings', id, 'history', months] as const,
+};
+
+export function useSavingsAccounts() {
+  return useQuery({ queryKey: qkSavings.all(), queryFn: () => api.get<SavingsAccount[]>('/savings-accounts') });
+}
+
+export function useSavingsAccount(id: string | undefined) {
+  return useQuery({
+    queryKey: qkSavings.one(id ?? ''),
+    queryFn: () => api.get<SavingsAccount>(`/savings-accounts/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useSavingsHistory(id: string | undefined, months = 12) {
+  return useQuery({
+    queryKey: qkSavings.history(id ?? '', months),
+    queryFn: () => api.get<BalanceHistoryEntry[]>(`/savings-accounts/${id}/balance-history?months=${months}`),
+    enabled: !!id,
+  });
+}
+
+export function useCreateSavingsAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SavingsAccountInput) => api.post<SavingsAccount>('/savings-accounts', input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSavings.all() }),
+  });
+}
+
+export function useUpdateSavingsAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: SavingsAccountInput }) =>
+      api.put<SavingsAccount>(`/savings-accounts/${id}`, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSavings.all() }),
+  });
+}
+
+export function useDeleteSavingsAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/savings-accounts/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSavings.all() }),
+  });
+}
+
+export function useAddSavingsMovement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: { date: string; amount: number; note?: string } }) =>
+      api.post<SavingsAccount>(`/savings-accounts/${id}/movements`, body),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: qkSavings.all() });
+      qc.invalidateQueries({ queryKey: qkSavings.one(vars.id) });
     },
   });
 }
