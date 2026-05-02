@@ -4,13 +4,14 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router';
+import { Navigate } from '@tanstack/react-router';
 import { Root } from './components/layout/root';
 import { LoginPage } from './routes/login';
 import { DashboardPage } from './routes/index';
 import { HistoryPage } from './routes/history';
 import { StatementDetailPage } from './routes/statement.$id';
 import { BudgetPage } from './routes/budget';
-import { RecurringPage } from './routes/recurring';
+import { IncomePage } from './routes/income';
 import { DeclarationsPage } from './routes/declarations';
 import { ForecastPage } from './routes/forecast';
 import { YearlyPage } from './routes/yearly';
@@ -51,10 +52,16 @@ const budgetRoute = createRoute({
   component: BudgetPage,
 });
 
-const recurringRoute = createRoute({
+const incomeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/income',
+  component: IncomePage,
+});
+
+const recurringRedirectRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/recurring',
-  component: RecurringPage,
+  component: () => <Navigate to="/income" replace />,
 });
 
 const declarationsRoute = createRoute({
@@ -105,7 +112,8 @@ const routeTree = rootRoute.addChildren([
   historyRoute,
   statementRoute,
   budgetRoute,
-  recurringRoute,
+  incomeRoute,
+  recurringRedirectRoute,
   declarationsRoute,
   forecastRoute,
   yearlyRoute,

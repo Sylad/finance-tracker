@@ -8,9 +8,11 @@ import {
   TrendingDown,
   Minus,
   Sparkles,
+  PiggyBank,
+  CreditCard,
 } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, AreaChart, Area } from 'recharts';
-import { useStatements, useScoreHistory, useBudget, useStatement, useClaudeUsage } from '@/lib/queries';
+import { useStatements, useScoreHistory, useBudget, useStatement, useClaudeUsage, useSavingsAccounts, useLoans } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
 import { ScoreRing, ScoreBadge } from '@/components/score-ring';
@@ -22,6 +24,12 @@ export function DashboardPage() {
   const history = useScoreHistory();
   const budget = useBudget();
   const claude = useClaudeUsage();
+  const savings = useSavingsAccounts();
+  const loans = useLoans();
+
+  const totalSavings = (savings.data ?? []).reduce((s, a) => s + a.currentBalance, 0);
+  const activeLoans = (loans.data ?? []).filter((l) => l.isActive);
+  const totalMonthlyLoans = activeLoans.reduce((s, l) => s + l.monthlyPayment, 0);
 
   const summaries = stmts.data ?? [];
   const current = summaries[0];
@@ -108,7 +116,7 @@ export function DashboardPage() {
 
         {/* Income */}
         <StatCard
-          label="Crédits"
+          label="Entrées"
           value={formatEUR(current.totalCredits)}
           icon={<ArrowUpRight className="h-4 w-4 text-positive" />}
           tone="positive"
@@ -130,6 +138,18 @@ export function DashboardPage() {
         <StatCard
           label="Solde de clôture"
           value={formatEUR(current.closingBalance)}
+        />
+        <StatCard
+          label="Patrimoine épargne"
+          value={formatEUR(totalSavings)}
+          icon={<PiggyBank className="h-4 w-4 text-accent" />}
+          tone="positive"
+        />
+        <StatCard
+          label="Charge crédits"
+          value={`${formatEUR(totalMonthlyLoans)} / mois`}
+          icon={<CreditCard className="h-4 w-4 text-warning" />}
+          tone="negative"
         />
       </section>
 
