@@ -1,7 +1,9 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
 import { DemoCoreModule } from './modules/demo/demo-core.module';
+import { DemoModule } from './modules/demo/demo.module';
+import { DemoModeMiddleware } from './modules/demo/demo-mode.middleware';
 import { StorageModule } from './modules/storage/storage.module';
 import { AnalysisModule } from './modules/analysis/analysis.module';
 import { StatementsModule } from './modules/statements/statements.module';
@@ -21,6 +23,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
   imports: [
     ConfigModule.forRoot({ load: [configuration], isGlobal: true }),
     DemoCoreModule,
+    DemoModule,
     EventsModule,
     ClaudeUsageModule,
     SnapshotsModule,
@@ -37,4 +40,15 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     DashboardModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(DemoModeMiddleware)
+      .exclude(
+        { path: 'demo/(.*)', method: RequestMethod.ALL },
+        { path: 'demo', method: RequestMethod.ALL },
+        { path: 'health', method: RequestMethod.ALL },
+      )
+      .forRoutes('*');
+  }
+}
