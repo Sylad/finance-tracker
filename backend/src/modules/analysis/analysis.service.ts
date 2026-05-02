@@ -35,7 +35,7 @@ export class AnalysisService {
     await this.snapshots.takeSnapshot(`before-reanalyze-${id}`);
     await this.storage.saveStatement(candidate);
     try {
-      await this.autoSync.syncStatement(candidate);
+      await this.autoSync.syncStatement(candidate, result.suggestedRecurringExpenses ?? []);
     } catch (e) {
       this.logger.error(`AutoSync failed for ${candidate.id}`, e as Error);
       // Don't block persistence — log and continue.
@@ -54,7 +54,7 @@ export class AnalysisService {
     await this.snapshots.takeSnapshot(replaced ? `before-replace-${statement.id}` : `before-save-${statement.id}`);
     await this.storage.saveStatement(statement);
     try {
-      await this.autoSync.syncStatement(statement);
+      await this.autoSync.syncStatement(statement, result.suggestedRecurringExpenses ?? []);
     } catch (e) {
       this.logger.error(`AutoSync failed for ${statement.id}`, e as Error);
       // Don't block persistence — log and continue.

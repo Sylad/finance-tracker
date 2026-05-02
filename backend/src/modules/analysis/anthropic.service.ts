@@ -23,6 +23,14 @@ export interface ClaudeAnalysisResult {
   scoreFactors: ClaudeScoreFactors;
   analysisNarrative: string;
   claudeHealthComment: string;
+  suggestedRecurringExpenses?: {
+    label: string;
+    monthlyAmount: number;
+    occurrencesSeen: number;
+    firstSeenDate: string;
+    suggestedType: 'loan' | 'subscription' | 'utility';
+    matchPattern: string;
+  }[];
 }
 
 export interface ClaudeTransaction {
@@ -129,6 +137,22 @@ const ANALYZE_TOOL: Anthropic.Tool = {
       },
       analysisNarrative: { type: 'string', description: 'Résumé en français de 2-3 phrases (jamais en anglais)' },
       claudeHealthComment: { type: 'string', description: 'Forces et points d\'attention en français (jamais en anglais)' },
+      suggestedRecurringExpenses: {
+        type: 'array',
+        description: "Charges récurrentes détectées (≥ 2 occurrences même libellé) qui pourraient être des crédits, abonnements ou factures (libellés en français).",
+        items: {
+          type: 'object',
+          properties: {
+            label: { type: 'string' },
+            monthlyAmount: { type: 'number' },
+            occurrencesSeen: { type: 'number' },
+            firstSeenDate: { type: 'string', description: 'YYYY-MM-DD' },
+            suggestedType: { type: 'string', enum: ['loan', 'subscription', 'utility'] },
+            matchPattern: { type: 'string', description: 'Regex insensible à la casse pour matcher la transaction' },
+          },
+          required: ['label', 'monthlyAmount', 'occurrencesSeen', 'firstSeenDate', 'suggestedType', 'matchPattern'],
+        },
+      },
     },
     required: ['recurringCredits', 'scoreFactors', 'analysisNarrative', 'claudeHealthComment'],
   },
@@ -269,6 +293,7 @@ export class AnthropicService {
       scoreFactors: p2.scoreFactors as ClaudeScoreFactors,
       analysisNarrative: p2.analysisNarrative as string,
       claudeHealthComment: p2.claudeHealthComment as string,
+      suggestedRecurringExpenses: (p2.suggestedRecurringExpenses ?? []) as ClaudeAnalysisResult['suggestedRecurringExpenses'],
     };
   }
 

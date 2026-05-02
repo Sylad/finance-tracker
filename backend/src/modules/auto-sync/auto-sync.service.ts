@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SavingsService } from '../savings/savings.service';
 import { LoansService } from '../loans/loans.service';
+import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
 import { EventBusService } from '../events/event-bus.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
 import { SavingsAccount } from '../../models/savings-account.model';
+import type { IncomingSuggestion } from '../../models/loan-suggestion.model';
 
 @Injectable()
 export class AutoSyncService {
@@ -13,12 +15,16 @@ export class AutoSyncService {
   constructor(
     private readonly savings: SavingsService,
     private readonly loans: LoansService,
+    private readonly suggestions: LoanSuggestionsService,
     private readonly bus: EventBusService,
   ) {}
 
-  async syncStatement(statement: MonthlyStatement): Promise<void> {
+  async syncStatement(statement: MonthlyStatement, claudeSuggestions: IncomingSuggestion[] = []): Promise<void> {
     await this.syncSavings(statement);
     await this.syncLoans(statement);
+    if (claudeSuggestions.length > 0) {
+      await this.suggestions.upsertMany(statement.id, claudeSuggestions);
+    }
     this.bus.emit('accounts-synced');
   }
 

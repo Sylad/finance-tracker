@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { AutoSyncService } from './auto-sync.service';
 import { SavingsService } from '../savings/savings.service';
 import { LoansService } from '../loans/loans.service';
+import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
 import { EventBusService } from '../events/event-bus.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 
@@ -44,6 +45,7 @@ describe('AutoSyncService', () => {
         AutoSyncService,
         { provide: SavingsService, useValue: savings },
         { provide: LoansService, useValue: loans },
+        { provide: LoanSuggestionsService, useValue: { upsertMany: jest.fn() } },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
