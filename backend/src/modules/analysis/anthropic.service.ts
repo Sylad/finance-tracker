@@ -127,8 +127,8 @@ const ANALYZE_TOOL: Anthropic.Tool = {
         },
         required: ['estimatedSavingsRate', 'discretionaryRatio', 'recurringObligationRatio', 'balanceTrend', 'spendingVarianceScore'],
       },
-      analysisNarrative: { type: 'string', description: '2-3 sentence summary' },
-      claudeHealthComment: { type: 'string', description: 'Strengths and concerns' },
+      analysisNarrative: { type: 'string', description: 'Résumé en français de 2-3 phrases (jamais en anglais)' },
+      claudeHealthComment: { type: 'string', description: 'Forces et points d\'attention en français (jamais en anglais)' },
     },
     required: ['recurringCredits', 'scoreFactors', 'analysisNarrative', 'claudeHealthComment'],
   },
@@ -210,12 +210,12 @@ export class AnthropicService {
     const phase2 = await this.client.messages.create({
       model: 'claude-sonnet-4-5',
       max_tokens: 4096,
-      system: 'You are a financial health analyst. Analyze the provided transaction data and call the analyze_finances tool.',
+      system: "Tu es un analyste financier. Analyse les transactions fournies et appelle l'outil analyze_finances. IMPORTANT : tous les champs textuels que tu produis (analysisNarrative, claudeHealthComment, libellés des suggestions) doivent être rédigés en français. N'utilise jamais l'anglais.",
       tools: [ANALYZE_TOOL],
       tool_choice: { type: 'tool', name: 'analyze_finances' },
       messages: [{
         role: 'user',
-        content: `Bank: ${p1.bankName}\nPeriod: ${period.month}/${period.year}\nCurrency: ${p1.currency}\nOpening: ${p1.openingBalance}\nClosing: ${p1.closingBalance}\n\nTransactions:\n${txSummary}\n\nIdentify recurring credits, compute score factors, and write a financial health assessment.`,
+        content: `Banque : ${p1.bankName}\nPériode : ${period.month}/${period.year}\nDevise : ${p1.currency}\nSolde initial : ${p1.openingBalance}\nSolde final : ${p1.closingBalance}\n\nTransactions :\n${txSummary}\n\nIdentifie les crédits récurrents, calcule les facteurs de score, et rédige un bilan de santé financière en français.`,
       }],
     });
 
