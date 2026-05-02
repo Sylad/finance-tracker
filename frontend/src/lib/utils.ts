@@ -37,3 +37,17 @@ export function formatDateShort(iso: string): string {
     day: '2-digit', month: '2-digit',
   });
 }
+
+// Recharts <Tooltip /> props partagées pour respecter le thème (texte clair sur fond sombre).
+// À utiliser comme `<Tooltip {...chartTooltipProps} />` ou `<Tooltip {...chartTooltipProps} formatter={...} />`.
+export const chartTooltipProps = {
+  contentStyle: {
+    background: 'hsl(var(--surface-2))',
+    border: '1px solid hsl(var(--border))',
+    borderRadius: 6,
+    fontSize: 12,
+    color: 'hsl(var(--fg))',
+  },
+  labelStyle: { color: 'hsl(var(--fg))' },
+  itemStyle: { color: 'hsl(var(--fg))' },
+};

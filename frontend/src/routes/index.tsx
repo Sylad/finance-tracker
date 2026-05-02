@@ -17,7 +17,7 @@ import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
 import { ScoreRing, ScoreBadge } from '@/components/score-ring';
 import { CATEGORY_LABELS, type TransactionCategory } from '@/types/api';
-import { formatEUR, formatMonth, formatMonthShort, cn } from '@/lib/utils';
+import { formatEUR, formatMonth, formatMonthShort, cn, chartTooltipProps } from '@/lib/utils';
 
 export function DashboardPage() {
   const stmts = useStatements();
@@ -219,15 +219,7 @@ export function DashboardPage() {
                   </defs>
                   <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'hsl(var(--surface-2))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: 6,
-                      fontSize: 12,
-                    }}
-                    labelStyle={{ color: 'hsl(var(--fg))' }}
-                  />
+                  <Tooltip {...chartTooltipProps} />
                   <Area type="monotone" dataKey="score" stroke="hsl(160 84% 50%)" strokeWidth={2} fill="url(#score-grad)" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -253,12 +245,7 @@ export function DashboardPage() {
                   <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={50} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                   <Tooltip
-                    contentStyle={{
-                      background: 'hsl(var(--surface-2))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: 6,
-                      fontSize: 12,
-                    }}
+                    {...chartTooltipProps}
                     formatter={(v: number) => [formatEUR(v), 'Solde']}
                   />
                   <Line type="monotone" dataKey="balance" stroke="hsl(217 91% 60%)" strokeWidth={2} dot={{ r: 3, fill: 'hsl(217 91% 60%)' }} />
@@ -333,7 +320,7 @@ export function DashboardPage() {
                 <BarChart data={yearly.data.monthly}>
                   <XAxis dataKey="month" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }} />
                   <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                  <Tooltip contentStyle={{ background: 'hsl(var(--surface-2))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 }} />
+                  <Tooltip {...chartTooltipProps} />
                   <Bar dataKey="credits" fill="hsl(160 84% 50%)" />
                   <Bar dataKey="debits" fill="hsl(0 70% 55%)" />
                 </BarChart>

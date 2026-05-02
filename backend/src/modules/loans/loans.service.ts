@@ -118,6 +118,22 @@ export class LoansService {
     return all[idx];
   }
 
+  async clearOccurrencesAndResetBalance(id: string, baselineUsedAmount?: number): Promise<void> {
+    const all = await this.getAll();
+    const idx = all.findIndex((l) => l.id === id);
+    if (idx === -1) throw new NotFoundException(`Crédit ${id} introuvable`);
+    const loan = all[idx];
+    loan.occurrencesDetected = [];
+    if (loan.type === 'revolving' && baselineUsedAmount !== undefined) {
+      if (loan.maxAmount != null && baselineUsedAmount > loan.maxAmount) {
+        throw new BadRequestException('baselineUsedAmount > maxAmount');
+      }
+      loan.usedAmount = baselineUsedAmount;
+    }
+    loan.updatedAt = new Date().toISOString();
+    await this.persist(all);
+  }
+
   private async persist(all: Loan[]): Promise<void> {
     await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
     this.bus.emit('loans-changed');
