@@ -30,6 +30,7 @@ export interface ClaudeAnalysisResult {
     firstSeenDate: string;
     suggestedType: 'loan' | 'subscription' | 'utility';
     matchPattern: string;
+    creditor?: string;
   }[];
   externalAccountBalances?: {
     accountNumber: string;
@@ -173,6 +174,7 @@ const ANALYZE_TOOL: Anthropic.Tool = {
             firstSeenDate: { type: 'string', description: 'YYYY-MM-DD' },
             suggestedType: { type: 'string', enum: ['loan', 'subscription', 'utility'] },
             matchPattern: { type: 'string', description: 'Regex insensible à la casse pour matcher la transaction' },
+            creditor: { type: 'string', description: "Nom court et normalisé de l'organisme prêteur quand suggestedType=loan, en majuscules : 'COFIDIS', 'SOFINCO', 'CETELEM', 'FLOA', 'CARREFOUR BANQUE', 'CA CONSUMER FINANCE', 'BPCE', 'KLARNA', 'ALMA', 'BANQUE POSTALE CONSUMER FINANCE', 'YOUNITED', 'FRANFINANCE', 'ONEY', 'MONABANQ'… Vide si le type n'est pas 'loan' ou si l'organisme n'est pas identifiable." },
           },
           required: ['label', 'monthlyAmount', 'occurrencesSeen', 'firstSeenDate', 'suggestedType', 'matchPattern'],
         },
@@ -255,7 +257,7 @@ export class AnthropicService {
     const phase2 = await this.client.messages.create({
       model: 'claude-sonnet-4-5',
       max_tokens: 4096,
-      system: "Tu es un analyste financier. Analyse les transactions fournies et appelle l'outil analyze_finances. IMPORTANT : tous les champs textuels que tu produis (analysisNarrative, claudeHealthComment, libellés des suggestions) doivent être rédigés en français. N'utilise jamais l'anglais.",
+      system: "Tu es un analyste financier. Analyse les transactions fournies et appelle l'outil analyze_finances. IMPORTANT : tous les champs textuels que tu produis (analysisNarrative, claudeHealthComment, libellés des suggestions) doivent être rédigés en français. N'utilise jamais l'anglais.\n\nPour chaque suggestion de type 'loan', tu DOIS identifier l'organisme prêteur (creditor) parmi les organismes français standards : COFIDIS, SOFINCO, CETELEM, FLOA, CARREFOUR BANQUE, CA CONSUMER FINANCE, BPCE, KLARNA, ALMA, BANQUE POSTALE CONSUMER FINANCE, YOUNITED, FRANFINANCE, ONEY, MONABANQ. Utilise le nom EXACT en MAJUSCULES. Si l'organisme n'est pas l'un de ces standards et n'est pas évident dans le libellé, laisse creditor vide.",
       tools: [ANALYZE_TOOL],
       tool_choice: { type: 'tool', name: 'analyze_finances' },
       messages: [{
@@ -315,7 +317,7 @@ export class AnthropicService {
       scoreFactors: p2.scoreFactors as ClaudeScoreFactors,
       analysisNarrative: p2.analysisNarrative as string,
       claudeHealthComment: p2.claudeHealthComment as string,
-      suggestedRecurringExpenses: (p2.suggestedRecurringExpenses ?? []) as ClaudeAnalysisResult['suggestedRecurringExpenses'],
+      suggestedRecurringExpenses: ((p2.suggestedRecurringExpenses ?? []) as ClaudeAnalysisResult['suggestedRecurringExpenses']),
       externalAccountBalances: (p1.externalAccountBalances ?? []) as ClaudeAnalysisResult['externalAccountBalances'],
     };
   }
