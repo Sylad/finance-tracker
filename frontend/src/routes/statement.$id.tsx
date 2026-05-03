@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   Trash2,
   Search,
+  Languages,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useStatement, useDeleteStatement, useReanalyzeStatement } from '@/lib/queries';
@@ -145,9 +146,9 @@ export function StatementDetailPage() {
             ouverture : {formatEUR(data.openingBalance)}
           </div>
         </div>
-        <div className="card p-5 flex items-center gap-4">
+        <div className="card p-5 flex items-start gap-4">
           <ScoreRing score={data.healthScore.total} size={70} strokeWidth={6} />
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="stat-label">Score</div>
             <div className="text-xs text-fg-muted mt-1.5 leading-relaxed line-clamp-3">
               {data.healthScore.claudeComment}
@@ -155,9 +156,10 @@ export function StatementDetailPage() {
             <button
               onClick={handleReanalyze}
               disabled={reanalyze.isPending}
-              className="btn-ghost text-xs mt-2"
+              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent/10 hover:bg-accent/20 text-accent-bright text-xs font-medium border border-accent/30 transition-colors disabled:opacity-50"
             >
-              {reanalyze.isPending ? 'Re-analyse en cours…' : 'Re-analyser ce relevé en français'}
+              <Languages className="h-3.5 w-3.5" />
+              {reanalyze.isPending ? 'Re-analyse en cours…' : 'Re-analyser en français'}
             </button>
           </div>
         </div>
@@ -280,7 +282,17 @@ export function StatementDetailPage() {
 
       {data.analysisNarrative && (
         <section className="card p-5">
-          <div className="stat-label mb-3">Analyse Claude</div>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="stat-label">Analyse Claude</div>
+            <button
+              onClick={handleReanalyze}
+              disabled={reanalyze.isPending}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 hover:bg-accent/20 text-accent-bright text-xs font-medium border border-accent/30 transition-colors disabled:opacity-50"
+            >
+              <Languages className="h-3 w-3" />
+              {reanalyze.isPending ? 'Re-analyse…' : 'Re-analyser en français'}
+            </button>
+          </div>
           <p className="text-sm text-fg leading-relaxed whitespace-pre-line">
             {data.analysisNarrative}
           </p>
