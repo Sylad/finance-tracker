@@ -186,15 +186,28 @@ export class AutoSyncService {
   private async syncLoans(statement: MonthlyStatement): Promise<void> {
     const loans = await this.loans.getAll();
     for (const loan of loans) {
-      if (!loan.isActive || !loan.matchPattern) continue;
-      let regex: RegExp;
-      try {
-        regex = new RegExp(loan.matchPattern, 'i');
-      } catch {
-        this.logger.warn(`Invalid regex on loan ${loan.id}: ${loan.matchPattern}`);
+      if (!loan.isActive) continue;
+
+      // Build a matcher: contractRef takes priority — when set, ONLY transactions
+      // whose description contains the ref will be matched. Otherwise fall back
+      // to the regex matchPattern.
+      let matcher: (description: string) => boolean;
+      if (loan.contractRef) {
+        const ref = loan.contractRef.toLowerCase();
+        matcher = (desc) => desc.toLowerCase().includes(ref);
+      } else if (loan.matchPattern) {
+        try {
+          const regex = new RegExp(loan.matchPattern, 'i');
+          matcher = (desc) => regex.test(desc);
+        } catch {
+          this.logger.warn(`Invalid regex on loan ${loan.id}: ${loan.matchPattern}`);
+          continue;
+        }
+      } else {
         continue;
       }
-      const matches = statement.transactions.filter((t) => regex.test(t.description));
+
+      const matches = statement.transactions.filter((t) => matcher(t.description));
       for (const t of matches) {
         await this.loans.addOccurrence(loan.id, {
           statementId: statement.id,
