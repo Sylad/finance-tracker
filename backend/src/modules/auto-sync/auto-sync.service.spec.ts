@@ -22,6 +22,7 @@ const baseStatement: MonthlyStatement = {
   healthScore: { total: 70, breakdown: { savingsRate: 50, expenseControl: 60, debtBurden: 70, cashFlowBalance: 50, irregularSpending: 80 }, trend: 'insufficient_data', claudeComment: '' },
   recurringCredits: [],
   analysisNarrative: '',
+  externalAccountBalances: [],
 };
 
 describe('AutoSyncService', () => {
@@ -118,5 +119,45 @@ describe('AutoSyncService', () => {
     await svc.removeForStatement('2026-03');
     expect(savings.removeMovementsForStatement).toHaveBeenCalledWith('2026-03');
     expect(loans.removeOccurrencesForStatement).toHaveBeenCalledWith('2026-03');
+  });
+
+  it('overwrites currentBalance when externalAccountBalances contains a match', async () => {
+    savings.getAll.mockResolvedValue([{
+      id: 'pel-1', name: 'PEL', type: 'pel', initialBalance: 1000, initialBalanceDate: '2026-01-01',
+      matchPattern: 'VIR.*PEL', accountNumber: '12345678', interestRate: 0.02, interestAnniversaryMonth: 6,
+      currentBalance: 1500, lastSyncedStatementId: null, movements: [], createdAt: '', updatedAt: '',
+    }]);
+    loans.getAll.mockResolvedValue([]);
+    const stmt: MonthlyStatement = {
+      ...baseStatement,
+      externalAccountBalances: [{ accountNumber: '1234 5678', accountType: 'pel', balance: 1750 }],
+      transactions: [],
+    };
+    await svc.syncStatement(stmt);
+    expect(savings.addMovement).toHaveBeenCalledWith('pel-1', expect.objectContaining({
+      amount: 250, source: 'bank-extract', statementId: '2026-03',
+    }));
+  });
+
+  it('matches transactions by targetAccountNumber when no bank-extract', async () => {
+    savings.getAll.mockResolvedValue([{
+      id: 'livret-1', name: 'Livret A', type: 'livret-a', initialBalance: 100, initialBalanceDate: '2026-01-01',
+      matchPattern: '', accountNumber: '99999999', interestRate: 0.015, interestAnniversaryMonth: 12,
+      currentBalance: 100, lastSyncedStatementId: null, movements: [], createdAt: '', updatedAt: '',
+    }]);
+    loans.getAll.mockResolvedValue([]);
+    const stmt: MonthlyStatement = {
+      ...baseStatement,
+      externalAccountBalances: [],
+      transactions: [
+        { id: 'tx1', date: '2026-03-05', description: 'VIREMENT POUR LIVRET', normalizedDescription: 'virement pour livret',
+          amount: -50, currency: 'EUR', category: 'savings', subcategory: '', isRecurring: true, confidence: 1,
+          targetAccountNumber: '9999 9999' },
+      ],
+    };
+    await svc.syncStatement(stmt);
+    expect(savings.addMovement).toHaveBeenCalledWith('livret-1', expect.objectContaining({
+      amount: 50, source: 'detected', transactionId: 'tx1',
+    }));
   });
 });

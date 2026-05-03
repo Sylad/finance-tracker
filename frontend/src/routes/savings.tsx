@@ -17,7 +17,7 @@ import {
   type SavingsAccountType,
   SAVINGS_TYPE_LABELS,
 } from '@/types/api';
-import { formatEUR } from '@/lib/utils';
+import { formatEUR, maskAccountNumber } from '@/lib/utils';
 
 const TYPES: SavingsAccountType[] = ['livret-a', 'pel', 'cel', 'ldds', 'pea', 'other'];
 
@@ -27,6 +27,7 @@ const DEFAULT: SavingsAccountInput = {
   initialBalance: 0,
   initialBalanceDate: new Date().toISOString().slice(0, 10),
   matchPattern: '',
+  accountNumber: '',
   interestRate: 0.015,
   interestAnniversaryMonth: 12,
 };
@@ -95,6 +96,7 @@ function toInput(a: SavingsAccount): SavingsAccountInput {
     initialBalance: a.initialBalance,
     initialBalanceDate: a.initialBalanceDate,
     matchPattern: a.matchPattern,
+    accountNumber: a.accountNumber ?? '',
     interestRate: a.interestRate,
     interestAnniversaryMonth: a.interestAnniversaryMonth,
   };
@@ -125,6 +127,9 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
           <div>
             <div className="font-display font-semibold text-fg-bright">{account.name}</div>
             <div className="text-xs text-fg-dim">{SAVINGS_TYPE_LABELS[account.type]} · {(account.interestRate * 100).toFixed(2)}%</div>
+            {account.accountNumber && (
+              <div className="text-xs text-fg-dim">{maskAccountNumber(account.accountNumber)}</div>
+            )}
           </div>
         </div>
         <div className="flex gap-1">
@@ -207,6 +212,11 @@ function SavingsForm({ init, onSave, onCancel, busy }: { init: SavingsAccountInp
                      onChange={(e) => setForm({ ...form, matchPattern: e.target.value })} />
             </Field>
           </div>
+          <Field label="N° de compte (optionnel)">
+            <input className="input font-mono text-xs" placeholder="ex: 1234 5678 90" value={form.accountNumber ?? ''}
+                   onChange={(e) => setForm({ ...form, accountNumber: e.target.value })} />
+            <span className="stat-label block mt-1">Si renseigné, l'auto-sync utilisera le n° de compte (plus fiable que le pattern).</span>
+          </Field>
           <div className="flex items-center justify-end gap-2 pt-2">
             <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
             <button type="submit" disabled={busy} className="btn-primary">Enregistrer</button>

@@ -1,6 +1,6 @@
 export type SavingsAccountType = 'livret-a' | 'pel' | 'cel' | 'ldds' | 'pea' | 'other';
 
-export type SavingsMovementSource = 'initial' | 'detected' | 'manual' | 'interest';
+export type SavingsMovementSource = 'initial' | 'detected' | 'manual' | 'interest' | 'bank-extract';
 
 export interface SavingsMovement {
   id: string;
@@ -19,6 +19,7 @@ export interface SavingsAccount {
   initialBalance: number;
   initialBalanceDate: string;
   matchPattern: string;
+  accountNumber?: string;
   interestRate: number;
   interestAnniversaryMonth: number;
   currentBalance: number;
