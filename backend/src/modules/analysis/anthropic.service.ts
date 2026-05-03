@@ -323,16 +323,31 @@ export class AnthropicService {
   private derivePeriodFromTransactions(
     txs: Array<{ date: string }>,
   ): { year: number; month: number } | null {
-    const counts = new Map<string, number>();
+    // We classify by the month with the LARGEST temporal coverage
+    // (number of distinct dates), not the largest tx count.
+    //
+    // Why: French bank statements (LBP, etc.) cover ~30 consecutive
+    // days that straddle two calendar months — typically 10/MM →
+    // 09/(MM+1). The previous month-of-record (~21 days) usually has
+    // many more business days than the current month spillover (~9
+    // days), but the spillover can have a high tx density (salary
+    // arriving on day 1, recurring debits clustered) and would win
+    // a raw count vote — leading to mis-classification.
+    //
+    // Counting unique days fixes this: 21 distinct days > 9 distinct
+    // days no matter how many transactions happen on any single day.
+    const daysByMonth = new Map<string, Set<string>>();
     for (const t of txs) {
-      const m = t.date.match(/^(\d{4})-(0[1-9]|1[0-2])-/);
+      const m = t.date.match(/^(\d{4})-(0[1-9]|1[0-2])-(\d{2})/);
       if (!m) continue;
-      const key = `${m[1]}-${m[2]}`;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
+      const monthKey = `${m[1]}-${m[2]}`;
+      const dayKey = m[3];
+      if (!daysByMonth.has(monthKey)) daysByMonth.set(monthKey, new Set());
+      daysByMonth.get(monthKey)!.add(dayKey);
     }
-    if (!counts.size) return null;
-    const [topKey] = [...counts.entries()].sort((a, b) => {
-      if (b[1] !== a[1]) return b[1] - a[1];
+    if (!daysByMonth.size) return null;
+    const [topKey] = [...daysByMonth.entries()].sort((a, b) => {
+      if (b[1].size !== a[1].size) return b[1].size - a[1].size;
       return a[0].localeCompare(b[0]); // earlier YYYY-MM wins ties
     })[0];
     const [year, month] = topKey.split('-').map(Number);
