@@ -8,6 +8,11 @@ import { Transaction } from '../../models/transaction.model';
 import { SavingsAccount } from '../../models/savings-account.model';
 import type { IncomingSuggestion } from '../../models/loan-suggestion.model';
 
+function normalizeAccountNumber(s: string | null | undefined): string {
+  if (!s) return '';
+  return s.replace(/[^0-9A-Z]/gi, '').toUpperCase();
+}
+
 @Injectable()
 export class AutoSyncService {
   private readonly logger = new Logger(AutoSyncService.name);
@@ -36,13 +41,69 @@ export class AutoSyncService {
 
   private async syncSavings(statement: MonthlyStatement): Promise<void> {
     const accounts = await this.savings.getAll();
+    const externalBalances = statement.externalAccountBalances ?? [];
+
     for (const acc of accounts) {
-      if (!acc.matchPattern) continue;
+      let handled = false;
+
+      // Priority 1: bank-extract recalibration (if account has an accountNumber)
+      if (acc.accountNumber) {
+        const normAcc = normalizeAccountNumber(acc.accountNumber);
+        const match = externalBalances.find(
+          (eb) => normalizeAccountNumber(eb.accountNumber) === normAcc,
+        );
+        if (match) {
+          // Idempotence: skip if a bank-extract movement for this statement already exists
+          const alreadyDone = acc.movements.some(
+            (m) => m.source === 'bank-extract' && m.statementId === statement.id,
+          );
+          if (!alreadyDone) {
+            const delta = Math.round((match.balance - acc.currentBalance) * 100) / 100;
+            await this.savings.addMovement(acc.id, {
+              date: match.asOfDate ?? `${statement.year}-${String(statement.month).padStart(2, '0')}-01`,
+              amount: delta,
+              source: 'bank-extract',
+              statementId: statement.id,
+              transactionId: null,
+              note: 'Solde recalibré depuis le relevé',
+            });
+          }
+          await this.maybeAddInterest(acc, statement);
+          handled = true;
+        }
+      }
+
+      if (handled) continue;
+
+      // Priority 2: match by targetAccountNumber on transactions
+      if (acc.accountNumber) {
+        const normAcc = normalizeAccountNumber(acc.accountNumber);
+        const txMatches = statement.transactions.filter(
+          (t) => t.targetAccountNumber && normalizeAccountNumber(t.targetAccountNumber) === normAcc,
+        );
+        if (txMatches.length > 0) {
+          for (const t of txMatches) {
+            const epargneAmount = -t.amount;
+            await this.safeAddMovement(acc, t, epargneAmount, statement.id);
+          }
+          await this.maybeAddInterest(acc, statement);
+          handled = true;
+        }
+      }
+
+      if (handled) continue;
+
+      // Priority 3: regex fallback
+      if (!acc.matchPattern) {
+        await this.maybeAddInterest(acc, statement);
+        continue;
+      }
       let regex: RegExp;
       try {
         regex = new RegExp(acc.matchPattern, 'i');
       } catch (e) {
         this.logger.warn(`Invalid regex on savings ${acc.id}: ${acc.matchPattern}`);
+        await this.maybeAddInterest(acc, statement);
         continue;
       }
       const matches = statement.transactions.filter((t) => regex.test(t.description));

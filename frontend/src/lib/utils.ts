@@ -38,6 +38,13 @@ export function formatDateShort(iso: string): string {
   });
 }
 
+export function maskAccountNumber(n: string | null | undefined): string {
+  if (!n) return '';
+  const clean = n.replace(/\s+/g, '');
+  if (clean.length <= 4) return clean;
+  return '••••' + clean.slice(-4);
+}
+
 // Recharts <Tooltip /> props partagées pour respecter le thème (texte clair sur fond sombre).
 // À utiliser comme `<Tooltip {...chartTooltipProps} />` ou `<Tooltip {...chartTooltipProps} formatter={...} />`.
 export const chartTooltipProps = {

@@ -14,6 +14,7 @@ export interface Transaction {
   isRecurring: boolean;
   recurringCreditEndDate?: string | null;
   confidence: number;
+  targetAccountNumber?: string | null;
 }
 
 export interface ScoreBreakdown {
@@ -51,6 +52,14 @@ export interface RecurringCredit {
   isActive: boolean;
 }
 
+export interface ExternalAccountBalance {
+  accountNumber: string;
+  accountType: 'livret-a' | 'pel' | 'cel' | 'ldds' | 'pea' | 'other';
+  balance: number;
+  label?: string;
+  asOfDate?: string;
+}
+
 export interface MonthlyStatement {
   id: string;
   month: number;
@@ -67,6 +76,7 @@ export interface MonthlyStatement {
   healthScore: FinancialHealthScore;
   recurringCredits: RecurringCredit[];
   analysisNarrative: string;
+  externalAccountBalances?: ExternalAccountBalance[];
 }
 
 export interface StatementSummary {
@@ -240,7 +250,7 @@ export interface SavingsMovement {
   id: string;
   date: string;
   amount: number;
-  source: 'initial' | 'detected' | 'manual' | 'interest';
+  source: 'initial' | 'detected' | 'manual' | 'interest' | 'bank-extract';
   statementId: string | null;
   transactionId: string | null;
   note?: string;
@@ -253,6 +263,7 @@ export interface SavingsAccount {
   initialBalance: number;
   initialBalanceDate: string;
   matchPattern: string;
+  accountNumber?: string;
   interestRate: number;
   interestAnniversaryMonth: number;
   currentBalance: number;
