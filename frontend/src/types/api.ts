@@ -354,3 +354,18 @@ export interface YearlyOverview {
   monthly: { month: string; credits: number; debits: number; net: number }[];
   topCategories: { category: string; total: number }[];
 }
+
+export type ImportLogStatus = 'success' | 'error';
+
+export interface ImportLog {
+  id: string;
+  filename: string;
+  uploadedAt: string;
+  durationMs: number;
+  status: ImportLogStatus;
+  statementId?: string | null;
+  statementMonth?: number | null;
+  statementYear?: number | null;
+  replaced?: boolean;
+  error?: string;
+}
