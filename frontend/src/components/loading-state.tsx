@@ -1,10 +1,10 @@
 import { Loader2 } from 'lucide-react';
 
-export function LoadingState({ label = 'Chargement...' }: { label?: string }) {
+export function LoadingState({ label = 'Chargement…' }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-3 text-fg-muted py-16">
-      <Loader2 className="h-4 w-4 animate-spin" />
-      <span className="text-sm">{label}</span>
+    <div className="flex flex-col items-center justify-center gap-4 text-fg-muted py-24">
+      <Loader2 className="h-10 w-10 animate-spin text-accent-bright" />
+      <span className="text-sm font-medium">{label}</span>
     </div>
   );
 }
