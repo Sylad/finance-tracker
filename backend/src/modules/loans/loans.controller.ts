@@ -28,4 +28,9 @@ export class LoansController {
   reset(@Param('id') id: string, @Body() body: { usedAmount: number }) {
     return this.svc.resetRevolving(id, Number(body.usedAmount));
   }
+
+  @Post(':id/split-by-amount')
+  split(@Param('id') id: string) {
+    return this.svc.splitByAmount(id);
+  }
 }

@@ -300,6 +300,14 @@ export function useDeleteLoan() {
   });
 }
 
+export function useSplitLoanByAmount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<{ split: boolean; createdCount: number; groups: { amount: number; count: number }[] }>(`/loans/${id}/split-by-amount`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+  });
+}
+
 export function useResetRevolving() {
   const qc = useQueryClient();
   return useMutation({
