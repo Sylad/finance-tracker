@@ -11,6 +11,7 @@ export interface LoanSuggestion {
   lastSeenDate: string;
   suggestedType: SuggestedExpenseType;
   matchPattern: string;
+  creditor?: string;
   status: LoanSuggestionStatus;
   createdAt: string;
   resolvedAt?: string;
@@ -24,4 +25,5 @@ export interface IncomingSuggestion {
   firstSeenDate: string;
   suggestedType: SuggestedExpenseType;
   matchPattern: string;
+  creditor?: string;
 }

@@ -310,6 +310,7 @@ export interface Loan {
   monthlyPayment: number;
   matchPattern: string;
   isActive: boolean;
+  creditor?: string;
   startDate?: string;
   endDate?: string;
   initialPrincipal?: number;
@@ -335,6 +336,7 @@ export interface LoanSuggestion {
   lastSeenDate: string;
   suggestedType: 'loan' | 'subscription' | 'utility';
   matchPattern: string;
+  creditor?: string;
   status: LoanSuggestionStatus;
   createdAt: string;
   resolvedAt?: string;
