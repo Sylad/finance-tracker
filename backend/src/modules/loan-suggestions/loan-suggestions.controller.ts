@@ -18,4 +18,7 @@ export class LoanSuggestionsController {
 
   @Post(':id/snooze')
   snooze(@Param('id') id: string) { return this.svc.snooze(id); }
+
+  @Post(':id/unsnooze')
+  unsnooze(@Param('id') id: string) { return this.svc.unsnooze(id); }
 }

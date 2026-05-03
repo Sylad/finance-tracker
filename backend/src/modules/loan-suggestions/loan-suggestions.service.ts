@@ -79,6 +79,16 @@ export class LoanSuggestionsService {
     return this.transition(id, 'snoozed');
   }
 
+  async unsnooze(id: string): Promise<LoanSuggestion> {
+    const all = await this.getAll();
+    const idx = all.findIndex((s) => s.id === id);
+    if (idx === -1) throw new NotFoundException(`Suggestion ${id} introuvable`);
+    all[idx].status = 'pending';
+    delete all[idx].resolvedAt;
+    await this.persist(all);
+    return all[idx];
+  }
+
   private async transition(id: string, status: LoanSuggestion['status'], loanId?: string): Promise<LoanSuggestion> {
     const all = await this.getAll();
     const idx = all.findIndex((s) => s.id === id);

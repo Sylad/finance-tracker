@@ -1,68 +1,122 @@
-import { Zap, Check, X as XIcon, Repeat2 } from 'lucide-react';
-import { useLoanSuggestions, useSnoozeSuggestion, useRejectSuggestion } from '@/lib/queries';
+import { useState } from 'react';
+import { Zap, Check, X as XIcon, Repeat2, EyeOff, RotateCcw } from 'lucide-react';
+import { useLoanSuggestions, useSnoozeSuggestion, useRejectSuggestion, useUnsnoozeSuggestion } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
 import type { LoanSuggestion } from '@/types/api';
-import { formatEUR } from '@/lib/utils';
+import { formatEUR, cn } from '@/lib/utils';
 
 export function SubscriptionsPage() {
   const { data, isLoading } = useLoanSuggestions();
   const snooze = useSnoozeSuggestion();
   const reject = useRejectSuggestion();
+  const unsnooze = useUnsnoozeSuggestion();
+  const [showHidden, setShowHidden] = useState(false);
 
   if (isLoading) return <LoadingState />;
-  const items = (data ?? []).filter(
-    (s) => s.status === 'pending' && (s.suggestedType === 'subscription' || s.suggestedType === 'utility'),
+  const all = (data ?? []).filter(
+    (s) => s.suggestedType === 'subscription' || s.suggestedType === 'utility',
   );
-  const subs = items.filter((s) => s.suggestedType === 'subscription');
-  const utils = items.filter((s) => s.suggestedType === 'utility');
+  const pending = all.filter((s) => s.status === 'pending');
+  const hidden = all.filter((s) => s.status === 'snoozed');
 
-  const totalMonthly = items.reduce((sum, s) => sum + s.monthlyAmount, 0);
+  const visibleSubs = pending.filter((s) => s.suggestedType === 'subscription');
+  const visibleUtils = pending.filter((s) => s.suggestedType === 'utility');
+  const hiddenSubs = hidden.filter((s) => s.suggestedType === 'subscription');
+  const hiddenUtils = hidden.filter((s) => s.suggestedType === 'utility');
+
+  const totalMonthly = pending.reduce((sum, s) => sum + s.monthlyAmount, 0);
 
   return (
     <>
       <PageHeader
         eyebrow="Abonnements & factures"
         title={`${formatEUR(totalMonthly)} / mois`}
-        subtitle={`${items.length} suggestion${items.length > 1 ? 's' : ''} détectée${items.length > 1 ? 's' : ''} par Claude. Cette page sert à nettoyer la liste — pas (encore) à enregistrer tes vrais abonnements.`}
+        subtitle={`${pending.length} suggestion${pending.length > 1 ? 's' : ''} à trier. Cette page sert à nettoyer la liste — pas (encore) à enregistrer tes vrais abonnements.`}
+        actions={
+          hidden.length > 0 ? (
+            <button
+              onClick={() => setShowHidden((s) => !s)}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors',
+                showHidden
+                  ? 'bg-accent/10 border-accent/30 text-accent-bright'
+                  : 'bg-surface-2 border-border text-fg-muted hover:text-fg-bright',
+              )}
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+              {showHidden ? 'Masquer' : 'Voir'} les masqués ({hidden.length})
+            </button>
+          ) : null
+        }
       />
 
-      {items.length === 0 ? (
+      {pending.length === 0 && hidden.length === 0 ? (
         <EmptyState
           title="Aucune suggestion d'abonnement à trier"
           hint="Importe un relevé pour que Claude détecte les charges récurrentes."
         />
       ) : (
         <>
-          <div className="card p-4 mb-6 border-l-4 border-l-info bg-info/5">
-            <div className="text-sm text-fg-bright font-medium mb-1">Comment trier</div>
-            <div className="text-xs text-fg-muted leading-relaxed">
-              <span className="text-positive font-medium">Connu, masquer</span> : tu reconnais cette charge mais tu ne veux pas la voir ici. Elle disparaît mais Claude pourra la re-suggérer si elle évolue (montant, libellé).
-              <br />
-              <span className="text-negative font-medium">Faux positif</span> : ce n'est pas un abonnement (erreur de classification). Claude ne te la re-proposera plus jamais.
+          {pending.length > 0 && (
+            <div className="card p-4 mb-6 border-l-4 border-l-info bg-info/5">
+              <div className="text-sm text-fg-bright font-medium mb-1">Comment trier</div>
+              <div className="text-xs text-fg-muted leading-relaxed">
+                <span className="text-positive font-medium">Connu, masquer</span> : tu reconnais cette charge mais tu ne veux pas la voir ici. Elle disparaît mais Claude pourra la re-suggérer si elle évolue (montant, libellé).
+                <br />
+                <span className="text-negative font-medium">Faux positif</span> : ce n'est pas un abonnement (erreur de classification). Claude ne te la re-proposera plus jamais.
+              </div>
             </div>
-          </div>
+          )}
+
           <div className="space-y-8">
-          {subs.length > 0 && (
-            <Section
-              title="Abonnements"
-              count={subs.length}
-              icon={Repeat2}
-              items={subs}
-              onSnooze={(id) => snooze.mutate(id)}
-              onReject={(id) => reject.mutate(id)}
-            />
-          )}
-          {utils.length > 0 && (
-            <Section
-              title="Factures variables"
-              count={utils.length}
-              icon={Zap}
-              items={utils}
-              onSnooze={(id) => snooze.mutate(id)}
-              onReject={(id) => reject.mutate(id)}
-            />
-          )}
+            {visibleSubs.length > 0 && (
+              <Section
+                title="Abonnements"
+                count={visibleSubs.length}
+                icon={Repeat2}
+                items={visibleSubs}
+                onSnooze={(id) => snooze.mutate(id)}
+                onReject={(id) => reject.mutate(id)}
+              />
+            )}
+            {visibleUtils.length > 0 && (
+              <Section
+                title="Factures variables"
+                count={visibleUtils.length}
+                icon={Zap}
+                items={visibleUtils}
+                onSnooze={(id) => snooze.mutate(id)}
+                onReject={(id) => reject.mutate(id)}
+              />
+            )}
+
+            {showHidden && hidden.length > 0 && (
+              <section>
+                <h2 className="font-display text-sm uppercase tracking-wider text-fg-dim mb-3 flex items-center gap-2">
+                  <EyeOff className="h-4 w-4" /> Masqués ({hidden.length})
+                </h2>
+                <div className="card divide-y divide-border opacity-70">
+                  {[...hiddenSubs, ...hiddenUtils].map((s) => (
+                    <div key={s.id} className="px-4 py-3 flex items-center gap-3 flex-wrap">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-fg-bright truncate">{s.label}</div>
+                        <div className="text-xs text-fg-dim tabular">
+                          {formatEUR(s.monthlyAmount)}/mois · vu {s.occurrencesSeen} fois · {s.suggestedType === 'subscription' ? 'abonnement' : 'facture'}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => unsnooze.mutate(s.id)}
+                        title="Remettre cette suggestion dans la liste à trier"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-info/10 hover:bg-info/20 text-info text-xs font-medium border border-info/30"
+                      >
+                        <RotateCcw className="h-3 w-3" /> Réafficher
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         </>
       )}

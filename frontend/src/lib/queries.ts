@@ -346,6 +346,14 @@ export function useSnoozeSuggestion() {
   });
 }
 
+export function useUnsnoozeSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<LoanSuggestion>(`/loan-suggestions/${id}/unsnooze`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
+  });
+}
+
 export function useResyncSavings() {
   const qc = useQueryClient();
   return useMutation({
