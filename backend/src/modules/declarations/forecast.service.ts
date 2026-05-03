@@ -4,6 +4,7 @@ import { DeclarationsService } from './declarations.service';
 import { StorageService } from '../storage/storage.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
+import { LoansService } from '../loans/loans.service';
 
 const PAST_MONTHS = 6;
 const FUTURE_MONTHS = 5;
@@ -15,10 +16,12 @@ export class ForecastService {
   constructor(
     private readonly declarations: DeclarationsService,
     private readonly storage: StorageService,
+    private readonly loans: LoansService,
   ) {}
 
   async compute(): Promise<ForecastMonth[]> {
     const declarations = await this.declarations.getAll();
+    const activeLoans = (await this.loans.getAll()).filter((l) => l.isActive);
     const window = buildWindow(new Date(), PAST_MONTHS, FUTURE_MONTHS);
     const statements = await this.storage.getAllStatements();
     const txByMonth = indexTransactionsByMonth(statements);
@@ -40,6 +43,31 @@ export class ForecastService {
           type: decl.type,
           category: decl.category,
           amountSigned: signed,
+          matched: !!matchedTx,
+          matchedTxId: matchedTx?.id ?? null,
+        });
+      }
+
+      // Active loans add a monthly expense within their start/end window.
+      // Try to find a matching transaction in the month's actual statement.
+      for (const loan of activeLoans) {
+        if (loan.startDate && monthKey < loan.startDate.slice(0, 7)) continue;
+        if (loan.endDate && monthKey > loan.endDate.slice(0, 7)) continue;
+        const txs = txByMonth.get(monthKey) ?? [];
+        const matchedTx = txs.find((t) => {
+          if (consumed.has(t.id)) return false;
+          if (Math.sign(t.amount) >= 0) return false;
+          if (Math.abs(Math.abs(t.amount) - loan.monthlyPayment) > Math.max(loan.monthlyPayment * 0.05, 1)) return false;
+          if (loan.contractRef && !t.description.toLowerCase().includes(loan.contractRef.toLowerCase())) return false;
+          return true;
+        });
+        if (matchedTx) consumed.add(matchedTx.id);
+        occurrences.push({
+          declarationId: `loan:${loan.id}`,
+          label: loan.name,
+          type: 'loan',
+          category: loan.category,
+          amountSigned: -loan.monthlyPayment,
           matched: !!matchedTx,
           matchedTxId: matchedTx?.id ?? null,
         });
