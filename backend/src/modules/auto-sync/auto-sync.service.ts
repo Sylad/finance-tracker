@@ -25,12 +25,32 @@ export class AutoSyncService {
   ) {}
 
   async syncStatement(statement: MonthlyStatement, claudeSuggestions: IncomingSuggestion[] = []): Promise<void> {
+    await this.autoDiscoverSavings(statement);
     await this.syncSavings(statement);
     await this.syncLoans(statement);
     if (claudeSuggestions.length > 0) {
       await this.suggestions.upsertMany(statement.id, claudeSuggestions);
     }
     this.bus.emit('accounts-synced');
+  }
+
+  /**
+   * Auto-discovery : pour chaque compte épargne externe affiché dans le PDF qui n'est
+   * pas encore connu (par accountNumber), on le crée avec defaults intelligents.
+   */
+  private async autoDiscoverSavings(statement: MonthlyStatement): Promise<void> {
+    const externals = statement.externalAccountBalances ?? [];
+    for (const eb of externals) {
+      if (!eb.accountNumber || eb.balance == null) continue;
+      try {
+        const result = await this.savings.upsertFromBankExtract(eb, statement.month, statement.year);
+        if (result.created) {
+          this.logger.log(`Auto-discovered savings account: ${result.account.name} (${eb.accountType})`);
+        }
+      } catch (e) {
+        this.logger.warn(`Failed to auto-discover savings for accountNumber=${eb.accountNumber}: ${(e as Error).message}`);
+      }
+    }
   }
 
   async removeForStatement(statementId: string): Promise<void> {
