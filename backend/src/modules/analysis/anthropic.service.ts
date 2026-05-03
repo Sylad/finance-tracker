@@ -212,25 +212,22 @@ export class AnthropicService {
 
     try {
     // Phase 1: extract transactions from PDF
-    const phase1 = await this.client.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 8192,
-      system: "Tu es un spécialiste de l'extraction de données bancaires. Extrais toutes les transactions du PDF de relevé bancaire en appelant l'outil extract_transactions. Sois exhaustif — inclus chaque transaction. Utilise des libellés courts (60 caractères max). Si le PDF contient une section 'Vos autres comptes' (ou équivalent listant les soldes d'autres comptes du client : Livret A, PEL, etc.), remplis externalAccountBalances. Pour chaque virement (libellé débutant par 'VIREMENT POUR' ou similaire), si le libellé mentionne un numéro de compte destinataire, capture-le dans targetAccountNumber.",
-      tools: [EXTRACT_TRANSACTIONS_TOOL],
-      tool_choice: { type: 'tool', name: 'extract_transactions' },
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Pdf } },
-          { type: 'text', text: "Extrais toutes les transactions de ce relevé bancaire. Inclus chaque débit et crédit. Utilise des libellés courts et nettoyés. Renseigne externalAccountBalances si une section 'Vos autres comptes' figure dans le PDF, et targetAccountNumber pour chaque virement contenant un n° de compte destinataire." },
-        ],
-      }],
-    });
+    // Phase 1 — extraction avec budget output adapté.
+    // On part à 32k (4 × ancien défaut) ; si le relevé est volumineux et qu'on hit
+    // max_tokens, on retente une fois avec 64k (max supporté par Sonnet 4.5).
+    let phase1 = await this.runPhase1(base64Pdf, 32768);
+    if (phase1.stop_reason === 'max_tokens') {
+      this.logger.warn('Phase 1: max_tokens hit @ 32k, retrying @ 64k');
+      phase1 = await this.runPhase1(base64Pdf, 64000);
+    }
 
     this.usage.recordUsage(phase1.usage.input_tokens, phase1.usage.output_tokens);
     this.logger.log(`Phase 1: stop_reason=${phase1.stop_reason}`);
     if (phase1.stop_reason === 'max_tokens') {
-      throw new AnthropicParseError('Statement has too many transactions for a single analysis. Try a shorter period.');
+      throw new AnthropicParseError(
+        "Trop de transactions pour une seule analyse, même avec le budget maximum (64k tokens). " +
+        "Si possible, scinde le PDF en deux périodes (1-15 et 16-fin du mois) et importe-les séparément.",
+      );
     }
 
     const p1Block = phase1.content.find((b) => b.type === 'tool_use');
@@ -340,5 +337,22 @@ export class AnthropicService {
     })[0];
     const [year, month] = topKey.split('-').map(Number);
     return { year, month };
+  }
+
+  private async runPhase1(base64Pdf: string, maxTokens: number) {
+    return this.client.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: maxTokens,
+      system: "Tu es un spécialiste de l'extraction de données bancaires. Extrais toutes les transactions du PDF de relevé bancaire en appelant l'outil extract_transactions. Sois exhaustif — inclus chaque transaction. Utilise des libellés courts (60 caractères max). Si le PDF contient une section 'Vos autres comptes' (ou équivalent listant les soldes d'autres comptes du client : Livret A, PEL, etc.), remplis externalAccountBalances. Pour chaque virement (libellé débutant par 'VIREMENT POUR' ou similaire), si le libellé mentionne un numéro de compte destinataire, capture-le dans targetAccountNumber.",
+      tools: [EXTRACT_TRANSACTIONS_TOOL],
+      tool_choice: { type: 'tool', name: 'extract_transactions' },
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Pdf } },
+          { type: 'text', text: "Extrais toutes les transactions de ce relevé bancaire. Inclus chaque débit et crédit. Utilise des libellés courts et nettoyés. Renseigne externalAccountBalances si une section 'Vos autres comptes' figure dans le PDF, et targetAccountNumber pour chaque virement contenant un n° de compte destinataire." },
+        ],
+      }],
+    });
   }
 }
