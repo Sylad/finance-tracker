@@ -64,23 +64,25 @@ export class StorageService implements OnModuleInit {
   }
 
   async getAllStatements(): Promise<MonthlyStatement[]> {
-    let files: string[];
+    // Active statements (current year)
+    const active = await this.readStatementsInDir(this.statementsDir);
+
+    // Archived statements: scan archive/<year>/ for each subdirectory
+    const archived: MonthlyStatement[] = [];
     try {
-      files = await fs.promises.readdir(this.statementsDir);
+      const yearDirs = await fs.promises.readdir(this.archiveDir);
+      for (const year of yearDirs) {
+        const yearPath = path.join(this.archiveDir, year);
+        const stat = await fs.promises.stat(yearPath).catch(() => null);
+        if (!stat?.isDirectory()) continue;
+        const monthsInYear = await this.readStatementsInDir(yearPath);
+        archived.push(...monthsInYear);
+      }
     } catch {
-      return [];
+      // archive dir absent — fine
     }
 
-    const statements = await Promise.all(
-      files
-        .filter((f) => FILENAME_REGEX.test(f))
-        .map(async (f) => {
-          const content = await fs.promises.readFile(path.join(this.statementsDir, f), 'utf8');
-          return JSON.parse(content) as MonthlyStatement;
-        }),
-    );
-
-    return statements.sort((a, b) => {
+    return [...active, ...archived].sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
       return b.month - a.month;
     });
