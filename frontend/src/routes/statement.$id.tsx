@@ -7,6 +7,8 @@ import {
   Trash2,
   Search,
   Languages,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useStatement, useDeleteStatement, useReanalyzeStatement } from '@/lib/queries';
@@ -93,13 +95,7 @@ export function StatementDetailPage() {
     input.accept = 'application/pdf';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        try {
-          await reanalyze.mutateAsync({ id, file });
-        } catch (err) {
-          alert((err as Error).message ?? 'Erreur lors de la ré-analyse');
-        }
-      }
+      if (file) await reanalyze.mutateAsync({ id, file }).catch(() => {});
     };
     input.click();
   };
@@ -146,9 +142,9 @@ export function StatementDetailPage() {
             ouverture : {formatEUR(data.openingBalance)}
           </div>
         </div>
-        <div className="card p-5 flex items-start gap-4">
+        <div className="card p-5 flex items-start gap-4 relative">
           <ScoreRing score={data.healthScore.total} size={70} strokeWidth={6} />
-          <div className="flex-1 min-w-0">
+          <div className={cn('flex-1 min-w-0 transition-opacity', reanalyze.isPending && 'opacity-30')}>
             <div className="stat-label">Score</div>
             <div className="text-xs text-fg-muted mt-1.5 leading-relaxed line-clamp-3">
               {data.healthScore.claudeComment}
@@ -156,12 +152,20 @@ export function StatementDetailPage() {
             <button
               onClick={handleReanalyze}
               disabled={reanalyze.isPending}
-              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent/10 hover:bg-accent/20 text-accent-bright text-xs font-medium border border-accent/30 transition-colors disabled:opacity-50"
+              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent/10 hover:bg-accent/20 text-accent-bright text-xs font-medium border border-accent/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Languages className="h-3.5 w-3.5" />
-              {reanalyze.isPending ? 'Re-analyse en cours…' : 'Re-analyser en français'}
+              {reanalyze.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Languages className="h-3.5 w-3.5" />}
+              {reanalyze.isPending ? 'Analyse en cours…' : 'Re-analyser en français'}
             </button>
           </div>
+          {reanalyze.isPending && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-surface/95 border border-accent/40 shadow-lg">
+                <Loader2 className="h-4 w-4 animate-spin text-accent-bright" />
+                <span className="text-xs font-medium text-fg-bright">Claude analyse ton relevé… (~30 s)</span>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -281,21 +285,38 @@ export function StatementDetailPage() {
       </section>
 
       {data.analysisNarrative && (
-        <section className="card p-5">
+        <section className="card p-5 relative">
           <div className="flex items-center justify-between gap-3 mb-3">
             <div className="stat-label">Analyse Claude</div>
             <button
               onClick={handleReanalyze}
               disabled={reanalyze.isPending}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 hover:bg-accent/20 text-accent-bright text-xs font-medium border border-accent/30 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 hover:bg-accent/20 text-accent-bright text-xs font-medium border border-accent/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Languages className="h-3 w-3" />
-              {reanalyze.isPending ? 'Re-analyse…' : 'Re-analyser en français'}
+              {reanalyze.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Languages className="h-3 w-3" />}
+              {reanalyze.isPending ? 'Analyse en cours…' : 'Re-analyser en français'}
             </button>
           </div>
-          <p className="text-sm text-fg leading-relaxed whitespace-pre-line">
+          <p className={cn('text-sm text-fg leading-relaxed whitespace-pre-line transition-opacity', reanalyze.isPending && 'opacity-30')}>
             {data.analysisNarrative}
           </p>
+          {reanalyze.isPending && (
+            <div className="absolute inset-x-0 bottom-4 flex items-center justify-center pointer-events-none">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-surface/95 border border-accent/40 shadow-lg">
+                <Loader2 className="h-4 w-4 animate-spin text-accent-bright" />
+                <span className="text-xs font-medium text-fg-bright">Claude analyse ton relevé… (~30 s)</span>
+              </div>
+            </div>
+          )}
+          {reanalyze.isError && (
+            <div className="mt-3 flex items-start gap-2 p-3 rounded-md bg-negative/10 border border-negative/40 text-sm">
+              <AlertCircle className="h-4 w-4 text-negative shrink-0 mt-0.5" />
+              <div>
+                <div className="font-medium text-negative">Échec de la ré-analyse</div>
+                <div className="text-xs text-fg-muted mt-0.5">{(reanalyze.error as Error)?.message ?? 'Erreur inconnue'}</div>
+              </div>
+            </div>
+          )}
         </section>
       )}
     </>
