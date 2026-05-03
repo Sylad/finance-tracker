@@ -6,9 +6,43 @@ import {
   BalanceHistoryEntry,
   SavingsAccount,
   SavingsAccountInput,
+  SavingsAccountType,
   SavingsMovement,
   SavingsMovementSource,
 } from '../../models/savings-account.model';
+import { ExternalAccountBalance } from '../../models/monthly-statement.model';
+
+const DEFAULT_RATES: Record<SavingsAccountType, number> = {
+  'livret-a': 0.015,
+  pel: 0.02,
+  cel: 0.0125,
+  ldds: 0.015,
+  pea: 0,
+  other: 0,
+};
+
+const DEFAULT_ANNIVERSARY_MONTH: Record<SavingsAccountType, number> = {
+  'livret-a': 12,
+  pel: 1,
+  cel: 12,
+  ldds: 12,
+  pea: 12,
+  other: 12,
+};
+
+const TYPE_LABELS: Record<SavingsAccountType, string> = {
+  'livret-a': 'Livret A',
+  pel: 'PEL',
+  cel: 'CEL',
+  ldds: 'LDDS',
+  pea: 'PEA',
+  other: 'Compte épargne',
+};
+
+function normalizeAccountNumber(s: string | null | undefined): string {
+  if (!s) return '';
+  return s.replace(/[^0-9A-Z]/gi, '').toUpperCase();
+}
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 
@@ -167,6 +201,42 @@ export class SavingsService {
     acc.currentBalance = Math.round((acc.currentBalance - delta) * 100) / 100;
     acc.updatedAt = new Date().toISOString();
     await this.persist(all);
+  }
+
+  /**
+   * Auto-discovery : crée un SavingsAccount à partir d'une ExternalAccountBalance extraite du PDF
+   * si aucun compte avec ce numéro n'existe déjà. Idempotent.
+   */
+  async upsertFromBankExtract(
+    eb: ExternalAccountBalance,
+    statementMonth: number,
+    statementYear: number,
+  ): Promise<{ account: SavingsAccount; created: boolean }> {
+    const normTarget = normalizeAccountNumber(eb.accountNumber);
+    if (!normTarget) {
+      throw new Error('upsertFromBankExtract: accountNumber vide');
+    }
+    const all = await this.getAll();
+    const existing = all.find((a) => a.accountNumber && normalizeAccountNumber(a.accountNumber) === normTarget);
+    if (existing) {
+      return { account: existing, created: false };
+    }
+    const type: SavingsAccountType = (
+      ['livret-a', 'pel', 'cel', 'ldds', 'pea'].includes(eb.accountType) ? eb.accountType : 'other'
+    ) as SavingsAccountType;
+    const monthEnd = new Date(statementYear, statementMonth, 0).toISOString().slice(0, 10);
+    const created = await this.create({
+      name: eb.label?.trim() || `${TYPE_LABELS[type]} ${eb.accountNumber.slice(-4)}`,
+      type,
+      initialBalance: eb.balance,
+      initialBalanceDate: eb.asOfDate || monthEnd,
+      matchPattern: '',
+      interestRate: DEFAULT_RATES[type],
+      interestAnniversaryMonth: DEFAULT_ANNIVERSARY_MONTH[type],
+      accountNumber: eb.accountNumber,
+    });
+    this.logger.log(`Auto-created savings account ${created.id} (${created.name}) from bank extract`);
+    return { account: created, created: true };
   }
 
   private async persist(all: SavingsAccount[]): Promise<void> {
