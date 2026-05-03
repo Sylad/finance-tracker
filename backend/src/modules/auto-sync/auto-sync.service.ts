@@ -207,7 +207,13 @@ export class AutoSyncService {
         continue;
       }
 
-      const matches = statement.transactions.filter((t) => matcher(t.description));
+      // Anti-pattern: exclude card / immediate-debit transactions that match
+      // the regex but are NOT credit repayments. Common LBP/Carrefour Banque
+      // labels: 'PRLV COMPTANT IMMEDIAT', 'PRELEVT COMPTANT', 'CB <merchant>',
+      // 'PAIEMENT CB'.
+      const NOT_A_CREDIT = /\b(COMPTANT|PAIEMENT CB|ACHAT CB|CB CARREFOUR|RETRAIT)\b/i;
+
+      const matches = statement.transactions.filter((t) => matcher(t.description) && !NOT_A_CREDIT.test(t.description));
       for (const t of matches) {
         await this.loans.addOccurrence(loan.id, {
           statementId: statement.id,
