@@ -4,6 +4,7 @@ import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
 import { AnalysisService } from '../analysis/analysis.service';
 import { AutoSyncService } from '../auto-sync/auto-sync.service';
+import { ImportLogsService } from '../import-logs/import-logs.service';
 
 @Controller('statements')
 export class StatementsController {
@@ -12,6 +13,7 @@ export class StatementsController {
     private readonly snapshots: SnapshotService,
     private readonly analysis: AnalysisService,
     private readonly autoSync: AutoSyncService,
+    private readonly importLogs: ImportLogsService,
   ) {}
 
   @Get()
@@ -69,6 +71,30 @@ export class StatementsController {
   }))
   async reanalyze(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new NotFoundException('PDF requis pour re-analyser');
-    return this.analysis.reanalyzeStatement(id, file.buffer);
+    const startedAt = Date.now();
+    const uploadedAt = new Date().toISOString();
+    try {
+      const result = await this.analysis.reanalyzeStatement(id, file.buffer);
+      await this.importLogs.log({
+        filename: file.originalname,
+        uploadedAt,
+        durationMs: Date.now() - startedAt,
+        status: 'success',
+        statementId: result.statement.id,
+        statementMonth: result.statement.month,
+        statementYear: result.statement.year,
+        replaced: result.replaced,
+      });
+      return result;
+    } catch (e) {
+      await this.importLogs.log({
+        filename: file.originalname,
+        uploadedAt,
+        durationMs: Date.now() - startedAt,
+        status: 'error',
+        error: (e as Error).message ?? 'Unknown error',
+      });
+      throw e;
+    }
   }
 }
