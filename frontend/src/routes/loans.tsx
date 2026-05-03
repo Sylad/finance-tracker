@@ -354,7 +354,9 @@ function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) => void
   const { data } = useLoanSuggestions();
   const reject = useRejectSuggestion();
   const snooze = useSnoozeSuggestion();
-  const items = (data ?? []).filter((s) => s.status === 'pending');
+  // Cette page concerne les CRÉDITS uniquement.
+  // Les suggestions de type subscription/utility appartiennent à la page /subscriptions.
+  const items = (data ?? []).filter((s) => s.status === 'pending' && s.suggestedType === 'loan');
   if (items.length === 0) return null;
   return (
     <div className="card p-4 mb-6 border-l-4 border-l-warning">
