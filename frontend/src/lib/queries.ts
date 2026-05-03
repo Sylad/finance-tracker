@@ -21,6 +21,7 @@ import type {
   NetWorth,
   DashboardAlert,
   YearlyOverview,
+  ImportLog,
 } from '@/types/api';
 
 export const qk = {
@@ -34,6 +35,8 @@ export const qk = {
   forecast: (months: number) => ['forecast', months] as const,
   claudeUsage: () => ['claude', 'usage'] as const,
 };
+
+export const qkImportLogs = { all: () => ['import-logs'] as const };
 
 export function useStatements() {
   return useQuery({
@@ -168,6 +171,7 @@ export function useUploadStatements() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.statements() });
       qc.invalidateQueries({ queryKey: qk.scoreHistory() });
+      qc.invalidateQueries({ queryKey: qkImportLogs.all() });
     },
   });
 }
@@ -374,4 +378,12 @@ export function useAlerts() {
 }
 export function useYearlyOverview(months = 12) {
   return useQuery({ queryKey: ['dashboard', 'yearly', months], queryFn: () => api.get<YearlyOverview>(`/dashboard/yearly-overview?months=${months}`) });
+}
+
+export function useImportLogs() {
+  return useQuery({
+    queryKey: qkImportLogs.all(),
+    queryFn: () => api.get<ImportLog[]>('/import-logs'),
+    refetchInterval: 5000,
+  });
 }

@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Upload as UploadIcon, FileText, X, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { useUploadStatements } from '@/lib/queries';
+import { Upload as UploadIcon, FileText, X, CheckCircle2, AlertCircle, Loader2, History as HistoryIcon, ExternalLink } from 'lucide-react';
+import { useUploadStatements, useImportLogs } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import type { UploadResult } from '@/types/api';
-import { cn, formatEUR } from '@/lib/utils';
+import { cn, formatEUR, formatMonth } from '@/lib/utils';
 
 const MAX = 12;
 
@@ -119,6 +119,7 @@ export function UploadPage() {
       )}
 
       {result && <UploadReport result={result} />}
+      <ImportHistory />
     </>
   );
 }
@@ -176,5 +177,51 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: 'pos
       <div className={cn('font-display text-2xl font-bold tabular', cls)}>{value}</div>
       <div className="stat-label mt-1">{label}</div>
     </div>
+  );
+}
+
+function ImportHistory() {
+  const { data } = useImportLogs();
+  const items = (data ?? []).slice(0, 20);
+  if (items.length === 0) return null;
+  return (
+    <section className="card p-5 mt-6">
+      <div className="flex items-center gap-2 mb-3">
+        <HistoryIcon className="h-4 w-4 text-fg-dim" />
+        <div className="stat-label">Historique des imports ({items.length})</div>
+      </div>
+      <div className="divide-y divide-border">
+        {items.map((it) => (
+          <div key={it.id} className="flex items-center gap-3 py-2.5 text-sm">
+            {it.status === 'success'
+              ? <CheckCircle2 className="h-4 w-4 text-positive shrink-0" />
+              : <AlertCircle className="h-4 w-4 text-negative shrink-0" />}
+            <div className="flex-1 min-w-0">
+              <div className="text-fg-bright truncate">{it.filename}</div>
+              <div className="text-xs text-fg-dim">
+                {new Date(it.uploadedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                {' · '}
+                {(it.durationMs / 1000).toFixed(1)}s
+                {it.status === 'success' && it.statementMonth && it.statementYear && (
+                  <> · <span className="text-accent-bright">{formatMonth(it.statementMonth, it.statementYear)}</span></>
+                )}
+                {it.status === 'success' && it.replaced && <> · <span className="text-warning">remplacé</span></>}
+                {it.status === 'error' && <> · <span className="text-negative">{it.error}</span></>}
+              </div>
+            </div>
+            {it.status === 'success' && it.statementId && (
+              <Link
+                to="/history/$id"
+                params={{ id: it.statementId }}
+                className="btn-ghost p-1.5"
+                title="Voir le relevé"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
