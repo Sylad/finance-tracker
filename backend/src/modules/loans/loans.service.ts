@@ -154,18 +154,36 @@ export class LoansService {
       return { split: false, createdCount: 0, groups: [] };
     }
 
-    // Helper: extract a numeric reference (>=8 digits) from a description
-    const extractRef = (desc: string | undefined): string => {
-      if (!desc) return '';
-      const m = desc.match(/\d{8,}/);
-      return m ? m[0] : '';
+    // Helper: extract ALL numeric sequences (>=8 digits) from a description
+    const extractAllRefs = (desc: string | undefined): string[] => {
+      if (!desc) return [];
+      return [...desc.matchAll(/\d{8,}/g)].map((m) => m[0]);
     };
 
-    // Group occurrences by (rounded amount, extracted reference)
+    // Pre-count global frequency of each numeric sequence across all occurrences.
+    // A "stable" reference (= contract number) appears in ≥ 2 occurrences.
+    // A unique sequence (= virement reference, unique per tx) is filtered out.
+    const refCounts = new Map<string, number>();
+    for (const o of original.occurrencesDetected) {
+      for (const r of extractAllRefs(o.description)) {
+        refCounts.set(r, (refCounts.get(r) ?? 0) + 1);
+      }
+    }
+    // Pick the stable ref for an occurrence: longest then most frequent.
+    const stableRef = (desc: string | undefined): string => {
+      const refs = extractAllRefs(desc).filter((r) => (refCounts.get(r) ?? 0) >= 2);
+      if (refs.length === 0) return '';
+      return refs.sort((a, b) => {
+        if (b.length !== a.length) return b.length - a.length;
+        return (refCounts.get(b) ?? 0) - (refCounts.get(a) ?? 0);
+      })[0];
+    };
+
+    // Group occurrences by (rounded amount, stable reference)
     const groups = new Map<string, { amount: number; ref: string; occurrences: LoanOccurrence[] }>();
     for (const o of original.occurrencesDetected) {
       const amount = Math.round(Math.abs(o.amount));
-      const ref = extractRef(o.description);
+      const ref = stableRef(o.description);
       const key = `${amount}|${ref}`;
       if (!groups.has(key)) groups.set(key, { amount, ref, occurrences: [] });
       groups.get(key)!.occurrences.push(o);

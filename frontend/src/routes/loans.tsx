@@ -165,9 +165,22 @@ function toInput(l: Loan): LoanInput {
 
 function detectAmountGroups(loan: Loan): number {
   if (loan.occurrencesDetected.length < 2) return 1;
-  const extractRef = (d: string | undefined) => (d?.match(/\d{8,}/)?.[0]) ?? '';
+  // Same logic as backend splitByAmount: find stable refs (≥2 occurrences),
+  // unique virement references are filtered out.
+  const extractAll = (d: string | undefined) => (d ? [...d.matchAll(/\d{8,}/g)].map((m) => m[0]) : []);
+  const refCounts = new Map<string, number>();
+  for (const o of loan.occurrencesDetected) {
+    for (const r of extractAll(o.description)) {
+      refCounts.set(r, (refCounts.get(r) ?? 0) + 1);
+    }
+  }
+  const stableRef = (d: string | undefined) => {
+    const refs = extractAll(d).filter((r) => (refCounts.get(r) ?? 0) >= 2);
+    if (refs.length === 0) return '';
+    return refs.sort((a, b) => (b.length !== a.length ? b.length - a.length : (refCounts.get(b) ?? 0) - (refCounts.get(a) ?? 0)))[0];
+  };
   const set = new Set(
-    loan.occurrencesDetected.map((o) => `${Math.round(Math.abs(o.amount))}|${extractRef(o.description)}`),
+    loan.occurrencesDetected.map((o) => `${Math.round(Math.abs(o.amount))}|${stableRef(o.description)}`),
   );
   return set.size;
 }
