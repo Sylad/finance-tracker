@@ -79,8 +79,13 @@ export function StatementDetailPage() {
       .sort((a, b) => b.value - a.value);
   }, [transactions]);
 
-  if (isLoading) return <LoadingState />;
-  if (!data) return null;
+  if (isLoading) return <LoadingState label="Récupération du relevé…" />;
+  if (!data) return (
+    <div className="card p-8 text-center">
+      <div className="text-negative font-medium">Relevé introuvable</div>
+      <div className="text-xs text-fg-muted mt-1.5">L'identifiant {id} n'existe pas (ou plus) en base.</div>
+    </div>
+  );
 
   const handleDelete = async () => {
     if (!confirm('Supprimer définitivement ce relevé ?')) return;
