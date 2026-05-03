@@ -28,6 +28,8 @@ export function validateSavingsAccountInput(raw: unknown): SavingsAccountInput {
     }
   }
 
+  const accountNumber = typeof r.accountNumber === 'string' ? r.accountNumber.trim() : '';
+
   const interestRate = Number(r.interestRate);
   if (!Number.isFinite(interestRate) || interestRate < 0 || interestRate > 0.5) {
     throw new BadRequestException('interestRate hors plage [0, 0.5]');
@@ -44,6 +46,7 @@ export function validateSavingsAccountInput(raw: unknown): SavingsAccountInput {
     initialBalance,
     initialBalanceDate,
     matchPattern,
+    accountNumber: accountNumber || undefined,
     interestRate,
     interestAnniversaryMonth: anniv,
   };

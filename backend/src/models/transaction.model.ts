@@ -23,4 +23,5 @@ export interface Transaction {
   isRecurring: boolean;
   recurringCreditEndDate?: string | null;
   confidence: number;
+  targetAccountNumber?: string | null;
 }

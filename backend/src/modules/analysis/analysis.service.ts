@@ -82,6 +82,7 @@ export class AnalysisService {
       isRecurring: t.isRecurring ?? false,
       recurringCreditEndDate: t.recurringCreditEndDate ?? null,
       confidence: t.confidence ?? 0.5,
+      targetAccountNumber: t.targetAccountNumber ?? null,
     }));
 
     const recurringCredits: RecurringCredit[] = (result.recurringCredits ?? []).map((rc) => {
@@ -128,6 +129,7 @@ export class AnalysisService {
       healthScore,
       recurringCredits,
       analysisNarrative: result.analysisNarrative ?? '',
+      externalAccountBalances: result.externalAccountBalances ?? [],
     };
   }
 

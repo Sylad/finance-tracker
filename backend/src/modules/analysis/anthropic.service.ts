@@ -31,6 +31,13 @@ export interface ClaudeAnalysisResult {
     suggestedType: 'loan' | 'subscription' | 'utility';
     matchPattern: string;
   }[];
+  externalAccountBalances?: {
+    accountNumber: string;
+    accountType: string;
+    balance: number;
+    label?: string;
+    asOfDate?: string;
+  }[];
 }
 
 export interface ClaudeTransaction {
@@ -43,6 +50,7 @@ export interface ClaudeTransaction {
   isRecurring: boolean;
   recurringCreditEndDate: string | null;
   confidence: number;
+  targetAccountNumber?: string | null;
 }
 
 export interface ClaudeRecurringCredit {
@@ -90,8 +98,24 @@ const EXTRACT_TRANSACTIONS_TOOL: Anthropic.Tool = {
               enum: ['income', 'housing', 'transport', 'food', 'health', 'entertainment', 'subscriptions', 'savings', 'transfers', 'taxes', 'other'],
             },
             isRecurring: { type: 'boolean' },
+            targetAccountNumber: { type: 'string', description: "Pour les virements (libellé contenant 'VIREMENT POUR' ou similaire) : le numéro de compte destinataire complet si présent dans la description de l'opération. Sinon vide ou absent." },
           },
           required: ['date', 'label', 'amount', 'category', 'isRecurring'],
+        },
+      },
+      externalAccountBalances: {
+        type: 'array',
+        description: "Soldes des autres comptes du même client affichés dans le PDF (section type 'Vos autres comptes' chez La Banque Postale). Chaque entrée contient le numéro de compte complet, le type (livret-a, pel, cel, ldds, pea, other), le solde et éventuellement le libellé et la date du solde. Renvoie un array vide si la section n'est pas présente.",
+        items: {
+          type: 'object',
+          properties: {
+            accountNumber: { type: 'string', description: 'Numéro de compte complet tel qu\'affiché dans le PDF' },
+            accountType: { type: 'string', enum: ['livret-a', 'pel', 'cel', 'ldds', 'pea', 'other'] },
+            balance: { type: 'number', description: 'Solde en euros (positif)' },
+            label: { type: 'string', description: 'Libellé du compte si différent du type (ex: "Livret A SYLVAIN")' },
+            asOfDate: { type: 'string', description: 'Date du solde au format YYYY-MM-DD si précisée' },
+          },
+          required: ['accountNumber', 'accountType', 'balance'],
         },
       },
     },
@@ -191,14 +215,14 @@ export class AnthropicService {
     const phase1 = await this.client.messages.create({
       model: 'claude-sonnet-4-5',
       max_tokens: 8192,
-      system: 'You are a financial data extraction specialist. Extract all transactions from the bank statement PDF by calling the extract_transactions tool. Be exhaustive — include every transaction. Use short labels (max 60 chars).',
+      system: "Tu es un spécialiste de l'extraction de données bancaires. Extrais toutes les transactions du PDF de relevé bancaire en appelant l'outil extract_transactions. Sois exhaustif — inclus chaque transaction. Utilise des libellés courts (60 caractères max). Si le PDF contient une section 'Vos autres comptes' (ou équivalent listant les soldes d'autres comptes du client : Livret A, PEL, etc.), remplis externalAccountBalances. Pour chaque virement (libellé débutant par 'VIREMENT POUR' ou similaire), si le libellé mentionne un numéro de compte destinataire, capture-le dans targetAccountNumber.",
       tools: [EXTRACT_TRANSACTIONS_TOOL],
       tool_choice: { type: 'tool', name: 'extract_transactions' },
       messages: [{
         role: 'user',
         content: [
           { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Pdf } },
-          { type: 'text', text: 'Extract all transactions from this bank statement. Include every debit and credit. Use short cleaned labels.' },
+          { type: 'text', text: "Extrais toutes les transactions de ce relevé bancaire. Inclus chaque débit et crédit. Utilise des libellés courts et nettoyés. Renseigne externalAccountBalances si une section 'Vos autres comptes' figure dans le PDF, et targetAccountNumber pour chaque virement contenant un n° de compte destinataire." },
         ],
       }],
     });
@@ -214,7 +238,7 @@ export class AnthropicService {
       throw new AnthropicParseError('Phase 1: no tool_use block returned');
     }
     const p1 = p1Block.input as Record<string, unknown>;
-    const transactions = p1.transactions as Array<{ date: string; label: string; amount: number; category: string; isRecurring: boolean }>;
+    const transactions = p1.transactions as Array<{ date: string; label: string; amount: number; category: string; isRecurring: boolean; targetAccountNumber?: string }>;
     this.logger.log(`Phase 1: extracted ${transactions.length} transactions`);
 
     // Derive period from transaction dates (mode of YYYY-MM, earliest wins ties).
@@ -265,7 +289,7 @@ export class AnthropicService {
   private mergeResults(
     p1: Record<string, unknown>,
     p2: Record<string, unknown>,
-    rawTransactions: Array<{ date: string; label: string; amount: number; category: string; isRecurring: boolean }>,
+    rawTransactions: Array<{ date: string; label: string; amount: number; category: string; isRecurring: boolean; targetAccountNumber?: string }>,
     period: { year: number; month: number },
   ): ClaudeAnalysisResult {
     const transactions: ClaudeTransaction[] = rawTransactions.map((t) => ({
@@ -278,6 +302,7 @@ export class AnthropicService {
       isRecurring: t.isRecurring ?? false,
       recurringCreditEndDate: null,
       confidence: 0.85,
+      targetAccountNumber: t.targetAccountNumber ?? null,
     }));
 
     return {
@@ -294,6 +319,7 @@ export class AnthropicService {
       analysisNarrative: p2.analysisNarrative as string,
       claudeHealthComment: p2.claudeHealthComment as string,
       suggestedRecurringExpenses: (p2.suggestedRecurringExpenses ?? []) as ClaudeAnalysisResult['suggestedRecurringExpenses'],
+      externalAccountBalances: (p1.externalAccountBalances ?? []) as ClaudeAnalysisResult['externalAccountBalances'],
     };
   }
 
