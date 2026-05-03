@@ -71,28 +71,10 @@ export function LoansPage() {
         }
       />
 
-      <SuggestionsBanner
-        onAccept={(s) => {
-          setEditing(null);
-          setCreating(true);
-          setPrefilled({
-            name: s.creditor ?? s.label,
-            type: 'classic',
-            category: 'consumer',
-            monthlyPayment: s.monthlyAmount,
-            matchPattern: s.matchPattern,
-            isActive: true,
-            creditor: s.creditor,
-            startDate: s.firstSeenDate,
-          });
-          setSuggestionToAccept(s.id);
-        }}
-      />
-
       {items.length === 0 ? (
         <EmptyState title="Aucun crédit déclaré" hint="Ajoute ton crédit immobilier, conso ou ta carte revolving." />
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-8 mb-6">
           {classics.length > 0 && (
             <section>
               <h2 className="font-display text-sm uppercase tracking-wider text-fg-dim mb-3">
@@ -120,6 +102,24 @@ export function LoansPage() {
           )}
         </div>
       )}
+
+      <SuggestionsBanner
+        onAccept={(s) => {
+          setEditing(null);
+          setCreating(true);
+          setPrefilled({
+            name: s.creditor ?? s.label,
+            type: 'classic',
+            category: 'consumer',
+            monthlyPayment: s.monthlyAmount,
+            matchPattern: s.matchPattern,
+            isActive: true,
+            creditor: s.creditor,
+            startDate: s.firstSeenDate,
+          });
+          setSuggestionToAccept(s.id);
+        }}
+      />
 
       {(creating || editing) && (
         <LoanForm
