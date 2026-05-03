@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Plus, CreditCard, Pencil, Trash2, X, Banknote, RefreshCw, BarChart3, EyeOff, RotateCcw } from 'lucide-react';
+import { Plus, CreditCard, Pencil, Trash2, X, Banknote, RefreshCw, BarChart3, EyeOff, RotateCcw, Split } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { useLoans, useCreateLoan, useUpdateLoan, useDeleteLoan, useResetRevolving, useLoanSuggestions, useAcceptSuggestion, useRejectSuggestion, useSnoozeSuggestion, useUnsnoozeSuggestion, useResyncLoan } from '@/lib/queries';
+import { useLoans, useCreateLoan, useUpdateLoan, useDeleteLoan, useResetRevolving, useLoanSuggestions, useAcceptSuggestion, useRejectSuggestion, useSnoozeSuggestion, useUnsnoozeSuggestion, useResyncLoan, useSplitLoanByAmount } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
 import { type Loan, type LoanInput, type LoanType, type LoanCategory, LOAN_CATEGORY_LABELS, type LoanSuggestion } from '@/types/api';
@@ -163,6 +163,36 @@ function toInput(l: Loan): LoanInput {
   return rest;
 }
 
+function detectAmountGroups(loan: Loan): number {
+  if (loan.occurrencesDetected.length < 2) return 1;
+  const set = new Set(loan.occurrencesDetected.map((o) => Math.round(Math.abs(o.amount))));
+  return set.size;
+}
+
+function SplitButton({ loan }: { loan: Loan }) {
+  const split = useSplitLoanByAmount();
+  const groupCount = detectAmountGroups(loan);
+  if (groupCount < 2) return null;
+  const handleClick = async () => {
+    if (!confirm(`Découper ce crédit en ${groupCount} sous-crédits selon les montants distincts détectés ?`)) return;
+    try {
+      const r = await split.mutateAsync(loan.id);
+      alert(r.split ? `${r.createdCount} sous-crédit(s) créé(s)` : 'Aucun découpage nécessaire (un seul groupe)');
+    } catch (e) {
+      alert(`Erreur : ${(e as Error).message}`);
+    }
+  };
+  return (
+    <button
+      onClick={handleClick}
+      title={`${groupCount} montants distincts détectés`}
+      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-warning/10 hover:bg-warning/20 text-warning text-xs font-medium border border-warning/30 mt-2"
+    >
+      <Split className="h-3 w-3" /> Découper en {groupCount} sous-crédits
+    </button>
+  );
+}
+
 function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
   const resync = useResyncLoan();
   const start = loan.startDate ? new Date(loan.startDate).getTime() : 0;
@@ -216,6 +246,7 @@ function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => voi
       ) : (
         <p className="text-xs text-fg-dim italic">Renseigne les dates de début et fin pour activer le suivi.</p>
       )}
+      <SplitButton loan={loan} />
       <button
         onClick={handleResync}
         disabled={resync.isPending}
@@ -284,6 +315,7 @@ function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => v
         <span className="text-fg-dim">/ {formatEUR(max)} ({pct}%)</span>
       </div>
       <div className="text-xs text-fg-muted tabular mt-1">{formatEUR(max - used)} disponibles</div>
+      <SplitButton loan={loan} />
       <button onClick={handleReset} className="btn-ghost text-xs mt-3">Recaler le solde</button>
       <button
         onClick={handleResync}
@@ -321,6 +353,7 @@ function ClosedCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void
         <div>Total remboursé estimé : <span className="text-fg-bright">{formatEUR(totalRepaid)}</span></div>
         {lastOcc && <div>Dernière mensualité : {lastOcc.date}</div>}
       </div>
+      <SplitButton loan={loan} />
     </div>
   );
 }

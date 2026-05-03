@@ -134,6 +134,82 @@ export class LoansService {
     await this.persist(all);
   }
 
+  /**
+   * Découpe un loan en plusieurs sous-loans selon les montants distincts
+   * trouvés dans ses occurrencesDetected (regroupés à l'euro près).
+   * Utile quand un creditor (ex: Klarna) a en réalité plusieurs prêts BNPL
+   * fusionnés en un seul Loan.
+   */
+  async splitByAmount(id: string): Promise<{ split: boolean; createdCount: number; groups: Array<{ amount: number; count: number }> }> {
+    const all = await this.getAll();
+    const idx = all.findIndex((l) => l.id === id);
+    if (idx === -1) throw new NotFoundException(`Crédit ${id} introuvable`);
+    const original = all[idx];
+    if (original.occurrencesDetected.length < 2) {
+      return { split: false, createdCount: 0, groups: [] };
+    }
+
+    // Group occurrences by rounded amount
+    const groups = new Map<number, LoanOccurrence[]>();
+    for (const o of original.occurrencesDetected) {
+      const k = Math.round(Math.abs(o.amount));
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k)!.push(o);
+    }
+    if (groups.size < 2) {
+      return { split: false, createdCount: 0, groups: [{ amount: [...groups.keys()][0] ?? 0, count: original.occurrencesDetected.length }] };
+    }
+
+    // Sort groups by occurrence count descending — keep the largest in the original loan
+    const sorted = [...groups.entries()].sort((a, b) => b[1].length - a[1].length);
+    const [keepKey, keepOccurrences] = sorted[0];
+    const otherGroups = sorted.slice(1);
+
+    // Update original to keep only its largest-count group
+    const keepAvg = keepOccurrences.reduce((s, o) => s + Math.abs(o.amount), 0) / keepOccurrences.length;
+    original.occurrencesDetected = keepOccurrences;
+    original.monthlyPayment = Math.round(keepAvg * 100) / 100;
+    if (!original.name.includes(`${keepKey} €`)) {
+      original.name = `${original.creditor ?? original.name} (${original.monthlyPayment.toFixed(2)} €/mois)`;
+    }
+    original.updatedAt = new Date().toISOString();
+
+    // Create one new Loan per remaining group
+    const now = new Date().toISOString();
+    let createdCount = 0;
+    for (const [amountKey, occ] of otherGroups) {
+      const avg = occ.reduce((s, o) => s + Math.abs(o.amount), 0) / occ.length;
+      const newLoan: Loan = {
+        id: randomUUID(),
+        name: `${original.creditor ?? original.name.split(' (')[0]} (${avg.toFixed(2)} €/mois)`,
+        type: original.type,
+        category: original.category,
+        monthlyPayment: Math.round(avg * 100) / 100,
+        matchPattern: original.matchPattern,
+        isActive: original.isActive,
+        creditor: original.creditor,
+        startDate: original.startDate,
+        endDate: original.endDate,
+        initialPrincipal: undefined,
+        maxAmount: undefined,
+        usedAmount: undefined,
+        occurrencesDetected: occ,
+        createdAt: now,
+        updatedAt: now,
+      };
+      all.push(newLoan);
+      createdCount++;
+      this.logger.log(`Split: created ${newLoan.name} from ${original.id} with ${occ.length} occurrences`);
+      void amountKey;
+    }
+    await this.persist(all);
+    return {
+      split: true,
+      createdCount,
+      groups: [...groups.entries()].map(([amount, occ]) => ({ amount, count: occ.length })),
+    };
+  }
+
   private async persist(all: Loan[]): Promise<void> {
     await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
     this.bus.emit('loans-changed');
