@@ -180,14 +180,26 @@ export class LoansService {
     };
 
     // Group occurrences by (rounded amount, stable reference)
-    const groups = new Map<string, { amount: number; ref: string; occurrences: LoanOccurrence[] }>();
+    const allGroups = new Map<string, { amount: number; ref: string; occurrences: LoanOccurrence[] }>();
     for (const o of original.occurrencesDetected) {
       const amount = Math.round(Math.abs(o.amount));
       const ref = stableRef(o.description);
       const key = `${amount}|${ref}`;
-      if (!groups.has(key)) groups.set(key, { amount, ref, occurrences: [] });
-      groups.get(key)!.occurrences.push(o);
+      if (!allGroups.has(key)) allGroups.set(key, { amount, ref, occurrences: [] });
+      allGroups.get(key)!.occurrences.push(o);
     }
+
+    // Filter to groups that LOOK LIKE a real credit:
+    //  - Seen across ≥ 2 distinct months (excludes one-off purchases)
+    //  - At most 1 occurrence per month (excludes card payments,
+    //    multiple impulse purchases, etc.)
+    const groups = new Map<string, { amount: number; ref: string; occurrences: LoanOccurrence[] }>();
+    for (const [k, g] of allGroups.entries()) {
+      const monthsSeen = new Set(g.occurrences.map((o) => o.date.slice(0, 7)));
+      const maxPerMonth = Math.max(...[...monthsSeen].map((m) => g.occurrences.filter((o) => o.date.startsWith(m)).length));
+      if (monthsSeen.size >= 2 && maxPerMonth <= 1) groups.set(k, g);
+    }
+
     if (groups.size < 2) {
       const first = [...groups.values()][0];
       return { split: false, createdCount: 0, groups: [{ key: '0', amount: first?.amount ?? 0, ref: first?.ref, count: original.occurrencesDetected.length }] };

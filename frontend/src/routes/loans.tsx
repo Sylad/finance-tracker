@@ -166,8 +166,7 @@ function toInput(l: Loan): LoanInput {
 
 function detectAmountGroups(loan: Loan): number {
   if (loan.occurrencesDetected.length < 2) return 1;
-  // Same logic as backend splitByAmount: find stable refs (≥2 occurrences),
-  // unique virement references are filtered out.
+  // Same logic as backend splitByAmount.
   const extractAll = (d: string | undefined) => (d ? [...d.matchAll(/\d{8,}/g)].map((m) => m[0]) : []);
   const refCounts = new Map<string, number>();
   for (const o of loan.occurrencesDetected) {
@@ -180,10 +179,21 @@ function detectAmountGroups(loan: Loan): number {
     if (refs.length === 0) return '';
     return refs.sort((a, b) => (b.length !== a.length ? b.length - a.length : (refCounts.get(b) ?? 0) - (refCounts.get(a) ?? 0)))[0];
   };
-  const set = new Set(
-    loan.occurrencesDetected.map((o) => `${Math.round(Math.abs(o.amount))}|${stableRef(o.description)}`),
-  );
-  return set.size;
+  type Bucket = { amount: number; ref: string; occurrences: typeof loan.occurrencesDetected };
+  const all = new Map<string, Bucket>();
+  for (const o of loan.occurrencesDetected) {
+    const k = `${Math.round(Math.abs(o.amount))}|${stableRef(o.description)}`;
+    if (!all.has(k)) all.set(k, { amount: Math.round(Math.abs(o.amount)), ref: stableRef(o.description), occurrences: [] });
+    all.get(k)!.occurrences.push(o);
+  }
+  // Same filter as backend: ≥2 distinct months AND ≤1 occurrence per month
+  let validGroups = 0;
+  for (const [, g] of all) {
+    const monthsSeen = new Set(g.occurrences.map((o) => o.date.slice(0, 7)));
+    const maxPerMonth = Math.max(...[...monthsSeen].map((m) => g.occurrences.filter((o) => o.date.startsWith(m)).length));
+    if (monthsSeen.size >= 2 && maxPerMonth <= 1) validGroups++;
+  }
+  return validGroups;
 }
 
 function SplitButton({ loan }: { loan: Loan }) {
