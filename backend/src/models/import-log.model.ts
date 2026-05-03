@@ -1,10 +1,10 @@
-export type ImportLogStatus = 'success' | 'error';
+export type ImportLogStatus = 'in-progress' | 'success' | 'error';
 
 export interface ImportLog {
   id: string;
   filename: string;
   uploadedAt: string;        // ISO timestamp when import started
-  durationMs: number;        // total processing time
+  durationMs: number;        // total processing time (0 while in-progress)
   status: ImportLogStatus;
   // Success-only fields
   statementId?: string | null;

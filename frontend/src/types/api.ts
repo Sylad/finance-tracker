@@ -355,7 +355,7 @@ export interface YearlyOverview {
   topCategories: { category: string; total: number }[];
 }
 
-export type ImportLogStatus = 'success' | 'error';
+export type ImportLogStatus = 'in-progress' | 'success' | 'error';
 
 export interface ImportLog {
   id: string;

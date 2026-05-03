@@ -37,4 +37,14 @@ export class ImportLogsService {
     this.bus.emit('import-logs-changed');
     return log;
   }
+
+  async update(id: string, patch: Partial<Omit<ImportLog, 'id'>>): Promise<ImportLog | null> {
+    const all = await this.getAll();
+    const idx = all.findIndex((l) => l.id === id);
+    if (idx === -1) return null;
+    all[idx] = { ...all[idx], ...patch };
+    await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
+    this.bus.emit('import-logs-changed');
+    return all[idx];
+  }
 }

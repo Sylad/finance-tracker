@@ -384,6 +384,10 @@ export function useImportLogs() {
   return useQuery({
     queryKey: qkImportLogs.all(),
     queryFn: () => api.get<ImportLog[]>('/import-logs'),
-    refetchInterval: 5000,
+    // Polling rapide quand au moins 1 import est en cours, sinon mou.
+    refetchInterval: (q) => {
+      const data = q.state.data as ImportLog[] | undefined;
+      return data?.some((l) => l.status === 'in-progress') ? 2000 : 10000;
+    },
   });
 }
