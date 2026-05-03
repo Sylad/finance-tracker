@@ -193,6 +193,47 @@ export class AutoSyncService {
     }
   }
 
+  // Whitelist stricte des organismes de crédit français reconnus
+  // (membres ASF + acteurs BNPL + filiales banques spécialisées en crédit conso).
+  // Si Claude met `creditor` à autre chose (BPCE Assurances, Predica, EDF…),
+  // on n'auto-crée PAS de Loan : la suggestion reste pending pour tri manuel.
+  // Source : REGAFI ACPR + Association française des Sociétés Financières.
+  private readonly KNOWN_LOAN_CREDITORS = new Set([
+    // Filiales bancaires spécialisées crédit conso
+    'cetelem',                            // BNP Paribas Personal Finance
+    'cofinoga',                           // BNP
+    'sofinco',                            // CA Consumer Finance
+    'ca consumer finance',
+    'creditas',
+    'crédit agricole consumer finance',
+    'franfinance',                        // Société Générale
+    'societe generale insurance financial services',
+    'floa',                               // BPCE
+    'bpce financement',
+    'banque postale consumer finance',
+    'lbp consumer finance',
+    'monabanq',                           // Crédit Mutuel
+    // Indépendants / spécialistes
+    'cofidis',
+    'carrefour banque',
+    'banque casino',
+    'oney',                               // Auchan / BPCE
+    'younited',
+    'younited credit',
+    // BNPL (Buy Now Pay Later)
+    'klarna',
+    'alma',
+    'pledg',
+    'paypal credit',
+    // Constructeurs auto / financements spécifiques
+    'cofica bail',
+    'diac',                               // Renault Finance
+    'rci banque',                         // Renault
+    'psa bank',                           // Stellantis
+    'volkswagen financial services',
+    'bnp paribas personal finance',
+  ]);
+
   private async autoCreateLoansFromSuggestions(): Promise<void> {
     const suggestions = await this.suggestions.getPending();
 
@@ -202,6 +243,8 @@ export class AutoSyncService {
     for (const s of suggestions) {
       if (s.suggestedType !== 'loan' || !s.creditor) continue;
       const key = s.creditor.toLowerCase().trim();
+      // Only auto-create if creditor is in our whitelist of real French lenders
+      if (!this.KNOWN_LOAN_CREDITORS.has(key)) continue;
       if (!byCreditor.has(key)) byCreditor.set(key, []);
       byCreditor.get(key)!.push(s as SuggWithCreditor);
     }
