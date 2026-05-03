@@ -33,7 +33,11 @@ export function validateLoanInput(raw: unknown): LoanInput {
 
   const isActive = r.isActive !== false;
 
-  const base: LoanInput = { name, type, category, monthlyPayment, matchPattern, isActive };
+  // Optional creditor + contract reference (free text, trimmed)
+  const creditor = typeof r.creditor === 'string' ? r.creditor.trim() : undefined;
+  const contractRef = typeof r.contractRef === 'string' ? r.contractRef.trim() : undefined;
+
+  const base: LoanInput = { name, type, category, monthlyPayment, matchPattern, isActive, creditor: creditor || undefined, contractRef: contractRef || undefined };
 
   if (type === 'classic') {
     const startDate = typeof r.startDate === 'string' ? r.startDate : '';

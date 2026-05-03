@@ -303,6 +303,9 @@ export interface LoanOccurrence {
   description?: string;
 }
 
+// Marker for the Loan type (placed here for proximity to LoanOccurrence)
+// The full Loan interface lives further down in this file already.
+
 export interface Loan {
   id: string;
   name: string;
@@ -312,6 +315,7 @@ export interface Loan {
   matchPattern: string;
   isActive: boolean;
   creditor?: string;
+  contractRef?: string;
   startDate?: string;
   endDate?: string;
   initialPrincipal?: number;

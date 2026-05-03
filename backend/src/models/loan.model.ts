@@ -19,6 +19,7 @@ export interface Loan {
   matchPattern: string;
   isActive: boolean;
   creditor?: string;
+  contractRef?: string;  // N° de contrat manuel — prioritaire sur matchPattern
   // Classic
   startDate?: string;
   endDate?: string;

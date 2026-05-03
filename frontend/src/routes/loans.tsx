@@ -17,6 +17,7 @@ const DEFAULT: LoanInput = {
   matchPattern: '',
   isActive: true,
   creditor: '',
+  contractRef: '',
   startDate: '',
   endDate: '',
 };
@@ -237,7 +238,7 @@ function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => voi
           <Banknote className="h-4 w-4 text-accent" />
           <div>
             <div className="font-display font-semibold text-fg-bright">{loan.name}</div>
-            {loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}
+            <>{loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}{loan.contractRef && <span className="text-xs text-fg-dim font-mono ml-2">#{loan.contractRef}</span>}</>
             <div className="text-xs text-fg-dim">{LOAN_CATEGORY_LABELS[loan.category]} · {formatEUR(loan.monthlyPayment)}/mois</div>
           </div>
         </div>
@@ -314,7 +315,7 @@ function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => v
           <CreditCard className="h-4 w-4 text-warning" />
           <div>
             <div className="font-display font-semibold text-fg-bright">{loan.name}</div>
-            {loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}
+            <>{loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}{loan.contractRef && <span className="text-xs text-fg-dim font-mono ml-2">#{loan.contractRef}</span>}</>
             <div className="text-xs text-fg-dim">Revolving · {formatEUR(loan.monthlyPayment)}/mois</div>
           </div>
         </div>
@@ -355,7 +356,7 @@ function ClosedCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void
           <span className="inline-block w-2 h-2 rounded-full bg-negative shrink-0 mt-1.5" />
           <div>
             <div className="font-display font-semibold text-fg-bright">{loan.name}</div>
-            {loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}
+            <>{loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}{loan.contractRef && <span className="text-xs text-fg-dim font-mono ml-2">#{loan.contractRef}</span>}</>
             <div className="text-xs text-fg-dim">Terminé · {LOAN_CATEGORY_LABELS[loan.category]}</div>
           </div>
         </div>
@@ -406,11 +407,15 @@ function LoanForm({ init, onSave, onCancel, busy }: { init: LoanInput; onSave: (
               <input className="input tabular" type="number" step="0.01" required value={form.monthlyPayment}
                      onChange={(e) => setForm({ ...form, monthlyPayment: Number(e.target.value) })} />
             </Field>
-            <Field label="Pattern (regex)">
-              <input className="input font-mono text-xs" placeholder="PRELEVT.*BANQUE" value={form.matchPattern}
-                     onChange={(e) => setForm({ ...form, matchPattern: e.target.value })} />
+            <Field label="N° de contrat (prioritaire)">
+              <input className="input font-mono text-xs" placeholder="ex: 51215116521100" value={form.contractRef ?? ''}
+                     onChange={(e) => setForm({ ...form, contractRef: e.target.value })} />
             </Field>
           </div>
+          <Field label="Pattern (regex, fallback si pas de n° de contrat)">
+            <input className="input font-mono text-xs" placeholder="PRELEVT.*BANQUE" value={form.matchPattern}
+                   onChange={(e) => setForm({ ...form, matchPattern: e.target.value })} />
+          </Field>
           {form.type === 'classic' ? (
             <div className="grid grid-cols-2 gap-3">
               <Field label="Date début">
