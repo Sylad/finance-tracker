@@ -21,7 +21,10 @@ export function validateSavingsAccountInput(raw: unknown): SavingsAccountInput {
     throw new BadRequestException('initialBalanceDate doit être YYYY-MM-DD');
   }
 
-  const matchPattern = typeof r.matchPattern === 'string' ? r.matchPattern.trim() : '';
+  // Strip leading inline flags (?i), (?m), etc. — JS ne supporte pas, on ajoute 'i' au runtime.
+  const matchPattern = typeof r.matchPattern === 'string'
+    ? r.matchPattern.trim().replace(/^\(\?[a-zA-Z]+\)/, '')
+    : '';
   if (matchPattern) {
     try { new RegExp(matchPattern, 'i'); } catch {
       throw new BadRequestException(`matchPattern n'est pas un regex valide: ${matchPattern}`);
