@@ -188,24 +188,24 @@ export class AutoSyncService {
     for (const loan of loans) {
       if (!loan.isActive) continue;
 
-      // Build a matcher: contractRef takes priority — when set, ONLY transactions
-      // whose description contains the ref will be matched. Otherwise fall back
-      // to the regex matchPattern.
-      let matcher: (description: string) => boolean;
-      if (loan.contractRef) {
-        const ref = loan.contractRef.toLowerCase();
-        matcher = (desc) => desc.toLowerCase().includes(ref);
-      } else if (loan.matchPattern) {
-        try {
-          const regex = new RegExp(loan.matchPattern, 'i');
-          matcher = (desc) => regex.test(desc);
-        } catch {
-          this.logger.warn(`Invalid regex on loan ${loan.id}: ${loan.matchPattern}`);
-          continue;
-        }
-      } else {
-        continue;
+      // Build a matcher. We combine signals:
+      // - contractRef must be present in description (substring, case-insensitive)
+      // - AND if matchPattern is set too, the regex must also match
+      // - if only one of the two is set, that one is the sole criterion
+      // - if neither, the loan can't be auto-synced
+      let regex: RegExp | null = null;
+      if (loan.matchPattern) {
+        try { regex = new RegExp(loan.matchPattern, 'i'); }
+        catch { this.logger.warn(`Invalid regex on loan ${loan.id}: ${loan.matchPattern}`); continue; }
       }
+      const ref = loan.contractRef?.toLowerCase().trim();
+      if (!ref && !regex) continue;
+      const matcher = (desc: string): boolean => {
+        const lower = desc.toLowerCase();
+        if (ref && !lower.includes(ref)) return false;
+        if (regex && !regex.test(desc)) return false;
+        return true;
+      };
 
       // Anti-pattern: exclude card / immediate-debit transactions that match
       // the regex but are NOT credit repayments. Common LBP/Carrefour Banque
