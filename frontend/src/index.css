@@ -166,3 +166,26 @@
   margin-bottom: 4px !important;
   font-weight: 600;
 }
+
+/* Shimmer bar — barre lumineuse qui balaye, pour les états loading */
+@keyframes shimmer-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+.shimmer-bar {
+  position: relative;
+  height: 2px;
+  background: hsl(var(--surface-3));
+  overflow: hidden;
+  border-radius: 1px;
+}
+.shimmer-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 25%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, hsl(var(--accent-bright)) 50%, transparent 100%);
+  animation: shimmer-slide 1.6s ease-in-out infinite;
+}

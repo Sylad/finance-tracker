@@ -83,18 +83,27 @@ export function UploadPage() {
       {files.length > 0 && (
         <section className="card divide-y divide-border mb-6">
           {files.map((f, i) => (
-            <div key={`${f.name}-${i}`} className="flex items-center gap-3 px-4 py-3">
-              <FileText className="h-4 w-4 text-fg-dim shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm text-fg-bright truncate">{f.name}</div>
-                <div className="text-xs text-fg-dim tabular">{(f.size / 1024).toFixed(0)} Ko</div>
+            <div key={`${f.name}-${i}`} className="px-4 py-3">
+              <div className="flex items-center gap-3">
+                <FileText className={cn('h-4 w-4 shrink-0', upload.isPending ? 'text-accent-bright' : 'text-fg-dim')} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-fg-bright truncate">{f.name}</div>
+                  <div className="text-xs text-fg-dim tabular">
+                    {(f.size / 1024).toFixed(0)} Ko {upload.isPending && '· Claude analyse…'}
+                  </div>
+                </div>
+                {upload.isPending ? (
+                  <Loader2 className="h-4 w-4 text-accent-bright animate-spin" />
+                ) : (
+                  <button
+                    onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
+                    className="btn-ghost p-1.5"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
-              <button
-                onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
-                className="btn-ghost p-1.5"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+              {upload.isPending && <div className="shimmer-bar mt-2" />}
             </div>
           ))}
           <div className="px-4 py-3 bg-surface-2 flex items-center justify-between">
