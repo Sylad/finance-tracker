@@ -174,6 +174,7 @@ export function StatementDetailPage() {
                     <Pie
                       data={categoryBreakdown}
                       dataKey="value"
+                      nameKey="label"
                       cx="50%"
                       cy="50%"
                       innerRadius={45}
@@ -196,7 +197,7 @@ export function StatementDetailPage() {
                     </Pie>
                     <Tooltip
                       {...chartTooltipProps}
-                      formatter={(v: number) => [formatEUR(v), '']}
+                      formatter={(v: number, name: string) => [formatEUR(v), name]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
