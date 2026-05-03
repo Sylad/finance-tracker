@@ -237,33 +237,54 @@ export class AutoSyncService {
   private async autoCreateLoansFromSuggestions(): Promise<void> {
     const suggestions = await this.suggestions.getPending();
 
-    // Group loan-type suggestions by creditor
+    // Group loan-type suggestions by (creditor + monthlyAmount rounded).
+    // A single creditor can have multiple credits (e.g., Carrefour Banque a une
+    // réserve + une carte Pass), each with a distinct monthly payment.
+    // Grouping by montant arrondi évite de fusionner ces sous-crédits.
     type SuggWithCreditor = (typeof suggestions)[number] & { creditor: string };
-    const byCreditor = new Map<string, SuggWithCreditor[]>();
+    const byKey = new Map<string, SuggWithCreditor[]>();
     for (const s of suggestions) {
       if (s.suggestedType !== 'loan' || !s.creditor) continue;
-      const key = s.creditor.toLowerCase().trim();
-      // Only auto-create if creditor is in our whitelist of real French lenders
-      if (!this.KNOWN_LOAN_CREDITORS.has(key)) continue;
-      if (!byCreditor.has(key)) byCreditor.set(key, []);
-      byCreditor.get(key)!.push(s as SuggWithCreditor);
+      const creditorKey = s.creditor.toLowerCase().trim();
+      if (!this.KNOWN_LOAN_CREDITORS.has(creditorKey)) continue;
+      // Round to nearest euro for the bucket key (accommodates 99.37 vs 99.50 etc.)
+      const amountKey = Math.round(s.monthlyAmount).toString();
+      const groupKey = `${creditorKey}|${amountKey}`;
+      if (!byKey.has(groupKey)) byKey.set(groupKey, []);
+      byKey.get(groupKey)!.push(s as SuggWithCreditor);
     }
 
-    // For each creditor with no existing Loan, auto-create one
+    // For each (creditor, amount) bucket, auto-create one Loan UNLESS a similar
+    // Loan already exists. "Similar" = same creditor field AND monthlyPayment
+    // within ±5€ of the bucket amount, OR a manual loan whose name contains
+    // the creditor string and matching monthlyPayment.
     const existingLoans = await this.loans.getAll();
-    const existingCreditors = new Set(
-      existingLoans.map((l) => (l.creditor ?? '').toLowerCase().trim()).filter(Boolean),
-    );
 
-    for (const [creditorKey, sugs] of byCreditor.entries()) {
-      if (existingCreditors.has(creditorKey)) continue;
+    for (const [groupKey, sugs] of byKey.entries()) {
+      const [creditorKey, amountStr] = groupKey.split('|');
+      const bucketAmount = Number(amountStr);
+      const matchedExisting = existingLoans.some((l) => {
+        const sameAmount = Math.abs(l.monthlyPayment - bucketAmount) < 5;
+        if (!sameAmount) return false;
+        const c = (l.creditor ?? '').toLowerCase().trim();
+        if (c && c === creditorKey) return true;
+        if (l.name.toLowerCase().includes(creditorKey)) return true;
+        return false;
+      });
+      if (matchedExisting) continue;
       const totalMonthly = sugs.reduce((sum, s) => sum + s.monthlyAmount, 0);
       const avgMonthly = Math.round((totalMonthly / sugs.length) * 100) / 100;
       const creditor = sugs[0].creditor;
+      // Name disambiguation: if more than one bucket exists for this creditor,
+      // suffix with the amount so the user sees them as distinct.
+      const sameCreditorBuckets = [...byKey.keys()].filter((k) => k.startsWith(creditorKey + '|'));
+      const name = sameCreditorBuckets.length > 1
+        ? `${creditor} (${avgMonthly.toFixed(2)} €/mois)`
+        : creditor;
       const escaped = creditor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const matchPattern = escaped.split(/\s+/).join('.*');
       await this.loans.create({
-        name: creditor,
+        name,
         type: 'classic',
         category: 'consumer',
         monthlyPayment: avgMonthly,
@@ -271,8 +292,7 @@ export class AutoSyncService {
         isActive: true,
         creditor,
       });
-      this.logger.log(`Auto-created Loan for creditor ${creditor} (avg ${avgMonthly}€/mois)`);
-      // Snooze all suggestions for this creditor (they're now covered by the auto-created loan)
+      this.logger.log(`Auto-created Loan ${name} (avg ${avgMonthly}€/mois)`);
       for (const s of sugs) {
         try {
           await this.suggestions.snooze(s.id);
@@ -288,8 +308,11 @@ export class AutoSyncService {
     const sortedMonths = allStatements
       .map((s) => `${s.year}-${String(s.month).padStart(2, '0')}`)
       .sort();
-    if (sortedMonths.length < 3) return; // not enough history yet
-    const recentMonths = new Set(sortedMonths.slice(-3));
+    if (sortedMonths.length < 2) return; // not enough history yet
+    // A loan is considered stale if NOT seen in the 2 most recent statement
+    // months (we tolerate one month gap since a monthly debit can occasionally
+    // skip — e.g., creditor changes payment date).
+    const recentMonths = new Set(sortedMonths.slice(-2));
 
     // Skip loans created in the last 60 seconds — they were just auto-created
     // and haven't had a chance to accumulate occurrences yet (sync runs the

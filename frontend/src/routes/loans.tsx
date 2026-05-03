@@ -36,6 +36,7 @@ export function LoansPage() {
   const items = data ?? [];
   const classics = items.filter((l) => l.type === 'classic' && l.isActive);
   const revolvings = items.filter((l) => l.type === 'revolving' && l.isActive);
+  const closed = items.filter((l) => !l.isActive);
   const totalMonthly = items.filter((l) => l.isActive).reduce((s, l) => s + l.monthlyPayment, 0);
 
   const handleSave = async (input: LoanInput) => {
@@ -99,6 +100,21 @@ export function LoansPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {revolvings.map((l) => (
                   <RevolvingCard key={l.id} loan={l} onEdit={() => setEditing(l)} onDelete={() => confirm(`Supprimer ${l.name} ?`) && remove.mutate(l.id)} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {closed.length > 0 && (
+            <section>
+              <h2 className="font-display text-sm uppercase tracking-wider text-negative mb-3 flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-negative" />
+                Crédits terminés ({closed.length})
+              </h2>
+              <p className="text-xs text-fg-dim mb-3">Ces crédits n'ont plus eu de mensualité dans les 2 derniers relevés. Ils ne sont plus comptés dans la charge mensuelle.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {closed.map((l) => (
+                  <ClosedCard key={l.id} loan={l} onEdit={() => setEditing(l)} onDelete={() => confirm(`Supprimer définitivement ${l.name} ?`) && remove.mutate(l.id)} />
                 ))}
               </div>
             </section>
@@ -277,6 +293,34 @@ function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => v
         <RefreshCw className={`h-3 w-3 ${resync.isPending ? 'animate-spin' : ''}`} />
         {resync.isPending ? 'Re-scan en cours…' : 'Re-scanner les relevés'}
       </button>
+    </div>
+  );
+}
+
+function ClosedCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
+  const lastOcc = [...loan.occurrencesDetected].sort((a, b) => b.date.localeCompare(a.date))[0];
+  const totalRepaid = loan.occurrencesDetected.reduce((s, o) => s + Math.abs(o.amount), 0);
+  return (
+    <div className="card p-5 border-l-4 border-l-negative opacity-80">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-2 h-2 rounded-full bg-negative shrink-0 mt-1.5" />
+          <div>
+            <div className="font-display font-semibold text-fg-bright">{loan.name}</div>
+            {loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}
+            <div className="text-xs text-fg-dim">Terminé · {LOAN_CATEGORY_LABELS[loan.category]}</div>
+          </div>
+        </div>
+        <div className="flex gap-1">
+          <button onClick={onEdit} className="btn-ghost p-1.5"><Pencil className="h-3.5 w-3.5" /></button>
+          <button onClick={onDelete} className="btn-ghost p-1.5 hover:text-negative"><Trash2 className="h-3.5 w-3.5" /></button>
+        </div>
+      </div>
+      <div className="text-xs text-fg-muted tabular space-y-0.5">
+        <div>{loan.occurrencesDetected.length} mensualité{loan.occurrencesDetected.length > 1 ? 's' : ''} prélevée{loan.occurrencesDetected.length > 1 ? 's' : ''}</div>
+        <div>Total remboursé estimé : <span className="text-fg-bright">{formatEUR(totalRepaid)}</span></div>
+        {lastOcc && <div>Dernière mensualité : {lastOcc.date}</div>}
+      </div>
     </div>
   );
 }
