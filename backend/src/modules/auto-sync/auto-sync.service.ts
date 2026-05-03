@@ -39,6 +39,19 @@ export class AutoSyncService {
   }
 
   /**
+   * Re-évalue le statut actif/inactif de tous les crédits sans avoir besoin
+   * de ré-importer un PDF. Utile après un changement de seuil ou pour rafraîchir
+   * manuellement.
+   */
+  async recomputeLoanStatuses(): Promise<{ deactivated: number }> {
+    const before = (await this.loans.getAll()).filter((l) => l.isActive).length;
+    await this.autoDeactivateStaleLoans();
+    const after = (await this.loans.getAll()).filter((l) => l.isActive).length;
+    this.bus.emit('accounts-synced');
+    return { deactivated: before - after };
+  }
+
+  /**
    * Auto-discovery : pour chaque compte épargne externe affiché dans le PDF qui n'est
    * pas encore connu (par accountNumber), on le crée avec defaults intelligents.
    */
