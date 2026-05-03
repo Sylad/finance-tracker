@@ -340,7 +340,10 @@ export class AnthropicService {
   }
 
   private async runPhase1(base64Pdf: string, maxTokens: number) {
-    return this.client.messages.create({
+    // Use streaming API: required by the SDK when max_tokens is high enough
+    // that the non-streaming timeout (10 min default) might be exceeded.
+    // finalMessage() returns the same shape as messages.create() once done.
+    const stream = this.client.messages.stream({
       model: 'claude-sonnet-4-5',
       max_tokens: maxTokens,
       system: "Tu es un spécialiste de l'extraction de données bancaires. Extrais toutes les transactions du PDF de relevé bancaire en appelant l'outil extract_transactions. Sois exhaustif — inclus chaque transaction. Utilise des libellés courts (60 caractères max). Si le PDF contient une section 'Vos autres comptes' (ou équivalent listant les soldes d'autres comptes du client : Livret A, PEL, etc.), remplis externalAccountBalances. Pour chaque virement (libellé débutant par 'VIREMENT POUR' ou similaire), si le libellé mentionne un numéro de compte destinataire, capture-le dans targetAccountNumber.",
@@ -354,5 +357,6 @@ export class AnthropicService {
         ],
       }],
     });
+    return stream.finalMessage();
   }
 }
