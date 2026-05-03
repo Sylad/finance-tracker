@@ -32,13 +32,14 @@ export class LoanSuggestionsService {
     const now = new Date().toISOString();
     let dirty = false;
     for (const inc of incoming) {
-      const existing = all.find((s) => this.normalizePattern(s.matchPattern) === this.normalizePattern(inc.matchPattern));
+      const existing = all.find((s) => this.dedupKey(s) === this.dedupKey(inc));
       if (existing) {
         if (existing.status === 'rejected') continue;
         existing.occurrencesSeen = inc.occurrencesSeen;
         existing.lastSeenDate = inc.firstSeenDate;
         existing.monthlyAmount = inc.monthlyAmount;
         existing.label = inc.label;
+        if (inc.creditor && !existing.creditor) existing.creditor = inc.creditor;
         dirty = true;
       } else {
         all.push({
@@ -51,6 +52,7 @@ export class LoanSuggestionsService {
           lastSeenDate: inc.firstSeenDate,
           suggestedType: inc.suggestedType,
           matchPattern: inc.matchPattern,
+          ...(inc.creditor ? { creditor: inc.creditor } : {}),
           status: 'pending',
           createdAt: now,
         });
@@ -58,6 +60,11 @@ export class LoanSuggestionsService {
       }
     }
     if (dirty) await this.persist(all);
+  }
+
+  private dedupKey(s: { creditor?: string; matchPattern: string }): string {
+    if (s.creditor && s.creditor.trim()) return 'creditor:' + s.creditor.toLowerCase().trim();
+    return 'pattern:' + s.matchPattern.toLowerCase().replace(/\s+/g, ' ').trim();
   }
 
   async accept(id: string, loanId: string): Promise<LoanSuggestion> {
@@ -81,10 +88,6 @@ export class LoanSuggestionsService {
     if (loanId) all[idx].acceptedAsLoanId = loanId;
     await this.persist(all);
     return all[idx];
-  }
-
-  private normalizePattern(p: string): string {
-    return p.toLowerCase().replace(/\s+/g, ' ').trim();
   }
 
   private async persist(all: LoanSuggestion[]): Promise<void> {

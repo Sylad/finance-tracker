@@ -15,6 +15,7 @@ const DEFAULT: LoanInput = {
   monthlyPayment: 0,
   matchPattern: '',
   isActive: true,
+  creditor: '',
   startDate: '',
   endDate: '',
 };
@@ -75,12 +76,13 @@ export function LoansPage() {
           setEditing(null);
           setCreating(true);
           setPrefilled({
-            name: s.label,
+            name: s.creditor ?? s.label,
             type: 'classic',
             category: 'consumer',
             monthlyPayment: s.monthlyAmount,
             matchPattern: s.matchPattern,
             isActive: true,
+            creditor: s.creditor,
             startDate: s.firstSeenDate,
           });
           setSuggestionToAccept(s.id);
@@ -170,6 +172,7 @@ function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => voi
           <Banknote className="h-4 w-4 text-accent" />
           <div>
             <div className="font-display font-semibold text-fg-bright">{loan.name}</div>
+            {loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}
             <div className="text-xs text-fg-dim">{LOAN_CATEGORY_LABELS[loan.category]} · {formatEUR(loan.monthlyPayment)}/mois</div>
           </div>
         </div>
@@ -245,6 +248,7 @@ function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => v
           <CreditCard className="h-4 w-4 text-warning" />
           <div>
             <div className="font-display font-semibold text-fg-bright">{loan.name}</div>
+            {loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}
             <div className="text-xs text-fg-dim">Revolving · {formatEUR(loan.monthlyPayment)}/mois</div>
           </div>
         </div>
@@ -284,6 +288,9 @@ function LoanForm({ init, onSave, onCancel, busy }: { init: LoanInput; onSave: (
           <button onClick={onCancel} className="btn-ghost p-1"><X className="h-4 w-4" /></button>
         </div>
         <form className="p-5 space-y-3" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+          <Field label="Organisme (Cofidis, Sofinco, ...)">
+            <input className="input" value={form.creditor ?? ''} onChange={(e) => setForm({ ...form, creditor: e.target.value || undefined })} placeholder="ex: COFIDIS" />
+          </Field>
           <Field label="Nom"><input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Type">

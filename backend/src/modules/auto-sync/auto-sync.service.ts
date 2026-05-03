@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SavingsService } from '../savings/savings.service';
 import { LoansService } from '../loans/loans.service';
 import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
+import { StorageService } from '../storage/storage.service';
 import { EventBusService } from '../events/event-bus.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
@@ -21,6 +22,7 @@ export class AutoSyncService {
     private readonly savings: SavingsService,
     private readonly loans: LoansService,
     private readonly suggestions: LoanSuggestionsService,
+    private readonly storage: StorageService,
     private readonly bus: EventBusService,
   ) {}
 
@@ -31,6 +33,8 @@ export class AutoSyncService {
     if (claudeSuggestions.length > 0) {
       await this.suggestions.upsertMany(statement.id, claudeSuggestions);
     }
+    await this.autoCreateLoansFromSuggestions();
+    await this.autoDeactivateStaleLoans();
     this.bus.emit('accounts-synced');
   }
 
@@ -185,6 +189,79 @@ export class AutoSyncService {
           amount: t.amount,
           transactionId: t.id,
         });
+      }
+    }
+  }
+
+  private async autoCreateLoansFromSuggestions(): Promise<void> {
+    const suggestions = await this.suggestions.getPending();
+
+    // Group loan-type suggestions by creditor
+    type SuggWithCreditor = (typeof suggestions)[number] & { creditor: string };
+    const byCreditor = new Map<string, SuggWithCreditor[]>();
+    for (const s of suggestions) {
+      if (s.suggestedType !== 'loan' || !s.creditor) continue;
+      const key = s.creditor.toLowerCase().trim();
+      if (!byCreditor.has(key)) byCreditor.set(key, []);
+      byCreditor.get(key)!.push(s as SuggWithCreditor);
+    }
+
+    // For each creditor with no existing Loan, auto-create one
+    const existingLoans = await this.loans.getAll();
+    const existingCreditors = new Set(
+      existingLoans.map((l) => (l.creditor ?? '').toLowerCase().trim()).filter(Boolean),
+    );
+
+    for (const [creditorKey, sugs] of byCreditor.entries()) {
+      if (existingCreditors.has(creditorKey)) continue;
+      const totalMonthly = sugs.reduce((sum, s) => sum + s.monthlyAmount, 0);
+      const avgMonthly = Math.round((totalMonthly / sugs.length) * 100) / 100;
+      const creditor = sugs[0].creditor;
+      const escaped = creditor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const matchPattern = escaped.split(/\s+/).join('.*');
+      await this.loans.create({
+        name: creditor,
+        type: 'classic',
+        category: 'consumer',
+        monthlyPayment: avgMonthly,
+        matchPattern,
+        isActive: true,
+        creditor,
+      });
+      this.logger.log(`Auto-created Loan for creditor ${creditor} (avg ${avgMonthly}€/mois)`);
+      // Snooze all suggestions for this creditor (they're now covered by the auto-created loan)
+      for (const s of sugs) {
+        try {
+          await this.suggestions.snooze(s.id);
+        } catch { /* ignore */ }
+      }
+    }
+  }
+
+  private async autoDeactivateStaleLoans(): Promise<void> {
+    const loans = await this.loans.getAll();
+    const allStatements = await this.storage.getAllStatements();
+    // Build sorted list of statement months (YYYY-MM)
+    const sortedMonths = allStatements
+      .map((s) => `${s.year}-${String(s.month).padStart(2, '0')}`)
+      .sort();
+    if (sortedMonths.length < 3) return; // not enough history yet
+    const recentMonths = new Set(sortedMonths.slice(-3));
+
+    for (const loan of loans) {
+      if (!loan.isActive) continue;
+      const seenInRecent = loan.occurrencesDetected.some((o) => {
+        const m = o.date.slice(0, 7);
+        return recentMonths.has(m);
+      });
+      if (!seenInRecent) {
+        const { id: _id, occurrencesDetected: _occ, createdAt: _ca, updatedAt: _ua, ...loanInput } = loan;
+        void _id; void _occ; void _ca; void _ua;
+        await this.loans.update(loan.id, {
+          ...loanInput,
+          isActive: false,
+        });
+        this.logger.log(`Auto-deactivated loan ${loan.name} (no occurrence in last 3 months)`);
       }
     }
   }
