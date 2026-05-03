@@ -28,19 +28,31 @@ export function UploadPage() {
     });
   };
 
+  const [connectionLost, setConnectionLost] = useState(false);
+
   const handleSubmit = async () => {
     if (files.length === 0) return;
     setResult(null);
+    setConnectionLost(false);
     try {
       const r = await upload.mutateAsync(files);
       setResult(r);
       setFiles([]);
     } catch (e) {
-      setResult({
-        succeeded: [],
-        skipped: [],
-        failed: [{ filename: 'upload', error: String((e as Error).message) }],
-      });
+      const msg = String((e as Error).message);
+      // Connexion coupée (timeout nginx 504, déconnexion réseau, rebuild conteneur…)
+      // → ne PAS afficher comme échec : le backend traite peut-être encore.
+      // L'historique des imports en bas montre l'état réel via polling 5s.
+      if (msg.includes('504') || msg.toLowerCase().includes('failed to fetch')) {
+        setConnectionLost(true);
+        setFiles([]);
+      } else {
+        setResult({
+          succeeded: [],
+          skipped: [],
+          failed: [{ filename: 'upload', error: msg }],
+        });
+      }
     }
   };
 
@@ -118,6 +130,20 @@ export function UploadPage() {
         </section>
       )}
 
+      {connectionLost && (
+        <section className="card p-4 mb-6 border-l-4 border-l-warning bg-warning/5">
+          <div className="flex items-start gap-3">
+            <Loader2 className="h-5 w-5 text-warning shrink-0 mt-0.5 animate-spin" />
+            <div className="flex-1">
+              <div className="font-medium text-fg-bright">Connexion fermée — l'analyse continue côté serveur</div>
+              <div className="text-xs text-fg-muted mt-1 leading-relaxed">
+                La requête a été coupée (souvent un timeout réseau pour les uploads longs), mais Claude continue à traiter tes PDFs en arrière-plan.
+                Suis l'historique des imports ci-dessous : il se rafraîchit toutes les 5 secondes et tu verras chaque fichier passer de "Analyse en cours" à son résultat final.
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
       {result && <UploadReport result={result} />}
       <ImportHistory />
     </>
@@ -184,24 +210,38 @@ function ImportHistory() {
   const { data } = useImportLogs();
   const items = (data ?? []).slice(0, 20);
   if (items.length === 0) return null;
+  const inProgressCount = items.filter((it) => it.status === 'in-progress').length;
   return (
     <section className="card p-5 mt-6">
-      <div className="flex items-center gap-2 mb-3">
-        <HistoryIcon className="h-4 w-4 text-fg-dim" />
-        <div className="stat-label">Historique des imports ({items.length})</div>
+      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <HistoryIcon className="h-4 w-4 text-fg-dim" />
+          <div className="stat-label">Historique des imports ({items.length})</div>
+        </div>
+        {inProgressCount > 0 && (
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/30 text-accent-bright text-xs font-medium">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {inProgressCount} analyse{inProgressCount > 1 ? 's' : ''} en cours
+          </div>
+        )}
       </div>
       <div className="divide-y divide-border">
         {items.map((it) => (
-          <div key={it.id} className="flex items-center gap-3 py-2.5 text-sm">
-            {it.status === 'success'
-              ? <CheckCircle2 className="h-4 w-4 text-positive shrink-0" />
-              : <AlertCircle className="h-4 w-4 text-negative shrink-0" />}
+          <div key={it.id} className={cn(
+            'flex items-center gap-3 py-2.5 text-sm relative',
+            it.status === 'in-progress' && 'bg-accent/5 -mx-5 px-5',
+          )}>
+            {it.status === 'in-progress' && <Loader2 className="h-4 w-4 text-accent-bright shrink-0 animate-spin" />}
+            {it.status === 'success' && <CheckCircle2 className="h-4 w-4 text-positive shrink-0" />}
+            {it.status === 'error' && <AlertCircle className="h-4 w-4 text-negative shrink-0" />}
             <div className="flex-1 min-w-0">
               <div className="text-fg-bright truncate">{it.filename}</div>
               <div className="text-xs text-fg-dim">
                 {new Date(it.uploadedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
-                {' · '}
-                {(it.durationMs / 1000).toFixed(1)}s
+                {it.status === 'in-progress' && (
+                  <> · <span className="text-accent-bright">Claude analyse… ({Math.round((Date.now() - new Date(it.uploadedAt).getTime()) / 1000)}s)</span></>
+                )}
+                {it.status !== 'in-progress' && <> · {(it.durationMs / 1000).toFixed(1)}s</>}
                 {it.status === 'success' && it.statementMonth && it.statementYear && (
                   <> · <span className="text-accent-bright">{formatMonth(it.statementMonth, it.statementYear)}</span></>
                 )}
@@ -209,6 +249,7 @@ function ImportHistory() {
                 {it.status === 'error' && <> · <span className="text-negative">{it.error}</span></>}
               </div>
             </div>
+            {it.status === 'in-progress' && <div className="shimmer-bar absolute left-5 right-5 bottom-0" />}
             {it.status === 'success' && it.statementId && (
               <Link
                 to="/history/$id"

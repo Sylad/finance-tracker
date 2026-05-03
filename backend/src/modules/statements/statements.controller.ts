@@ -73,11 +73,15 @@ export class StatementsController {
     if (!file) throw new NotFoundException('PDF requis pour re-analyser');
     const startedAt = Date.now();
     const uploadedAt = new Date().toISOString();
+    const pendingLog = await this.importLogs.log({
+      filename: file.originalname,
+      uploadedAt,
+      durationMs: 0,
+      status: 'in-progress',
+    });
     try {
       const result = await this.analysis.reanalyzeStatement(id, file.buffer);
-      await this.importLogs.log({
-        filename: file.originalname,
-        uploadedAt,
+      await this.importLogs.update(pendingLog.id, {
         durationMs: Date.now() - startedAt,
         status: 'success',
         statementId: result.statement.id,
@@ -87,9 +91,7 @@ export class StatementsController {
       });
       return result;
     } catch (e) {
-      await this.importLogs.log({
-        filename: file.originalname,
-        uploadedAt,
+      await this.importLogs.update(pendingLog.id, {
         durationMs: Date.now() - startedAt,
         status: 'error',
         error: (e as Error).message ?? 'Unknown error',

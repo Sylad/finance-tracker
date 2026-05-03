@@ -103,11 +103,16 @@ export class AnalysisController {
       // --- Analyse via Claude ---
       const startedAt = Date.now();
       const uploadedAt = new Date().toISOString();
+      // Log immédiat avec status=in-progress pour donner du retour live à l'UI
+      const pendingLog = await this.importLogs.log({
+        filename: file.originalname,
+        uploadedAt,
+        durationMs: 0,
+        status: 'in-progress',
+      });
       try {
         const response = await this.analysisService.analyzeAndPersist(pdfBuffer);
-        await this.importLogs.log({
-          filename: file.originalname,
-          uploadedAt,
+        await this.importLogs.update(pendingLog.id, {
           durationMs: Date.now() - startedAt,
           status: 'success',
           statementId: response.statement.id,
@@ -122,9 +127,7 @@ export class AnalysisController {
           e instanceof AnthropicParseError
             ? `Analyse échouée : ${e.message}`
             : 'Erreur inattendue lors de l\'analyse';
-        await this.importLogs.log({
-          filename: file.originalname,
-          uploadedAt,
+        await this.importLogs.update(pendingLog.id, {
           durationMs: Date.now() - startedAt,
           status: 'error',
           error: message,
