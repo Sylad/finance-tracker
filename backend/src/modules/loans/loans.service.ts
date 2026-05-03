@@ -179,25 +179,60 @@ export class LoansService {
       })[0];
     };
 
-    // Group occurrences by (rounded amount, stable reference)
-    const allGroups = new Map<string, { amount: number; ref: string; occurrences: LoanOccurrence[] }>();
-    for (const o of original.occurrencesDetected) {
-      const amount = Math.round(Math.abs(o.amount));
+    // Filter to debits only (loans are negative-amount transactions).
+    // Positive amounts (refunds, avoirs) are not credit repayments.
+    const debits = original.occurrencesDetected.filter((o) => o.amount < 0);
+    if (debits.length < 2) {
+      return { split: false, createdCount: 0, groups: [] };
+    }
+
+    // Cluster occurrences:
+    //  1) Group strictly by stable reference first (very strong signal).
+    //  2) Within each ref-group (or within "no ref"), cluster amounts with
+    //     a tolerance of ±5 % to absorb interest variations on the same loan.
+    type Bucket = { amount: number; ref: string; occurrences: LoanOccurrence[] };
+    const refGroups = new Map<string, LoanOccurrence[]>();
+    for (const o of debits) {
       const ref = stableRef(o.description);
-      const key = `${amount}|${ref}`;
-      if (!allGroups.has(key)) allGroups.set(key, { amount, ref, occurrences: [] });
-      allGroups.get(key)!.occurrences.push(o);
+      if (!refGroups.has(ref)) refGroups.set(ref, []);
+      refGroups.get(ref)!.push(o);
+    }
+
+    const allGroups = new Map<string, Bucket>();
+    for (const [ref, occList] of refGroups.entries()) {
+      // Sort by amount asc to cluster adjacent amounts
+      const sortedOcc = [...occList].sort((a, b) => Math.abs(a.amount) - Math.abs(b.amount));
+      const buckets: Bucket[] = [];
+      for (const o of sortedOcc) {
+        const amt = Math.abs(o.amount);
+        const last = buckets[buckets.length - 1];
+        // Same bucket if within ±5 % of the bucket's centre (avg of its amounts).
+        const lastAvg = last ? last.occurrences.reduce((s, x) => s + Math.abs(x.amount), 0) / last.occurrences.length : 0;
+        const tolerance = lastAvg * 0.05;
+        if (last && Math.abs(amt - lastAvg) <= tolerance) {
+          last.occurrences.push(o);
+        } else {
+          buckets.push({ amount: Math.round(amt), ref, occurrences: [o] });
+        }
+      }
+      // Re-key each bucket (use rounded median amount)
+      for (const b of buckets) {
+        const median = Math.round(b.occurrences.reduce((s, x) => s + Math.abs(x.amount), 0) / b.occurrences.length);
+        b.amount = median;
+        allGroups.set(`${median}|${ref}`, b);
+      }
     }
 
     // Filter to groups that LOOK LIKE a real credit:
-    //  - Seen across ≥ 2 distinct months (excludes one-off purchases)
-    //  - At most 1 occurrence per month (excludes card payments,
-    //    multiple impulse purchases, etc.)
+    //  - Seen across ≥ 3 distinct months (a credit lasts months/years)
+    //  - At most 1 occurrence per month (excludes card payments)
+    //  - For small amounts (< 30€), require ≥ 4 months (else likely subscription)
     const groups = new Map<string, { amount: number; ref: string; occurrences: LoanOccurrence[] }>();
     for (const [k, g] of allGroups.entries()) {
       const monthsSeen = new Set(g.occurrences.map((o) => o.date.slice(0, 7)));
       const maxPerMonth = Math.max(...[...monthsSeen].map((m) => g.occurrences.filter((o) => o.date.startsWith(m)).length));
-      if (monthsSeen.size >= 2 && maxPerMonth <= 1) groups.set(k, g);
+      const minMonths = g.amount < 30 ? 4 : 3;
+      if (monthsSeen.size >= minMonths && maxPerMonth <= 1) groups.set(k, g);
     }
 
     if (groups.size < 2) {
