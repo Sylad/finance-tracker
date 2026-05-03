@@ -7,4 +7,9 @@ export default () => ({
   maxFileSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB ?? '20', 10),
   appPin: process.env.APP_PIN ?? '',
   demoModeAvailable: process.env.DEMO_MODE_AVAILABLE !== 'false',
+  // Comma-separated list of host patterns that ALWAYS run in demo mode.
+  // Any request whose Host header contains one of these substrings is locked
+  // into demo (toggle disabled, banner permanent). Default covers Cloudflare
+  // quick tunnels.
+  demoForcedHosts: (process.env.DEMO_FORCED_HOSTS ?? 'trycloudflare.com').split(',').map((s) => s.trim()).filter(Boolean),
 });

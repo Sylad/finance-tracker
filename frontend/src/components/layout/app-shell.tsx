@@ -1,16 +1,28 @@
 import type { ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Sidebar } from './sidebar';
 import { BottomNav } from './bottom-nav';
 import { TopBar } from './top-bar';
 import { demoStore } from '@/lib/demo';
+import { api } from '@/lib/api';
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const status = useQuery({
+    queryKey: ['demo', 'status'],
+    queryFn: () => api.get<{ available: boolean; seeded: boolean; forced: boolean }>('/demo/status'),
+    retry: false,
+    staleTime: 60_000,
+  });
+  const forced = status.data?.forced === true;
+  const showBanner = forced || demoStore.isActive();
   return (
     <div className="min-h-screen">
-      {demoStore.isActive() && (
+      {showBanner && (
         <div className="bg-warning/20 border-b border-warning text-warning px-6 py-2 text-sm font-medium text-center">
-          🎭 Mode démo actif — données fictives.
-          <button onClick={() => demoStore.disable()} className="underline ml-2">Quitter</button>
+          🎭 Mode démo {forced && 'verrouillé '}— données fictives. Toutes les fonctionnalités sont actives, rien n'est partagé avec un vrai compte.
+          {!forced && (
+            <button onClick={() => demoStore.disable()} className="underline ml-2">Quitter</button>
+          )}
         </div>
       )}
       <Sidebar />

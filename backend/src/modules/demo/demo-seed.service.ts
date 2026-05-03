@@ -2,12 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { RequestDataDirService } from './request-data-dir.service';
 
 @Injectable()
 export class DemoSeedService {
   private readonly logger = new Logger(DemoSeedService.name);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly dataDir: RequestDataDirService,
+  ) {}
 
   private loadFixtures(): Record<string, unknown> {
     const fixturePath = path.join(__dirname, 'demo-fixtures.json');
@@ -46,9 +50,9 @@ export class DemoSeedService {
     }
   }
 
-  status(): { available: boolean; seeded: boolean } {
+  status(): { available: boolean; seeded: boolean; forced: boolean } {
     const available = this.config.get<boolean>('demoModeAvailable') ?? true;
     const sentinel = path.join(this.config.get<string>('dataDir')!, 'demo', '.seeded');
-    return { available, seeded: fs.existsSync(sentinel) };
+    return { available, seeded: fs.existsSync(sentinel), forced: this.dataDir.isForced() };
   }
 }
