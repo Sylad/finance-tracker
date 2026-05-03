@@ -4,7 +4,7 @@ import { AnthropicService, ClaudeAnalysisResult } from './anthropic.service';
 import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
 import { AutoSyncService } from '../auto-sync/auto-sync.service';
-import { MonthlyStatement, AnalysisResponse } from '../../models/monthly-statement.model';
+import { MonthlyStatement, AnalysisResponse, ExternalAccountBalance } from '../../models/monthly-statement.model';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
 import { FinancialHealthScore, ScoreTrend } from '../../models/financial-health-score.model';
@@ -129,7 +129,13 @@ export class AnalysisService {
       healthScore,
       recurringCredits,
       analysisNarrative: result.analysisNarrative ?? '',
-      externalAccountBalances: result.externalAccountBalances ?? [],
+      externalAccountBalances: (result.externalAccountBalances ?? []).map((b) => ({
+        accountNumber: b.accountNumber,
+        accountType: (['livret-a', 'pel', 'cel', 'ldds', 'pea'].includes(b.accountType) ? b.accountType : 'other') as ExternalAccountBalance['accountType'],
+        balance: b.balance,
+        label: b.label,
+        asOfDate: b.asOfDate,
+      })),
     };
   }
 
