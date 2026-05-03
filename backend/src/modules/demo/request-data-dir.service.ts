@@ -5,6 +5,7 @@ import * as path from 'path';
 
 interface RequestContext {
   demoMode: boolean;
+  forced: boolean;
 }
 
 @Injectable()
@@ -19,6 +20,10 @@ export class RequestDataDirService {
 
   isDemoMode(): boolean {
     return this.als.getStore()?.demoMode ?? false;
+  }
+
+  isForced(): boolean {
+    return this.als.getStore()?.forced ?? false;
   }
 
   getDataDir(): string {

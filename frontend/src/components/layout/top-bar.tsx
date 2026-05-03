@@ -9,11 +9,12 @@ import { cn } from '@/lib/utils';
 export function TopBar() {
   const demoStatus = useQuery({
     queryKey: ['demo', 'status'],
-    queryFn: () => api.get<{ available: boolean; seeded: boolean }>('/demo/status'),
+    queryFn: () => api.get<{ available: boolean; seeded: boolean; forced: boolean }>('/demo/status'),
     retry: false,
     staleTime: 60_000,
   });
   const demoOn = demoStore.isActive();
+  const forced = demoStatus.data?.forced === true;
 
   const handleToggle = async () => {
     if (demoOn) {
@@ -38,7 +39,7 @@ export function TopBar() {
           Finance Tracker
         </div>
       </Link>
-      {demoStatus.data?.available && (
+      {demoStatus.data?.available && !forced && (
         <button
           onClick={handleToggle}
           className={cn(
@@ -50,6 +51,12 @@ export function TopBar() {
           <Drama className="h-4 w-4" />
           {demoOn ? 'Quitter démo' : 'Mode démo'}
         </button>
+      )}
+      {forced && (
+        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-warning/15 border border-warning/30 text-warning text-xs font-medium">
+          <Drama className="h-3.5 w-3.5" />
+          Démo verrouillée
+        </span>
       )}
     </header>
   );
