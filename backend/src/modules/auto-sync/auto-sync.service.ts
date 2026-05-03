@@ -201,6 +201,7 @@ export class AutoSyncService {
           date: t.date,
           amount: t.amount,
           transactionId: t.id,
+          description: t.description,
         });
       }
     }
