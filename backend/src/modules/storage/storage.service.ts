@@ -82,7 +82,14 @@ export class StorageService implements OnModuleInit {
       // archive dir absent — fine
     }
 
-    return [...active, ...archived].sort((a, b) => {
+    // Defensive dedup: if a statement id exists both in active and archive
+    // (can happen if archival was interrupted or the user re-uploaded a past
+    // year), the active version wins (more recent).
+    const byId = new Map<string, MonthlyStatement>();
+    for (const s of archived) byId.set(s.id, s);
+    for (const s of active) byId.set(s.id, s); // overwrites archived with same id
+
+    return [...byId.values()].sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
       return b.month - a.month;
     });
@@ -196,10 +203,13 @@ export class StorageService implements OnModuleInit {
 
   private async archivePastYears(): Promise<void> {
     const currentYear = new Date().getFullYear();
-    const active = await this.getAllStatements();
+    // Only consider files in the active dir (not archive) for moving.
+    // getAllStatements() now reads archive too, which would cause a
+    // double-rename ENOENT when re-running archive.
+    const activeFiles = await this.readStatementsInDir(this.statementsDir);
 
     const byYear = new Map<number, MonthlyStatement[]>();
-    for (const s of active) {
+    for (const s of activeFiles) {
       if (s.year >= currentYear) continue;
       if (!byYear.has(s.year)) byYear.set(s.year, []);
       byYear.get(s.year)!.push(s);
