@@ -19,6 +19,7 @@ import { UploadPage } from './routes/upload';
 import { AboutPage } from './routes/about';
 import { SavingsPage } from './routes/savings';
 import { LoansPage } from './routes/loans';
+import { SubscriptionsPage } from './routes/subscriptions';
 
 const rootRoute = createRootRoute({ component: Root });
 
@@ -106,6 +107,12 @@ const loansRoute = createRoute({
   component: LoansPage,
 });
 
+const subscriptionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/subscriptions',
+  component: SubscriptionsPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -121,6 +128,7 @@ const routeTree = rootRoute.addChildren([
   aboutRoute,
   savingsRoute,
   loansRoute,
+  subscriptionsRoute,
 ]);
 
 export const router = createRouter({

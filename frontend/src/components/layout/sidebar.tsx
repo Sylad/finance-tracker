@@ -12,6 +12,7 @@ import {
   LogOut,
   PiggyBank,
   Banknote,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BrandMark } from '../brand-mark';
@@ -23,6 +24,7 @@ export const NAV_ITEMS = [
   { to: '/budget', label: 'Budget', icon: Wallet, exact: false },
   { to: '/savings', label: 'Comptes épargne', icon: PiggyBank, exact: false },
   { to: '/loans', label: 'Crédits', icon: Banknote, exact: false },
+  { to: '/subscriptions', label: 'Abonnements', icon: Zap, exact: false },
   { to: '/income', label: 'Revenus', icon: Repeat, exact: false },
   { to: '/declarations', label: 'Déclarations', icon: ListChecks, exact: false },
   { to: '/forecast', label: 'Prévisions', icon: CalendarRange, exact: false },
