@@ -25,9 +25,11 @@ export function Root() {
     // On forced-demo hosts we skip the login flow entirely: write a placeholder
     // PIN so the auth-aware fetch wrappers stop redirecting to /login. The
     // backend bypasses the PIN check on these hosts anyway.
+    // Reload the page so authStore.isAuthenticated() is re-evaluated (the auth
+    // helper reads sessionStorage at call time, not via a reactive subscription).
     if (forced && !authed) {
       authStore.setPin('demo');
-      navigate({ to: '/', replace: true });
+      window.location.reload();
       return;
     }
     if (!authed && !isLogin) navigate({ to: '/login', replace: true });
