@@ -24,7 +24,7 @@ export function SubscriptionsPage() {
       <PageHeader
         eyebrow="Abonnements & factures"
         title={`${formatEUR(totalMonthly)} / mois`}
-        subtitle={`${items.length} suggestion${items.length > 1 ? 's' : ''} détectée${items.length > 1 ? 's' : ''} par Claude — à valider ou ignorer.`}
+        subtitle={`${items.length} suggestion${items.length > 1 ? 's' : ''} détectée${items.length > 1 ? 's' : ''} par Claude. Cette page sert à nettoyer la liste — pas (encore) à enregistrer tes vrais abonnements.`}
       />
 
       {items.length === 0 ? (
@@ -33,7 +33,16 @@ export function SubscriptionsPage() {
           hint="Importe un relevé pour que Claude détecte les charges récurrentes."
         />
       ) : (
-        <div className="space-y-8">
+        <>
+          <div className="card p-4 mb-6 border-l-4 border-l-info bg-info/5">
+            <div className="text-sm text-fg-bright font-medium mb-1">Comment trier</div>
+            <div className="text-xs text-fg-muted leading-relaxed">
+              <span className="text-positive font-medium">Connu, masquer</span> : tu reconnais cette charge mais tu ne veux pas la voir ici. Elle disparaît mais Claude pourra la re-suggérer si elle évolue (montant, libellé).
+              <br />
+              <span className="text-negative font-medium">Faux positif</span> : ce n'est pas un abonnement (erreur de classification). Claude ne te la re-proposera plus jamais.
+            </div>
+          </div>
+          <div className="space-y-8">
           {subs.length > 0 && (
             <Section
               title="Abonnements"
@@ -54,7 +63,8 @@ export function SubscriptionsPage() {
               onReject={(id) => reject.mutate(id)}
             />
           )}
-        </div>
+          </div>
+        </>
       )}
     </>
   );
@@ -92,15 +102,17 @@ function Section({
             <div className="flex gap-1 shrink-0">
               <button
                 onClick={() => onSnooze(s.id)}
+                title="Tu reconnais cette charge. Elle disparaît de la liste mais peut revenir si Claude la redétecte avec des changements."
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-positive/10 hover:bg-positive/20 text-positive text-xs font-medium border border-positive/30"
               >
-                <Check className="h-3 w-3" /> OK je connais
+                <Check className="h-3 w-3" /> Connu, masquer
               </button>
               <button
                 onClick={() => onReject(s.id)}
+                title="Ce n'est pas un abonnement. Claude ne te la re-proposera plus jamais."
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-negative/10 hover:bg-negative/20 text-negative text-xs font-medium border border-negative/30"
               >
-                <XIcon className="h-3 w-3" /> Pas un abonnement
+                <XIcon className="h-3 w-3" /> Faux positif
               </button>
             </div>
           </div>
