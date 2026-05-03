@@ -248,8 +248,14 @@ export class AutoSyncService {
     if (sortedMonths.length < 3) return; // not enough history yet
     const recentMonths = new Set(sortedMonths.slice(-3));
 
+    // Skip loans created in the last 60 seconds — they were just auto-created
+    // and haven't had a chance to accumulate occurrences yet (sync runs the
+    // create+detect+deactivate trio in one pass).
+    const freshThresholdMs = Date.now() - 60_000;
+
     for (const loan of loans) {
       if (!loan.isActive) continue;
+      if (new Date(loan.createdAt).getTime() > freshThresholdMs) continue;
       const seenInRecent = loan.occurrencesDetected.some((o) => {
         const m = o.date.slice(0, 7);
         return recentMonths.has(m);
