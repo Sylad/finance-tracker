@@ -300,6 +300,7 @@ export interface LoanOccurrence {
   date: string;
   amount: number;
   transactionId: string | null;
+  description?: string;
 }
 
 export interface Loan {

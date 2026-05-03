@@ -7,6 +7,7 @@ export interface LoanOccurrence {
   date: string;
   amount: number;
   transactionId: string | null;
+  description?: string;  // Libellé de la transaction d'origine (pour split par référence)
 }
 
 export interface Loan {

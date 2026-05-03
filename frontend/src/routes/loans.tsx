@@ -165,7 +165,10 @@ function toInput(l: Loan): LoanInput {
 
 function detectAmountGroups(loan: Loan): number {
   if (loan.occurrencesDetected.length < 2) return 1;
-  const set = new Set(loan.occurrencesDetected.map((o) => Math.round(Math.abs(o.amount))));
+  const extractRef = (d: string | undefined) => (d?.match(/\d{8,}/)?.[0]) ?? '';
+  const set = new Set(
+    loan.occurrencesDetected.map((o) => `${Math.round(Math.abs(o.amount))}|${extractRef(o.description)}`),
+  );
   return set.size;
 }
 

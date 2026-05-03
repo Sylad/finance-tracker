@@ -67,7 +67,7 @@ export class LoansService {
 
   async addOccurrence(
     id: string,
-    occ: { statementId: string; date: string; amount: number; transactionId: string | null },
+    occ: { statementId: string; date: string; amount: number; transactionId: string | null; description?: string },
   ): Promise<Loan> {
     const all = await this.getAll();
     const idx = all.findIndex((l) => l.id === id);
@@ -135,12 +135,17 @@ export class LoansService {
   }
 
   /**
-   * Découpe un loan en plusieurs sous-loans selon les montants distincts
-   * trouvés dans ses occurrencesDetected (regroupés à l'euro près).
-   * Utile quand un creditor (ex: Klarna) a en réalité plusieurs prêts BNPL
-   * fusionnés en un seul Loan.
+   * Découpe un loan en plusieurs sous-loans selon les groupes distincts
+   * trouvés dans ses occurrencesDetected. La clé de groupement combine :
+   * - le montant arrondi à l'euro
+   * - une référence numérique extraite du libellé (numéro de contrat, IBAN
+   *   destinataire, etc. — toute suite de >= 8 chiffres). Si pas de réf,
+   *   le montant seul fait office de clé.
+   *
+   * Utile pour Klarna / Cofidis / Carrefour Banque qui ont N sous-prêts
+   * distincts mensualisés séparément.
    */
-  async splitByAmount(id: string): Promise<{ split: boolean; createdCount: number; groups: Array<{ amount: number; count: number }> }> {
+  async splitByAmount(id: string): Promise<{ split: boolean; createdCount: number; groups: Array<{ key: string; amount: number; ref?: string; count: number }> }> {
     const all = await this.getAll();
     const idx = all.findIndex((l) => l.id === id);
     if (idx === -1) throw new NotFoundException(`Crédit ${id} introuvable`);
@@ -149,39 +154,53 @@ export class LoansService {
       return { split: false, createdCount: 0, groups: [] };
     }
 
-    // Group occurrences by rounded amount
-    const groups = new Map<number, LoanOccurrence[]>();
+    // Helper: extract a numeric reference (>=8 digits) from a description
+    const extractRef = (desc: string | undefined): string => {
+      if (!desc) return '';
+      const m = desc.match(/\d{8,}/);
+      return m ? m[0] : '';
+    };
+
+    // Group occurrences by (rounded amount, extracted reference)
+    const groups = new Map<string, { amount: number; ref: string; occurrences: LoanOccurrence[] }>();
     for (const o of original.occurrencesDetected) {
-      const k = Math.round(Math.abs(o.amount));
-      if (!groups.has(k)) groups.set(k, []);
-      groups.get(k)!.push(o);
+      const amount = Math.round(Math.abs(o.amount));
+      const ref = extractRef(o.description);
+      const key = `${amount}|${ref}`;
+      if (!groups.has(key)) groups.set(key, { amount, ref, occurrences: [] });
+      groups.get(key)!.occurrences.push(o);
     }
     if (groups.size < 2) {
-      return { split: false, createdCount: 0, groups: [{ amount: [...groups.keys()][0] ?? 0, count: original.occurrencesDetected.length }] };
+      const first = [...groups.values()][0];
+      return { split: false, createdCount: 0, groups: [{ key: '0', amount: first?.amount ?? 0, ref: first?.ref, count: original.occurrencesDetected.length }] };
     }
 
     // Sort groups by occurrence count descending — keep the largest in the original loan
-    const sorted = [...groups.entries()].sort((a, b) => b[1].length - a[1].length);
-    const [keepKey, keepOccurrences] = sorted[0];
+    const sorted = [...groups.entries()].sort((a, b) => b[1].occurrences.length - a[1].occurrences.length);
+    const keepGroup = sorted[0][1];
     const otherGroups = sorted.slice(1);
 
+    // Helper: name suffix from amount + ref
+    const groupSuffix = (amount: number, ref: string): string => {
+      const refTail = ref ? `…${ref.slice(-4)}` : '';
+      return `(${amount.toFixed(2)} €/mois${refTail ? ` · ${refTail}` : ''})`;
+    };
+
     // Update original to keep only its largest-count group
-    const keepAvg = keepOccurrences.reduce((s, o) => s + Math.abs(o.amount), 0) / keepOccurrences.length;
-    original.occurrencesDetected = keepOccurrences;
+    const keepAvg = keepGroup.occurrences.reduce((s, o) => s + Math.abs(o.amount), 0) / keepGroup.occurrences.length;
+    original.occurrencesDetected = keepGroup.occurrences;
     original.monthlyPayment = Math.round(keepAvg * 100) / 100;
-    if (!original.name.includes(`${keepKey} €`)) {
-      original.name = `${original.creditor ?? original.name} (${original.monthlyPayment.toFixed(2)} €/mois)`;
-    }
+    original.name = `${original.creditor ?? original.name.split(' (')[0]} ${groupSuffix(original.monthlyPayment, keepGroup.ref)}`;
     original.updatedAt = new Date().toISOString();
 
     // Create one new Loan per remaining group
     const now = new Date().toISOString();
     let createdCount = 0;
-    for (const [amountKey, occ] of otherGroups) {
-      const avg = occ.reduce((s, o) => s + Math.abs(o.amount), 0) / occ.length;
+    for (const [, group] of otherGroups) {
+      const avg = group.occurrences.reduce((s, o) => s + Math.abs(o.amount), 0) / group.occurrences.length;
       const newLoan: Loan = {
         id: randomUUID(),
-        name: `${original.creditor ?? original.name.split(' (')[0]} (${avg.toFixed(2)} €/mois)`,
+        name: `${original.creditor ?? original.name.split(' (')[0]} ${groupSuffix(Math.round(avg * 100) / 100, group.ref)}`,
         type: original.type,
         category: original.category,
         monthlyPayment: Math.round(avg * 100) / 100,
@@ -193,20 +212,19 @@ export class LoansService {
         initialPrincipal: undefined,
         maxAmount: undefined,
         usedAmount: undefined,
-        occurrencesDetected: occ,
+        occurrencesDetected: group.occurrences,
         createdAt: now,
         updatedAt: now,
       };
       all.push(newLoan);
       createdCount++;
-      this.logger.log(`Split: created ${newLoan.name} from ${original.id} with ${occ.length} occurrences`);
-      void amountKey;
+      this.logger.log(`Split: created ${newLoan.name} from ${original.id} with ${group.occurrences.length} occurrences`);
     }
     await this.persist(all);
     return {
       split: true,
       createdCount,
-      groups: [...groups.entries()].map(([amount, occ]) => ({ amount, count: occ.length })),
+      groups: [...groups.entries()].map(([key, g]) => ({ key, amount: g.amount, ref: g.ref || undefined, count: g.occurrences.length })),
     };
   }
 
