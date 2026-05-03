@@ -162,3 +162,7 @@
 .recharts-tooltip-wrapper .recharts-tooltip-item-list {
   color: hsl(var(--fg)) !important;
 }
+.recharts-tooltip-wrapper .recharts-tooltip-label:not(:empty) {
+  margin-bottom: 4px !important;
+  font-weight: 600;
+}

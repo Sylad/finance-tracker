@@ -318,11 +318,25 @@ export function DashboardPage() {
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={yearly.data.monthly}>
-                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }}
+                    tickFormatter={(m: string) => {
+                      const [y, mm] = m.split('-');
+                      return formatMonthShort(Number(mm), Number(y));
+                    }}
+                  />
                   <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                  <Tooltip {...chartTooltipProps} />
-                  <Bar dataKey="credits" fill="hsl(160 84% 50%)" />
-                  <Bar dataKey="debits" fill="hsl(0 70% 55%)" />
+                  <Tooltip
+                    {...chartTooltipProps}
+                    labelFormatter={(m: string) => {
+                      const [y, mm] = m.split('-');
+                      return formatMonthShort(Number(mm), Number(y));
+                    }}
+                    formatter={(v: number, name: string) => [formatEUR(v), name]}
+                  />
+                  <Bar dataKey="credits" name="Entrées" fill="hsl(160 84% 50%)" />
+                  <Bar dataKey="debits" name="Sorties" fill="hsl(0 70% 55%)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
