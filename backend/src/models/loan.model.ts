@@ -17,6 +17,7 @@ export interface Loan {
   monthlyPayment: number;
   matchPattern: string;
   isActive: boolean;
+  creditor?: string;
   // Classic
   startDate?: string;
   endDate?: string;
