@@ -37,20 +37,24 @@ export function LoansPage() {
   const totalMonthly = items.filter((l) => l.isActive).reduce((s, l) => s + l.monthlyPayment, 0);
 
   const handleSave = async (input: LoanInput) => {
-    let saved: Loan;
-    if (editing) saved = await update.mutateAsync({ id: editing.id, input });
-    else saved = await create.mutateAsync(input);
-    if (suggestionToAccept) {
-      try {
-        await acceptSugg.mutateAsync({ id: suggestionToAccept, loanId: saved.id });
-      } catch (e) {
-        console.error('Accept suggestion failed', e);
+    try {
+      let saved: Loan;
+      if (editing) saved = await update.mutateAsync({ id: editing.id, input });
+      else saved = await create.mutateAsync(input);
+      if (suggestionToAccept) {
+        try {
+          await acceptSugg.mutateAsync({ id: suggestionToAccept, loanId: saved.id });
+        } catch (e) {
+          console.error('Accept suggestion failed', e);
+        }
+        setSuggestionToAccept(null);
       }
-      setSuggestionToAccept(null);
+      setEditing(null);
+      setCreating(false);
+      setPrefilled(null);
+    } catch (e) {
+      alert(`Erreur lors de l'enregistrement : ${(e as Error).message}`);
     }
-    setEditing(null);
-    setCreating(false);
-    setPrefilled(null);
   };
 
   return (

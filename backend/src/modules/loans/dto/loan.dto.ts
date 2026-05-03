@@ -20,7 +20,11 @@ export function validateLoanInput(raw: unknown): LoanInput {
   const monthlyPayment = Number(r.monthlyPayment);
   if (!Number.isFinite(monthlyPayment) || monthlyPayment < 0) throw new BadRequestException('monthlyPayment invalide');
 
-  const matchPattern = typeof r.matchPattern === 'string' ? r.matchPattern.trim() : '';
+  // Strip leading inline flags (?i), (?m), etc. — JavaScript ne supporte pas
+  // ces flags inline, on ajoute le flag 'i' au runtime de toute façon.
+  const matchPattern = typeof r.matchPattern === 'string'
+    ? r.matchPattern.trim().replace(/^\(\?[a-zA-Z]+\)/, '')
+    : '';
   if (matchPattern) {
     try { new RegExp(matchPattern, 'i'); } catch {
       throw new BadRequestException(`matchPattern n'est pas un regex valide: ${matchPattern}`);
