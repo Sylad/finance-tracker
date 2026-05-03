@@ -54,13 +54,19 @@ export class StorageService implements OnModuleInit {
   }
 
   async getStatement(id: string): Promise<MonthlyStatement | null> {
-    const filepath = path.join(this.statementsDir, `${id}.json`);
-    try {
-      const content = await fs.promises.readFile(filepath, 'utf8');
-      return JSON.parse(content) as MonthlyStatement;
-    } catch {
-      return null;
+    // Look in active dir first, then in archive/<year>/.
+    const m = id.match(/^(\d{4})-/);
+    const candidates = [path.join(this.statementsDir, `${id}.json`)];
+    if (m) candidates.push(path.join(this.archiveDir, m[1], `${id}.json`));
+    for (const filepath of candidates) {
+      try {
+        const content = await fs.promises.readFile(filepath, 'utf8');
+        return JSON.parse(content) as MonthlyStatement;
+      } catch {
+        // try next
+      }
     }
+    return null;
   }
 
   async getAllStatements(): Promise<MonthlyStatement[]> {
@@ -116,13 +122,19 @@ export class StorageService implements OnModuleInit {
   }
 
   async deleteStatement(id: string): Promise<boolean> {
-    const filepath = path.join(this.statementsDir, `${id}.json`);
-    try {
-      await fs.promises.unlink(filepath);
-      return true;
-    } catch {
-      return false;
+    // Try both active and archive locations
+    const m = id.match(/^(\d{4})-/);
+    const candidates = [path.join(this.statementsDir, `${id}.json`)];
+    if (m) candidates.push(path.join(this.archiveDir, m[1], `${id}.json`));
+    for (const filepath of candidates) {
+      try {
+        await fs.promises.unlink(filepath);
+        return true;
+      } catch {
+        // try next
+      }
     }
+    return false;
   }
 
   async getScoreHistory(): Promise<ScoreHistoryEntry[]> {
