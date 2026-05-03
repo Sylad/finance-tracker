@@ -44,13 +44,11 @@ import { ImportLogsModule } from './modules/import-logs/import-logs.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    // Apply DemoModeMiddleware on EVERYTHING (including /api/demo/*) so the
+    // forced-by-host detection populates the ALS context for the status endpoint.
     consumer
       .apply(DemoModeMiddleware)
-      .exclude(
-        { path: 'demo/(.*)', method: RequestMethod.ALL },
-        { path: 'demo', method: RequestMethod.ALL },
-        { path: 'health', method: RequestMethod.ALL },
-      )
+      .exclude({ path: 'health', method: RequestMethod.ALL })
       .forRoutes('*');
   }
 }
