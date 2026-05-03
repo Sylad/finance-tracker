@@ -2,6 +2,14 @@ import { Transaction } from './transaction.model';
 import { FinancialHealthScore } from './financial-health-score.model';
 import { RecurringCredit } from './recurring-credit.model';
 
+export interface ExternalAccountBalance {
+  accountNumber: string;
+  accountType: 'livret-a' | 'pel' | 'cel' | 'ldds' | 'pea' | 'other';
+  balance: number;
+  label?: string;
+  asOfDate?: string;
+}
+
 export interface MonthlyStatement {
   id: string;
   month: number;
@@ -18,6 +26,7 @@ export interface MonthlyStatement {
   healthScore: FinancialHealthScore;
   recurringCredits: RecurringCredit[];
   analysisNarrative: string;
+  externalAccountBalances?: ExternalAccountBalance[];
 }
 
 export interface AnalysisResponse {
