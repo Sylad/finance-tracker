@@ -18,6 +18,7 @@ import { LoansModule } from './modules/loans/loans.module';
 import { AutoSyncModule } from './modules/auto-sync/auto-sync.module';
 import { LoanSuggestionsModule } from './modules/loan-suggestions/loan-suggestions.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ImportLogsModule } from './modules/import-logs/import-logs.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     AutoSyncModule,
     LoanSuggestionsModule,
     DashboardModule,
+    ImportLogsModule,
   ],
 })
 export class AppModule implements NestModule {

@@ -17,6 +17,7 @@ import { AnthropicParseError } from './anthropic.service';
 import { MulterExceptionFilter } from '../../filters/multer-exception.filter';
 import { AnalysisResponse } from '../../models/monthly-statement.model';
 import { StorageService } from '../storage/storage.service';
+import { ImportLogsService } from '../import-logs/import-logs.service';
 
 // Detects only the unambiguous YYYY-MM pattern (real period).
 // YYYYMMDD/YYYYMM patterns were removed: bank PDFs (e.g. La Banque Postale) are named by
@@ -39,6 +40,7 @@ export class AnalysisController {
   constructor(
     private readonly analysisService: AnalysisService,
     private readonly storage: StorageService,
+    private readonly importLogs: ImportLogsService,
   ) {}
 
   @Post('upload')
@@ -99,8 +101,20 @@ export class AnalysisController {
       }
 
       // --- Analyse via Claude ---
+      const startedAt = Date.now();
+      const uploadedAt = new Date().toISOString();
       try {
         const response = await this.analysisService.analyzeAndPersist(pdfBuffer);
+        await this.importLogs.log({
+          filename: file.originalname,
+          uploadedAt,
+          durationMs: Date.now() - startedAt,
+          status: 'success',
+          statementId: response.statement.id,
+          statementMonth: response.statement.month,
+          statementYear: response.statement.year,
+          replaced: response.replaced,
+        });
         results.push({ filename: file.originalname, response });
         this.logger.log(`Processed ${file.originalname} → ${response.statement.id} (replaced=${response.replaced})`);
       } catch (e) {
@@ -108,6 +122,13 @@ export class AnalysisController {
           e instanceof AnthropicParseError
             ? `Analyse échouée : ${e.message}`
             : 'Erreur inattendue lors de l\'analyse';
+        await this.importLogs.log({
+          filename: file.originalname,
+          uploadedAt,
+          durationMs: Date.now() - startedAt,
+          status: 'error',
+          error: message,
+        });
         results.push({ filename: file.originalname, error: message });
         this.logger.error(`Failed ${file.originalname}`, e);
       }

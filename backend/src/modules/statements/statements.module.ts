@@ -4,9 +4,10 @@ import { AnalysisModule } from '../analysis/analysis.module';
 import { StorageModule } from '../storage/storage.module';
 import { SnapshotsModule } from '../snapshots/snapshots.module';
 import { AutoSyncModule } from '../auto-sync/auto-sync.module';
+import { ImportLogsModule } from '../import-logs/import-logs.module';
 
 @Module({
-  imports: [AnalysisModule, StorageModule, SnapshotsModule, AutoSyncModule],
+  imports: [AnalysisModule, StorageModule, SnapshotsModule, AutoSyncModule, ImportLogsModule],
   controllers: [StatementsController],
 })
 export class StatementsModule {}
