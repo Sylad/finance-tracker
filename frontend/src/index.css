@@ -143,3 +143,22 @@
   .badge-info { @apply badge bg-info/15 text-info; }
   .badge-neutral { @apply badge bg-surface-3 text-fg-muted; }
 }
+
+/* Recharts tooltips — force readable text colors over inline styles */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: hsl(var(--surface-2)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 6px !important;
+  color: hsl(var(--fg)) !important;
+}
+.recharts-tooltip-wrapper .recharts-tooltip-label,
+.recharts-tooltip-wrapper .recharts-tooltip-item,
+.recharts-tooltip-wrapper .recharts-tooltip-item-name,
+.recharts-tooltip-wrapper .recharts-tooltip-item-separator,
+.recharts-tooltip-wrapper .recharts-tooltip-item-value,
+.recharts-tooltip-wrapper .recharts-tooltip-item-unit {
+  color: hsl(var(--fg)) !important;
+}
+.recharts-tooltip-wrapper .recharts-tooltip-item-list {
+  color: hsl(var(--fg)) !important;
+}
