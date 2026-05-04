@@ -2,9 +2,20 @@
 
 > Analyse tes relevés bancaires PDF avec Claude, suis ton score de santé financière, configure des budgets et des prévisions. Tout local, rien ne sort de ta machine.
 
-![Finance Tracker — login](./docs/screenshots/login.png)
+![Dashboard — Finance Tracker](./docs/screenshots/dashboard.png)
 
-> Capture du login affichée pour préserver la confidentialité des données. Un mode démo avec données de test viendra plus tard.
+> Captures prises en **mode démo** (jeu de données fictives 6 mois). L'app embarque un mode démo activable d'un clic, pour explorer toutes les fonctionnalités sans toucher à un vrai compte bancaire.
+
+### Aperçu
+
+| | |
+|---|---|
+| ![Détail d'un relevé](./docs/screenshots/statement-detail.png) | ![Crédits](./docs/screenshots/loans.png) |
+| **Détail d'un relevé** — répartition catégorielle, transactions taggées + récurrentes, commentaire Claude | **Crédits** — classiques (barre temporelle), revolving (jauge), suggestions Claude à valider |
+| ![Comptes épargne](./docs/screenshots/savings.png) | ![Abonnements](./docs/screenshots/subscriptions.png) |
+| **Comptes épargne** — PEL, Livret A, sparkline + recalage auto à chaque import | **Abonnements** — détectés par Claude, à trier (connu / faux positif) |
+| ![Historique](./docs/screenshots/history.png) | ![Login](./docs/screenshots/login.png) |
+| **Historique** — relevés analysés groupés par année, score par mois | **Login** — PIN guard simple (Bearer token) pour les déploiements perso |
 
 ## Pourquoi
 
