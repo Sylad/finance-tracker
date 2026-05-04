@@ -3,6 +3,7 @@ import { AutoSyncService } from './auto-sync.service';
 import { SavingsService } from '../savings/savings.service';
 import { LoansService } from '../loans/loans.service';
 import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
+import { StorageService } from '../storage/storage.service';
 import { EventBusService } from '../events/event-bus.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 
@@ -46,7 +47,15 @@ describe('AutoSyncService', () => {
         AutoSyncService,
         { provide: SavingsService, useValue: savings },
         { provide: LoansService, useValue: loans },
-        { provide: LoanSuggestionsService, useValue: { upsertMany: jest.fn() } },
+        {
+          provide: LoanSuggestionsService,
+          useValue: {
+            upsertMany: jest.fn(),
+            getPending: jest.fn().mockResolvedValue([]),
+            snooze: jest.fn(),
+          },
+        },
+        { provide: StorageService, useValue: { getAllStatements: jest.fn().mockResolvedValue([]) } },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
