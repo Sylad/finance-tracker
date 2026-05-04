@@ -11,13 +11,29 @@ import {
   PiggyBank,
   CreditCard,
 } from 'lucide-react';
-import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, AreaChart, Area, BarChart, Bar } from 'recharts';
-import { useStatements, useScoreHistory, useBudget, useStatement, useClaudeUsage, useSavingsAccounts, useLoans, useNetWorth, useAlerts, useYearlyOverview } from '@/lib/queries';
+import {
+  useStatements,
+  useScoreHistory,
+  useBudget,
+  useStatement,
+  useClaudeUsage,
+  useSavingsAccounts,
+  useLoans,
+  useNetWorth,
+  useAlerts,
+  useYearlyOverview,
+} from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
-import { ScoreRing, ScoreBadge } from '@/components/score-ring';
-import { CATEGORY_LABELS, type TransactionCategory } from '@/types/api';
-import { formatEUR, formatMonth, formatMonthShort, cn, chartTooltipProps } from '@/lib/utils';
+import { ScoreRing } from '@/components/score-ring';
+import { formatEUR, formatMonth, formatMonthShort, cn } from '@/lib/utils';
+import { StatCard } from '@/components/dashboard/stat-card';
+import { BudgetSnapshot } from '@/components/dashboard/budget-snapshot';
+import { ClaudeUsageCard } from '@/components/dashboard/claude-usage-card';
+import { ScoreTrendChart } from '@/components/dashboard/score-trend-chart';
+import { BalanceTrendChart } from '@/components/dashboard/balance-trend-chart';
+import { RecentStatements } from '@/components/dashboard/recent-statements';
+import { YearlyCharts } from '@/components/dashboard/yearly-charts';
 
 export function DashboardPage() {
   const stmts = useStatements();
@@ -142,7 +158,6 @@ export function DashboardPage() {
       )}
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        {/* Hero score card */}
         <div className="card p-6 lg:row-span-2 flex flex-col">
           <div className="stat-label flex items-center gap-1.5">
             <Sparkles className="h-3 w-3" /> Santé financière
@@ -156,28 +171,23 @@ export function DashboardPage() {
             </blockquote>
           )}
         </div>
-
-        {/* Income */}
         <StatCard
           label="Entrées"
           value={formatEUR(current.totalCredits)}
           icon={<ArrowUpRight className="h-4 w-4 text-positive" />}
           tone="positive"
         />
-        {/* Spend */}
         <StatCard
           label="Débits"
           value={formatEUR(current.totalDebits)}
           icon={<ArrowDownRight className="h-4 w-4 text-negative" />}
           tone="negative"
         />
-        {/* Net */}
         <StatCard
           label="Net du mois"
           value={formatEUR(net, true)}
           tone={net >= 0 ? 'positive' : 'negative'}
         />
-        {/* Closing balance */}
         <StatCard
           label="Solde de clôture"
           value={formatEUR(current.closingBalance)}
@@ -197,108 +207,12 @@ export function DashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="stat-label">Évolution du score</div>
-              <div className="text-fg-bright font-display text-xl font-semibold mt-1">
-                {scoreSeries.length} mois
-              </div>
-            </div>
-            <ScoreBadge score={current.healthScore} />
-          </div>
-          {scoreSeries.length > 1 ? (
-            <div className="h-44">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={scoreSeries} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
-                  <defs>
-                    <linearGradient id="score-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(160 84% 50%)" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="hsl(160 84% 50%)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
-                  <Tooltip {...chartTooltipProps} />
-                  <Area type="monotone" dataKey="score" stroke="hsl(160 84% 50%)" strokeWidth={2} fill="url(#score-grad)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="text-sm text-fg-dim italic py-12 text-center">Importe au moins 2 relevés pour voir l'évolution.</p>
-          )}
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="stat-label">Évolution du solde</div>
-              <div className="text-fg-bright font-display text-xl font-semibold mt-1 tabular">
-                {formatEUR(current.closingBalance)}
-              </div>
-            </div>
-          </div>
-          {balanceSeries.length > 1 ? (
-            <div className="h-44">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={balanceSeries} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
-                  <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={50} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip
-                    {...chartTooltipProps}
-                    formatter={(v: number) => [formatEUR(v), 'Solde']}
-                  />
-                  <Line type="monotone" dataKey="balance" stroke="hsl(217 91% 60%)" strokeWidth={2} dot={{ r: 3, fill: 'hsl(217 91% 60%)' }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="text-sm text-fg-dim italic py-12 text-center">Importe au moins 2 relevés pour voir l'évolution.</p>
-          )}
-        </div>
+        <ScoreTrendChart series={scoreSeries} currentScore={current.healthScore} />
+        <BalanceTrendChart series={balanceSeries} currentBalance={current.closingBalance} />
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Recent statements */}
-        <div className="card p-5 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <div className="stat-label">Relevés récents</div>
-            <Link to="/history" className="text-xs text-accent-bright hover:text-accent flex items-center gap-1 font-medium">
-              Voir tout <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="space-y-1">
-            {summaries.slice(0, 5).map((s) => (
-              <Link
-                key={s.id}
-                to="/history/$id"
-                params={{ id: s.id }}
-                className="flex items-center justify-between px-3 py-2.5 rounded hover:bg-surface-2 transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-1 h-9 rounded-full bg-accent-dim group-hover:bg-accent transition-colors" />
-                  <div>
-                    <div className="text-sm font-medium text-fg-bright">
-                      {formatMonth(s.month, s.year)}
-                    </div>
-                    <div className="text-xs text-fg-dim">
-                      {s.transactionCount} transactions · {s.bankName}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right tabular">
-                    <div className="text-sm text-fg">{formatEUR(s.closingBalance)}</div>
-                    <div className="text-xs text-fg-dim">solde</div>
-                  </div>
-                  <ScoreBadge score={s.healthScore} />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Budget snapshot */}
+        <RecentStatements summaries={summaries} />
         <BudgetSnapshot
           budget={budget.data}
           transactions={currentDetail.data?.transactions}
@@ -313,199 +227,9 @@ export function DashboardPage() {
 
       {yearly.data && yearly.data.monthly.length >= 2 && (
         <section className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="card p-5">
-            <div className="stat-label mb-3">Entrées / sorties (12 mois glissants)</div>
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={yearly.data.monthly}>
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }}
-                    tickFormatter={(m: string) => {
-                      const [y, mm] = m.split('-');
-                      return formatMonthShort(Number(mm), Number(y));
-                    }}
-                  />
-                  <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                  <Tooltip
-                    {...chartTooltipProps}
-                    labelFormatter={(m: string) => {
-                      const [y, mm] = m.split('-');
-                      return formatMonthShort(Number(mm), Number(y));
-                    }}
-                    formatter={(v: number, name: string) => [formatEUR(v), name]}
-                  />
-                  <Bar dataKey="credits" name="Entrées" fill="hsl(160 84% 50%)" />
-                  <Bar dataKey="debits" name="Sorties" fill="hsl(0 70% 55%)" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-          <div className="card p-5">
-            <div className="stat-label mb-3">Top 5 postes de dépense (12 mois)</div>
-            <div className="space-y-2">
-              {yearly.data.topCategories.map((c) => (
-                <div key={c.category} className="flex items-center justify-between text-sm">
-                  <span className="text-fg-muted">{CATEGORY_LABELS[c.category as TransactionCategory] ?? c.category}</span>
-                  <span className="font-display tabular text-fg-bright">{formatEUR(c.total)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <YearlyCharts data={yearly.data} />
         </section>
       )}
     </>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  tone,
-}: {
-  label: string;
-  value: string;
-  icon?: React.ReactNode;
-  tone?: 'positive' | 'negative' | 'neutral';
-}) {
-  return (
-    <div className="card p-5">
-      <div className="stat-label flex items-center gap-1.5">
-        {icon} {label}
-      </div>
-      <div
-        className={cn(
-          'mt-2 font-display tabular font-semibold tracking-tight',
-          tone === 'positive' && 'text-positive',
-          tone === 'negative' && 'text-negative',
-          !tone && 'text-fg-bright',
-        )}
-        style={{ fontSize: 26 }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function BudgetSnapshot({
-  budget,
-  transactions,
-}: {
-  budget: Record<string, number | undefined> | undefined;
-  transactions: { category: TransactionCategory; amount: number }[] | undefined;
-}) {
-  const items = budget && transactions ? buildItems(budget, transactions) : [];
-
-  return (
-    <div className="card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="stat-label">Budgets ce mois</div>
-        <Link to="/budget" className="text-xs text-accent-bright hover:text-accent flex items-center gap-1 font-medium">
-          Configurer <ArrowRight className="h-3 w-3" />
-        </Link>
-      </div>
-      {items.length === 0 ? (
-        <p className="text-xs text-fg-dim italic">
-          Aucun budget configuré.
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {items.slice(0, 5).map((b) => (
-            <div key={b.category}>
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-fg-muted font-medium">{b.label}</span>
-                <span className={cn('tabular', b.over ? 'text-negative font-semibold' : 'text-fg-dim')}>
-                  {Math.round(b.spent)} / {b.limit}€
-                </span>
-              </div>
-              <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
-                <div
-                  className={cn(
-                    'h-full rounded-full transition-all',
-                    b.over ? 'bg-negative' : b.pct >= 80 ? 'bg-warning' : 'bg-positive',
-                  )}
-                  style={{ width: `${Math.min(100, b.pct)}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function buildItems(
-  budget: Record<string, number | undefined>,
-  transactions: { category: TransactionCategory; amount: number }[],
-) {
-  const spending = new Map<string, number>();
-  for (const t of transactions) {
-    if (t.amount < 0) spending.set(t.category, (spending.get(t.category) ?? 0) + Math.abs(t.amount));
-  }
-  return Object.entries(budget)
-    .filter(([, l]) => typeof l === 'number' && l > 0)
-    .map(([cat, limit]) => {
-      const lim = limit as number;
-      const spent = Math.round((spending.get(cat) ?? 0) * 100) / 100;
-      const pct = Math.round((spent / lim) * 100);
-      return {
-        category: cat,
-        label: CATEGORY_LABELS[cat as TransactionCategory] ?? cat,
-        spent, limit: lim, pct,
-        over: spent > lim,
-      };
-    })
-    .sort((a, b) => b.pct - a.pct);
-}
-
-function ClaudeUsageCard({ usage }: { usage: import('@/types/api').ClaudeUsage }) {
-  const remainingPct = usage.remainingPercent ?? null;
-  const tone = remainingPct == null ? 'neutral'
-    : remainingPct > 50 ? 'positive'
-    : remainingPct > 20 ? 'warning'
-    : 'negative';
-  return (
-    <div className="card p-5">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="stat-label flex items-center gap-1.5">
-            <Sparkles className="h-3 w-3" /> Budget Claude · {usage.calls} appels ce mois
-          </div>
-          <div className="mt-2 flex items-baseline gap-3">
-            <div className="font-display text-display-md font-bold tabular text-fg-bright">
-              {usage.estimatedCostEur.toFixed(2)}€
-            </div>
-            <div className="text-fg-dim text-sm tabular">/ {usage.budgetEur}€</div>
-          </div>
-        </div>
-        {usage.hasBalance && usage.estimatedRemainingEur != null && (
-          <div className="text-right">
-            <div className="stat-label">Solde restant</div>
-            <div className={cn(
-              'font-display text-xl font-semibold tabular mt-1',
-              tone === 'positive' && 'text-positive',
-              tone === 'warning' && 'text-warning',
-              tone === 'negative' && 'text-negative',
-              tone === 'neutral' && 'text-fg-bright',
-            )}>
-              {usage.estimatedRemainingEur.toFixed(2)}€
-            </div>
-            <div className="text-xs text-fg-dim tabular">{remainingPct}% du crédit</div>
-          </div>
-        )}
-      </div>
-      <div className="mt-4 h-1.5 bg-surface-3 rounded-full overflow-hidden">
-        <div
-          className={cn(
-            'h-full rounded-full transition-all',
-            usage.percent >= 90 ? 'bg-negative' : usage.percent >= 70 ? 'bg-warning' : 'bg-accent',
-          )}
-          style={{ width: `${Math.min(100, usage.percent)}%` }}
-        />
-      </div>
-    </div>
   );
 }
