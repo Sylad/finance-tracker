@@ -1,3 +1,20 @@
+/**
+ * ⚠ DUPLICATED across 3 backends (finance-tracker, warhammer40k, ol-companion).
+ *
+ * The 3 apps share `claude-shared.json` on the NAS to track a single Claude
+ * balance across them. The 3 services are nearly identical by design — only
+ * the import-extension convention differs (warhammer40k uses `.js` for
+ * NodeNext, the other two CommonJS).
+ *
+ * Convention : finance-tracker is the **canonical source**. When you change
+ * this file, sync the other two before pushing :
+ *   - warhammer40k/backend/src/modules/claude-usage/claude-usage.service.ts
+ *   - ol-companion/backend/src/modules/claude-usage/claude-usage.service.ts
+ *
+ * Real mutualization (npm workspace, path-mapped shared package) was assessed
+ * and deferred : the cost of restructuring 3 Dockerfiles + 3 tsconfigs was
+ * judged too high vs. the rate of drift on this 130-line file.
+ */
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
