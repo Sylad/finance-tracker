@@ -2,6 +2,8 @@ import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
+import { parseExternal } from '../../common/zod-validation.pipe';
+import { Phase1OutputSchema, Phase2OutputSchema, Phase1Output, Phase2Output } from './anthropic.schemas';
 
 export class AnthropicParseError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
@@ -236,8 +238,13 @@ export class AnthropicService {
     if (!p1Block || p1Block.type !== 'tool_use') {
       throw new AnthropicParseError('Phase 1: no tool_use block returned');
     }
-    const p1 = p1Block.input as Record<string, unknown>;
-    const transactions = p1.transactions as Array<{ date: string; label: string; amount: number; category: string; isRecurring: boolean; targetAccountNumber?: string }>;
+    let p1: Phase1Output;
+    try {
+      p1 = parseExternal(Phase1OutputSchema, p1Block.input, 'Claude phase 1');
+    } catch (err) {
+      throw new AnthropicParseError((err as Error).message, err);
+    }
+    const transactions = p1.transactions;
     this.logger.log(`Phase 1: extracted ${transactions.length} transactions`);
 
     // Derive period from transaction dates (mode of YYYY-MM, earliest wins ties).
@@ -273,7 +280,12 @@ export class AnthropicService {
     if (!p2Block || p2Block.type !== 'tool_use') {
       throw new AnthropicParseError('Phase 2: no tool_use block returned');
     }
-    const p2 = p2Block.input as Record<string, unknown>;
+    let p2: Phase2Output;
+    try {
+      p2 = parseExternal(Phase2OutputSchema, p2Block.input, 'Claude phase 2');
+    } catch (err) {
+      throw new AnthropicParseError((err as Error).message, err);
+    }
 
     // Merge results
     return this.mergeResults(p1, p2, transactions, period);
@@ -286,9 +298,9 @@ export class AnthropicService {
   }
 
   private mergeResults(
-    p1: Record<string, unknown>,
-    p2: Record<string, unknown>,
-    rawTransactions: Array<{ date: string; label: string; amount: number; category: string; isRecurring: boolean; targetAccountNumber?: string }>,
+    p1: Phase1Output,
+    p2: Phase2Output,
+    rawTransactions: Phase1Output['transactions'],
     period: { year: number; month: number },
   ): ClaudeAnalysisResult {
     const transactions: ClaudeTransaction[] = rawTransactions.map((t) => ({
@@ -305,20 +317,23 @@ export class AnthropicService {
     }));
 
     return {
-      bankName: p1.bankName as string,
-      accountHolder: p1.accountHolder as string,
+      bankName: p1.bankName,
+      accountHolder: p1.accountHolder,
       statementMonth: period.month,
       statementYear: period.year,
-      currency: p1.currency as string,
-      openingBalance: p1.openingBalance as number,
-      closingBalance: p1.closingBalance as number,
+      currency: p1.currency,
+      openingBalance: p1.openingBalance,
+      closingBalance: p1.closingBalance,
       transactions,
-      recurringCredits: (p2.recurringCredits as ClaudeRecurringCredit[]) ?? [],
-      scoreFactors: p2.scoreFactors as ClaudeScoreFactors,
-      analysisNarrative: p2.analysisNarrative as string,
-      claudeHealthComment: p2.claudeHealthComment as string,
-      suggestedRecurringExpenses: ((p2.suggestedRecurringExpenses ?? []) as ClaudeAnalysisResult['suggestedRecurringExpenses']),
-      externalAccountBalances: (p1.externalAccountBalances ?? []) as ClaudeAnalysisResult['externalAccountBalances'],
+      recurringCredits: p2.recurringCredits.map((c) => ({
+        ...c,
+        contractEndDate: c.contractEndDate ?? null,
+      })),
+      scoreFactors: p2.scoreFactors,
+      analysisNarrative: p2.analysisNarrative,
+      claudeHealthComment: p2.claudeHealthComment,
+      suggestedRecurringExpenses: p2.suggestedRecurringExpenses ?? [],
+      externalAccountBalances: p1.externalAccountBalances ?? [],
     };
   }
 
