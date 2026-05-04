@@ -158,15 +158,21 @@ export class SavingsService {
     let running = 0;
     let cursor = 0;
     for (let i = months - 1; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      // Build the YYYY-MM label and last day of month from local components
+      // (toISOString() drifts to UTC and shifts midnight values to the previous day,
+      // which silently shifted the month label by one in CEST/CET).
+      const year = now.getFullYear();
+      const monthIndex = now.getMonth() - i;
+      const d = new Date(year, monthIndex, 1);
       const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-      const monthEndStr = monthEnd.toISOString().slice(0, 10);
+      const monthLabel = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const monthEndStr = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, '0')}-${String(monthEnd.getDate()).padStart(2, '0')}`;
       while (cursor < sorted.length && sorted[cursor].date <= monthEndStr) {
         running += sorted[cursor].amount;
         cursor++;
       }
       result.push({
-        month: d.toISOString().slice(0, 7),
+        month: monthLabel,
         balance: Math.round(running * 100) / 100,
       });
     }
