@@ -1,6 +1,10 @@
 import { Controller, Get, Put, Body } from '@nestjs/common';
+import { z } from 'zod';
 import { BudgetService } from './budget.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
+import { ZodValidationPipe } from '../../common/zod-validation.pipe';
+
+const BudgetsSchema = z.record(z.string(), z.number().nonnegative());
 
 @Controller('budgets')
 export class BudgetController {
@@ -15,7 +19,7 @@ export class BudgetController {
   }
 
   @Put()
-  async saveBudgets(@Body() body: Record<string, number>) {
+  async saveBudgets(@Body(new ZodValidationPipe(BudgetsSchema)) body: Record<string, number>) {
     await this.snapshots.takeSnapshot('before-budget-overwrite');
     return this.budgetService.saveBudgets(body);
   }

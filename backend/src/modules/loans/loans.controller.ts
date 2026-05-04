@@ -1,6 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
+import { z } from 'zod';
 import { LoansService } from './loans.service';
 import { validateLoanInput } from './dto/loan.dto';
+import { ZodValidationPipe } from '../../common/zod-validation.pipe';
+
+const ResetRevolvingSchema = z.object({ usedAmount: z.number().nonnegative() });
 
 @Controller('loans')
 export class LoansController {
@@ -25,8 +29,11 @@ export class LoansController {
   async delete(@Param('id') id: string): Promise<void> { await this.svc.delete(id); }
 
   @Post(':id/reset-revolving')
-  reset(@Param('id') id: string, @Body() body: { usedAmount: number }) {
-    return this.svc.resetRevolving(id, Number(body.usedAmount));
+  reset(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(ResetRevolvingSchema)) body: { usedAmount: number },
+  ) {
+    return this.svc.resetRevolving(id, body.usedAmount);
   }
 
   @Post(':id/split-by-amount')
