@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { EventBusService } from '../events/event-bus.service';
@@ -28,12 +28,13 @@ const BUDGET_EUR = 10;
 const INPUT_USD_PER_TOKEN = 3 / 1_000_000;
 const OUTPUT_USD_PER_TOKEN = 15 / 1_000_000;
 const USD_TO_EUR = 0.93;
-const SHARED_FILE = path.join(process.env['SHARED_DATA_DIR'] ?? 'C:/Developpeur/data', 'claude-shared.json');
+const SHARED_FILE = path.join(process.env['SHARED_DATA_DIR'] ?? path.resolve(process.cwd(), 'data', 'shared'), 'claude-shared.json');
 const SHARED_FILENAME = path.basename(SHARED_FILE);
 const SHARED_DIR = path.dirname(SHARED_FILE);
 
 @Injectable()
 export class ClaudeUsageService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(ClaudeUsageService.name);
   private readonly filePath = path.resolve(process.cwd(), 'data', 'claude-usage.json');
   private data: Record<string, { inputTokens: number; outputTokens: number; calls: number }> = {};
   private watcher: fs.FSWatcher | null = null;
@@ -86,7 +87,8 @@ export class ClaudeUsageService implements OnModuleInit, OnModuleDestroy {
     }
     try {
       return JSON.parse(fs.readFileSync(SHARED_FILE, 'utf-8'));
-    } catch {
+    } catch (err: unknown) {
+      this.logger.warn(`Failed to read ${SHARED_FILE}: ${(err as Error)?.message ?? err}`);
       return { balanceUsd: null, balanceSetAt: null, totalConsumedUsdAtConfig: 0, totalConsumedUsd: 0 };
     }
   }

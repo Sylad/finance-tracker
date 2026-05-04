@@ -23,7 +23,13 @@ export class LoansService {
     try {
       const c = await fs.promises.readFile(this.filepath, 'utf8');
       return JSON.parse(c) as Loan[];
-    } catch { return []; }
+    } catch (err: unknown) {
+      const e = err as NodeJS.ErrnoException;
+      if (e?.code !== 'ENOENT') {
+        this.logger.warn(`Failed to read ${this.filepath}: ${e?.message ?? err}`);
+      }
+      return [];
+    }
   }
 
   async getOne(id: string): Promise<Loan> {
