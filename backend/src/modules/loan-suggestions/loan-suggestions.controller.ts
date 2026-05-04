@@ -1,5 +1,9 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { z } from 'zod';
 import { LoanSuggestionsService } from './loan-suggestions.service';
+import { ZodValidationPipe } from '../../common/zod-validation.pipe';
+
+const AcceptSchema = z.object({ loanId: z.string().min(1) });
 
 @Controller('loan-suggestions')
 export class LoanSuggestionsController {
@@ -9,7 +13,10 @@ export class LoanSuggestionsController {
   list() { return this.svc.getPending(); }
 
   @Post(':id/accept')
-  accept(@Param('id') id: string, @Body() body: { loanId: string }) {
+  accept(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(AcceptSchema)) body: { loanId: string },
+  ) {
     return this.svc.accept(id, body.loanId);
   }
 

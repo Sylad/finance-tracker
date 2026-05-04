@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
 import { DeclarationsService } from './declarations.service';
 import { ForecastService } from './forecast.service';
+import { ZodValidationPipe } from '../../common/zod-validation.pipe';
+import { DeclarationInputSchema } from './declarations.schema';
 import type { Declaration, DeclarationInput, ForecastMonth } from '../../models/declaration.model';
 
 @Controller()
@@ -16,12 +18,15 @@ export class DeclarationsController {
   }
 
   @Post('declarations')
-  create(@Body() body: DeclarationInput): Promise<Declaration> {
+  create(@Body(new ZodValidationPipe(DeclarationInputSchema)) body: DeclarationInput): Promise<Declaration> {
     return this.declarations.create(body);
   }
 
   @Put('declarations/:id')
-  update(@Param('id') id: string, @Body() body: DeclarationInput): Promise<Declaration> {
+  update(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(DeclarationInputSchema)) body: DeclarationInput,
+  ): Promise<Declaration> {
     return this.declarations.update(id, body);
   }
 
