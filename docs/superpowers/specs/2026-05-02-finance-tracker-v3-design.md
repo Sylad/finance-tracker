@@ -1,7 +1,7 @@
 # Finance Tracker V3 — Design
 
 **Date** : 2026-05-02
-**Auteur** : Sylvain Ladoire (avec Claude Code)
+**Auteur** : Sylad (avec Claude Code)
 **Statut** : validé en brainstorming, en attente de plan d'implémentation
 
 ## Contexte & objectifs

@@ -115,7 +115,7 @@ const EXTRACT_TRANSACTIONS_TOOL: Anthropic.Tool = {
             accountNumber: { type: 'string', description: 'Numéro de compte complet tel qu\'affiché dans le PDF' },
             accountType: { type: 'string', enum: ['livret-a', 'pel', 'cel', 'ldds', 'pea', 'other'] },
             balance: { type: 'number', description: 'Solde en euros (positif)' },
-            label: { type: 'string', description: 'Libellé du compte si différent du type (ex: "Livret A SYLVAIN")' },
+            label: { type: 'string', description: 'Libellé du compte si différent du type (ex: "Livret A NOM-DU-TITULAIRE")' },
             asOfDate: { type: 'string', description: 'Date du solde au format YYYY-MM-DD si précisée' },
           },
           required: ['accountNumber', 'accountType', 'balance'],

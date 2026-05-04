@@ -2120,7 +2120,7 @@ const baseStatement: MonthlyStatement = {
   year: 2026,
   uploadedAt: '2026-04-01T00:00:00Z',
   bankName: 'LBP',
-  accountHolder: 'Sylvain',
+  accountHolder: 'Alex Démo',
   currency: 'EUR',
   openingBalance: 1000,
   closingBalance: 900,
