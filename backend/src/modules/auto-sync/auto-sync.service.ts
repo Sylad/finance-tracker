@@ -329,7 +329,9 @@ export class AutoSyncService {
       for (const s of sugs) {
         try {
           await this.suggestions.snooze(s.id);
-        } catch { /* ignore */ }
+        } catch (err: unknown) {
+          this.logger.warn(`Failed to snooze suggestion ${s.id}: ${(err as Error)?.message ?? err}`);
+        }
       }
     }
   }

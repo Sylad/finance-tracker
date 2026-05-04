@@ -19,7 +19,13 @@ export class LoanSuggestionsService {
   async getAll(): Promise<LoanSuggestion[]> {
     try {
       return JSON.parse(await fs.promises.readFile(this.filepath, 'utf8')) as LoanSuggestion[];
-    } catch { return []; }
+    } catch (err: unknown) {
+      const e = err as NodeJS.ErrnoException;
+      if (e?.code !== 'ENOENT') {
+        this.logger.warn(`Failed to read ${this.filepath}: ${e?.message ?? err}`);
+      }
+      return [];
+    }
   }
 
   async getPending(): Promise<LoanSuggestion[]> {

@@ -25,7 +25,13 @@ export class ImportLogsService {
     try {
       const c = await fs.promises.readFile(this.filepath, 'utf8');
       return JSON.parse(c) as ImportLog[];
-    } catch { return []; }
+    } catch (err: unknown) {
+      const e = err as NodeJS.ErrnoException;
+      if (e?.code !== 'ENOENT') {
+        this.logger.warn(`Failed to read ${this.filepath}: ${e?.message ?? err}`);
+      }
+      return [];
+    }
   }
 
   async log(entry: Omit<ImportLog, 'id'>): Promise<ImportLog> {
