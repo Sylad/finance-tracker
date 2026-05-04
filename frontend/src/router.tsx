@@ -20,6 +20,7 @@ import { AboutPage } from './routes/about';
 import { SavingsPage } from './routes/savings';
 import { LoansPage } from './routes/loans';
 import { SubscriptionsPage } from './routes/subscriptions';
+import { CategoryRulesPage } from './routes/category-rules';
 
 const rootRoute = createRootRoute({ component: Root });
 
@@ -113,6 +114,12 @@ const subscriptionsRoute = createRoute({
   component: SubscriptionsPage,
 });
 
+const categoryRulesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/category-rules',
+  component: CategoryRulesPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -129,6 +136,7 @@ const routeTree = rootRoute.addChildren([
   savingsRoute,
   loansRoute,
   subscriptionsRoute,
+  categoryRulesRoute,
 ]);
 
 export const router = createRouter({
