@@ -4,7 +4,7 @@ describe('Anthropic Phase 1 / Phase 2 schemas', () => {
   describe('Phase1OutputSchema', () => {
     const valid = {
       bankName: 'LBP',
-      accountHolder: 'Sylvain',
+      accountHolder: 'Alex Démo',
       currency: 'EUR',
       openingBalance: 1000,
       closingBalance: 900,
