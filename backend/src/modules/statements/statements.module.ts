@@ -5,9 +5,10 @@ import { StorageModule } from '../storage/storage.module';
 import { SnapshotsModule } from '../snapshots/snapshots.module';
 import { AutoSyncModule } from '../auto-sync/auto-sync.module';
 import { ImportLogsModule } from '../import-logs/import-logs.module';
+import { CategoryRulesModule } from '../category-rules/category-rules.module';
 
 @Module({
-  imports: [AnalysisModule, StorageModule, SnapshotsModule, AutoSyncModule, ImportLogsModule],
+  imports: [AnalysisModule, StorageModule, SnapshotsModule, AutoSyncModule, ImportLogsModule, CategoryRulesModule],
   controllers: [StatementsController],
 })
 export class StatementsModule {}

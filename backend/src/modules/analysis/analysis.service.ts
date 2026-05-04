@@ -4,6 +4,7 @@ import { AnthropicService, ClaudeAnalysisResult } from './anthropic.service';
 import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
 import { AutoSyncService } from '../auto-sync/auto-sync.service';
+import { CategoryRulesService } from '../category-rules/category-rules.service';
 import { MonthlyStatement, AnalysisResponse, ExternalAccountBalance } from '../../models/monthly-statement.model';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
@@ -18,6 +19,7 @@ export class AnalysisService {
     private readonly storage: StorageService,
     private readonly snapshots: SnapshotService,
     private readonly autoSync: AutoSyncService,
+    private readonly categoryRules: CategoryRulesService,
   ) {}
 
   async reanalyzeStatement(id: string, pdfBuffer: Buffer): Promise<AnalysisResponse> {
@@ -32,6 +34,7 @@ export class AnalysisService {
         `Le PDF fourni correspond au relevé ${candidate.id}, pas au relevé ${id} demandé. Re-upload le bon PDF.`,
       );
     }
+    candidate.transactions = await this.categoryRules.apply(candidate.transactions);
     await this.snapshots.takeSnapshot(`before-reanalyze-${id}`);
     await this.storage.saveStatement(candidate);
     try {
@@ -48,6 +51,7 @@ export class AnalysisService {
     const result = await this.anthropic.analyzeBankStatement(pdfBuffer);
     const statement = this.buildStatement(result);
 
+    statement.transactions = await this.categoryRules.apply(statement.transactions);
     const existing = await this.storage.getStatement(statement.id);
     const replaced = existing !== null;
 

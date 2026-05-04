@@ -1,10 +1,12 @@
-import { BadRequestException, Controller, Delete, Get, NotFoundException, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
 import { AnalysisService } from '../analysis/analysis.service';
 import { AutoSyncService } from '../auto-sync/auto-sync.service';
 import { ImportLogsService } from '../import-logs/import-logs.service';
+import { CategoryRulesService } from '../category-rules/category-rules.service';
+import { TransactionCategory } from '../../models/transaction.model';
 
 @Controller('statements')
 export class StatementsController {
@@ -14,6 +16,7 @@ export class StatementsController {
     private readonly analysis: AnalysisService,
     private readonly autoSync: AutoSyncService,
     private readonly importLogs: ImportLogsService,
+    private readonly categoryRules: CategoryRulesService,
   ) {}
 
   @Get()
@@ -48,6 +51,56 @@ export class StatementsController {
     const statement = await this.storage.getStatement(id);
     if (!statement) throw new NotFoundException(`Relevé ${id} introuvable`);
     return statement;
+  }
+
+  @Patch(':id/transactions/:txId/category')
+  async patchTransactionCategory(
+    @Param('id') id: string,
+    @Param('txId') txId: string,
+    @Body() body: { category: string; subcategory?: string; createRule?: boolean; rulePattern?: string; replayAll?: boolean },
+  ) {
+    if (!body?.category) throw new BadRequestException('category requis');
+    const stmt = await this.storage.getStatement(id);
+    if (!stmt) throw new NotFoundException(`Relevé ${id} introuvable`);
+    const tx = stmt.transactions.find((t) => t.id === txId);
+    if (!tx) throw new NotFoundException(`Transaction ${txId} introuvable`);
+
+    tx.category = body.category as TransactionCategory;
+    tx.subcategory = body.subcategory ?? tx.subcategory;
+    await this.storage.saveStatement(stmt);
+
+    let createdRule = null;
+    if (body.createRule) {
+      const pattern = (body.rulePattern && body.rulePattern.trim())
+        || this.escapeRegex(tx.normalizedDescription || tx.description);
+      createdRule = await this.categoryRules.create({
+        pattern,
+        flags: 'i',
+        category: body.category,
+        subcategory: body.subcategory,
+        priority: 100,
+      });
+    }
+
+    let replayed = 0;
+    if (body.createRule && body.replayAll) {
+      const all = await this.storage.getAllStatements();
+      for (const s of all) {
+        const before = JSON.stringify(s.transactions.map((t) => [t.id, t.category, t.subcategory]));
+        s.transactions = await this.categoryRules.apply(s.transactions);
+        const after = JSON.stringify(s.transactions.map((t) => [t.id, t.category, t.subcategory]));
+        if (before !== after) {
+          await this.storage.saveStatement(s);
+          replayed++;
+        }
+      }
+    }
+
+    return { transaction: tx, createdRule, replayed };
+  }
+
+  private escapeRegex(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   @Delete(':id')

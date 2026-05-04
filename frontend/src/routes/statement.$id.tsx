@@ -15,6 +15,7 @@ import { useStatement, useDeleteStatement, useReanalyzeStatement } from '@/lib/q
 import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
 import { ScoreRing } from '@/components/score-ring';
+import { CategoryPicker } from '@/components/category-picker';
 import {
   CATEGORY_LABELS,
   type Transaction,
@@ -45,6 +46,7 @@ export function StatementDetailPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'credit' | 'debit'>('all');
   const [activeCat, setActiveCat] = useState<TransactionCategory | null>(null);
+  const [pickingTx, setPickingTx] = useState<Transaction | null>(null);
 
   const transactions = data?.transactions ?? [];
 
@@ -279,7 +281,7 @@ export function StatementDetailPage() {
             </div>
           </div>
           <div className="divide-y divide-border max-h-[640px] overflow-auto">
-            {filtered.map((t) => <TxRow key={t.id} t={t} />)}
+            {filtered.map((t) => <TxRow key={t.id} t={t} onPickCategory={setPickingTx} />)}
             {filtered.length === 0 && (
               <div className="text-sm text-fg-dim italic py-8 text-center">
                 Aucune transaction.
@@ -324,32 +326,38 @@ export function StatementDetailPage() {
           )}
         </section>
       )}
+
+      {pickingTx && (
+        <CategoryPicker statementId={id} tx={pickingTx} onClose={() => setPickingTx(null)} />
+      )}
     </>
   );
 }
 
-function TxRow({ t }: { t: Transaction }) {
+function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (t: Transaction) => void }) {
   const positive = t.amount > 0;
+  const knownCat = (Object.keys(CATEGORY_LABELS) as TransactionCategory[]).includes(t.category);
+  const color = knownCat ? CATEGORY_COLOR[t.category] : 'hsl(220 12% 50%)';
+  const label = knownCat ? CATEGORY_LABELS[t.category] : t.category;
   return (
     <div className="grid grid-cols-12 gap-3 items-center px-2 py-2.5 text-sm">
       <div className="col-span-2 text-xs text-fg-dim tabular">{formatDate(t.date)}</div>
       <div className="col-span-5 min-w-0">
         <div className="truncate text-fg">{t.description}</div>
         <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5">
-          {t.subcategory || CATEGORY_LABELS[t.category]}
+          {t.subcategory || label}
           {t.isRecurring && <span className="ml-2 text-accent-bright">· récurrent</span>}
         </div>
       </div>
       <div className="col-span-2">
-        <span
-          className="badge text-[10px]"
-          style={{
-            background: `${CATEGORY_COLOR[t.category]}20`,
-            color: CATEGORY_COLOR[t.category],
-          }}
+        <button
+          onClick={() => onPickCategory(t)}
+          className="badge text-[10px] cursor-pointer hover:ring-1 hover:ring-accent transition"
+          style={{ background: `${color}20`, color }}
+          title="Modifier la catégorie"
         >
-          {CATEGORY_LABELS[t.category]}
-        </span>
+          {label}
+        </button>
       </div>
       <div className={cn(
         'col-span-3 text-right tabular font-medium',
