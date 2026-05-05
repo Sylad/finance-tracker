@@ -14,6 +14,7 @@ import {
   Banknote,
   Zap,
   Tags,
+  Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BrandMark } from '../brand-mark';
@@ -30,6 +31,7 @@ export const NAV_ITEMS = [
   { to: '/declarations', label: 'Déclarations', icon: ListChecks, exact: false },
   { to: '/forecast', label: 'Prévisions', icon: CalendarRange, exact: false },
   { to: '/yearly', label: 'Bilan annuel', icon: CalendarDays, exact: false },
+  { to: '/goals', label: 'Objectifs', icon: Target, exact: false },
   { to: '/category-rules', label: 'Catégorisation', icon: Tags, exact: false },
   { to: '/upload', label: 'Importer', icon: Upload, exact: false },
 ] as const;
