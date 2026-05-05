@@ -9,9 +9,14 @@ import {
   Languages,
   Loader2,
   AlertCircle,
+  AlertTriangle,
+  Info,
+  Copy,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useQuery } from '@tanstack/react-query';
 import { useStatement, useDeleteStatement, useReanalyzeStatement } from '@/lib/queries';
+import { api } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
 import { ScoreRing } from '@/components/score-ring';
@@ -37,6 +42,14 @@ const CATEGORY_COLOR: Record<TransactionCategory, string> = {
   taxes: 'hsl(20 90% 55%)',
   other: 'hsl(220 8% 40%)',
 };
+
+interface AnomalyDto {
+  type: 'duplicate' | 'bank_fee_spike' | 'large_outlier' | 'new_recurring';
+  severity: 'info' | 'warning' | 'critical';
+  title: string;
+  detail: string;
+  transactionIds: string[];
+}
 
 function categoryTotalsFor(transactions: Transaction[]): Map<TransactionCategory, number> {
   const map = new Map<TransactionCategory, number>();
@@ -105,6 +118,14 @@ export function StatementDetailPage() {
   const debitsDelta = prev ? data ? data.totalDebits - prev.totalDebits : null : null;
   const debitsDeltaPct = prev && prev.totalDebits > 0 && data ? ((data.totalDebits - prev.totalDebits) / prev.totalDebits) * 100 : null;
   const scoreDelta = prev && data ? data.healthScore.total - prev.healthScore.total : null;
+
+  // Anomaly detection (server-side, deterministic)
+  const { data: anomaliesData } = useQuery<{ anomalies: AnomalyDto[] }>({
+    queryKey: ['statement', id, 'anomalies'],
+    queryFn: () => api.get(`/statements/${id}/anomalies`),
+    enabled: !!id,
+  });
+  const anomalies = anomaliesData?.anomalies ?? [];
 
   if (isLoading) return <LoadingState label="Récupération du relevé…" />;
   if (!data) return (
@@ -210,6 +231,18 @@ export function StatementDetailPage() {
           )}
         </div>
       </section>
+
+      {anomalies.length > 0 && (
+        <section className="card p-5 mb-6">
+          <div className="stat-label mb-3 flex items-center gap-2">
+            <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+            Anomalies détectées ({anomalies.length})
+          </div>
+          <div className="space-y-2">
+            {anomalies.map((a, i) => <AnomalyRow key={i} a={a} />)}
+          </div>
+        </section>
+      )}
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <div className="card p-5 lg:col-span-1">
@@ -378,6 +411,25 @@ export function StatementDetailPage() {
         <CategoryPicker statementId={id} tx={pickingTx} onClose={() => setPickingTx(null)} />
       )}
     </>
+  );
+}
+
+function AnomalyRow({ a }: { a: AnomalyDto }) {
+  const Icon = a.severity === 'critical' ? AlertCircle : a.severity === 'warning' ? AlertTriangle : Info;
+  const tone = a.severity === 'critical'
+    ? 'text-negative bg-negative/10 border-negative/40'
+    : a.severity === 'warning'
+      ? 'text-warning bg-warning/10 border-warning/40'
+      : 'text-fg-muted bg-surface-2 border-border';
+  const TypeIcon = a.type === 'duplicate' ? Copy : Icon;
+  return (
+    <div className={cn('flex items-start gap-3 px-3 py-2.5 rounded-md border', tone)}>
+      <TypeIcon className="h-4 w-4 shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium">{a.title}</div>
+        <div className="text-xs opacity-90 mt-0.5">{a.detail}</div>
+      </div>
+    </div>
   );
 }
 

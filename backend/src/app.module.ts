@@ -20,6 +20,7 @@ import { LoanSuggestionsModule } from './modules/loan-suggestions/loan-suggestio
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ImportLogsModule } from './modules/import-logs/import-logs.module';
 import { CategoryRulesModule } from './modules/category-rules/category-rules.module';
+import { AnomaliesModule } from './modules/anomalies/anomalies.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { CategoryRulesModule } from './modules/category-rules/category-rules.mod
     DashboardModule,
     ImportLogsModule,
     CategoryRulesModule,
+    AnomaliesModule,
   ],
 })
 export class AppModule implements NestModule {
