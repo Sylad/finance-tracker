@@ -22,6 +22,7 @@ import { LoansPage } from './routes/loans';
 import { SubscriptionsPage } from './routes/subscriptions';
 import { CategoryRulesPage } from './routes/category-rules';
 import { GoalsPage } from './routes/goals';
+import { HeatmapPage } from './routes/heatmap';
 
 const rootRoute = createRootRoute({ component: Root });
 
@@ -127,6 +128,12 @@ const goalsRoute = createRoute({
   component: GoalsPage,
 });
 
+const heatmapRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/heatmap',
+  component: HeatmapPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -145,6 +152,7 @@ const routeTree = rootRoute.addChildren([
   subscriptionsRoute,
   categoryRulesRoute,
   goalsRoute,
+  heatmapRoute,
 ]);
 
 export const router = createRouter({
