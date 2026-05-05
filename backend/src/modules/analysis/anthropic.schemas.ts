@@ -67,13 +67,6 @@ export const Phase2OutputSchema = z.object({
       category: z.enum(['salary', 'rental', 'pension', 'subsidy', 'investment', 'other']),
     }),
   ),
-  scoreFactors: z.object({
-    estimatedSavingsRate: z.number(),
-    discretionaryRatio: z.number(),
-    recurringObligationRatio: z.number(),
-    balanceTrend: z.number(),
-    spendingVarianceScore: z.number(),
-  }),
   analysisNarrative: z.string(),
   claudeHealthComment: z.string(),
   suggestedRecurringExpenses: z

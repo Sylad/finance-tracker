@@ -22,7 +22,6 @@ export interface ClaudeAnalysisResult {
   closingBalance: number;
   transactions: ClaudeTransaction[];
   recurringCredits: ClaudeRecurringCredit[];
-  scoreFactors: ClaudeScoreFactors;
   analysisNarrative: string;
   claudeHealthComment: string;
   suggestedRecurringExpenses?: {
@@ -66,14 +65,6 @@ export interface ClaudeRecurringCredit {
   contractEndDate: string | null;
   endDateConfidence: string;
   category: string;
-}
-
-export interface ClaudeScoreFactors {
-  estimatedSavingsRate: number;
-  discretionaryRatio: number;
-  recurringObligationRatio: number;
-  balanceTrend: number;
-  spendingVarianceScore: number;
 }
 
 // Phase 1 tool: compact transaction extraction
@@ -151,17 +142,6 @@ const ANALYZE_TOOL: Anthropic.Tool = {
           required: ['description', 'normalizedDescription', 'monthlyAmount', 'frequency', 'firstSeenDate', 'lastSeenDate', 'endDateConfidence', 'category'],
         },
       },
-      scoreFactors: {
-        type: 'object',
-        properties: {
-          estimatedSavingsRate: { type: 'number', description: '0-1' },
-          discretionaryRatio: { type: 'number', description: '0-1' },
-          recurringObligationRatio: { type: 'number', description: '0-1' },
-          balanceTrend: { type: 'number', description: '-1 to 1' },
-          spendingVarianceScore: { type: 'number', description: '0-1, 1=very consistent' },
-        },
-        required: ['estimatedSavingsRate', 'discretionaryRatio', 'recurringObligationRatio', 'balanceTrend', 'spendingVarianceScore'],
-      },
       analysisNarrative: { type: 'string', description: 'Résumé en français de 2-3 phrases (jamais en anglais)' },
       claudeHealthComment: { type: 'string', description: 'Forces et points d\'attention en français (jamais en anglais)' },
       suggestedRecurringExpenses: {
@@ -182,7 +162,7 @@ const ANALYZE_TOOL: Anthropic.Tool = {
         },
       },
     },
-    required: ['recurringCredits', 'scoreFactors', 'analysisNarrative', 'claudeHealthComment'],
+    required: ['recurringCredits', 'analysisNarrative', 'claudeHealthComment'],
   },
 };
 
@@ -270,7 +250,7 @@ export class AnthropicService {
       tool_choice: { type: 'tool', name: 'analyze_finances' },
       messages: [{
         role: 'user',
-        content: `Banque : ${p1.bankName}\nPériode : ${period.month}/${period.year}\nDevise : ${p1.currency}\nSolde initial : ${p1.openingBalance}\nSolde final : ${p1.closingBalance}\n\nTransactions :\n${txSummary}\n\nIdentifie les crédits récurrents, calcule les facteurs de score, et rédige un bilan de santé financière en français.`,
+        content: `Banque : ${p1.bankName}\nPériode : ${period.month}/${period.year}\nDevise : ${p1.currency}\nSolde initial : ${p1.openingBalance}\nSolde final : ${p1.closingBalance}\n\nTransactions :\n${txSummary}\n\nIdentifie les crédits récurrents et rédige un bilan de santé financière en français (le score lui-même est calculé côté backend de manière déterministe).`,
       }],
     });
 
@@ -330,7 +310,6 @@ export class AnthropicService {
         ...c,
         contractEndDate: c.contractEndDate ?? null,
       })),
-      scoreFactors: p2.scoreFactors,
       analysisNarrative: p2.analysisNarrative,
       claudeHealthComment: p2.claudeHealthComment,
       suggestedRecurringExpenses: p2.suggestedRecurringExpenses ?? [],

@@ -72,13 +72,6 @@ describe('Anthropic Phase 1 / Phase 2 schemas', () => {
           category: 'other',
         },
       ],
-      scoreFactors: {
-        estimatedSavingsRate: 0.15,
-        discretionaryRatio: 0.3,
-        recurringObligationRatio: 0.4,
-        balanceTrend: 0.1,
-        spendingVarianceScore: 0.7,
-      },
       analysisNarrative: 'Ça va.',
       claudeHealthComment: 'Forces : épargne. Points : crédits.',
     };

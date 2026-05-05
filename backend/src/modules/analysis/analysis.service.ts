@@ -5,10 +5,10 @@ import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
 import { AutoSyncService } from '../auto-sync/auto-sync.service';
 import { CategoryRulesService } from '../category-rules/category-rules.service';
+import { ScoreCalculatorService } from '../score/score-calculator.service';
 import { MonthlyStatement, AnalysisResponse, ExternalAccountBalance } from '../../models/monthly-statement.model';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
-import { FinancialHealthScore, ScoreTrend } from '../../models/financial-health-score.model';
 
 @Injectable()
 export class AnalysisService {
@@ -20,6 +20,7 @@ export class AnalysisService {
     private readonly snapshots: SnapshotService,
     private readonly autoSync: AutoSyncService,
     private readonly categoryRules: CategoryRulesService,
+    private readonly scoreCalc: ScoreCalculatorService,
   ) {}
 
   async reanalyzeStatement(id: string, pdfBuffer: Buffer): Promise<AnalysisResponse> {
@@ -108,8 +109,6 @@ export class AnalysisService {
       };
     });
 
-    const healthScore = this.computeScore(result, id);
-
     const totalCredits = transactions
       .filter((t) => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0);
@@ -117,7 +116,7 @@ export class AnalysisService {
       .filter((t) => t.amount < 0)
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-    return {
+    const partial: MonthlyStatement = {
       id,
       month,
       year,
@@ -130,7 +129,8 @@ export class AnalysisService {
       totalCredits,
       totalDebits,
       transactions,
-      healthScore,
+      // healthScore filled in below; placeholder zeros to satisfy the type
+      healthScore: { total: 0, breakdown: { savingsRate: 0, expenseControl: 0, debtBurden: 0, cashFlowBalance: 0, irregularSpending: 0 }, trend: 'insufficient_data', claudeComment: '' },
       recurringCredits,
       analysisNarrative: result.analysisNarrative ?? '',
       externalAccountBalances: (result.externalAccountBalances ?? []).map((b) => ({
@@ -141,37 +141,8 @@ export class AnalysisService {
         asOfDate: b.asOfDate,
       })),
     };
-  }
 
-  private computeScore(result: ClaudeAnalysisResult, id: string): FinancialHealthScore {
-    const f = result.scoreFactors;
-
-    const savingsRate = Math.max(0, Math.min(1, f.estimatedSavingsRate ?? 0));
-    const expenseControl = Math.max(0, Math.min(1, 1 - (f.discretionaryRatio ?? 0.5)));
-    const debtBurden = Math.max(0, Math.min(1, 1 - (f.recurringObligationRatio ?? 0.5)));
-    const balanceTrend = Math.max(0, Math.min(1, (f.balanceTrend + 1) / 2));
-    const irregularSpending = Math.max(0, Math.min(1, f.spendingVarianceScore ?? 0.5));
-
-    const total = Math.round(
-      (savingsRate * 0.25 +
-        expenseControl * 0.20 +
-        debtBurden * 0.20 +
-        balanceTrend * 0.20 +
-        irregularSpending * 0.15) *
-        100,
-    );
-
-    return {
-      total,
-      breakdown: {
-        savingsRate: Math.round(savingsRate * 100),
-        expenseControl: Math.round(expenseControl * 100),
-        debtBurden: Math.round(debtBurden * 100),
-        cashFlowBalance: Math.round(balanceTrend * 100),
-        irregularSpending: Math.round(irregularSpending * 100),
-      },
-      trend: 'insufficient_data' as ScoreTrend,
-      claudeComment: result.claudeHealthComment ?? '',
-    };
+    partial.healthScore = this.scoreCalc.compute(partial, result.claudeHealthComment ?? '');
+    return partial;
   }
 }

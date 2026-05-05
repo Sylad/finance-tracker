@@ -6,6 +6,7 @@ import { AnalysisService } from '../analysis/analysis.service';
 import { AutoSyncService } from '../auto-sync/auto-sync.service';
 import { ImportLogsService } from '../import-logs/import-logs.service';
 import { CategoryRulesService } from '../category-rules/category-rules.service';
+import { ScoreCalculatorService } from '../score/score-calculator.service';
 import { TransactionCategory } from '../../models/transaction.model';
 
 @Controller('statements')
@@ -17,7 +18,24 @@ export class StatementsController {
     private readonly autoSync: AutoSyncService,
     private readonly importLogs: ImportLogsService,
     private readonly categoryRules: CategoryRulesService,
+    private readonly scoreCalc: ScoreCalculatorService,
   ) {}
+
+  @Post('rescore-all')
+  async rescoreAll() {
+    const all = await this.storage.getAllStatements();
+    let updated = 0;
+    for (const stmt of all) {
+      const before = JSON.stringify(stmt.healthScore);
+      const fresh = this.scoreCalc.compute(stmt, stmt.healthScore.claudeComment);
+      stmt.healthScore = fresh;
+      if (JSON.stringify(stmt.healthScore) !== before) {
+        await this.storage.saveStatement(stmt);
+        updated++;
+      }
+    }
+    return { processed: all.length, updated };
+  }
 
   @Get()
   async findAll() {
