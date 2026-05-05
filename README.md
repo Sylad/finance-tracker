@@ -36,6 +36,10 @@ Le rôle de Claude : poser le code, expliquer, itérer.
 - **Suivi conso Claude** partagé avec les autres apps (claude-shared.json)
 - PIN guard simple en Bearer token
 
+## Comment ça marche sous le capot
+
+Curieux de savoir qui (toi / Claude / le backend) décide de quoi dans le pipeline d'analyse ? Le partage des rôles, les 5 dimensions du score déterministe, et l'historique des choix d'archi sont expliqués dans [**docs/HOW-IT-WORKS.md**](./docs/HOW-IT-WORKS.md).
+
 ## Stack
 
 | Couche | Tech |
