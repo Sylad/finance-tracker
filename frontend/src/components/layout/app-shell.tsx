@@ -4,6 +4,7 @@ import { Sidebar } from './sidebar';
 import { BottomNav } from './bottom-nav';
 import { TopBar } from './top-bar';
 import { CommandPalette } from '../command-palette';
+import { InstallPrompt } from '../install-prompt';
 import { demoStore } from '@/lib/demo';
 import { api } from '@/lib/api';
 
@@ -35,6 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </main>
       <CommandPalette />
+      <InstallPrompt />
     </div>
   );
 }
