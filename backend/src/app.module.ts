@@ -21,6 +21,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ImportLogsModule } from './modules/import-logs/import-logs.module';
 import { CategoryRulesModule } from './modules/category-rules/category-rules.module';
 import { AnomaliesModule } from './modules/anomalies/anomalies.module';
+import { GoalsModule } from './modules/goals/goals.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { AnomaliesModule } from './modules/anomalies/anomalies.module';
     ImportLogsModule,
     CategoryRulesModule,
     AnomaliesModule,
+    GoalsModule,
   ],
 })
 export class AppModule implements NestModule {
