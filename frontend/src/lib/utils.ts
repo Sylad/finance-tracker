@@ -14,6 +14,16 @@ export function formatEUR(amount: number, signed = false): string {
   }).format(amount);
 }
 
+/** Returns the YYYY-MM id of the month preceding the given one. */
+export function prevMonthId(id: string): string | null {
+  const m = id.match(/^(\d{4})-(\d{2})$/);
+  if (!m) return null;
+  let year = Number(m[1]);
+  let month = Number(m[2]) - 1;
+  if (month < 1) { month = 12; year -= 1; }
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
 export function formatMonth(month: number, year: number): string {
   const names = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
