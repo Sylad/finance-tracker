@@ -91,12 +91,32 @@ export function CategoryRulesPage() {
       )}
 
       <section className="card p-5 mb-6">
-        <div className="stat-label mb-3">Catégories personnelles</div>
+        <div className="stat-label mb-3">Catégories disponibles</div>
         <p className="text-xs text-fg-muted mb-3">
-          Ajoute des catégories supplémentaires à utiliser dans le picker (en plus des 11 prédéfinies).
+          Les 11 catégories prédéfinies sont toujours disponibles. Tu peux ajouter des catégories
+          personnelles supplémentaires utilisables dans le picker et les règles.
         </p>
-        <div className="flex flex-wrap gap-2 mb-3">
-          {userCats.length === 0 && <span className="text-xs text-fg-dim italic">Aucune.</span>}
+
+        <div className="text-[10px] uppercase tracking-wider text-fg-dim font-semibold mb-2">
+          Prédéfinies
+        </div>
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {BUILTIN.map((c) => (
+            <span
+              key={c}
+              className="badge text-xs px-2.5 py-1 bg-surface-2 border border-border text-fg-muted"
+              title={`Identifiant interne : ${c}`}
+            >
+              {CATEGORY_LABELS[c]}
+            </span>
+          ))}
+        </div>
+
+        <div className="text-[10px] uppercase tracking-wider text-fg-dim font-semibold mb-2">
+          Personnelles ({userCats.length})
+        </div>
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {userCats.length === 0 && <span className="text-xs text-fg-dim italic">Aucune pour l'instant.</span>}
           {userCats.map((c) => (
             <span key={c.id} className="badge-info text-xs flex items-center gap-1.5 pl-2.5 pr-1.5 py-1">
               {c.name}
