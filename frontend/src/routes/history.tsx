@@ -1,15 +1,25 @@
 import { Link } from '@tanstack/react-router';
-import { ArrowRight, ArrowDownRight, ArrowUpRight, Search } from 'lucide-react';
+import { ArrowRight, ArrowDownRight, ArrowUpRight, Search, RefreshCw, Loader2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useStatements } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
 import { ScoreBadge } from '@/components/score-ring';
 import { formatEUR, formatMonth } from '@/lib/utils';
+import { api } from '@/lib/api';
 
 export function HistoryPage() {
   const { data, isLoading } = useStatements();
   const [query, setQuery] = useState('');
+  const qc = useQueryClient();
+  const rescore = useMutation({
+    mutationFn: () => api.post<{ processed: number; updated: number }>('/statements/rescore-all'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['statements'] });
+      qc.invalidateQueries({ queryKey: ['statement'] });
+    },
+  });
 
   const filtered = useMemo(() => {
     const all = data ?? [];
@@ -40,18 +50,35 @@ export function HistoryPage() {
         title="Historique"
         subtitle={`${data?.length ?? 0} relevés analysés. Clique sur un mois pour voir le détail.`}
         actions={
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fg-dim" />
-            <input
-              type="text"
-              placeholder="Rechercher..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="input pl-9 w-64"
-            />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => rescore.mutate()}
+              disabled={rescore.isPending || !data || data.length === 0}
+              className="btn-ghost text-sm"
+              title="Recalcule les scores avec la formule actuelle (instantané, pas d'appel Claude)"
+            >
+              {rescore.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Recalculer les scores
+            </button>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fg-dim" />
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="input pl-9 w-64"
+              />
+            </div>
           </div>
         }
       />
+
+      {rescore.isSuccess && rescore.data && (
+        <div className="mb-4 p-3 rounded-md bg-positive/10 border border-positive/40 text-sm">
+          Scores recalculés : {rescore.data.updated} relevé(s) modifié(s) sur {rescore.data.processed}.
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="card p-12 text-center text-fg-dim">Aucun relevé.</div>
