@@ -1,4 +1,5 @@
-import { BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Header, NotFoundException, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
@@ -55,6 +56,43 @@ export class StatementsController {
   @Get('yearly')
   async getYearlySummaries() {
     return this.storage.getAllYearlySummaries();
+  }
+
+  @Get('export.csv')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  async exportCsv(
+    @Query('from') from: string | undefined,
+    @Query('to') to: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const all = await this.storage.getAllStatements();
+    const sorted = all
+      .filter((s) => (!from || s.id >= from) && (!to || s.id <= to))
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    const periodLabel = sorted.length === 0 ? 'vide' :
+      sorted.length === 1 ? sorted[0].id : `${sorted[0].id}_to_${sorted[sorted.length - 1].id}`;
+    res.setHeader('Content-Disposition', `attachment; filename="finance-tracker-${periodLabel}.csv"`);
+
+    const lines: string[] = [];
+    lines.push(['Mois', 'Date', 'Libellé', 'Catégorie', 'Sous-catégorie', 'Récurrent', 'Montant (€)'].map(csv).join(','));
+    for (const s of sorted) {
+      const monthLabel = `${s.year}-${String(s.month).padStart(2, '0')}`;
+      const txs = [...s.transactions].sort((a, b) => a.date.localeCompare(b.date));
+      for (const t of txs) {
+        lines.push([
+          monthLabel,
+          t.date,
+          t.description,
+          t.category,
+          t.subcategory,
+          t.isRecurring ? 'oui' : '',
+          t.amount.toFixed(2).replace('.', ','),
+        ].map(csv).join(','));
+      }
+    }
+    // BOM so Excel auto-detects UTF-8
+    return '﻿' + lines.join('\n');
   }
 
   @Get('yearly/:year')
@@ -170,4 +208,12 @@ export class StatementsController {
       throw e;
     }
   }
+}
+
+function csv(value: string): string {
+  // RFC 4180-ish: quote if contains comma, quote, or newline; double internal quotes.
+  if (value == null) return '';
+  const s = String(value);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
 }
