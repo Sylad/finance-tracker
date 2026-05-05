@@ -105,6 +105,10 @@ export function Sidebar() {
       </nav>
 
       <div className="px-3 pb-3 border-t border-border pt-3 space-y-1">
+        <div className="px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-fg-dim flex items-center justify-between">
+          <span>Recherche rapide</span>
+          <kbd className="font-sans normal-case text-[10px] tracking-normal border border-border rounded px-1.5 py-[1px] text-fg-muted">⌘K</kbd>
+        </div>
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-fg-muted hover:bg-surface-2/60 hover:text-fg transition-colors"
