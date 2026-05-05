@@ -21,7 +21,7 @@ import {
   type Transaction,
   type TransactionCategory,
 } from '@/types/api';
-import { formatEUR, formatMonth, formatDate, cn, chartTooltipProps } from '@/lib/utils';
+import { formatEUR, formatMonth, formatDate, cn, chartTooltipProps, prevMonthId } from '@/lib/utils';
 
 const CATEGORY_COLOR: Record<TransactionCategory, string> = {
   income: 'hsl(160 84% 50%)',
@@ -37,9 +37,23 @@ const CATEGORY_COLOR: Record<TransactionCategory, string> = {
   other: 'hsl(220 8% 40%)',
 };
 
+function categoryTotalsFor(transactions: Transaction[]): Map<TransactionCategory, number> {
+  const map = new Map<TransactionCategory, number>();
+  for (const t of transactions) {
+    if (t.amount < 0) {
+      map.set(t.category, (map.get(t.category) ?? 0) + Math.abs(t.amount));
+    }
+  }
+  return map;
+}
+
 export function StatementDetailPage() {
   const { id } = useParams({ from: '/history/$id' });
   const { data, isLoading } = useStatement(id);
+  const prevId = prevMonthId(id);
+  // Best-effort fetch of the previous statement for delta comparisons.
+  // It's OK if it doesn't exist (first month, missing import) — we just hide the deltas.
+  const { data: prev } = useStatement(prevId ?? undefined);
   const del = useDeleteStatement();
   const reanalyze = useReanalyzeStatement();
   const navigate = useNavigate();
@@ -64,22 +78,32 @@ export function StatementDetailPage() {
     });
   }, [transactions, filter, activeCat, search]);
 
+  const prevTotals = useMemo(() => prev ? categoryTotalsFor(prev.transactions) : null, [prev]);
+
   const categoryBreakdown = useMemo(() => {
-    const map = new Map<TransactionCategory, number>();
-    for (const t of transactions) {
-      if (t.amount < 0) {
-        map.set(t.category, (map.get(t.category) ?? 0) + Math.abs(t.amount));
-      }
-    }
-    return Array.from(map.entries())
-      .map(([cat, total]) => ({
-        category: cat,
-        label: CATEGORY_LABELS[cat],
-        value: Math.round(total * 100) / 100,
-        color: CATEGORY_COLOR[cat],
-      }))
+    const totals = categoryTotalsFor(transactions);
+    return Array.from(totals.entries())
+      .map(([cat, total]) => {
+        const prevValue = prevTotals?.get(cat) ?? null;
+        const delta = prevValue != null ? total - prevValue : null;
+        const deltaPct = prevValue && prevValue > 0 ? ((total - prevValue) / prevValue) * 100 : null;
+        return {
+          category: cat,
+          label: CATEGORY_LABELS[cat],
+          value: Math.round(total * 100) / 100,
+          color: CATEGORY_COLOR[cat],
+          prevValue,
+          delta,
+          deltaPct,
+        };
+      })
       .sort((a, b) => b.value - a.value);
-  }, [transactions]);
+  }, [transactions, prevTotals]);
+
+  // Header-level deltas (computed against the previous statement when available)
+  const debitsDelta = prev ? data ? data.totalDebits - prev.totalDebits : null : null;
+  const debitsDeltaPct = prev && prev.totalDebits > 0 && data ? ((data.totalDebits - prev.totalDebits) / prev.totalDebits) * 100 : null;
+  const scoreDelta = prev && data ? data.healthScore.total - prev.healthScore.total : null;
 
   if (isLoading) return <LoadingState label="Récupération du relevé…" />;
   if (!data) return (
@@ -139,6 +163,9 @@ export function StatementDetailPage() {
           <div className="font-display text-xl font-semibold tabular text-negative mt-2 flex items-center gap-1.5">
             <ArrowDownRight className="h-4 w-4" /> {formatEUR(data.totalDebits)}
           </div>
+          {prev && debitsDelta != null && (
+            <DeltaBadge delta={debitsDelta} pct={debitsDeltaPct} prevMonth={formatMonth(prev.month, prev.year)} invertColors />
+          )}
         </div>
         <div className="card p-5">
           <div className="stat-label">Solde de clôture</div>
@@ -152,7 +179,14 @@ export function StatementDetailPage() {
         <div className="card p-5 flex items-start gap-4 relative">
           <ScoreRing score={data.healthScore.total} size={70} strokeWidth={6} />
           <div className={cn('flex-1 min-w-0 transition-opacity', reanalyze.isPending && 'opacity-30')}>
-            <div className="stat-label">Score</div>
+            <div className="stat-label flex items-center gap-2">
+              Score
+              {scoreDelta != null && scoreDelta !== 0 && (
+                <span className={cn('text-[10px] font-semibold tabular', scoreDelta > 0 ? 'text-positive' : 'text-negative')}>
+                  {scoreDelta > 0 ? '↑+' : '↓'}{scoreDelta} pts
+                </span>
+              )}
+            </div>
             <div className="text-xs text-fg-muted mt-1.5 leading-relaxed line-clamp-3">
               {data.healthScore.claudeComment}
             </div>
@@ -215,7 +249,7 @@ export function StatementDetailPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="space-y-1.5 mt-3 max-h-44 overflow-auto pr-1">
+              <div className="space-y-1.5 mt-3 max-h-52 overflow-auto pr-1">
                 {categoryBreakdown.map((b) => (
                   <button
                     key={b.category}
@@ -225,12 +259,24 @@ export function StatementDetailPage() {
                       activeCat === b.category ? 'bg-surface-2' : 'hover:bg-surface-2/50',
                     )}
                   >
-                    <span className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-sm" style={{ background: b.color }} />
-                      <span className="text-fg">{b.label}</span>
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: b.color }} />
+                      <span className="text-fg truncate">{b.label}</span>
                     </span>
-                    <span className="text-fg-muted tabular">{formatEUR(b.value)}</span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      <CategoryDelta prevValue={b.prevValue} delta={b.delta} deltaPct={b.deltaPct} />
+                      <span className="text-fg-muted tabular">{formatEUR(b.value)}</span>
+                    </span>
                   </button>
+                ))}
+                {prev && categoriesAbsentThisMonth(prevTotals, categoryBreakdown).map((cat) => (
+                  <div key={cat} className="w-full flex items-center justify-between text-xs px-2 py-1.5 rounded opacity-60">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="h-2.5 w-2.5 rounded-sm shrink-0 bg-fg-dim" />
+                      <span className="text-fg-muted truncate italic">{CATEGORY_LABELS[cat]}</span>
+                    </span>
+                    <span className="text-positive text-[10px] tabular">disparu</span>
+                  </div>
                 ))}
               </div>
             </>
@@ -331,6 +377,45 @@ export function StatementDetailPage() {
         <CategoryPicker statementId={id} tx={pickingTx} onClose={() => setPickingTx(null)} />
       )}
     </>
+  );
+}
+
+function categoriesAbsentThisMonth(
+  prev: Map<TransactionCategory, number> | null,
+  current: { category: TransactionCategory }[],
+): TransactionCategory[] {
+  if (!prev) return [];
+  const currentSet = new Set(current.map((c) => c.category));
+  return Array.from(prev.keys()).filter((c) => !currentSet.has(c));
+}
+
+function CategoryDelta({ prevValue, delta, deltaPct }: { prevValue: number | null; delta: number | null; deltaPct: number | null }) {
+  if (prevValue == null) {
+    return <span className="text-[10px] uppercase tracking-wider text-positive font-semibold">nouveau</span>;
+  }
+  if (delta == null || Math.abs(delta) < 0.01) {
+    return <span className="text-[10px] tabular text-fg-dim">=</span>;
+  }
+  const up = delta > 0;
+  // For expenses, going UP is bad (red), going DOWN is good (green).
+  return (
+    <span className={cn('text-[10px] tabular font-semibold', up ? 'text-negative' : 'text-positive')}>
+      {up ? '↑' : '↓'}{deltaPct != null ? `${Math.abs(Math.round(deltaPct))}%` : formatEUR(Math.abs(delta))}
+    </span>
+  );
+}
+
+function DeltaBadge({ delta, pct, prevMonth, invertColors }: { delta: number; pct: number | null; prevMonth: string; invertColors?: boolean }) {
+  if (Math.abs(delta) < 0.01) {
+    return <div className="text-[10px] text-fg-dim mt-1">= vs {prevMonth}</div>;
+  }
+  const up = delta > 0;
+  // For debits we invert: more debits = bad (red), less = good (green).
+  const isBad = invertColors ? up : !up;
+  return (
+    <div className={cn('text-[10px] tabular font-semibold mt-1', isBad ? 'text-negative' : 'text-positive')}>
+      {up ? '↑+' : '↓'}{pct != null ? `${Math.abs(Math.round(pct))}%` : ''} {formatEUR(Math.abs(delta))} vs {prevMonth}
+    </div>
   );
 }
 
