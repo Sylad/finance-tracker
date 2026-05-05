@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { ArrowRight, ArrowDownRight, ArrowUpRight, Search, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowDownRight, ArrowUpRight, Search, RefreshCw, Loader2, Download } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useStatements } from '@/lib/queries';
@@ -8,6 +8,8 @@ import { LoadingState } from '@/components/loading-state';
 import { ScoreBadge } from '@/components/score-ring';
 import { formatEUR, formatMonth } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { authStore } from '@/lib/auth';
+import { demoStore } from '@/lib/demo';
 
 export function HistoryPage() {
   const { data, isLoading } = useStatements();
@@ -20,6 +22,28 @@ export function HistoryPage() {
       qc.invalidateQueries({ queryKey: ['statement'] });
     },
   });
+
+  const handleExport = async () => {
+    const pin = authStore.getPin();
+    const headers: Record<string, string> = {};
+    if (pin) headers.Authorization = `Bearer ${pin}`;
+    if (demoStore.isActive()) headers['X-Demo-Mode'] = 'true';
+    const res = await fetch('/api/statements/export.csv', { headers });
+    if (!res.ok) {
+      alert('Export impossible (HTTP ' + res.status + ')');
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = res.headers.get('Content-Disposition')?.match(/filename="(.+?)"/)?.[1]
+      ?? 'finance-tracker-export.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   const filtered = useMemo(() => {
     const all = data ?? [];
@@ -51,6 +75,15 @@ export function HistoryPage() {
         subtitle={`${data?.length ?? 0} relevés analysés. Clique sur un mois pour voir le détail.`}
         actions={
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              disabled={!data || data.length === 0}
+              className="btn-ghost text-sm"
+              title="Télécharge toutes les transactions au format CSV (Excel-compatible)"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </button>
             <button
               onClick={() => rescore.mutate()}
               disabled={rescore.isPending || !data || data.length === 0}
