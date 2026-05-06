@@ -10,6 +10,19 @@ export interface LoanOccurrence {
   description?: string;  // Libellé de la transaction d'origine (pour split par référence)
 }
 
+export interface LoanStatementSnapshot {
+  date: string;          // ISO timestamp de l'import
+  source: 'pdf-import' | 'manual' | 'auto-sync';
+  extractedValues: {
+    currentBalance?: number;
+    maxAmount?: number;
+    monthlyPayment?: number;
+    endDate?: string | null;
+    statementDate?: string;
+    taeg?: number | null;
+  };
+}
+
 export interface Loan {
   id: string;
   name: string;
@@ -30,6 +43,8 @@ export interface Loan {
   lastManualResetAt?: string;
   // Tracking
   occurrencesDetected: LoanOccurrence[];
+  // Snapshot du dernier relevé crédit importé
+  lastStatementSnapshot?: LoanStatementSnapshot;
   createdAt: string;
   updatedAt: string;
 }

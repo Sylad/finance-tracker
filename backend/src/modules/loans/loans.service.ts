@@ -2,9 +2,20 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
-import { Loan, LoanInput, LoanOccurrence } from '../../models/loan.model';
+import { Loan, LoanInput, LoanOccurrence, LoanStatementSnapshot } from '../../models/loan.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
+
+export interface CreditStatementSnapshotInput {
+  creditor: string;
+  creditType: 'revolving' | 'classic';
+  currentBalance: number;
+  maxAmount?: number;
+  monthlyPayment: number;
+  endDate: string | null;
+  taeg: number | null;
+  statementDate: string;
+}
 
 @Injectable()
 export class LoansService {
@@ -297,6 +308,60 @@ export class LoansService {
       createdCount,
       groups: [...groups.entries()].map(([key, g]) => ({ key, amount: g.amount, ref: g.ref || undefined, count: g.occurrences.length })),
     };
+  }
+
+  /**
+   * Met à jour un loan à partir des valeurs extraites d'un relevé de crédit
+   * (PDF analysé par Claude). Ne touche pas à `id`, `name`, `category`,
+   * `matchPattern`, `occurrencesDetected`, `createdAt`. Stocke le snapshot
+   * extrait dans `lastStatementSnapshot`.
+   */
+  async applyStatementSnapshot(
+    id: string,
+    extracted: CreditStatementSnapshotInput,
+  ): Promise<Loan> {
+    const all = await this.getAll();
+    const idx = all.findIndex((l) => l.id === id);
+    if (idx === -1) throw new NotFoundException(`Crédit ${id} introuvable`);
+    const loan = all[idx];
+
+    if (extracted.creditType === 'revolving') {
+      if (extracted.maxAmount != null && extracted.maxAmount > 0) {
+        loan.maxAmount = extracted.maxAmount;
+      }
+      // Pour un revolving, currentBalance = utilisation actuelle
+      loan.usedAmount = Math.max(0, extracted.currentBalance);
+    } else {
+      // classic : on n'écrase pas usedAmount/maxAmount qui sont revolving-only
+      if (extracted.endDate) loan.endDate = extracted.endDate;
+    }
+
+    if (Number.isFinite(extracted.monthlyPayment) && extracted.monthlyPayment > 0) {
+      loan.monthlyPayment = extracted.monthlyPayment;
+    }
+
+    // Renseigne creditor uniquement s'il est vide (l'utilisateur garde la main).
+    if (!loan.creditor && extracted.creditor) {
+      loan.creditor = extracted.creditor;
+    }
+
+    const snapshot: LoanStatementSnapshot = {
+      date: new Date().toISOString(),
+      source: 'pdf-import',
+      extractedValues: {
+        currentBalance: extracted.currentBalance,
+        maxAmount: extracted.maxAmount,
+        monthlyPayment: extracted.monthlyPayment,
+        endDate: extracted.endDate,
+        statementDate: extracted.statementDate,
+        taeg: extracted.taeg,
+      },
+    };
+    loan.lastStatementSnapshot = snapshot;
+    loan.updatedAt = new Date().toISOString();
+
+    await this.persist(all);
+    return loan;
   }
 
   private async persist(all: Loan[]): Promise<void> {

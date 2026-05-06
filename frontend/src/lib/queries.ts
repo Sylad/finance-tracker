@@ -6,6 +6,7 @@ import type {
   Declaration,
   DeclarationInput,
   ForecastMonth,
+  ImportLoanStatementResult,
   MonthlyStatement,
   RecurringCredit,
   ScoreHistoryEntry,
@@ -380,6 +381,20 @@ export function useResyncLoan() {
         `/auto-sync/loans/${id}`,
         baselineUsedAmount !== undefined ? { baselineUsedAmount } : undefined,
       ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkLoans.all() });
+    },
+  });
+}
+
+export function useImportLoanStatement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api.postForm<ImportLoanStatementResult>(`/loans/${id}/import-statement`, form);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qkLoans.all() });
     },
