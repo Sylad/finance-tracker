@@ -306,6 +306,19 @@ export interface LoanOccurrence {
 // Marker for the Loan type (placed here for proximity to LoanOccurrence)
 // The full Loan interface lives further down in this file already.
 
+export interface LoanStatementSnapshot {
+  date: string;
+  source: 'pdf-import' | 'manual' | 'auto-sync';
+  extractedValues: {
+    currentBalance?: number;
+    maxAmount?: number;
+    monthlyPayment?: number;
+    endDate?: string | null;
+    statementDate?: string;
+    taeg?: number | null;
+  };
+}
+
 export interface Loan {
   id: string;
   name: string;
@@ -323,11 +336,30 @@ export interface Loan {
   usedAmount?: number;
   lastManualResetAt?: string;
   occurrencesDetected: LoanOccurrence[];
+  lastStatementSnapshot?: LoanStatementSnapshot;
   createdAt: string;
   updatedAt: string;
 }
 
-export type LoanInput = Omit<Loan, 'id' | 'occurrencesDetected' | 'createdAt' | 'updatedAt'>;
+export type LoanInput = Omit<Loan, 'id' | 'occurrencesDetected' | 'lastStatementSnapshot' | 'createdAt' | 'updatedAt'>;
+
+export interface CreditStatementExtraction {
+  creditor: string;
+  creditType: LoanType;
+  currentBalance: number;
+  maxAmount?: number;
+  monthlyPayment: number;
+  endDate: string | null;
+  taeg: number | null;
+  statementDate: string;
+  accountNumber: string | null;
+}
+
+export interface ImportLoanStatementResult {
+  loan: Loan;
+  extracted: CreditStatementExtraction;
+  previous: Loan;
+}
 
 export type LoanSuggestionStatus = 'pending' | 'accepted' | 'rejected' | 'snoozed';
 

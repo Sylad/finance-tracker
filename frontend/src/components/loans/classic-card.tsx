@@ -1,11 +1,14 @@
-import { Banknote, Pencil, Trash2, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { Banknote, FileUp, Pencil, Trash2, RefreshCw } from 'lucide-react';
 import { useResyncLoan } from '@/lib/queries';
 import { type Loan, LOAN_CATEGORY_LABELS } from '@/types/api';
 import { formatEUR } from '@/lib/utils';
 import { SplitButton } from './split-button';
+import { ImportStatementModal } from './import-statement-modal';
 
 export function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
   const resync = useResyncLoan();
+  const [importing, setImporting] = useState(false);
   const start = loan.startDate ? new Date(loan.startDate).getTime() : 0;
   const end = loan.endDate ? new Date(loan.endDate).getTime() : 0;
   const now = Date.now();
@@ -66,6 +69,14 @@ export function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: ()
         <RefreshCw className={`h-3 w-3 ${resync.isPending ? 'animate-spin' : ''}`} />
         {resync.isPending ? 'Re-scan en cours…' : 'Re-scanner les relevés'}
       </button>
+      <button
+        onClick={() => setImporting(true)}
+        className="btn-ghost text-xs mt-2 flex items-center gap-1"
+      >
+        <FileUp className="h-3 w-3" />
+        Importer un relevé crédit (PDF)
+      </button>
+      {importing && <ImportStatementModal loan={loan} onClose={() => setImporting(false)} />}
     </div>
   );
 }
