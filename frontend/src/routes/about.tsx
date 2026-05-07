@@ -162,6 +162,31 @@ export function AboutPage() {
         </div>
       </section>
 
+      <section className="card p-5 mb-6">
+        <h3 className="font-display text-lg font-semibold text-fg-bright mb-1">Mes autres sites</h3>
+        <p className="text-sm text-fg-muted mb-5">
+          Quatre autres apps perso vibe-codées avec Claude Code. Toutes en open-source.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { tag: '🦖', name: 'Evatosorus', desc: 'Codex Mésozoïque (cadeau pour Eva)', url: 'https://evatosorus.pages.dev' },
+            { tag: '⚔️', name: 'Warhammer 40K Codex', desc: 'Fan codex narratif W40K', url: 'https://github.com/Sylad/warhammer40k' },
+            { tag: '⚽', name: 'OL Companion', desc: 'Suivi Olympique Lyonnais', url: 'https://github.com/Sylad/ol-companion' },
+            { tag: '🌿', name: 'Eywa', desc: 'Codex Pandora (pour Eva)', url: 'https://eywa-eywa.pages.dev' },
+          ].map((s) => (
+            <a key={s.name} href={s.url} target="_blank" rel="noopener"
+              className="card-hover p-3 flex items-center gap-3 group">
+              <span className="text-2xl select-none">{s.tag}</span>
+              <span className="flex-1 min-w-0">
+                <span className="block font-display font-semibold text-fg-bright group-hover:text-accent-bright transition-colors">{s.name}</span>
+                <span className="block text-xs text-fg-muted">{s.desc}</span>
+              </span>
+              <ExternalLink className="h-3.5 w-3.5 text-fg-dim group-hover:text-accent-bright shrink-0" />
+            </a>
+          ))}
+        </div>
+      </section>
+
       <section className="card p-5 text-center">
         <div className="text-fg-muted text-sm leading-relaxed max-w-2xl mx-auto">
           Si tu veux faire pareil : prends un sujet qui t'énerve, ouvre Claude Code, décris le problème
