@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
-import { Loan, LoanInput, LoanOccurrence, LoanStatementSnapshot } from '../../models/loan.model';
+import { Loan, LoanInput, LoanOccurrence, LoanOccurrenceSource, LoanStatementSnapshot } from '../../models/loan.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 
@@ -82,21 +82,74 @@ export class LoansService {
     await this.persist(next);
   }
 
+  /**
+   * Ajoute une occurrence à un loan, avec dédup multi-niveau :
+   *
+   * 1. Dédup stricte sur (statementId, transactionId) — empêche un même
+   *    relevé de réinjecter la même transaction au re-scan.
+   * 2. Dédup mensuelle sur (loanId, YYYY-MM) — empêche le double-comptage
+   *    quand la mensualité apparaît dans un relevé compte ET un relevé
+   *    crédit (typique : 1-3 jours d'écart). La nouvelle occurrence
+   *    remplace l'existante uniquement si elle a une priorité de source
+   *    supérieure : credit_statement > bank_statement > manual.
+   */
   async addOccurrence(
     id: string,
-    occ: { statementId: string; date: string; amount: number; transactionId: string | null; description?: string },
+    occ: {
+      statementId: string;
+      date: string;
+      amount: number;
+      transactionId: string | null;
+      description?: string;
+      source?: LoanOccurrenceSource;
+    },
   ): Promise<Loan> {
     const all = await this.getAll();
     const idx = all.findIndex((l) => l.id === id);
     if (idx === -1) throw new NotFoundException(`Crédit ${id} introuvable`);
     const loan = all[idx];
+    const source: LoanOccurrenceSource = occ.source ?? 'bank_statement';
+
+    // Niveau 1 : dédup stricte (statementId, transactionId)
     const dupKey = (o: LoanOccurrence) => `${o.statementId}|${o.transactionId ?? ''}`;
     const newKey = `${occ.statementId}|${occ.transactionId ?? ''}`;
     if (loan.occurrencesDetected.some((o) => dupKey(o) === newKey)) {
-      this.logger.debug(`Skipping duplicate occurrence on loan ${id}`);
+      this.logger.debug(`Skipping exact duplicate occurrence on loan ${id} (${newKey})`);
       return loan;
     }
-    const newOcc: LoanOccurrence = { id: randomUUID(), ...occ };
+
+    // Niveau 2 : dédup mensuelle (YYYY-MM, loanId) — gère les décalages temporels
+    const monthOf = (d: string) => d.slice(0, 7); // 'YYYY-MM-DD' → 'YYYY-MM'
+    const newMonth = monthOf(occ.date);
+    const sourcePriority = (s: LoanOccurrenceSource | undefined): number => {
+      // Plus haut = plus prioritaire. credit_statement = source canonique
+      // (émis par l'organisme prêteur), donc remplace bank_statement et manual.
+      if (s === 'credit_statement') return 3;
+      if (s === 'bank_statement' || s === undefined) return 2; // undefined = legacy = bank
+      return 1; // manual
+    };
+    const existingSameMonth = loan.occurrencesDetected.find(
+      (o) => monthOf(o.date) === newMonth,
+    );
+    if (existingSameMonth) {
+      const existingPrio = sourcePriority(existingSameMonth.source);
+      const newPrio = sourcePriority(source);
+      if (newPrio <= existingPrio) {
+        this.logger.debug(
+          `Skipping occurrence on loan ${id} for ${newMonth} — existing ${existingSameMonth.source ?? 'bank'} has equal/higher priority`,
+        );
+        return loan;
+      }
+      // Nouvelle source plus prioritaire → remplacement
+      this.logger.log(
+        `Replacing ${existingSameMonth.source ?? 'bank'} occurrence with ${source} on loan ${id} for ${newMonth}`,
+      );
+      loan.occurrencesDetected = loan.occurrencesDetected.filter(
+        (o) => o.id !== existingSameMonth.id,
+      );
+    }
+
+    const newOcc: LoanOccurrence = { id: randomUUID(), ...occ, source };
     loan.occurrencesDetected.push(newOcc);
     if (loan.type === 'revolving' && loan.usedAmount != null) {
       loan.usedAmount = Math.max(0, Math.round((loan.usedAmount - Math.abs(occ.amount)) * 100) / 100);
@@ -362,6 +415,30 @@ export class LoansService {
 
     await this.persist(all);
     return loan;
+  }
+
+  /**
+   * Cherche un Loan dont le contractRef matche l'accountNumber extrait
+   * d'un relevé de crédit. Le matching tolère les variations de format :
+   * - Comparaison case-insensitive
+   * - Strip des espaces et tirets (les N° sont parfois formatés
+   *   "1234 5678 9012" ou "1234-5678-9012" sur les PDFs)
+   * - Substring matching dans les deux sens (loan ref dans account number
+   *   ou inverse) — l'organisme abrège parfois le N° complet.
+   */
+  async findByAccountNumber(accountNumber: string): Promise<Loan | null> {
+    if (!accountNumber) return null;
+    const normalize = (s: string) => s.toLowerCase().replace(/[\s-]/g, '');
+    const target = normalize(accountNumber);
+    if (target.length < 4) return null; // évite les faux matchs sur des N° trop courts
+    const all = await this.getAll();
+    return (
+      all.find((loan) => {
+        if (!loan.contractRef) return false;
+        const ref = normalize(loan.contractRef);
+        return ref === target || ref.includes(target) || target.includes(ref);
+      }) ?? null
+    );
   }
 
   private async persist(all: Loan[]): Promise<void> {

@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import {
   useLoans,
   useCreateLoan,
   useUpdateLoan,
   useDeleteLoan,
   useAcceptSuggestion,
+  useImportCreditStatements,
+  type CreditStatementImportResult,
 } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
@@ -38,10 +40,24 @@ export function LoansPage() {
   const update = useUpdateLoan();
   const remove = useDeleteLoan();
   const acceptSugg = useAcceptSuggestion();
+  const importCredit = useImportCreditStatements();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState<Loan | null>(null);
   const [creating, setCreating] = useState(false);
   const [suggestionToAccept, setSuggestionToAccept] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState<LoanInput | null>(null);
+  const [importResult, setImportResult] = useState<CreditStatementImportResult | null>(null);
+
+  const handleCreditUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    try {
+      const result = await importCredit.mutateAsync(Array.from(files));
+      setImportResult(result);
+    } catch (e) {
+      alert(`Erreur upload : ${(e as Error).message}`);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   if (isLoading) return <LoadingState />;
   const items = data ?? [];
@@ -78,11 +94,67 @@ export function LoansPage() {
         title={`${formatEUR(totalMonthly)} / mois`}
         subtitle={`${items.filter((l) => l.isActive).length} crédit${items.length > 1 ? 's' : ''} actif${items.length > 1 ? 's' : ''}`}
         actions={
-          <button onClick={() => { setCreating(true); setEditing(null); }} className="btn-primary">
-            <Plus className="h-4 w-4" /> Nouveau crédit
-          </button>
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              multiple
+              hidden
+              onChange={(e) => handleCreditUpload(e.target.files)}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importCredit.isPending}
+              className="btn-secondary"
+              title="Importer un ou plusieurs PDF de relevé de crédit. Le N° de contrat sera reconnu automatiquement."
+            >
+              {importCredit.isPending ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Analyse…</>
+              ) : (
+                <><Upload className="h-4 w-4" /> Relevés crédit (PDF)</>
+              )}
+            </button>
+            <button onClick={() => { setCreating(true); setEditing(null); }} className="btn-primary">
+              <Plus className="h-4 w-4" /> Nouveau crédit
+            </button>
+          </div>
         }
       />
+
+      {importResult && (
+        <div className="card p-5 mb-4 relative">
+          <button
+            onClick={() => setImportResult(null)}
+            className="absolute top-3 right-3 text-fg-dim hover:text-fg"
+            aria-label="Fermer"
+          ><X className="h-4 w-4" /></button>
+          <h3 className="font-display text-sm font-semibold text-fg-bright mb-3">Import terminé</h3>
+          <ul className="space-y-2">
+            {importResult.results.map((r, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm">
+                {r.error ? (
+                  <AlertCircle className="h-4 w-4 text-negative mt-0.5 shrink-0" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-positive mt-0.5 shrink-0" />
+                )}
+                <span className="flex-1 min-w-0">
+                  <span className="font-mono text-xs text-fg-dim">{r.filename}</span>
+                  {r.error ? (
+                    <span className="block text-negative text-xs">{r.error}</span>
+                  ) : (
+                    <span className="block text-fg-muted text-xs">
+                      {r.created ? '🆕 nouveau crédit' : '🔗 rattaché'} · {r.creditor}
+                      {r.accountNumber && <> · #{r.accountNumber}</>}
+                      {r.monthlyPayment != null && <> · {formatEUR(r.monthlyPayment)}/mois</>}
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {items.length > 0 && <LoansMonthlyChart loans={items} />}
 

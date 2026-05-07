@@ -4,7 +4,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
 import { parseExternal } from '../../common/zod-validation.pipe';
 import { isAuthError, isQuotaError } from '../../common/claude-errors';
-import { CreditStatementOutputSchema, CreditStatementOutput } from './credit-statement.schemas';
+import { CreditStatementOutputSchema } from './credit-statement.schemas';
+import type { CreditStatementOutput } from './credit-statement.schemas';
 
 export class CreditStatementParseError extends Error {
   constructor(message: string, public readonly cause?: unknown) {

@@ -177,6 +177,40 @@ export function useUploadStatements() {
   });
 }
 
+export interface CreditStatementImportResult {
+  results: Array<{
+    filename: string;
+    loanId?: string;
+    created?: boolean;
+    matched?: boolean;
+    creditor?: string;
+    accountNumber?: string | null;
+    monthlyPayment?: number;
+    error?: string;
+  }>;
+}
+
+/**
+ * Upload multi-PDF de relevés de crédit avec matching automatique.
+ * Pour chaque PDF, le backend extrait le N° de contrat (Claude) et matche
+ * un Loan existant via contractRef. S'il n'y a pas de match, crée un
+ * nouveau Loan pré-rempli. Pas de choix manuel à faire côté UI.
+ */
+export function useImportCreditStatements() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (files: File[]) => {
+      const form = new FormData();
+      for (const f of files) form.append('files', f);
+      return api.postForm<CreditStatementImportResult>('/loans/import-credit-statements', form);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['loans'] });
+      qc.invalidateQueries({ queryKey: qk.statements() });
+    },
+  });
+}
+
 export function useDeleteStatement() {
   const qc = useQueryClient();
   return useMutation({
