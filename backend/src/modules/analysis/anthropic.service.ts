@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
 import { parseExternal } from '../../common/zod-validation.pipe';
+import { isAuthError, isQuotaError } from '../../common/claude-errors';
 import { Phase1OutputSchema, Phase2OutputSchema, Phase1Output, Phase2Output } from './anthropic.schemas';
 
 export class AnthropicParseError extends Error {
@@ -166,16 +167,6 @@ const ANALYZE_TOOL: Anthropic.Tool = {
   },
 };
 
-function isQuotaError(err: unknown): boolean {
-  if (err instanceof Anthropic.RateLimitError) return true;
-  if (err instanceof Anthropic.AuthenticationError) return true;
-  if (err instanceof Anthropic.APIError) {
-    const msg = (err.message ?? '').toLowerCase();
-    return err.status === 402 || msg.includes('credit') || msg.includes('quota');
-  }
-  return false;
-}
-
 @Injectable()
 export class AnthropicService {
   private readonly client: Anthropic;
@@ -271,6 +262,15 @@ export class AnthropicService {
     // Merge results
     return this.mergeResults(p1, p2, transactions, period);
     } catch (err) {
+      if (isAuthError(err)) {
+        throw new HttpException(
+          {
+            code: 'CLAUDE_AUTH_ERROR',
+            message: 'Clé API Claude invalide/révoquée — vérifie ANTHROPIC_API_KEY',
+          },
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
       if (isQuotaError(err)) {
         throw new HttpException('CLAUDE_QUOTA_EXCEEDED', HttpStatus.PAYMENT_REQUIRED);
       }
