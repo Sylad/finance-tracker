@@ -1,17 +1,18 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { RequestDataDirService } from '../demo/request-data-dir.service';
+
+const BUDGETS_FILE = 'budgets.json';
 
 @Injectable()
-export class BudgetService implements OnModuleInit {
+export class BudgetService {
   private readonly logger = new Logger(BudgetService.name);
-  private filepath: string;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly dataDir: RequestDataDirService) {}
 
-  onModuleInit() {
-    this.filepath = path.resolve(this.config.get<string>('dataDir')!, 'budgets.json');
+  private get filepath(): string {
+    return path.resolve(this.dataDir.getDataDir(), BUDGETS_FILE);
   }
 
   async getBudgets(): Promise<Record<string, number>> {
