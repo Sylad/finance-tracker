@@ -3,7 +3,14 @@ import { z } from 'zod';
 import { LoanSuggestionsService } from './loan-suggestions.service';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 
-const AcceptSchema = z.object({ loanId: z.string().min(1) });
+const AcceptSchema = z
+  .object({
+    loanId: z.string().min(1).optional(),
+    subscriptionId: z.string().min(1).optional(),
+  })
+  .refine((b) => Boolean(b.loanId) !== Boolean(b.subscriptionId), {
+    message: 'Exactement un de loanId ou subscriptionId est requis',
+  });
 
 @Controller('loan-suggestions')
 export class LoanSuggestionsController {
@@ -15,9 +22,9 @@ export class LoanSuggestionsController {
   @Post(':id/accept')
   accept(
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(AcceptSchema)) body: { loanId: string },
+    @Body(new ZodValidationPipe(AcceptSchema)) body: { loanId?: string; subscriptionId?: string },
   ) {
-    return this.svc.accept(id, body.loanId);
+    return this.svc.accept(id, body);
   }
 
   @Post(':id/reject')

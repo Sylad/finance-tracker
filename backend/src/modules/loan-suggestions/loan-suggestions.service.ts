@@ -73,8 +73,11 @@ export class LoanSuggestionsService {
     return 'pattern:' + s.matchPattern.toLowerCase().replace(/\s+/g, ' ').trim();
   }
 
-  async accept(id: string, loanId: string): Promise<LoanSuggestion> {
-    return this.transition(id, 'accepted', loanId);
+  async accept(
+    id: string,
+    target: { loanId?: string; subscriptionId?: string },
+  ): Promise<LoanSuggestion> {
+    return this.transition(id, 'accepted', target);
   }
 
   async reject(id: string): Promise<LoanSuggestion> {
@@ -95,13 +98,18 @@ export class LoanSuggestionsService {
     return all[idx];
   }
 
-  private async transition(id: string, status: LoanSuggestion['status'], loanId?: string): Promise<LoanSuggestion> {
+  private async transition(
+    id: string,
+    status: LoanSuggestion['status'],
+    target?: { loanId?: string; subscriptionId?: string },
+  ): Promise<LoanSuggestion> {
     const all = await this.getAll();
     const idx = all.findIndex((s) => s.id === id);
     if (idx === -1) throw new NotFoundException(`Suggestion ${id} introuvable`);
     all[idx].status = status;
     all[idx].resolvedAt = new Date().toISOString();
-    if (loanId) all[idx].acceptedAsLoanId = loanId;
+    if (target?.loanId) all[idx].acceptedAsLoanId = target.loanId;
+    if (target?.subscriptionId) all[idx].acceptedAsSubscriptionId = target.subscriptionId;
     await this.persist(all);
     return all[idx];
   }

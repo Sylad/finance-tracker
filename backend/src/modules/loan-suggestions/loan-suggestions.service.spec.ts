@@ -75,9 +75,21 @@ describe('LoanSuggestionsService', () => {
       suggestedType: 'loan', matchPattern: 'Y',
     }]);
     const [s] = await svc.getAll();
-    const updated = await svc.accept(s.id, 'loan-123');
+    const updated = await svc.accept(s.id, { loanId: 'loan-123' });
     expect(updated.status).toBe('accepted');
     expect(updated.acceptedAsLoanId).toBe('loan-123');
     expect(updated.resolvedAt).toBeDefined();
+  });
+
+  it('accept routes a subscription suggestion to acceptedAsSubscriptionId', async () => {
+    await svc.upsertMany('2026-03', [{
+      label: 'NETFLIX', monthlyAmount: 17.99, occurrencesSeen: 4, firstSeenDate: '2025-11-01',
+      suggestedType: 'subscription', matchPattern: 'NETFLIX',
+    }]);
+    const [s] = await svc.getAll();
+    const updated = await svc.accept(s.id, { subscriptionId: 'sub-456' });
+    expect(updated.status).toBe('accepted');
+    expect(updated.acceptedAsSubscriptionId).toBe('sub-456');
+    expect(updated.acceptedAsLoanId).toBeUndefined();
   });
 });
