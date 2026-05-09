@@ -19,6 +19,8 @@ import type {
   Loan,
   LoanInput,
   LoanSuggestion,
+  Subscription,
+  SubscriptionInput,
   NetWorth,
   DashboardAlert,
   YearlyOverview,
@@ -373,6 +375,18 @@ export function useAcceptSuggestion() {
   });
 }
 
+export function useAcceptSubscriptionSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, subscriptionId }: { id: string; subscriptionId: string }) =>
+      api.post<LoanSuggestion>(`/loan-suggestions/${id}/accept`, { subscriptionId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkSuggestions.all() });
+      qc.invalidateQueries({ queryKey: qkSubscriptions.all() });
+    },
+  });
+}
+
 export function useRejectSuggestion() {
   const qc = useQueryClient();
   return useMutation({
@@ -394,6 +408,43 @@ export function useUnsnoozeSuggestion() {
   return useMutation({
     mutationFn: (id: string) => api.post<LoanSuggestion>(`/loan-suggestions/${id}/unsnooze`),
     onSuccess: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
+  });
+}
+
+export const qkSubscriptions = {
+  all: () => ['subscriptions'] as const,
+  one: (id: string) => ['subscriptions', id] as const,
+};
+
+export function useSubscriptions() {
+  return useQuery({
+    queryKey: qkSubscriptions.all(),
+    queryFn: () => api.get<Subscription[]>('/subscriptions'),
+  });
+}
+
+export function useCreateSubscription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SubscriptionInput) => api.post<Subscription>('/subscriptions', input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSubscriptions.all() }),
+  });
+}
+
+export function useUpdateSubscription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: SubscriptionInput }) =>
+      api.put<Subscription>(`/subscriptions/${id}`, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSubscriptions.all() }),
+  });
+}
+
+export function useDeleteSubscription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/subscriptions/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSubscriptions.all() }),
   });
 }
 

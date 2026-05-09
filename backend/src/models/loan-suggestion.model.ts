@@ -16,6 +16,7 @@ export interface LoanSuggestion {
   createdAt: string;
   resolvedAt?: string;
   acceptedAsLoanId?: string;
+  acceptedAsSubscriptionId?: string;
 }
 
 export interface IncomingSuggestion {

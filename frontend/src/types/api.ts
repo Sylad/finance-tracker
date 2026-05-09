@@ -378,7 +378,66 @@ export interface LoanSuggestion {
   createdAt: string;
   resolvedAt?: string;
   acceptedAsLoanId?: string;
+  acceptedAsSubscriptionId?: string;
 }
+
+export type SubscriptionFrequency = 'monthly' | 'quarterly' | 'yearly';
+export type SubscriptionCategory =
+  | 'streaming'
+  | 'utility'
+  | 'software'
+  | 'membership'
+  | 'telecom'
+  | 'insurance'
+  | 'other';
+
+export const SUBSCRIPTION_CATEGORY_LABELS: Record<SubscriptionCategory, string> = {
+  streaming: 'Streaming',
+  utility: 'Énergie / eau',
+  software: 'Logiciels',
+  membership: 'Adhésion',
+  telecom: 'Télécom',
+  insurance: 'Assurance',
+  other: 'Autre',
+};
+
+export const SUBSCRIPTION_FREQUENCY_LABELS: Record<SubscriptionFrequency, string> = {
+  monthly: 'Mensuel',
+  quarterly: 'Trimestriel',
+  yearly: 'Annuel',
+};
+
+export interface SubscriptionOccurrence {
+  id: string;
+  statementId: string;
+  date: string;
+  amount: number;
+  transactionId: string | null;
+  description?: string;
+  source?: 'bank_statement' | 'manual';
+}
+
+export interface Subscription {
+  id: string;
+  name: string;
+  creditor?: string;
+  monthlyAmount: number;
+  frequency: SubscriptionFrequency;
+  category: SubscriptionCategory;
+  contractRef?: string;
+  matchPattern: string;
+  isActive: boolean;
+  startDate?: string;
+  endDate?: string;
+  occurrencesDetected: SubscriptionOccurrence[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SubscriptionInput = Omit<
+  Subscription,
+  'id' | 'occurrencesDetected' | 'createdAt' | 'updatedAt'
+>;
 
 export interface NetWorth {
   closingBalance: number;
