@@ -632,6 +632,25 @@ describe('LoansService', () => {
       expect(LoansService.getLoanHealth(loan, '2026-01-15')).toBe('partial');
     });
 
+    it('getLoanHealth installment : partial (pas gap) si 0 paid — relevés bancaires manquent', () => {
+      // Cas du contrat fraîchement importé sans relevé bancaire matchant :
+      // matcher rétroactif n'a rien trouvé → schedule reste à 0/N paid.
+      // Doit afficher PARTIEL (jaune) plutôt que TROU (rouge), car ce n'est
+      // pas un problème — juste un manque d'info.
+      const loan = {
+        kind: 'installment',
+        type: 'classic',
+        installmentSchedule: [
+          { dueDate: '2025-11-02', amount: 65, paid: false },
+          { dueDate: '2025-12-03', amount: 65, paid: false },
+          { dueDate: '2026-01-03', amount: 65, paid: false },
+          { dueDate: '2026-02-03', amount: 65, paid: false },
+        ],
+        occurrencesDetected: [],
+      } as any;
+      expect(LoansService.getLoanHealth(loan, '2026-05-10')).toBe('partial');
+    });
+
     it('getSuspiciousLoans skip les kind=installment (légitimes)', async () => {
       await svc.create({
         name: 'COFIDIS 4XCB AMAZON', type: 'classic', kind: 'installment',

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { LoansService } from './loans.service';
 import type { MatchSignals, MatchResult, AmortizationSnapshotInput } from './loans.service';
 import type { CreditStatementAnalysis } from '../analysis/credit-statement.service';
+import { StorageService } from '../storage/storage.service';
 import type { LoanInput, Loan, InstallmentLine } from '../../models/loan.model';
 
 /**
@@ -31,7 +32,10 @@ export type LoanDefaults = Partial<LoanInput> & Pick<LoanInput, 'name' | 'type' 
 export class ImportOrchestratorService {
   private readonly logger = new Logger(ImportOrchestratorService.name);
 
-  constructor(private readonly loans: LoansService) {}
+  constructor(
+    private readonly loans: LoansService,
+    private readonly storage: StorageService,
+  ) {}
 
   /**
    * Find-or-create générique. Utilisé par tous les paths qui ont besoin
@@ -105,7 +109,66 @@ export class ImportOrchestratorService {
       installmentSignatureDate: details.signatureDate ?? undefined,
     };
     const result = await this.findOrCreate(signals, defaults);
+    // Retro-match : à l'import du contrat, marquer paid les past dueDates
+    // dont on retrouve la trace dans les relevés bancaires existants. Sans
+    // ce retro-match, le card affiche "0/4 · TROU" alors que les débits ont
+    // déjà eu lieu — l'invariant 1 débit/mois nous donne 1 candidat unique
+    // par échéance.
+    if (result.created) {
+      await this.retroMatchInstallment(result.loan);
+    }
     return result;
+  }
+
+  /**
+   * Pour un Loan installment fraîchement créé : parcourt tous les relevés
+   * bancaires stockés, cherche les transactions matchant chaque past dueDate
+   * (date ±3j, amount ±0.50€, description contient creditor), et marque
+   * paid via `markInstallmentPaid`. Idempotent — sans effet si le matcher
+   * ne trouve rien (pas de relevé bancaire couvrant la période).
+   */
+  private async retroMatchInstallment(loan: Loan): Promise<void> {
+    const schedule = loan.installmentSchedule;
+    if (!schedule || schedule.length === 0) return;
+    const creditorLower = (loan.creditor ?? '').toLowerCase().trim();
+    if (!creditorLower) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const allStatements = await this.storage.getAllStatements();
+    let marked = 0;
+    for (let i = 0; i < schedule.length; i++) {
+      const line = schedule[i];
+      if (line.paid) continue;
+      if (line.dueDate > today) continue; // future, pas de débit attendu
+
+      const dueMs = new Date(line.dueDate + 'T00:00:00Z').getTime();
+      const tolMs = 3 * 24 * 3600 * 1000;
+      let matched: { tx: { id: string; date: string; amount: number; description: string }; statementId: string } | null = null;
+      for (const stmt of allStatements) {
+        for (const t of stmt.transactions) {
+          if (!t.description.toLowerCase().includes(creditorLower)) continue;
+          const txMs = new Date(t.date + 'T00:00:00Z').getTime();
+          if (Math.abs(txMs - dueMs) > tolMs) continue;
+          if (Math.abs(Math.abs(t.amount) - line.amount) > 0.5) continue;
+          matched = { tx: t, statementId: stmt.id };
+          break;
+        }
+        if (matched) break;
+      }
+      if (!matched) continue;
+      await this.loans.addOccurrence(loan.id, {
+        statementId: matched.statementId,
+        date: matched.tx.date,
+        amount: matched.tx.amount,
+        transactionId: matched.tx.id,
+        description: matched.tx.description,
+      });
+      await this.loans.markInstallmentPaid(loan.id, i, matched.statementId);
+      marked++;
+    }
+    if (marked > 0) {
+      this.logger.log(`Retro-matched installment loan ${loan.id}: ${marked}/${schedule.length} past dueDates marked paid`);
+    }
   }
 
   /**
