@@ -85,9 +85,21 @@ describe('CreditStatementOutputSchema', () => {
     expect(r.taeg).toBeNull();
   });
 
-  it('rejects non-numeric currentBalance', () => {
+  it('coerces numeric strings (Claude renvoie parfois "1234" au lieu de 1234)', () => {
+    // Pattern observé sur les contrats Cofidis 4XCB : Claude met maxAmount
+    // en string. Le schema doit coercer pour ne pas faire échouer l'import.
+    const r = CreditStatementOutputSchema.parse({
+      ...validClassic,
+      currentBalance: '4521.50' as any,
+      maxAmount: '1000' as any,
+    });
+    expect(r.currentBalance).toBe(4521.5);
+    expect(r.maxAmount).toBe(1000);
+  });
+
+  it('rejects truly non-numeric currentBalance (pas une string numérique)', () => {
     expect(() =>
-      CreditStatementOutputSchema.parse({ ...validClassic, currentBalance: '4521' }),
+      CreditStatementOutputSchema.parse({ ...validClassic, currentBalance: 'not-a-number' as any }),
     ).toThrow();
   });
 });

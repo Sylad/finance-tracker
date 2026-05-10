@@ -975,7 +975,10 @@ export class LoansService {
       }
       const paid = past.filter((l) => l.paid).length;
       if (paid === past.length) return 'complete';
-      if (paid === 0) return 'gap';
+      // 0 paid n'est PAS forcément un trou : si aucun relevé bancaire ne
+      // couvre les dueDates, le matcher n'a rien pu vérifier. On reste sur
+      // 'partial' (jaune) pour signaler "à compléter via import relevé"
+      // plutôt que 'gap' (rouge) qui suggère un problème.
       return 'partial';
     }
 

@@ -36,15 +36,33 @@ export const InstallmentDetailsSchema = z.object({
 
 export type InstallmentDetails = z.infer<typeof InstallmentDetailsSchema>;
 
+/**
+ * Coerce les nombres potentiellement renvoyés en string par Claude
+ * (constaté sur `maxAmount` des contrats 4XCB où Claude met "1000" au lieu
+ * de 1000, ou simplement N/A car installment ≠ revolving). Pratique standard
+ * pour les schemas Zod consommant du JSON LLM.
+ */
+const numberLike = z.preprocess(
+  (v) => {
+    if (typeof v === 'string') {
+      const cleaned = v.replace(/[^\d.,-]/g, '').replace(',', '.');
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : v;
+    }
+    return v;
+  },
+  z.number(),
+);
+
 export const CreditStatementOutputSchema = z
   .object({
     creditor: z.string(),
     creditType: z.enum(['revolving', 'classic']),
-    currentBalance: z.number(),
-    maxAmount: z.number().optional(),
-    monthlyPayment: z.number(),
+    currentBalance: numberLike,
+    maxAmount: numberLike.nullable().optional(),
+    monthlyPayment: numberLike,
     endDate: z.string().nullable().optional(),
-    taeg: z.number().nullable().optional(),
+    taeg: numberLike.nullable().optional(),
     statementDate: z.string(),
     startDate: z.string().nullable().optional(),
     accountNumber: z.string().nullable().optional(),
@@ -52,11 +70,18 @@ export const CreditStatementOutputSchema = z
     installmentDetails: InstallmentDetailsSchema.nullable().optional(),
   })
   .superRefine((value, ctx) => {
-    if (value.creditType === 'revolving' && (value.maxAmount == null || value.maxAmount <= 0)) {
+    // maxAmount n'est requis QUE pour revolving SANS installmentDetails
+    // (un contrat 4XCB est creditType='revolving' chez Cofidis mais doit être
+    // traité comme installment, donc maxAmount n'a pas de sens).
+    if (
+      value.creditType === 'revolving'
+      && !value.installmentDetails
+      && (value.maxAmount == null || value.maxAmount <= 0)
+    ) {
       ctx.addIssue({
         code: 'custom',
         path: ['maxAmount'],
-        message: 'maxAmount requis pour un crédit revolving',
+        message: 'maxAmount requis pour un crédit revolving (sans installmentDetails)',
       });
     }
   });

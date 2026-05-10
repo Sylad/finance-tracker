@@ -215,7 +215,7 @@ export class CreditStatementService {
         creditor: parsed.creditor,
         creditType: parsed.creditType,
         currentBalance: parsed.currentBalance,
-        maxAmount: parsed.maxAmount,
+        maxAmount: parsed.maxAmount ?? undefined,
         monthlyPayment: parsed.monthlyPayment,
         endDate: parsed.endDate ?? null,
         taeg: parsed.taeg ?? null,
