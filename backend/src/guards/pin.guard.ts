@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { timingSafeEqual } from 'crypto';
 import { Request } from 'express';
 
 @Injectable()
@@ -45,7 +46,14 @@ export class PinGuard implements CanActivate {
     const auth = req.headers['authorization'] ?? '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
 
-    if (!this.pin || token === this.pin) return true;
+    if (!this.pin) return true; // Mode permissif (warning loggé au boot)
+
+    // timingSafeEqual : protection contre attaques timing-based.
+    if (token.length !== this.pin.length) {
+      throw new UnauthorizedException('PIN invalide');
+    }
+    const ok = timingSafeEqual(Buffer.from(token), Buffer.from(this.pin));
+    if (ok) return true;
 
     throw new UnauthorizedException('PIN invalide');
   }
