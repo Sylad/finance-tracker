@@ -293,7 +293,9 @@ describe('AutoSyncService', () => {
         .toHaveBeenCalledWith('cofidis-4x', 0, 'occ-1');
     });
 
-    it("ne match PAS si la date diffère de >3j", async () => {
+    it("ne match PAS si la date est hors fenêtre [-3j, +15j]", async () => {
+      // Cofidis prélève typiquement 7-11j après la dueDate ; +15j est la
+      // limite. 25 jours après = clairement hors fenêtre.
       const installmentLoan = {
         id: 'cofidis-4x', name: '4× COFIDIS', type: 'classic', kind: 'installment',
         category: 'consumer', monthlyPayment: 65.81, matchPattern: 'COFIDIS', isActive: true,
@@ -308,7 +310,7 @@ describe('AutoSyncService', () => {
         ...baseStatement,
         transactions: [
           {
-            id: 'tx-a', date: '2025-11-08', // 6 jours après dueDate ✗
+            id: 'tx-a', date: '2025-11-27', // 25 jours après dueDate ✗
             description: 'PRELEVT COFIDIS', normalizedDescription: 'prelevt cofidis',
             amount: -65.81, currency: 'EUR', category: 'subscriptions', subcategory: '', isRecurring: true, confidence: 1,
           },
@@ -316,6 +318,39 @@ describe('AutoSyncService', () => {
       };
       await svc.syncStatement(stmt);
       expect(loans.addOccurrence).not.toHaveBeenCalled();
+    });
+
+    it("match dans la fenêtre +15j (Cofidis prélève souvent ~10j après l'échéance)", async () => {
+      const installmentLoan = {
+        id: 'cofidis-4x', name: '4× COFIDIS', type: 'classic', kind: 'installment',
+        category: 'consumer', monthlyPayment: 65.81, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'COFIDIS',
+        installmentSchedule: [{ dueDate: '2025-11-02', amount: 65.81, paid: false }],
+        occurrencesDetected: [],
+        createdAt: '', updatedAt: '',
+      };
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([installmentLoan as any]);
+      (loans as unknown as { getOne: jest.Mock }).getOne = jest.fn().mockResolvedValue({
+        ...installmentLoan,
+        occurrencesDetected: [{ id: 'occ-late', statementId: '2025-11', date: '2025-11-12', amount: -65.81, transactionId: 'tx-late' }],
+      });
+      (loans as unknown as { markInstallmentPaid: jest.Mock }).markInstallmentPaid = jest.fn();
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        id: '2025-11', month: 11, year: 2025,
+        transactions: [
+          {
+            id: 'tx-late', date: '2025-11-12', // 10 jours après dueDate ✓
+            description: 'Cofidis Amazon', normalizedDescription: 'cofidis amazon',
+            amount: -65.81, currency: 'EUR', category: 'subscriptions', subcategory: '', isRecurring: true, confidence: 1,
+          },
+        ],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('cofidis-4x', expect.objectContaining({
+        transactionId: 'tx-late',
+      }));
     });
 
     it("ne match PAS si l'amount diffère de >0.50€", async () => {
