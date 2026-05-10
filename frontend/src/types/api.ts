@@ -329,6 +329,7 @@ export interface Loan {
   isActive: boolean;
   creditor?: string;
   contractRef?: string;
+  rumRefs?: string[];
   startDate?: string;
   endDate?: string;
   initialPrincipal?: number;

@@ -105,4 +105,202 @@ describe('LoansService', () => {
     expect(updated.usedAmount).toBe(800);
     expect(updated.lastManualResetAt).toBeDefined();
   });
+
+  describe('findByIdentifiers (matcher avec RUM fallback)', () => {
+    it('matches by contractRef when accountNumber provided', async () => {
+      const loan = await svc.create({
+        name: 'Cofidis',
+        type: 'revolving',
+        category: 'consumer',
+        monthlyPayment: 80,
+        matchPattern: 'COFIDIS',
+        isActive: true,
+        creditor: 'COFIDIS',
+        contractRef: '51215116521100',
+        maxAmount: 3000,
+        usedAmount: 0,
+      });
+      const found = await svc.findByIdentifiers({ accountNumber: '51215116521100' });
+      expect(found?.id).toBe(loan.id);
+    });
+
+    it('matches by contractRef with formatted variations (spaces, hyphens)', async () => {
+      const loan = await svc.create({
+        name: 'Sofinco',
+        type: 'classic',
+        category: 'auto',
+        monthlyPayment: 240,
+        matchPattern: 'SOFINCO',
+        isActive: true,
+        contractRef: '12345678',
+      });
+      // PDF version with spaces/hyphens still matches
+      expect((await svc.findByIdentifiers({ accountNumber: '1234 5678' }))?.id).toBe(loan.id);
+      expect((await svc.findByIdentifiers({ accountNumber: '1234-5678' }))?.id).toBe(loan.id);
+      expect((await svc.findByIdentifiers({ accountNumber: '12345678' }))?.id).toBe(loan.id);
+    });
+
+    it('falls back to rumRefs when accountNumber misses', async () => {
+      const loan = await svc.create({
+        name: 'Cofidis',
+        type: 'revolving',
+        category: 'consumer',
+        monthlyPayment: 80,
+        matchPattern: 'COFIDIS',
+        isActive: true,
+        creditor: 'COFIDIS',
+        contractRef: '51215116521100',
+        rumRefs: ['COFI20240315ABC'],
+        maxAmount: 3000,
+        usedAmount: 0,
+      });
+      // Statement avec RUM mais sans accountNumber (cas Cofidis typique)
+      const found = await svc.findByIdentifiers({
+        accountNumber: null,
+        rumNumber: 'COFI20240315ABC',
+      });
+      expect(found?.id).toBe(loan.id);
+    });
+
+    it('falls back to rumRefs with normalized matching', async () => {
+      const loan = await svc.create({
+        name: 'Cofidis',
+        type: 'revolving',
+        category: 'consumer',
+        monthlyPayment: 80,
+        matchPattern: 'COFIDIS',
+        isActive: true,
+        rumRefs: ['COFI-2024-0315-ABC'],
+        maxAmount: 3000,
+        usedAmount: 0,
+      });
+      const found = await svc.findByIdentifiers({ rumNumber: 'COFI20240315ABC' });
+      expect(found?.id).toBe(loan.id);
+    });
+
+    it('returns null when neither contractRef nor rumRefs match', async () => {
+      await svc.create({
+        name: 'Sofinco',
+        type: 'classic',
+        category: 'auto',
+        monthlyPayment: 240,
+        matchPattern: 'SOFINCO',
+        isActive: true,
+        contractRef: '12345678',
+        rumRefs: ['SOFI-MAND-001'],
+      });
+      const found = await svc.findByIdentifiers({
+        accountNumber: '99999999',
+        rumNumber: 'COMPLETELY-DIFFERENT-RUM',
+      });
+      expect(found).toBeNull();
+    });
+
+    it('returns null when no identifiers provided', async () => {
+      await svc.create({
+        name: 'Cofidis',
+        type: 'revolving',
+        category: 'consumer',
+        monthlyPayment: 80,
+        matchPattern: 'COFIDIS',
+        isActive: true,
+        contractRef: '51215116521100',
+        maxAmount: 3000,
+      });
+      const found = await svc.findByIdentifiers({ accountNumber: null, rumNumber: null });
+      expect(found).toBeNull();
+    });
+
+    it('contractRef takes precedence over rumRefs when both could match', async () => {
+      const loanA = await svc.create({
+        name: 'Cofidis A',
+        type: 'revolving',
+        category: 'consumer',
+        monthlyPayment: 80,
+        matchPattern: 'COFIDIS',
+        isActive: true,
+        contractRef: '11111111',
+        rumRefs: ['SHARED-RUM'],
+        maxAmount: 3000,
+      });
+      await svc.create({
+        name: 'Cofidis B',
+        type: 'revolving',
+        category: 'consumer',
+        monthlyPayment: 80,
+        matchPattern: 'COFIDIS',
+        isActive: true,
+        contractRef: '22222222',
+        rumRefs: ['SHARED-RUM'], // collision RUM (théorique mais protège l'algorithme)
+        maxAmount: 3000,
+      });
+      // Quand accountNumber identifie A : on prend A même si le RUM est dans les deux
+      const found = await svc.findByIdentifiers({
+        accountNumber: '11111111',
+        rumNumber: 'SHARED-RUM',
+      });
+      expect(found?.id).toBe(loanA.id);
+    });
+  });
+
+  describe('attachRumRef', () => {
+    it('appends a new RUM to a loan that has none', async () => {
+      const loan = await svc.create({
+        name: 'Cofidis',
+        type: 'revolving',
+        category: 'consumer',
+        monthlyPayment: 80,
+        matchPattern: 'COFIDIS',
+        isActive: true,
+        contractRef: '51215116521100',
+        maxAmount: 3000,
+      });
+      const updated = await svc.attachRumRef(loan.id, 'COFI20240315ABC');
+      expect(updated.rumRefs).toEqual(['COFI20240315ABC']);
+    });
+
+    it('appends a second RUM (mandate renewal scenario)', async () => {
+      const loan = await svc.create({
+        name: 'Cofidis',
+        type: 'revolving',
+        category: 'consumer',
+        monthlyPayment: 80,
+        matchPattern: 'COFIDIS',
+        isActive: true,
+        rumRefs: ['COFI-MANDATE-V1'],
+        maxAmount: 3000,
+      });
+      const updated = await svc.attachRumRef(loan.id, 'COFI-MANDATE-V2');
+      expect(updated.rumRefs).toEqual(['COFI-MANDATE-V1', 'COFI-MANDATE-V2']);
+    });
+
+    it('does not duplicate when RUM already known (normalized)', async () => {
+      const loan = await svc.create({
+        name: 'Cofidis',
+        type: 'revolving',
+        category: 'consumer',
+        monthlyPayment: 80,
+        matchPattern: 'COFIDIS',
+        isActive: true,
+        rumRefs: ['COFI-MANDATE-001'],
+        maxAmount: 3000,
+      });
+      // Same RUM reformatted (no hyphens) — should be detected as duplicate
+      const updated = await svc.attachRumRef(loan.id, 'COFIMANDATE001');
+      expect(updated.rumRefs).toEqual(['COFI-MANDATE-001']); // unchanged
+    });
+
+    it('rejects empty RUM', async () => {
+      const loan = await svc.create({
+        name: 'Cofidis',
+        type: 'revolving',
+        category: 'consumer',
+        monthlyPayment: 80,
+        matchPattern: 'COFIDIS',
+        isActive: true,
+        maxAmount: 3000,
+      });
+      await expect(svc.attachRumRef(loan.id, '   ')).rejects.toThrow();
+    });
+  });
 });

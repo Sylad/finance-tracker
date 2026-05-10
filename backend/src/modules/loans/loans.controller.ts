@@ -159,20 +159,25 @@ export class LoansController {
       matched?: boolean;
       creditor?: string;
       accountNumber?: string | null;
+      rumNumber?: string | null;
       monthlyPayment?: number;
       error?: string;
     }> = [];
     for (const file of files) {
       try {
         const extracted = await this.creditStatement.analyzeCreditStatement(file.buffer);
-        let loan = extracted.accountNumber
-          ? await this.svc.findByAccountNumber(extracted.accountNumber)
-          : null;
+        let loan = await this.svc.findByIdentifiers({
+          accountNumber: extracted.accountNumber,
+          rumNumber: extracted.rumNumber,
+        });
         const matched = loan != null;
         if (!loan) {
           // Crée un nouveau Loan pré-rempli avec les valeurs extraites
           const now = new Date().toISOString();
-          const baseName = `${extracted.creditor}${extracted.accountNumber ? ` · ${extracted.accountNumber.slice(-4)}` : ''}`;
+          const idSuffix = extracted.accountNumber
+            ? extracted.accountNumber.slice(-4)
+            : extracted.rumNumber?.slice(-4);
+          const baseName = `${extracted.creditor}${idSuffix ? ` · ${idSuffix}` : ''}`;
           const newLoan: Loan = {
             id: randomUUID(),
             name: baseName,
@@ -183,6 +188,7 @@ export class LoansController {
             isActive: true,
             creditor: extracted.creditor,
             contractRef: extracted.accountNumber ?? undefined,
+            rumRefs: extracted.rumNumber ? [extracted.rumNumber] : undefined,
             startDate: extracted.statementDate,
             endDate: extracted.endDate ?? undefined,
             maxAmount: extracted.creditType === 'revolving' ? extracted.maxAmount : undefined,
@@ -200,11 +206,15 @@ export class LoansController {
             isActive: newLoan.isActive,
             creditor: newLoan.creditor,
             contractRef: newLoan.contractRef,
+            rumRefs: newLoan.rumRefs,
             startDate: newLoan.startDate,
             endDate: newLoan.endDate,
             maxAmount: newLoan.maxAmount,
             usedAmount: newLoan.usedAmount,
           });
+        } else if (extracted.rumNumber) {
+          // Match existant + nouveau RUM : auto-enrich (renouvellement mandat SEPA)
+          loan = await this.svc.attachRumRef(loan.id, extracted.rumNumber);
         }
         const updated = await this.svc.applyStatementSnapshot(loan.id, extracted);
         if (extracted.statementDate && extracted.monthlyPayment > 0) {
@@ -225,10 +235,16 @@ export class LoansController {
           matched,
           creditor: extracted.creditor,
           accountNumber: extracted.accountNumber,
+          rumNumber: extracted.rumNumber,
           monthlyPayment: extracted.monthlyPayment,
         });
+        const idDisplay = extracted.accountNumber
+          ? `#${extracted.accountNumber}`
+          : extracted.rumNumber
+            ? `RUM:${extracted.rumNumber}`
+            : '?';
         this.logger.log(
-          `[credit-auto] ${file.originalname} → ${matched ? 'matched' : 'CREATED'} loan ${updated.id} (${extracted.creditor} #${extracted.accountNumber ?? '?'})`,
+          `[credit-auto] ${file.originalname} → ${matched ? 'matched' : 'CREATED'} loan ${updated.id} (${extracted.creditor} ${idDisplay})`,
         );
       } catch (err) {
         const message =

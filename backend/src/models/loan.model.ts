@@ -49,6 +49,11 @@ export interface Loan {
   isActive: boolean;
   creditor?: string;
   contractRef?: string;  // N° de contrat manuel — prioritaire sur matchPattern
+  // Liste des Références Uniques de Mandat SEPA (RUM) connues pour ce crédit.
+  // Identifiant secondaire utilisé quand le contractRef n'apparaît pas sur le
+  // relevé (cas Cofidis/Sofinco) — un même crédit peut avoir plusieurs RUMs
+  // dans sa vie (renouvellement de mandat). Auto-enrichi à l'import PDF.
+  rumRefs?: string[];
   // Classic
   startDate?: string;
   endDate?: string;
