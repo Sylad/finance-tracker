@@ -319,6 +319,13 @@ export interface LoanStatementSnapshot {
   };
 }
 
+export interface AmortizationLine {
+  date: string;             // YYYY-MM-DD
+  capitalRemaining: number;
+  capitalPaid: number;
+  interestPaid: number;
+}
+
 export interface Loan {
   id: string;
   name: string;
@@ -330,6 +337,7 @@ export interface Loan {
   creditor?: string;
   contractRef?: string;
   rumRefs?: string[];
+  amortizationSchedule?: AmortizationLine[];
   startDate?: string;
   endDate?: string;
   initialPrincipal?: number;

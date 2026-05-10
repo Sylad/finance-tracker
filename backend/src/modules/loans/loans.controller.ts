@@ -3,12 +3,14 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   Logger,
   Param,
   Post,
   Put,
+  Query,
   UploadedFile,
   UploadedFiles,
   UseFilters,
@@ -25,6 +27,11 @@ import {
   CreditStatementService,
   CreditStatementParseError,
 } from '../analysis/credit-statement.service';
+import {
+  AmortizationService,
+  AmortizationParseError,
+} from '../analysis/amortization.service';
+import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { MulterExceptionFilter } from '../../filters/multer-exception.filter';
 import { Loan } from '../../models/loan.model';
 
@@ -43,6 +50,8 @@ export class LoansController {
   constructor(
     private readonly svc: LoansService,
     private readonly creditStatement: CreditStatementService,
+    private readonly amortization: AmortizationService,
+    private readonly dataDir: RequestDataDirService,
   ) {}
 
   @Get()
@@ -87,6 +96,68 @@ export class LoansController {
     body: { canonicalId: string; duplicateIds: string[] },
   ) {
     return this.svc.mergeDuplicates(body.canonicalId, body.duplicateIds);
+  }
+
+  /**
+   * Importe un tableau d'amortissement (PDF) d'un crédit classique.
+   * Si `attachToLoanId` est fourni → applique au Loan existant.
+   * Sinon → crée un nouveau Loan classic pré-rempli puis applique.
+   *
+   * Bypass démo : 403 (consomme des tokens API, pas en démo Cloudflare).
+   */
+  @Post('import-amortization')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      fileFilter: (_req, file, cb) => {
+        if (file.mimetype !== 'application/pdf') {
+          return cb(new BadRequestException('Seuls les fichiers PDF sont acceptés'), false);
+        }
+        cb(null, true);
+      },
+      limits: { fileSize: 20 * 1024 * 1024 },
+    }),
+  )
+  async importAmortization(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Query('attachToLoanId') attachToLoanId?: string,
+  ): Promise<Loan> {
+    if (this.dataDir.isDemoMode()) {
+      throw new ForbiddenException("Mode démo : import d'amortissement désactivé");
+    }
+    if (!file) {
+      throw new BadRequestException('Aucun fichier fourni');
+    }
+    let extracted;
+    try {
+      extracted = await this.amortization.analyzeAmortization(file.buffer);
+    } catch (err) {
+      if (err instanceof AmortizationParseError) {
+        throw new BadRequestException(`Analyse échouée : ${err.message}`);
+      }
+      throw err;
+    }
+
+    let targetLoanId = attachToLoanId;
+    if (!targetLoanId) {
+      // Crée un nouveau Loan classic pré-rempli
+      const created = await this.svc.create({
+        name: `${extracted.creditor} · ${Math.round(extracted.initialPrincipal)}€`,
+        type: 'classic',
+        category: 'consumer',
+        monthlyPayment: extracted.monthlyPayment,
+        matchPattern: extracted.creditor,
+        isActive: true,
+        creditor: extracted.creditor,
+        startDate: extracted.startDate,
+        endDate: extracted.endDate,
+        initialPrincipal: extracted.initialPrincipal,
+      });
+      targetLoanId = created.id;
+      this.logger.log(`[amortization-auto] Created loan ${created.id} (${extracted.creditor}, ${extracted.initialPrincipal}€)`);
+    }
+
+    return this.svc.applyAmortizationSchedule(targetLoanId, extracted);
   }
 
   @Post(':id/import-statement')

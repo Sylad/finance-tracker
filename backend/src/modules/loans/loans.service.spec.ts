@@ -455,4 +455,99 @@ describe('LoansService', () => {
       await expect(svc.mergeDuplicates(a.id, [a.id])).rejects.toThrow();
     });
   });
+
+  describe('applyAmortizationSchedule', () => {
+    it('applique le schedule + update partiel des champs canoniques', async () => {
+      const loan = await svc.create({
+        name: 'Auto', type: 'classic', category: 'auto',
+        monthlyPayment: 200, matchPattern: 'CETELEM', isActive: true,
+        creditor: 'CETELEM',
+      });
+      const updated = await svc.applyAmortizationSchedule(loan.id, {
+        creditor: 'CETELEM',
+        initialPrincipal: 12000,
+        monthlyPayment: 240,
+        startDate: '2026-01-01',
+        endDate: '2030-12-01',
+        taeg: 4.85,
+        schedule: [
+          { date: '2026-01-01', capitalRemaining: 11800, capitalPaid: 200, interestPaid: 40 },
+          { date: '2026-02-01', capitalRemaining: 11599, capitalPaid: 201, interestPaid: 39 },
+        ],
+      });
+      expect(updated.initialPrincipal).toBe(12000);
+      expect(updated.monthlyPayment).toBe(240); // updated
+      expect(updated.startDate).toBe('2026-01-01');
+      expect(updated.endDate).toBe('2030-12-01');
+      expect(updated.amortizationSchedule).toHaveLength(2);
+      expect(updated.amortizationSchedule![0].capitalRemaining).toBe(11800);
+    });
+
+    it('rejette si schedule vide (extraction Claude foireuse)', async () => {
+      const loan = await svc.create({
+        name: 'Auto', type: 'classic', category: 'auto',
+        monthlyPayment: 200, matchPattern: 'X', isActive: true,
+      });
+      await expect(svc.applyAmortizationSchedule(loan.id, {
+        creditor: 'X', initialPrincipal: 1000, monthlyPayment: 100,
+        startDate: '2026-01-01', endDate: '2026-12-01', taeg: null,
+        schedule: [],
+      })).rejects.toThrow(/Schedule vide/);
+    });
+
+    it('rejette si loan introuvable', async () => {
+      await expect(svc.applyAmortizationSchedule('does-not-exist', {
+        creditor: 'X', initialPrincipal: 1000, monthlyPayment: 100,
+        startDate: '2026-01-01', endDate: '2026-12-01', taeg: null,
+        schedule: [{ date: '2026-01-01', capitalRemaining: 900, capitalPaid: 100, interestPaid: 10 }],
+      })).rejects.toThrow(/introuvable/);
+    });
+
+    it("rejette si le loan n'est pas classique (revolving n'a pas de tableau)", async () => {
+      const loan = await svc.create({
+        name: 'Cofidis', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        maxAmount: 3000, usedAmount: 0,
+      });
+      await expect(svc.applyAmortizationSchedule(loan.id, {
+        creditor: 'COFIDIS', initialPrincipal: 3000, monthlyPayment: 80,
+        startDate: '2026-01-01', endDate: '2030-12-01', taeg: 19.84,
+        schedule: [{ date: '2026-01-01', capitalRemaining: 2920, capitalPaid: 80, interestPaid: 30 }],
+      })).rejects.toThrow(/classique/);
+    });
+
+    it('trie le schedule chronologiquement même si Claude renvoie désordonné', async () => {
+      const loan = await svc.create({
+        name: 'Auto', type: 'classic', category: 'auto',
+        monthlyPayment: 200, matchPattern: 'X', isActive: true,
+      });
+      const updated = await svc.applyAmortizationSchedule(loan.id, {
+        creditor: 'X', initialPrincipal: 600, monthlyPayment: 200,
+        startDate: '2026-01-01', endDate: '2026-03-01', taeg: 2.0,
+        schedule: [
+          { date: '2026-03-01', capitalRemaining: 0, capitalPaid: 200, interestPaid: 1 },
+          { date: '2026-01-01', capitalRemaining: 400, capitalPaid: 200, interestPaid: 3 },
+          { date: '2026-02-01', capitalRemaining: 200, capitalPaid: 200, interestPaid: 2 },
+        ],
+      });
+      expect(updated.amortizationSchedule!.map((l) => l.date)).toEqual([
+        '2026-01-01', '2026-02-01', '2026-03-01',
+      ]);
+    });
+
+    it('preserve le creditor existant si déjà défini (user a la main)', async () => {
+      const loan = await svc.create({
+        name: 'Auto perso', type: 'classic', category: 'auto',
+        monthlyPayment: 200, matchPattern: 'X', isActive: true,
+        creditor: 'Mon nom personnalisé',
+      });
+      const updated = await svc.applyAmortizationSchedule(loan.id, {
+        creditor: 'CETELEM',
+        initialPrincipal: 1000, monthlyPayment: 100,
+        startDate: '2026-01-01', endDate: '2026-10-01', taeg: 4.85,
+        schedule: [{ date: '2026-01-01', capitalRemaining: 900, capitalPaid: 100, interestPaid: 5 }],
+      });
+      expect(updated.creditor).toBe('Mon nom personnalisé');
+    });
+  });
 });

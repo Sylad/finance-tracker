@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
-import { Loan, LoanInput, LoanOccurrence, LoanOccurrenceSource, LoanStatementSnapshot } from '../../models/loan.model';
+import { Loan, LoanInput, LoanOccurrence, LoanOccurrenceSource, LoanStatementSnapshot, AmortizationLine } from '../../models/loan.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 
@@ -15,6 +15,20 @@ export interface CreditStatementSnapshotInput {
   endDate: string | null;
   taeg: number | null;
   statementDate: string;
+}
+
+/**
+ * Payload extrait par AmortizationService.analyzeAmortization() — utilisé
+ * par LoansService.applyAmortizationSchedule pour pré-remplir un Loan.
+ */
+export interface AmortizationSnapshotInput {
+  creditor: string;
+  initialPrincipal: number;
+  monthlyPayment: number;
+  startDate: string;
+  endDate: string;
+  taeg?: number | null;
+  schedule: AmortizationLine[];
 }
 
 @Injectable()
@@ -506,6 +520,54 @@ export class LoansService {
     await this.persist(all);
     this.logger.log(`Attached RUM "${trimmed}" to loan ${loanId}`);
     return all[idx];
+  }
+
+  /**
+   * Applique un tableau d'amortissement extrait depuis un PDF (Claude) à un
+   * Loan classique : update partiel des champs canoniques (initialPrincipal,
+   * monthlyPayment, startDate, endDate) + assignation du schedule[]. Ne
+   * touche pas à `name`, `category`, `matchPattern`, `occurrencesDetected`,
+   * `createdAt`. Force `type` à `'classic'` (les revolving n'ont pas de
+   * tableau d'amortissement par construction).
+   */
+  async applyAmortizationSchedule(
+    id: string,
+    extracted: AmortizationSnapshotInput,
+  ): Promise<Loan> {
+    if (!extracted.schedule || extracted.schedule.length === 0) {
+      throw new BadRequestException('Schedule vide — extraction PDF échouée');
+    }
+    const all = await this.getAll();
+    const idx = all.findIndex((l) => l.id === id);
+    if (idx === -1) throw new NotFoundException(`Crédit ${id} introuvable`);
+    const loan = all[idx];
+
+    if (loan.type !== 'classic') {
+      throw new BadRequestException(
+        `Le tableau d'amortissement ne s'applique qu'aux crédits classiques (type=classic). Crédit ${id} est ${loan.type}.`,
+      );
+    }
+
+    // Update partiel — on respecte le creditor déjà présent (user a la main)
+    if (!loan.creditor && extracted.creditor) {
+      loan.creditor = extracted.creditor;
+    }
+    loan.initialPrincipal = extracted.initialPrincipal;
+    loan.monthlyPayment = extracted.monthlyPayment;
+    loan.startDate = extracted.startDate;
+    loan.endDate = extracted.endDate;
+
+    // Tri chronologique défensif (le service trie déjà mais on durcit)
+    loan.amortizationSchedule = [...extracted.schedule].sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
+    loan.updatedAt = new Date().toISOString();
+
+    await this.persist(all);
+    this.logger.log(
+      `Applied amortization schedule to ${loan.id}: ${loan.amortizationSchedule.length} lines`,
+    );
+    return loan;
   }
 
   /**
