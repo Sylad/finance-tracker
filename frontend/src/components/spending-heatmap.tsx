@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { formatEUR } from '@/lib/utils';
 
-interface DayCell {
+export interface DayCell {
   date: string;          // YYYY-MM-DD
   amount: number;        // total absolute debits that day (>= 0)
 }
@@ -17,35 +17,51 @@ interface Props {
 const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const MONTH_LABELS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
-function dateKey(d: Date): string {
+export function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+export interface HeatmapGrid {
+  columns: (DayCell | null)[][];
+  max: number;
+  total: number;
+  daysCovered: number;
+}
+
+/**
+ * Pure reducer: builds the heatmap grid (Monday-anchored weeks, padded with
+ * nulls before `from` and after `to`) plus aggregates (max, total, days with
+ * spend). Exported for unit testing.
+ */
+export function buildHeatmapGrid(byDay: Map<string, number>, from: Date, to: Date): HeatmapGrid {
+  const cells: (DayCell | null)[][] = [];
+  const start = new Date(from);
+  // Monday-anchored ISO weekday (0..6 = Mon..Sun)
+  const isoWeekday = (start.getDay() + 6) % 7;
+  let week: (DayCell | null)[] = Array(isoWeekday).fill(null);
+  let currentMax = 0;
+  let total = 0;
+  let daysWithSpend = 0;
+  for (let d = new Date(start); d <= to; d.setDate(d.getDate() + 1)) {
+    const key = dateKey(d);
+    const amount = byDay.get(key) ?? 0;
+    week.push({ date: key, amount });
+    if (amount > currentMax) currentMax = amount;
+    if (amount > 0) { total += amount; daysWithSpend++; }
+    if (week.length === 7) { cells.push(week); week = []; }
+  }
+  if (week.length > 0) {
+    while (week.length < 7) week.push(null);
+    cells.push(week);
+  }
+  return { columns: cells, max: currentMax, total, daysCovered: daysWithSpend };
+}
+
 export function SpendingHeatmap({ byDay, from, to }: Props) {
-  const { columns, max, total, daysCovered } = useMemo(() => {
-    const cells: (DayCell | null)[][] = [];
-    // Compute Monday-anchored ISO weekday (1..7)
-    const start = new Date(from);
-    const isoWeekday = (start.getDay() + 6) % 7; // 0..6 Mon..Sun
-    // Pad the first column with nulls so it starts at the right weekday
-    let week: (DayCell | null)[] = Array(isoWeekday).fill(null);
-    let currentMax = 0;
-    let total = 0;
-    let daysWithSpend = 0;
-    for (let d = new Date(start); d <= to; d.setDate(d.getDate() + 1)) {
-      const key = dateKey(d);
-      const amount = byDay.get(key) ?? 0;
-      week.push({ date: key, amount });
-      if (amount > currentMax) currentMax = amount;
-      if (amount > 0) { total += amount; daysWithSpend++; }
-      if (week.length === 7) { cells.push(week); week = []; }
-    }
-    if (week.length > 0) {
-      while (week.length < 7) week.push(null);
-      cells.push(week);
-    }
-    return { columns: cells, max: currentMax, total, daysCovered: daysWithSpend };
-  }, [byDay, from, to]);
+  const { columns, max, total, daysCovered } = useMemo(
+    () => buildHeatmapGrid(byDay, from, to),
+    [byDay, from, to],
+  );
 
   // Find label positions: for each column, if its first cell starts a new month, label it
   const monthTicks = useMemo(() => {
