@@ -536,6 +536,64 @@ describe('LoansService', () => {
     });
   });
 
+  describe('getLoanHealth', () => {
+    const today = '2026-05-10';
+    const recent = '2026-04-15';
+    const old = '2025-09-15';
+
+    it('complete : amortization + ≥3 occurrences récentes', () => {
+      const loan = {
+        amortizationSchedule: [{ date: '2024-06-01', capitalRemaining: 100, capitalPaid: 10, interestPaid: 1 }],
+        occurrencesDetected: [
+          { id: '1', statementId: 's', date: '2026-03-01', amount: -100, transactionId: null },
+          { id: '2', statementId: 's', date: '2026-04-01', amount: -100, transactionId: null },
+          { id: '3', statementId: 's', date: '2026-05-01', amount: -100, transactionId: null },
+        ],
+      } as any;
+      expect(LoansService.getLoanHealth(loan, today)).toBe('complete');
+    });
+
+    it('complete : statement récent + ≥3 occurrences récentes (sans amortization)', () => {
+      const loan = {
+        lastStatementSnapshot: { date: recent, source: 'pdf-import', extractedValues: {} },
+        occurrencesDetected: [
+          { id: '1', statementId: 's', date: '2026-03-01', amount: -100, transactionId: null },
+          { id: '2', statementId: 's', date: '2026-04-01', amount: -100, transactionId: null },
+          { id: '3', statementId: 's', date: '2026-05-01', amount: -100, transactionId: null },
+        ],
+      } as any;
+      expect(LoansService.getLoanHealth(loan, today)).toBe('complete');
+    });
+
+    it('partial : amortization mais 0 occurrence récente', () => {
+      const loan = {
+        amortizationSchedule: [{ date: '2024-06-01', capitalRemaining: 100, capitalPaid: 10, interestPaid: 1 }],
+        occurrencesDetected: [
+          { id: '1', statementId: 's', date: '2024-09-01', amount: -100, transactionId: null }, // hors fenêtre 6 mois
+        ],
+      } as any;
+      expect(LoansService.getLoanHealth(loan, today)).toBe('partial');
+    });
+
+    it('partial : pas de schedule ni de statement récent, mais 2 occurrences récentes', () => {
+      const loan = {
+        occurrencesDetected: [
+          { id: '1', statementId: 's', date: '2026-04-01', amount: -100, transactionId: null },
+          { id: '2', statementId: 's', date: '2026-05-01', amount: -100, transactionId: null },
+        ],
+      } as any;
+      expect(LoansService.getLoanHealth(loan, today)).toBe('partial');
+    });
+
+    it('gap : pas de schedule, pas de statement récent, ≤1 occurrence', () => {
+      const loan = {
+        lastStatementSnapshot: { date: old, source: 'pdf-import', extractedValues: {} },
+        occurrencesDetected: [],
+      } as any;
+      expect(LoansService.getLoanHealth(loan, today)).toBe('gap');
+    });
+  });
+
   describe('mergeLoanPatch — règles priorité par source', () => {
     it('credit_statement update startDate si vide (avant : ne le faisait pas)', async () => {
       const loan = await svc.create({

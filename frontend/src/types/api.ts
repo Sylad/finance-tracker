@@ -346,6 +346,9 @@ export interface Loan {
   lastManualResetAt?: string;
   occurrencesDetected: LoanOccurrence[];
   lastStatementSnapshot?: LoanStatementSnapshot;
+  taeg?: number | null;
+  /** Calculé côté server à chaque GET /api/loans (item 5 APEX 04). */
+  health?: 'complete' | 'partial' | 'gap';
   createdAt: string;
   updatedAt: string;
 }

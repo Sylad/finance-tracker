@@ -5,6 +5,7 @@ import type { Loan } from '@/types/api';
 import { formatEUR, cn } from '@/lib/utils';
 import { SplitButton } from './split-button';
 import { ImportStatementModal } from './import-statement-modal';
+import { HealthChip } from './health-chip';
 
 export function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
   const reset = useResetRevolving();
@@ -45,7 +46,10 @@ export function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: 
         <div className="flex items-center gap-2">
           <CreditCard className="h-4 w-4 text-warning" />
           <div>
-            <div className="font-display font-semibold text-fg-bright">{loan.name}</div>
+            <div className="font-display font-semibold text-fg-bright flex items-center gap-2 flex-wrap">
+              {loan.name}
+              <HealthChip loan={loan} />
+            </div>
             <div>
               {loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}
               {loan.contractRef && <span className="text-xs text-fg-dim font-mono ml-2">#{loan.contractRef}</span>}
