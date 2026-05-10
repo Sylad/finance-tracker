@@ -256,6 +256,9 @@ describe('AutoSyncService', () => {
       loans.getAll.mockResolvedValue([]);
       const loansCreate = jest.fn();
       (loans as unknown as { create: jest.Mock }).create = loansCreate;
+      // findExistingLoan ajouté par Item 4 — par défaut null (= pas de match,
+      // proceed à la création). Tests peuvent override pour simuler match.
+      (loans as unknown as { findExistingLoan: jest.Mock }).findExistingLoan = jest.fn().mockResolvedValue(null);
 
       suggestions = {
         upsertMany: jest.fn(),

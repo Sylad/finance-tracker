@@ -31,6 +31,7 @@ import {
   AmortizationService,
   AmortizationParseError,
 } from '../analysis/amortization.service';
+import { ImportOrchestratorService } from './import-orchestrator.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { MulterExceptionFilter } from '../../filters/multer-exception.filter';
 import { Loan } from '../../models/loan.model';
@@ -51,6 +52,7 @@ export class LoansController {
     private readonly svc: LoansService,
     private readonly creditStatement: CreditStatementService,
     private readonly amortization: AmortizationService,
+    private readonly orchestrator: ImportOrchestratorService,
     private readonly dataDir: RequestDataDirService,
   ) {}
 
@@ -138,26 +140,15 @@ export class LoansController {
       throw err;
     }
 
-    let targetLoanId = attachToLoanId;
-    if (!targetLoanId) {
-      // Crée un nouveau Loan classic pré-rempli
-      const created = await this.svc.create({
-        name: `${extracted.creditor} · ${Math.round(extracted.initialPrincipal)}€`,
-        type: 'classic',
-        category: 'consumer',
-        monthlyPayment: extracted.monthlyPayment,
-        matchPattern: extracted.creditor,
-        isActive: true,
-        creditor: extracted.creditor,
-        startDate: extracted.startDate,
-        endDate: extracted.endDate,
-        initialPrincipal: extracted.initialPrincipal,
-      });
-      targetLoanId = created.id;
-      this.logger.log(`[amortization-auto] Created loan ${created.id} (${extracted.creditor}, ${extracted.initialPrincipal}€)`);
+    // Délégué à ImportOrchestratorService — find-or-create via signals,
+    // ou apply direct si attachToLoanId fourni.
+    const result = await this.orchestrator.importAmortization(extracted, attachToLoanId);
+    if (result.created) {
+      this.logger.log(`[amortization-auto] Created loan ${result.loan.id} (${extracted.creditor}, ${extracted.initialPrincipal}€)`);
+    } else {
+      this.logger.log(`[amortization-auto] Matched loan ${result.loan.id} (${result.matchReason ?? 'unknown'})`);
     }
-
-    return this.svc.applyAmortizationSchedule(targetLoanId, extracted);
+    return result.loan;
   }
 
   @Post(':id/import-statement')
@@ -255,60 +246,13 @@ export class LoansController {
     for (const file of files) {
       try {
         const extracted = await this.creditStatement.analyzeCreditStatement(file.buffer);
-        let loan = await this.svc.findByIdentifiers({
-          accountNumber: extracted.accountNumber,
-          rumNumber: extracted.rumNumber,
-        });
-        const matched = loan != null;
-        if (!loan) {
-          // Crée un nouveau Loan pré-rempli avec les valeurs extraites
-          const now = new Date().toISOString();
-          const idSuffix = extracted.accountNumber
-            ? extracted.accountNumber.slice(-4)
-            : extracted.rumNumber?.slice(-4);
-          const baseName = `${extracted.creditor}${idSuffix ? ` · ${idSuffix}` : ''}`;
-          const newLoan: Loan = {
-            id: randomUUID(),
-            name: baseName,
-            type: extracted.creditType,
-            category: 'consumer',
-            monthlyPayment: extracted.monthlyPayment,
-            matchPattern: extracted.creditor,
-            isActive: true,
-            creditor: extracted.creditor,
-            contractRef: extracted.accountNumber ?? undefined,
-            rumRefs: extracted.rumNumber ? [extracted.rumNumber] : undefined,
-            // startDate prioritise la VRAIE date de début du crédit extraite (cas
-            // classic). Fallback sur statementDate (date d'arrêté du relevé) si
-            // l'info n'est pas affichée — meilleure approximation que rien.
-            startDate: extracted.startDate ?? extracted.statementDate,
-            endDate: extracted.endDate ?? undefined,
-            maxAmount: extracted.creditType === 'revolving' ? extracted.maxAmount : undefined,
-            usedAmount: extracted.creditType === 'revolving' ? Math.max(0, extracted.currentBalance) : undefined,
-            occurrencesDetected: [],
-            createdAt: now,
-            updatedAt: now,
-          };
-          loan = await this.svc.create({
-            name: newLoan.name,
-            type: newLoan.type,
-            category: newLoan.category,
-            monthlyPayment: newLoan.monthlyPayment,
-            matchPattern: newLoan.matchPattern,
-            isActive: newLoan.isActive,
-            creditor: newLoan.creditor,
-            contractRef: newLoan.contractRef,
-            rumRefs: newLoan.rumRefs,
-            startDate: newLoan.startDate,
-            endDate: newLoan.endDate,
-            maxAmount: newLoan.maxAmount,
-            usedAmount: newLoan.usedAmount,
-          });
-        } else if (extracted.rumNumber) {
-          // Match existant + nouveau RUM : auto-enrich (renouvellement mandat SEPA)
-          loan = await this.svc.attachRumRef(loan.id, extracted.rumNumber);
-        }
-        const updated = await this.svc.applyStatementSnapshot(loan.id, extracted);
+        // Délégué à ImportOrchestratorService : findExistingLoan en first-class
+        // (même matcher unifié que les 2 autres paths).
+        const result = await this.orchestrator.importCreditStatement(extracted);
+        const updated = result.loan;
+        const matched = !result.created;
+
+        // Ajoute l'occurrence canonique du mois (source: 'credit_statement')
         if (extracted.statementDate && extracted.monthlyPayment > 0) {
           const occStatementId = `credit-${updated.id}-${extracted.statementDate.slice(0, 7)}`;
           await this.svc.addOccurrence(updated.id, {
