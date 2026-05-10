@@ -22,6 +22,7 @@ export const CreditStatementOutputSchema = z
     endDate: z.string().nullable().optional(),
     taeg: z.number().nullable().optional(),
     statementDate: z.string(),
+    startDate: z.string().nullable().optional(),
     accountNumber: z.string().nullable().optional(),
     rumNumber: z.string().nullable().optional(),
   })
