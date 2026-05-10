@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { X, AlertTriangle, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle2, Loader2, Trash2, ShoppingBag } from 'lucide-react';
 import {
   useSuspiciousLoans,
   useCleanupSuspiciousLoans,
+  useConvertToInstallment,
 } from '@/lib/queries';
 import { formatEUR } from '@/lib/utils';
 
@@ -13,8 +14,24 @@ interface Props {
 export function SuspiciousModal({ onClose }: Props) {
   const { data: items, isLoading, refetch } = useSuspiciousLoans();
   const cleanup = useCleanupSuspiciousLoans();
+  const convert = useConvertToInstallment();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cleaning, setCleaning] = useState(false);
+  const [convertingId, setConvertingId] = useState<string | null>(null);
+
+  const handleConvert = async (id: string, name: string) => {
+    if (!confirm(`Convertir « ${name} » en paiement échelonné ?\n\nLes occurrences détectées deviendront un échéancier complet (toutes marquées payées). Le crédit sera désactivé si toutes les échéances sont passées.`)) {
+      return;
+    }
+    setConvertingId(id);
+    try {
+      await convert.mutateAsync(id);
+      refetch();
+    } catch (e) {
+      alert(`Erreur conversion : ${(e as Error).message}`);
+    }
+    setConvertingId(null);
+  };
 
   const toggleAll = () => {
     if (!items) return;
@@ -50,7 +67,7 @@ export function SuspiciousModal({ onClose }: Props) {
             </h2>
             <p className="text-xs text-fg-muted">
               Heuristiques : nom matche pay-in-N (4X CB, FacilyPay…) OU ≤4 occurrences sur ≤4 mois et arrêté depuis ≥60j.
-              Vérifie chaque ligne — l'app ne supprime rien automatiquement.
+              Vérifie chaque ligne — supprime ou convertis en paiement échelonné (échéancier reconstruit).
             </p>
           </div>
           <button onClick={onClose} className="btn-ghost p-1" aria-label="Fermer"><X className="h-4 w-4" /></button>
@@ -112,6 +129,18 @@ export function SuspiciousModal({ onClose }: Props) {
                         </div>
                         <div className="text-[11px] text-warning mt-1 italic">{l.reason}</div>
                       </div>
+                      <button
+                        onClick={() => handleConvert(l.id, l.name)}
+                        disabled={cleaning || convertingId !== null}
+                        className="btn-ghost text-xs shrink-0"
+                        title="Convertit en paiement échelonné (kind='installment') avec un échéancier reconstruit depuis les occurrences détectées."
+                      >
+                        {convertingId === l.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <><ShoppingBag className="h-3.5 w-3.5" /> En N×</>
+                        )}
+                      </button>
                     </li>
                   );
                 })}

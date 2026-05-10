@@ -326,6 +326,15 @@ export interface AmortizationLine {
   interestPaid: number;
 }
 
+export type LoanKind = 'classic' | 'revolving' | 'installment';
+
+export interface InstallmentLine {
+  dueDate: string;             // YYYY-MM-DD
+  amount: number;
+  paid: boolean;
+  paidOccurrenceId?: string;
+}
+
 export interface Loan {
   id: string;
   name: string;
@@ -349,6 +358,13 @@ export interface Loan {
   taeg?: number | null;
   /** Calculé côté server à chaque GET /api/loans (item 5 APEX 04). */
   health?: 'complete' | 'partial' | 'gap';
+  /** Distinction sémantique fine — APEX 05. Optionnel pour rétro-compat ;
+   *  fallback sur `type` côté frontend si absent. */
+  kind?: LoanKind;
+  /** Échéancier d'un paiement en N fois (kind='installment'). */
+  installmentSchedule?: InstallmentLine[];
+  installmentMerchant?: string;
+  installmentSignatureDate?: string;
   createdAt: string;
   updatedAt: string;
 }

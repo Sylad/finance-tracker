@@ -5,6 +5,7 @@ import * as path from 'path';
 import { LoansService } from './loans.service';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
+import type { Loan } from '../../models/loan.model';
 
 describe('LoansService', () => {
   let svc: LoansService;
@@ -676,6 +677,60 @@ describe('LoansService', () => {
 
     it('cleanupSuspiciousLoans rejette si aucun ID ne correspond', async () => {
       await expect(svc.cleanupSuspiciousLoans(['does-not-exist'])).rejects.toThrow(/Aucun/);
+    });
+  });
+
+  describe('convertToInstallment', () => {
+    it('convertit un classic suspect en kind=installment, schedule depuis occurrences', async () => {
+      const loan = await svc.create({
+        name: 'COFIDIS 4X CB AMAZON', type: 'classic', category: 'consumer',
+        monthlyPayment: 65.81, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'COFIDIS',
+      });
+      await svc.addOccurrence(loan.id, { statementId: 's-2025-11', date: '2025-11-02', amount: -65.81, transactionId: null });
+      await svc.addOccurrence(loan.id, { statementId: 's-2025-12', date: '2025-12-03', amount: -65.81, transactionId: null });
+      await svc.addOccurrence(loan.id, { statementId: 's-2026-01', date: '2026-01-04', amount: -65.81, transactionId: null });
+      await svc.addOccurrence(loan.id, { statementId: 's-2026-02', date: '2026-02-03', amount: -65.81, transactionId: null });
+
+      const converted = await svc.convertToInstallment(loan.id);
+
+      expect(converted.kind).toBe('installment');
+      expect(converted.installmentSchedule).toHaveLength(4);
+      expect(converted.installmentSchedule![0]).toMatchObject({
+        dueDate: '2025-11-02',
+        amount: 65.81,
+        paid: true,
+        paidOccurrenceId: 's-2025-11',
+      });
+      expect(converted.installmentMerchant).toBe('COFIDIS');
+      expect(converted.installmentSignatureDate).toBe('2025-11-02');
+    });
+
+    it('désactive le loan si toutes les échéances sont passées', async () => {
+      const loan = await svc.create({
+        name: 'PAY 3X', type: 'classic', category: 'consumer',
+        monthlyPayment: 100, matchPattern: 'PAY', isActive: true,
+      });
+      await svc.addOccurrence(loan.id, { statementId: 's1', date: '2025-10-01', amount: -100, transactionId: null });
+      await svc.addOccurrence(loan.id, { statementId: 's2', date: '2025-11-01', amount: -100, transactionId: null });
+      await svc.addOccurrence(loan.id, { statementId: 's3', date: '2025-12-01', amount: -100, transactionId: null });
+
+      const converted = await svc.convertToInstallment(loan.id);
+      // toutes < today (2026-05-10 dans le test runner)
+      expect(converted.isActive).toBe(false);
+      expect(converted.endDate).toBe('2025-12-01');
+    });
+
+    it('rejette la conversion si le loan n\'a aucune occurrence', async () => {
+      const loan = await svc.create({
+        name: 'EMPTY', type: 'classic', category: 'consumer',
+        monthlyPayment: 50, matchPattern: 'X', isActive: true,
+      });
+      await expect(svc.convertToInstallment(loan.id)).rejects.toThrow(/sans occurrence/);
+    });
+
+    it('rejette la conversion si le loan n\'existe pas', async () => {
+      await expect(svc.convertToInstallment('does-not-exist')).rejects.toThrow(/introuvable/);
     });
   });
 
