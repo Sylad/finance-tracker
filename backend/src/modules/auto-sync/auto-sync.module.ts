@@ -5,10 +5,11 @@ import { ResyncController } from './resync.controller';
 import { SavingsModule } from '../savings/savings.module';
 import { LoansModule } from '../loans/loans.module';
 import { LoanSuggestionsModule } from '../loan-suggestions/loan-suggestions.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { EventsModule } from '../events/events.module';
 
 @Module({
-  imports: [SavingsModule, LoansModule, LoanSuggestionsModule, EventsModule],
+  imports: [SavingsModule, LoansModule, LoanSuggestionsModule, SubscriptionsModule, EventsModule],
   controllers: [ResyncController],
   providers: [AutoSyncService, ResyncService],
   exports: [AutoSyncService],

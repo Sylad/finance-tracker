@@ -3,6 +3,7 @@ import { AutoSyncService } from './auto-sync.service';
 import { SavingsService } from '../savings/savings.service';
 import { LoansService } from '../loans/loans.service';
 import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { StorageService } from '../storage/storage.service';
 import { EventBusService } from '../events/event-bus.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
@@ -53,6 +54,14 @@ describe('AutoSyncService', () => {
             upsertMany: jest.fn(),
             getPending: jest.fn().mockResolvedValue([]),
             snooze: jest.fn(),
+          },
+        },
+        {
+          provide: SubscriptionsService,
+          useValue: {
+            getAll: jest.fn().mockResolvedValue([]),
+            addOccurrence: jest.fn(),
+            deleteAll: jest.fn().mockResolvedValue({ deletedCount: 0 }),
           },
         },
         { provide: StorageService, useValue: { getAllStatements: jest.fn().mockResolvedValue([]) } },
@@ -430,6 +439,14 @@ describe('AutoSyncService', () => {
           { provide: SavingsService, useValue: savings },
           { provide: LoansService, useValue: loans },
           { provide: LoanSuggestionsService, useValue: suggestions },
+          {
+            provide: SubscriptionsService,
+            useValue: {
+              getAll: jest.fn().mockResolvedValue([]),
+              addOccurrence: jest.fn(),
+              deleteAll: jest.fn().mockResolvedValue({ deletedCount: 0 }),
+            },
+          },
           { provide: StorageService, useValue: { getAllStatements: jest.fn().mockResolvedValue([]) } },
           { provide: EventBusService, useValue: { emit: jest.fn() } },
         ],

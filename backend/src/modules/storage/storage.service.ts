@@ -146,10 +146,45 @@ export class StorageService implements OnModuleInit {
 
   async getAggregatedRecurringCredits(): Promise<RecurringCredit[]> {
     const statements = await this.getAllStatements();
+    // Mots génériques à filtrer pour identifier l'entité réelle (l'employeur,
+    // l'organisme prêteur…) et éviter les doublons quand Claude varie sa
+    // normalizedDescription ("Salaire mensuel" vs "Salaire Campbell").
+    const STOP_WORDS = new Set([
+      'salaire', 'mensuel', 'mensuelle', 'virement', 'vir', 'vrt', 'versement',
+      'versements', 'reguliers', 'reguliere', 'ponctuel', 'instantane', 'recu',
+      'paie', 'paiement', 'credit', 'debit', 'sas', 'sa', 'sarl', 'eurl', 'sasu',
+      'france', 'fr', 'probablement', 'deblocage', 'deblocages', 'avr', 'mai',
+      'juin', 'juil', 'aout', 'sept', 'oct', 'nov', 'dec', 'jan', 'fev', 'mar',
+      'janvier', 'fevrier', 'mars', 'avril', 'juin', 'juillet', 'aout', 'septembre',
+      'octobre', 'novembre', 'decembre',
+    ]);
+    const slugify = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+    const significantWords = (s: string): string[] =>
+      slugify(s).split(' ').filter((w) => w.length >= 4 && !STOP_WORDS.has(w));
+
+    // Pour chaque RecurringCredit candidat, calcule une clé de bucket basée
+    // sur (1er mot significatif de description OU normalizedDescription)
+    // + bucket de montant arrondi (par tranches de 100€).
+    const bucketKey = (c: RecurringCredit): string => {
+      const words = [
+        ...significantWords(c.description),
+        ...significantWords(c.normalizedDescription),
+      ];
+      if (words.length === 0) {
+        return `unknown|${Math.round(c.monthlyAmount / 100) * 100}`;
+      }
+      // Mot le plus distinctif = premier mot significatif partagé entre
+      // description + normalized → identifie l'employeur/organisme.
+      const primary = words[0];
+      // Bucket de montant ±10% pour absorber les variations de salaire / primes
+      const amountKey = Math.round(c.monthlyAmount / 100) * 100;
+      return `${primary}|${amountKey}`;
+    };
+
     const creditMap = new Map<string, RecurringCredit>();
     for (const statement of statements) {
       for (const credit of statement.recurringCredits) {
-        const key = credit.normalizedDescription.toLowerCase().trim();
+        const key = bucketKey(credit);
         const existing = creditMap.get(key);
         if (!existing || credit.lastSeenDate > existing.lastSeenDate) {
           creditMap.set(key, credit);

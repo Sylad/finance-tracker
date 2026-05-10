@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Zap, Check, X as XIcon, Repeat2, EyeOff, RotateCcw, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Zap, Check, X as XIcon, Repeat2, EyeOff, RotateCcw, Pencil, Trash2, GitMerge, Loader2 } from 'lucide-react';
 import {
   useLoanSuggestions,
   useSnoozeSuggestion,
@@ -10,7 +10,9 @@ import {
   useCreateSubscription,
   useUpdateSubscription,
   useDeleteSubscription,
+  useResetSubscriptions,
 } from '@/lib/queries';
+import { DedupeSubscriptionsModal } from '@/components/subscriptions/dedupe-subscriptions-modal';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
 import {
@@ -45,12 +47,31 @@ export function SubscriptionsPage() {
   const reject = useRejectSuggestion();
   const unsnooze = useUnsnoozeSuggestion();
   const acceptAsSub = useAcceptSubscriptionSuggestion();
+  const resetSubs = useResetSubscriptions();
 
   const [editing, setEditing] = useState<Subscription | null>(null);
   const [creating, setCreating] = useState(false);
   const [prefilled, setPrefilled] = useState<SubscriptionInput | null>(null);
   const [pendingSuggestionId, setPendingSuggestionId] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
+  const [dedupeOpen, setDedupeOpen] = useState(false);
+
+  const handleReset = async () => {
+    if (!confirm(
+      'Reset des abonnements ?\n\n'
+      + 'Cette action :\n'
+      + '  • Supprime TOUS les abonnements actuels\n'
+      + '  • Reset les suggestions à pending\n\n'
+      + 'Tu pourras ensuite ré-accepter les suggestions propres avec l\'invariant "1 retrait/mois max".\n\n'
+      + 'Continuer ?'
+    )) return;
+    try {
+      const result = await resetSubs.mutateAsync();
+      alert(`${result.deletedSubscriptions} abonnement(s) supprimé(s), ${result.resetSuggestions} suggestion(s) reset à pending.`);
+    } catch (e) {
+      alert(`Erreur : ${(e as Error).message}`);
+    }
+  };
 
   if (subs.isLoading || suggestions.isLoading) return <LoadingState />;
 
@@ -128,6 +149,25 @@ export function SubscriptionsPage() {
               </button>
             )}
             <button
+              onClick={() => setDedupeOpen(true)}
+              className="btn-secondary"
+              title="Détecter et fusionner les doublons d'abonnements (invariant 1 retrait/mois max)"
+            >
+              <GitMerge className="h-4 w-4" /> Doublons
+            </button>
+            <button
+              onClick={handleReset}
+              disabled={resetSubs.isPending}
+              className="btn-secondary text-negative hover:bg-negative/10 hover:text-negative border-negative/30"
+              title="Purge tous les abonnements + reset suggestions à pending"
+            >
+              {resetSubs.isPending ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Reset…</>
+              ) : (
+                <><RotateCcw className="h-4 w-4" /> Reset</>
+              )}
+            </button>
+            <button
               onClick={() => { setCreating(true); setEditing(null); setPrefilled(null); }}
               className="btn-primary"
             >
@@ -136,6 +176,8 @@ export function SubscriptionsPage() {
           </div>
         }
       />
+
+      {dedupeOpen && <DedupeSubscriptionsModal onClose={() => setDedupeOpen(false)} />}
 
       {items.length === 0 && pendingSugg.length === 0 ? (
         <EmptyState
