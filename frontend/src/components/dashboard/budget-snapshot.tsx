@@ -51,7 +51,7 @@ export function BudgetSnapshot({
   );
 }
 
-function buildItems(
+export function buildItems(
   budget: Record<string, number | undefined>,
   transactions: { category: TransactionCategory; amount: number }[],
 ) {
