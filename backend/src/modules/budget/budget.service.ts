@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { atomicWriteJson } from '../../common/atomic-write';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 const BUDGETS_FILE = 'budgets.json';
@@ -28,7 +29,7 @@ export class BudgetService {
     const filtered = Object.fromEntries(
       Object.entries(budgets).filter(([, v]) => typeof v === 'number' && v >= 0),
     );
-    await fs.promises.writeFile(this.filepath, JSON.stringify(filtered, null, 2), 'utf8');
+    await atomicWriteJson(this.filepath, filtered);
     this.logger.log('Budgets saved');
     return filtered;
   }
