@@ -278,7 +278,10 @@ export class LoansController {
             creditor: extracted.creditor,
             contractRef: extracted.accountNumber ?? undefined,
             rumRefs: extracted.rumNumber ? [extracted.rumNumber] : undefined,
-            startDate: extracted.statementDate,
+            // startDate prioritise la VRAIE date de début du crédit extraite (cas
+            // classic). Fallback sur statementDate (date d'arrêté du relevé) si
+            // l'info n'est pas affichée — meilleure approximation que rien.
+            startDate: extracted.startDate ?? extracted.statementDate,
             endDate: extracted.endDate ?? undefined,
             maxAmount: extracted.creditType === 'revolving' ? extracted.maxAmount : undefined,
             usedAmount: extracted.creditType === 'revolving' ? Math.max(0, extracted.currentBalance) : undefined,
