@@ -18,6 +18,38 @@ export interface CreditStatementSnapshotInput {
 }
 
 /**
+ * Source d'un patch appliqué à un Loan. Détermine la priorité d'écrasement
+ * dans `mergeLoanPatch` : user > amortization > credit_statement >
+ * bank_statement > suggestion. Cf doc dans CLAUDE.md du repo.
+ */
+export type LoanPatchSource =
+  | 'user'              // édition manuelle via formulaire
+  | 'amortization'      // PDF tableau d'amortissement initial
+  | 'credit_statement'  // PDF relevé mensuel crédit (Cofidis, Sofinco…)
+  | 'bank_statement'    // analyse bank LBP via Claude
+  | 'suggestion';       // suggestion Claude (recurringExpenses) auto-créée
+
+/**
+ * Patch partiel appliqué à un Loan via `mergeLoanPatch`. Tous les champs
+ * sont optionnels — seul ce qui est défini est candidat à mise à jour.
+ * `mergeLoanPatch` filtre selon la source quel champ peut écrire.
+ */
+export interface LoanPatch {
+  creditor?: string;
+  contractRef?: string;
+  rumRefs?: string[];                  // additif (union, pas écrase)
+  startDate?: string;
+  endDate?: string;
+  initialPrincipal?: number;
+  monthlyPayment?: number;
+  maxAmount?: number;
+  usedAmount?: number;
+  taeg?: number | null;
+  amortizationSchedule?: AmortizationLine[];
+  lastStatementSnapshot?: LoanStatementSnapshot;
+}
+
+/**
  * Signaux disponibles pour identifier un Loan existant à partir d'une
  * source d'import (relevé crédit, tableau d'amortissement, suggestion
  * Claude). Tous optionnels — la méthode `findExistingLoan` essaie chaque
@@ -403,9 +435,9 @@ export class LoansService {
 
   /**
    * Met à jour un loan à partir des valeurs extraites d'un relevé de crédit
-   * (PDF analysé par Claude). Ne touche pas à `id`, `name`, `category`,
-   * `matchPattern`, `occurrencesDetected`, `createdAt`. Stocke le snapshot
-   * extrait dans `lastStatementSnapshot`.
+   * (PDF analysé par Claude). Délégue à `mergeLoanPatch` avec source
+   * 'credit_statement' qui applique les règles de priorité par champ.
+   * Stocke le snapshot extrait dans `lastStatementSnapshot`.
    */
   async applyStatementSnapshot(
     id: string,
@@ -415,26 +447,6 @@ export class LoansService {
     const idx = all.findIndex((l) => l.id === id);
     if (idx === -1) throw new NotFoundException(`Crédit ${id} introuvable`);
     const loan = all[idx];
-
-    if (extracted.creditType === 'revolving') {
-      if (extracted.maxAmount != null && extracted.maxAmount > 0) {
-        loan.maxAmount = extracted.maxAmount;
-      }
-      // Pour un revolving, currentBalance = utilisation actuelle
-      loan.usedAmount = Math.max(0, extracted.currentBalance);
-    } else {
-      // classic : on n'écrase pas usedAmount/maxAmount qui sont revolving-only
-      if (extracted.endDate) loan.endDate = extracted.endDate;
-    }
-
-    if (Number.isFinite(extracted.monthlyPayment) && extracted.monthlyPayment > 0) {
-      loan.monthlyPayment = extracted.monthlyPayment;
-    }
-
-    // Renseigne creditor uniquement s'il est vide (l'utilisateur garde la main).
-    if (!loan.creditor && extracted.creditor) {
-      loan.creditor = extracted.creditor;
-    }
 
     const snapshot: LoanStatementSnapshot = {
       date: new Date().toISOString(),
@@ -448,11 +460,155 @@ export class LoansService {
         taeg: extracted.taeg,
       },
     };
-    loan.lastStatementSnapshot = snapshot;
-    loan.updatedAt = new Date().toISOString();
 
+    // Build patch — n'inclure que les champs définis (sinon mergeLoanPatch les
+    // ignore). Pour un revolving on update maxAmount + usedAmount ; pour un
+    // classic on update endDate uniquement (les autres champs revolving-only
+    // sont irrelevant).
+    const patch: LoanPatch = {
+      monthlyPayment: extracted.monthlyPayment > 0 ? extracted.monthlyPayment : undefined,
+      creditor: extracted.creditor || undefined,
+      taeg: extracted.taeg ?? undefined,
+      lastStatementSnapshot: snapshot,
+    };
+    if (extracted.creditType === 'revolving') {
+      if (extracted.maxAmount != null && extracted.maxAmount > 0) {
+        patch.maxAmount = extracted.maxAmount;
+      }
+      patch.usedAmount = Math.max(0, extracted.currentBalance);
+    } else {
+      // classic : on peut renseigner endDate si extraite ; idem startDate
+      // (qui était bug avant — credit_statement peut écrire startDate si vide)
+      if (extracted.endDate) patch.endDate = extracted.endDate;
+    }
+
+    LoansService.mergeLoanPatch(loan, patch, 'credit_statement');
     await this.persist(all);
     return loan;
+  }
+
+  /**
+   * MERGE LOAN PATCH — applique un patch partiel à un Loan en respectant
+   * les règles de priorité par champ et par source.
+   *
+   * Règles de priorité (du plus fort au plus faible) :
+   *   user > amortization > credit_statement > bank_statement > suggestion
+   *
+   * Pour chaque champ du patch :
+   *   - certains champs ne peuvent être écrits que par certaines sources
+   *   - certains champs ne sont écrits que si l'existant est vide (preserve user)
+   *   - rumRefs[] est additif (union, pas écrasement)
+   *   - lastStatementSnapshot ne s'écrit que depuis credit_statement
+   *   - amortizationSchedule ne s'écrit que depuis amortization
+   *
+   * Mute le loan en place et update `updatedAt`. NE PERSISTE PAS — le caller
+   * doit appeler `persist()` après. C'est intentionnel pour permettre le
+   * batching de plusieurs mutations dans une seule écriture.
+   */
+  static mergeLoanPatch(loan: Loan, patch: LoanPatch, source: LoanPatchSource): void {
+    const isUser = source === 'user';
+    const isAmortization = source === 'amortization';
+    const isCreditStatement = source === 'credit_statement';
+    const isAuto = !isUser; // toute source non-user est automatique
+
+    // creditor : preserve si déjà set (sauf si user override). Auto-fill si vide.
+    if (patch.creditor !== undefined) {
+      if (isUser) {
+        loan.creditor = patch.creditor || undefined;
+      } else if (!loan.creditor) {
+        loan.creditor = patch.creditor;
+      }
+    }
+
+    // contractRef : preserve user-set, auto-fill si vide
+    if (patch.contractRef !== undefined) {
+      if (isUser) {
+        loan.contractRef = patch.contractRef || undefined;
+      } else if (!loan.contractRef && patch.contractRef) {
+        loan.contractRef = patch.contractRef;
+      }
+    }
+
+    // rumRefs : ADDITIF (union dédup-normalisée)
+    if (patch.rumRefs && patch.rumRefs.length > 0) {
+      const existing = loan.rumRefs ?? [];
+      const merged = [...existing];
+      for (const r of patch.rumRefs) {
+        const known = merged.some((e) => LoansService.refsMatch(e, r));
+        if (!known) merged.push(r);
+      }
+      loan.rumRefs = merged.length > 0 ? merged : undefined;
+    }
+
+    // startDate : amortization gagne (source canonique). credit_statement
+    // peut auto-fill si vide. user peut tout écraser.
+    if (patch.startDate !== undefined) {
+      if (isUser || isAmortization) {
+        loan.startDate = patch.startDate;
+      } else if (!loan.startDate && patch.startDate) {
+        loan.startDate = patch.startDate;
+      }
+    }
+
+    // endDate : amortization gagne, credit_statement auto-update OK, user override
+    if (patch.endDate !== undefined) {
+      if (isUser || isAmortization || isCreditStatement) {
+        loan.endDate = patch.endDate;
+      }
+    }
+
+    // initialPrincipal : amortization-only (sauf user)
+    if (patch.initialPrincipal !== undefined) {
+      if (isUser || isAmortization) {
+        loan.initialPrincipal = patch.initialPrincipal;
+      }
+    }
+
+    // monthlyPayment : toute source peut update
+    if (patch.monthlyPayment !== undefined && Number.isFinite(patch.monthlyPayment) && patch.monthlyPayment > 0) {
+      loan.monthlyPayment = patch.monthlyPayment;
+    }
+
+    // maxAmount : credit_statement-only (revolving) sauf user
+    if (patch.maxAmount !== undefined) {
+      if (isUser || isCreditStatement) {
+        loan.maxAmount = patch.maxAmount;
+      }
+    }
+
+    // usedAmount : credit_statement-only (canonical) sauf user. amortization
+    // n'a aucune autorité sur usedAmount d'un revolving.
+    if (patch.usedAmount !== undefined) {
+      if (isUser || isCreditStatement) {
+        loan.usedAmount = patch.usedAmount;
+      }
+    }
+
+    // taeg : amortization > credit_statement, user peut override
+    if (patch.taeg !== undefined) {
+      if (isUser || isAmortization) {
+        loan.taeg = patch.taeg;
+      } else if (isCreditStatement && (loan.taeg == null)) {
+        // credit_statement : auto-fill si vide
+        loan.taeg = patch.taeg;
+      }
+    }
+
+    // amortizationSchedule : amortization-only
+    if (patch.amortizationSchedule !== undefined) {
+      if (isUser || isAmortization) {
+        loan.amortizationSchedule = patch.amortizationSchedule;
+      }
+    }
+
+    // lastStatementSnapshot : credit_statement-only
+    if (patch.lastStatementSnapshot !== undefined && isCreditStatement) {
+      loan.lastStatementSnapshot = patch.lastStatementSnapshot;
+    }
+
+    if (isAuto || isUser) {
+      loan.updatedAt = new Date().toISOString();
+    }
   }
 
   /**
@@ -614,24 +770,29 @@ export class LoansService {
       );
     }
 
-    // Update partiel — on respecte le creditor déjà présent (user a la main)
-    if (!loan.creditor && extracted.creditor) {
-      loan.creditor = extracted.creditor;
-    }
-    loan.initialPrincipal = extracted.initialPrincipal;
-    loan.monthlyPayment = extracted.monthlyPayment;
-    loan.startDate = extracted.startDate;
-    loan.endDate = extracted.endDate;
-
-    // Tri chronologique défensif (le service trie déjà mais on durcit)
-    loan.amortizationSchedule = [...extracted.schedule].sort((a, b) =>
+    // Délégué à mergeLoanPatch — l'amortization est la source la plus
+    // canonique pour : initialPrincipal, monthlyPayment, startDate, endDate,
+    // schedule[], taeg.
+    const sortedSchedule = [...extracted.schedule].sort((a, b) =>
       a.date.localeCompare(b.date),
     );
-    loan.updatedAt = new Date().toISOString();
+    LoansService.mergeLoanPatch(
+      loan,
+      {
+        creditor: extracted.creditor || undefined,
+        initialPrincipal: extracted.initialPrincipal,
+        monthlyPayment: extracted.monthlyPayment,
+        startDate: extracted.startDate,
+        endDate: extracted.endDate,
+        taeg: extracted.taeg ?? undefined,
+        amortizationSchedule: sortedSchedule,
+      },
+      'amortization',
+    );
 
     await this.persist(all);
     this.logger.log(
-      `Applied amortization schedule to ${loan.id}: ${loan.amortizationSchedule.length} lines`,
+      `Applied amortization schedule to ${loan.id}: ${(loan.amortizationSchedule ?? []).length} lines`,
     );
     return loan;
   }

@@ -86,6 +86,10 @@ export interface Loan {
   // Tableau d'amortissement initial (classic uniquement). Source canonique
   // pour le suivi du capital restant dû — chargé à l'import du PDF banque.
   amortizationSchedule?: AmortizationLine[];
+  // TAEG (taux annuel effectif global) en pourcentage. Hissé au top-level
+  // car partagé entre amortization (PDF banque) et credit_statement (relevé
+  // mensuel) qui peuvent tous deux le fournir.
+  taeg?: number | null;
   createdAt: string;
   updatedAt: string;
 }
