@@ -2,6 +2,32 @@ export type LoanType = 'classic' | 'revolving';
 export type LoanCategory = 'mortgage' | 'consumer' | 'auto' | 'student' | 'other';
 
 /**
+ * Kind du Loan — distinction sémantique fine au-delà du `type` historique.
+ *
+ * - `classic`     : crédit conso/auto/immo amortissable à mensualité fixe sur N mois
+ * - `revolving`   : réserve d'argent / compte permanent (Cofidis revolving, Carrefour Pass…)
+ * - `installment` : paiement échelonné court (4XCB Cofidis, 3X Alma, 4X Klarna,
+ *                   FacilyPay…). Échéancier précis connu à la souscription.
+ *
+ * Quand `kind` est absent (loans legacy avant APEX 05), on déduit via
+ * `LoansService.getLoanKind(loan)` qui mappe `type` → `kind`.
+ */
+export type LoanKind = 'classic' | 'revolving' | 'installment';
+
+/**
+ * Une ligne de l'échéancier d'un paiement en N fois (kind='installment').
+ * Connue à la souscription (depuis le PDF du contrat 4XCB Cofidis ou
+ * équivalent), elle est marquée `paid=true` quand `auto-sync.syncLoans`
+ * trouve une transaction bank correspondante (date ±3j, montant ±0.50€).
+ */
+export interface InstallmentLine {
+  dueDate: string;             // YYYY-MM-DD
+  amount: number;              // montant exact attendu
+  paid: boolean;               // true quand match trouvé dans un bank statement
+  paidOccurrenceId?: string;   // id de l'occurrence qui satisfait cette ligne
+}
+
+/**
  * Source de l'occurrence — gère les décalages temporels entre relevés :
  * - bank_statement : occurrence détectée dans un relevé de compte bancaire
  *   (la mensualité a été prélevée sur le compte courant)
@@ -60,6 +86,9 @@ export interface Loan {
   id: string;
   name: string;
   type: LoanType;
+  /** Distinction sémantique fine — voir `LoanKind`. Optionnel pour rétro-compat
+   *  avec les loans pré-APEX 05 ; déduit via getLoanKind() si absent. */
+  kind?: LoanKind;
   category: LoanCategory;
   monthlyPayment: number;
   matchPattern: string;
@@ -90,6 +119,12 @@ export interface Loan {
   // car partagé entre amortization (PDF banque) et credit_statement (relevé
   // mensuel) qui peuvent tous deux le fournir.
   taeg?: number | null;
+  // Pour kind='installment' (paiement en N fois) : échéancier complet connu
+  // à la souscription, mis à jour par syncLoans quand des matchs bank arrivent.
+  installmentSchedule?: InstallmentLine[];
+  // Métadonnées du contrat installment (visibles sur le PDF source)
+  installmentMerchant?: string;       // 'AMAZON' (chez qui l'achat a été fait)
+  installmentSignatureDate?: string;  // 'YYYY-MM-DD' date du contrat
   createdAt: string;
   updatedAt: string;
 }

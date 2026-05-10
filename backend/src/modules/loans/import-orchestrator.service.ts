@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { LoansService } from './loans.service';
 import type { MatchSignals, MatchResult, AmortizationSnapshotInput } from './loans.service';
 import type { CreditStatementAnalysis } from '../analysis/credit-statement.service';
-import type { LoanInput, Loan } from '../../models/loan.model';
+import type { LoanInput, Loan, InstallmentLine } from '../../models/loan.model';
 
 /**
  * Defaults pour la création d'un Loan quand aucun match n'est trouvé.
@@ -10,7 +10,11 @@ import type { LoanInput, Loan } from '../../models/loan.model';
  * `monthlyPayment`, `matchPattern`, `isActive` doivent être présents
  * (requis par `LoanInput`).
  */
-export type LoanDefaults = Partial<LoanInput> & Pick<LoanInput, 'name' | 'type' | 'category' | 'monthlyPayment' | 'matchPattern' | 'isActive'>;
+export type LoanDefaults = Partial<LoanInput> & Pick<LoanInput, 'name' | 'type' | 'category' | 'monthlyPayment' | 'matchPattern' | 'isActive'> & {
+  installmentSchedule?: InstallmentLine[];
+  installmentMerchant?: string;
+  installmentSignatureDate?: string;
+};
 
 /**
  * IMPORT ORCHESTRATOR — point d'entrée unique pour les 3 paths d'import :
@@ -48,10 +52,68 @@ export class ImportOrchestratorService {
   }
 
   /**
-   * Import d'un relevé de crédit : trouve le loan existant via les
-   * identifiants ou en crée un nouveau pré-rempli, puis applique le snapshot.
+   * Import d'un relevé/contrat de crédit. 2 chemins selon le PDF :
+   *
+   *   A) `extracted.installmentDetails != null` → CONTRAT pay-in-N (4XCB
+   *      Cofidis, 3X Alma, FacilyPay…). On crée un Loan `kind='installment'`
+   *      avec `installmentSchedule[]` exact, prêt à être matché par
+   *      `auto-sync.syncLoans` lors des prochains imports bank.
+   *
+   *   B) Sinon → relevé mensuel classique (revolving Cofidis ou amortissable).
+   *      Trouve l'existant via identifiants OU crée + applique le snapshot
+   *      canonique.
    */
   async importCreditStatement(extracted: CreditStatementAnalysis): Promise<{ loan: Loan; created: boolean; matchConfidence?: MatchResult['confidence']; matchReason?: string }> {
+    if (extracted.installmentDetails) {
+      return this.importInstallmentContract(extracted);
+    }
+    return this.importStandardCreditStatement(extracted);
+  }
+
+  /**
+   * Branche A : contrat pay-in-N (kind='installment').
+   */
+  private async importInstallmentContract(
+    extracted: CreditStatementAnalysis,
+  ): Promise<{ loan: Loan; created: boolean; matchConfidence?: MatchResult['confidence']; matchReason?: string }> {
+    const details = extracted.installmentDetails!;
+    const signals: MatchSignals = {
+      // Pour un installment Cofidis, contractRef est rare ; on s'appuie sur
+      // creditor + totalAmount pour matcher les imports doublons.
+      creditor: extracted.creditor,
+      monthlyAmount: details.amount,
+    };
+    const merchantSuffix = details.merchant ? ` · ${details.merchant}` : '';
+    const baseName = `${details.count}× ${extracted.creditor}${merchantSuffix} (${details.totalAmount.toFixed(0)}€)`;
+    const installmentSchedule: InstallmentLine[] = details.installments
+      .map((i) => ({ dueDate: i.date, amount: i.amount, paid: false }))
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    const lastDueDate = installmentSchedule[installmentSchedule.length - 1].dueDate;
+    const defaults: LoanDefaults = {
+      name: baseName,
+      type: 'classic', // historique : 'classic' fait sens pour un installment court
+      kind: 'installment',
+      category: 'consumer',
+      monthlyPayment: details.amount,
+      matchPattern: extracted.creditor,
+      isActive: true,
+      creditor: extracted.creditor,
+      startDate: details.signatureDate ?? installmentSchedule[0].dueDate,
+      endDate: lastDueDate,
+      installmentSchedule,
+      installmentMerchant: details.merchant ?? undefined,
+      installmentSignatureDate: details.signatureDate ?? undefined,
+    };
+    const result = await this.findOrCreate(signals, defaults);
+    return result;
+  }
+
+  /**
+   * Branche B : relevé mensuel classique (revolving / amortissable).
+   */
+  private async importStandardCreditStatement(
+    extracted: CreditStatementAnalysis,
+  ): Promise<{ loan: Loan; created: boolean; matchConfidence?: MatchResult['confidence']; matchReason?: string }> {
     const signals: MatchSignals = {
       contractRef: extracted.accountNumber,
       rumNumber: extracted.rumNumber,
@@ -65,6 +127,7 @@ export class ImportOrchestratorService {
     const defaults: LoanDefaults = {
       name: baseName,
       type: extracted.creditType,
+      kind: extracted.creditType,
       category: 'consumer',
       monthlyPayment: extracted.monthlyPayment,
       matchPattern: extracted.creditor,
