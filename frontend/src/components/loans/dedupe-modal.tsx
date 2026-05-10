@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { X, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import {
   useLoanDuplicates,
   useMergeLoanDuplicates,
   type LoanDuplicateGroup,
 } from '@/lib/queries';
-import { formatEUR } from '@/lib/utils';
+import { formatEUR, cn } from '@/lib/utils';
+
+type RowStatus = 'keep' | 'merge' | 'ignore';
 
 interface Props {
   onClose: () => void;
@@ -14,7 +16,7 @@ interface Props {
 export function DedupeModal({ onClose }: Props) {
   const { data: groups, isLoading, refetch } = useLoanDuplicates();
   const merge = useMergeLoanDuplicates();
-  const [statuses, setStatuses] = useState<Record<string, 'idle' | 'merging' | 'merged' | 'error'>>({});
+  const [groupStatuses, setGroupStatuses] = useState<Record<string, 'idle' | 'merging' | 'merged' | 'error'>>({});
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto animate-fade-in" onClick={onClose}>
@@ -23,7 +25,10 @@ export function DedupeModal({ onClose }: Props) {
           <div>
             <h2 className="font-display font-semibold text-fg-bright">Détecter et fusionner les doublons</h2>
             <p className="text-xs text-fg-muted">
-              Heuristique : même créancier + même type + mensualité ±5%. À toi de valider chaque groupe — pas d'auto-merge.
+              Heuristique : même créancier + même type + mensualité ±5%. Pour chaque ligne, choisis :
+              <strong className="text-accent"> Conserver</strong> (canonical) ·
+              <strong className="text-warning"> Merger</strong> (à fusionner dans le canonical) ·
+              <strong className="text-fg-dim"> Ignorer</strong> (faux positif, laisser tel quel).
             </p>
           </div>
           <button onClick={onClose} className="btn-ghost p-1" aria-label="Fermer"><X className="h-4 w-4" /></button>
@@ -39,24 +44,27 @@ export function DedupeModal({ onClose }: Props) {
             </div>
           )}
 
-          {!isLoading && groups && groups.map((group, idx) => (
-            <DedupeGroupCard
-              key={`${group.creditor}-${idx}`}
-              group={group}
-              status={statuses[idx] ?? 'idle'}
-              onMerge={async (canonicalId, dupIds) => {
-                setStatuses((s) => ({ ...s, [idx]: 'merging' }));
-                try {
-                  await merge.mutateAsync({ canonicalId, duplicateIds: dupIds });
-                  setStatuses((s) => ({ ...s, [idx]: 'merged' }));
-                  refetch();
-                } catch (err) {
-                  setStatuses((s) => ({ ...s, [idx]: 'error' }));
-                  alert(`Erreur : ${(err as Error).message}`);
-                }
-              }}
-            />
-          ))}
+          {!isLoading && groups && groups.map((group, idx) => {
+            const key = `${group.creditor}-${idx}`;
+            return (
+              <DedupeGroupCard
+                key={key}
+                group={group}
+                status={groupStatuses[key] ?? 'idle'}
+                onMerge={async (canonicalId, dupIds) => {
+                  setGroupStatuses((s) => ({ ...s, [key]: 'merging' }));
+                  try {
+                    await merge.mutateAsync({ canonicalId, duplicateIds: dupIds });
+                    setGroupStatuses((s) => ({ ...s, [key]: 'merged' }));
+                    refetch();
+                  } catch (err) {
+                    setGroupStatuses((s) => ({ ...s, [key]: 'error' }));
+                    alert(`Erreur : ${(err as Error).message}`);
+                  }
+                }}
+              />
+            );
+          })}
         </div>
 
         <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
@@ -76,13 +84,41 @@ function DedupeGroupCard({
   status: 'idle' | 'merging' | 'merged' | 'error';
   onMerge: (canonicalId: string, dupIds: string[]) => void;
 }) {
-  const [canonicalId, setCanonicalId] = useState<string>(group.loans[0]?.id ?? '');
-  const [selectedDups, setSelectedDups] = useState<Set<string>>(
-    new Set(group.loans.slice(1).map((l) => l.id)),
-  );
+  // Initial : ligne 0 = keep (canonical) ; lignes 1+ = merge (à fusionner)
+  const [rowStatus, setRowStatus] = useState<Record<string, RowStatus>>(() => {
+    const init: Record<string, RowStatus> = {};
+    group.loans.forEach((l, i) => {
+      init[l.id] = i === 0 ? 'keep' : 'merge';
+    });
+    return init;
+  });
 
   const merging = status === 'merging';
   const merged = status === 'merged';
+
+  const canonicalId = useMemo(() => {
+    return Object.entries(rowStatus).find(([, s]) => s === 'keep')?.[0];
+  }, [rowStatus]);
+
+  const dupIds = useMemo(() => {
+    return Object.entries(rowStatus).filter(([, s]) => s === 'merge').map(([id]) => id);
+  }, [rowStatus]);
+
+  // Quand l'user clique "Conserver" sur une ligne, l'ancienne canonical bascule en "merge"
+  // (par défaut on suppose qu'elle reste un doublon ; user peut la passer en "ignore" ensuite).
+  function setStatus(loanId: string, next: RowStatus) {
+    setRowStatus((prev) => {
+      const updated = { ...prev };
+      if (next === 'keep') {
+        // Demote any other 'keep' to 'merge'
+        for (const [id, s] of Object.entries(updated)) {
+          if (id !== loanId && s === 'keep') updated[id] = 'merge';
+        }
+      }
+      updated[loanId] = next;
+      return updated;
+    });
+  }
 
   return (
     <div className={`rounded-md border p-4 ${merged ? 'border-positive/40 bg-positive/5' : 'border-border bg-surface-3'}`}>
@@ -106,59 +142,26 @@ function DedupeGroupCard({
         </p>
       ) : (
         <>
-          <div className="space-y-2 mb-3">
+          <ul className="space-y-2 mb-3 list-none">
             {group.loans.map((l) => {
-              const isCanonical = l.id === canonicalId;
-              const isSelectedAsDup = selectedDups.has(l.id);
+              const s = rowStatus[l.id] ?? 'merge';
               return (
-                <div
+                <li
                   key={l.id}
-                  className={`flex items-start gap-3 rounded-sm p-2 border ${
-                    isCanonical
-                      ? 'border-accent/40 bg-accent/5'
-                      : isSelectedAsDup
-                      ? 'border-warning/30 bg-warning/5'
-                      : 'border-border bg-surface'
-                  }`}
+                  className={cn(
+                    'flex items-center gap-3 rounded-sm p-2 border transition-colors',
+                    s === 'keep' && 'border-accent/40 bg-accent/5',
+                    s === 'merge' && 'border-warning/30 bg-warning/5',
+                    s === 'ignore' && 'border-border bg-surface opacity-70',
+                  )}
                 >
-                  <input
-                    type="radio"
-                    name={`canonical-${group.creditor}`}
-                    checked={isCanonical}
-                    disabled={merging}
-                    onChange={() => {
-                      setCanonicalId(l.id);
-                      setSelectedDups((prev) => {
-                        const next = new Set(prev);
-                        next.delete(l.id);
-                        return next;
-                      });
-                    }}
-                    className="mt-1"
-                    aria-label="Conserver comme canonical"
-                  />
-                  <input
-                    type="checkbox"
-                    checked={isSelectedAsDup}
-                    disabled={merging || isCanonical}
-                    onChange={(e) => {
-                      setSelectedDups((prev) => {
-                        const next = new Set(prev);
-                        if (e.target.checked) next.add(l.id);
-                        else next.delete(l.id);
-                        return next;
-                      });
-                    }}
-                    className="mt-1"
-                    aria-label="Marquer comme doublon à fusionner"
-                  />
                   <div className="flex-1 min-w-0 text-sm">
                     <div className="font-display font-semibold text-fg-bright">{l.name}</div>
                     <div className="text-xs text-fg-muted tabular space-x-2">
                       <span>{formatEUR(l.monthlyPayment)}/mois</span>
                       {l.contractRef && <span className="font-mono">#{l.contractRef}</span>}
                       {l.maxAmount != null && <span>plafond {formatEUR(l.maxAmount)}</span>}
-                      <span>· {l.occurrencesCount} occurrence{l.occurrencesCount > 1 ? 's' : ''}</span>
+                      <span>· {l.occurrencesCount} occ.</span>
                       <span className={l.isActive ? 'text-positive' : 'text-fg-dim'}>
                         · {l.isActive ? 'actif' : 'archivé'}
                       </span>
@@ -169,32 +172,73 @@ function DedupeGroupCard({
                       </div>
                     )}
                   </div>
-                  <span className="text-[10px] uppercase tracking-wider font-semibold shrink-0">
-                    {isCanonical ? <span className="text-accent">À conserver</span> : isSelectedAsDup ? <span className="text-warning">À merger</span> : <span className="text-fg-dim">—</span>}
-                  </span>
-                </div>
+                  <SegmentedControl
+                    value={s}
+                    onChange={(next) => setStatus(l.id, next)}
+                    disabled={merging}
+                  />
+                </li>
               );
             })}
-          </div>
+          </ul>
 
           <div className="flex items-center justify-between gap-2 text-xs text-fg-muted">
             <span>
               Le canonical conservera l'historique d'occurrences (dédupé) + l'union des RUMs + le contractRef si manquant.
             </span>
             <button
-              onClick={() => onMerge(canonicalId, [...selectedDups])}
-              disabled={merging || selectedDups.size === 0}
+              onClick={() => canonicalId && onMerge(canonicalId, dupIds)}
+              disabled={merging || !canonicalId || dupIds.length === 0}
               className="btn-primary"
             >
               {merging ? (
                 <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Fusion…</>
               ) : (
-                <>Fusionner ({selectedDups.size})</>
+                <>Fusionner ({dupIds.length})</>
               )}
             </button>
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function SegmentedControl({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: RowStatus;
+  onChange: (next: RowStatus) => void;
+  disabled?: boolean;
+}) {
+  const options: { value: RowStatus; label: string; tone: string }[] = [
+    { value: 'keep', label: 'Conserver', tone: 'text-accent' },
+    { value: 'merge', label: 'Merger', tone: 'text-warning' },
+    { value: 'ignore', label: 'Ignorer', tone: 'text-fg-dim' },
+  ];
+  return (
+    <div className="inline-flex border border-border rounded overflow-hidden shrink-0">
+      {options.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(opt.value)}
+            className={cn(
+              'px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider transition-colors',
+              active ? `bg-surface-3 ${opt.tone}` : 'text-fg-dim hover:text-fg hover:bg-surface-2',
+              disabled && 'opacity-50 cursor-not-allowed',
+            )}
+            aria-pressed={active}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
