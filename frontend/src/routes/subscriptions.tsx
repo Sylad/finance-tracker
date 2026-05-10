@@ -83,7 +83,41 @@ export function SubscriptionsPage() {
   const allSugg = (suggestions.data ?? []).filter(
     (s) => s.suggestedType === 'subscription' || s.suggestedType === 'utility',
   );
-  const pendingSugg = allSugg.filter((s) => s.status === 'pending');
+  // Une suggestion est "déjà couverte" si un sub actif :
+  //   - matche son label via matchPattern regex
+  //   - OU partage un mot-clé significatif + montant ±10%
+  // Évite de proposer 50 fois "EDF / Orange Fibre" alors qu'ils sont déjà
+  // créés. Filtre purement UI : la suggestion reste pending en base, donc
+  // si l'user supprime le sub, elle réapparaît.
+  const slugify = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const STOP = new Set(['abonnement', 'abonnements', 'facture', 'factures', 'mensuel', 'mensuelle', 'paiement', 'prelevement', 'sas', 'sa', 'sarl', 'france', 'fr', 'des', 'pour', 'par', 'avec']);
+  const sigWords = (s: string) => new Set(slugify(s).split(' ').filter((w) => w.length >= 4 && !STOP.has(w)));
+  const isSuggCovered = (sugg: typeof allSugg[number]) => {
+    for (const sub of active) {
+      // 1. matchPattern regex match
+      if (sub.matchPattern) {
+        try {
+          if (new RegExp(sub.matchPattern, 'i').test(sugg.label)) return true;
+        } catch { /* invalid regex, skip */ }
+      }
+      // 2. creditor identique
+      if (sub.creditor && sugg.creditor) {
+        if (slugify(sub.creditor) === slugify(sugg.creditor)) return true;
+      }
+      // 3. slug name partage 1 mot ≥4 lettres + montant ±10%
+      const subWords = sigWords(sub.name);
+      const suggWords = sigWords(sugg.label);
+      const shared = [...subWords].some((w) => suggWords.has(w));
+      const amountClose =
+        Math.abs(sub.monthlyAmount - sugg.monthlyAmount)
+          <= Math.max(sub.monthlyAmount, sugg.monthlyAmount) * 0.1;
+      if (shared && amountClose) return true;
+    }
+    return false;
+  };
+  const pendingAll = allSugg.filter((s) => s.status === 'pending');
+  const coveredCount = pendingAll.filter(isSuggCovered).length;
+  const pendingSugg = pendingAll.filter((s) => !isSuggCovered(s));
   const hiddenSugg = allSugg.filter((s) => s.status === 'snoozed');
   const visibleSubs = pendingSugg.filter((s) => s.suggestedType === 'subscription');
   const visibleUtils = pendingSugg.filter((s) => s.suggestedType === 'utility');
@@ -226,7 +260,14 @@ export function SubscriptionsPage() {
           {pendingSugg.length > 0 && (
             <>
               <div className="card p-4 border-l-4 border-l-info bg-info/5">
-                <div className="text-sm text-fg-bright font-medium mb-1">Suggestions à trier</div>
+                <div className="text-sm text-fg-bright font-medium mb-1">
+                  Suggestions à trier
+                  {coveredCount > 0 && (
+                    <span className="ml-2 text-xs text-fg-muted font-normal">
+                      ({coveredCount} masquée{coveredCount > 1 ? 's' : ''} car déjà couverte{coveredCount > 1 ? 's' : ''} par un abonnement actif)
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-fg-muted leading-relaxed">
                   <span className="text-accent-bright font-medium">Enregistrer</span> : ouvre le formulaire pré-rempli pour ajouter cette charge à ton registre.
                   <br />

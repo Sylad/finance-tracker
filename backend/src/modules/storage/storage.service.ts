@@ -146,6 +146,18 @@ export class StorageService implements OnModuleInit {
 
   async getAggregatedRecurringCredits(): Promise<RecurringCredit[]> {
     const statements = await this.getAllStatements();
+    // Liste des organismes prêteurs reconnus — leurs virements sont des
+    // déblocages de crédit, PAS des revenus. À exclure de /income.
+    const LOAN_KEYWORDS = [
+      'cofidis', 'cetelem', 'sofinco', 'cofinoga', 'floa', 'oney', 'klarna', 'alma',
+      'younited', 'franfinance', 'monabanq', 'carrefour banque', 'banque casino',
+      'ca consumer finance', 'consumer finance', 'bpce financement', 'cofica',
+      'rci banque', 'diac', 'psa bank', 'volkswagen financial',
+    ];
+    const isLoanDrawdown = (c: RecurringCredit): boolean => {
+      const text = `${c.description} ${c.normalizedDescription}`.toLowerCase();
+      return LOAN_KEYWORDS.some((kw) => text.includes(kw));
+    };
     // Mots génériques à filtrer pour identifier l'entité réelle (l'employeur,
     // l'organisme prêteur…) et éviter les doublons quand Claude varie sa
     // normalizedDescription ("Salaire mensuel" vs "Salaire Campbell").
@@ -162,28 +174,29 @@ export class StorageService implements OnModuleInit {
     const significantWords = (s: string): string[] =>
       slugify(s).split(' ').filter((w) => w.length >= 4 && !STOP_WORDS.has(w));
 
-    // Pour chaque RecurringCredit candidat, calcule une clé de bucket basée
-    // sur (1er mot significatif de description OU normalizedDescription)
-    // + bucket de montant arrondi (par tranches de 100€).
+    // Clé de bucket : 2 premiers mots significatifs combinés (ex: "campbell
+    // scientific"). Identifie l'employeur/organisme. Pas de discriminant
+    // par montant pour les revenus (un salaire varie avec primes/ajustements
+    // sur 100-1000€) : on garde 1 entrée par "entité réelle".
+    // Catégorie incluse pour distinguer salaire vs autre.
     const bucketKey = (c: RecurringCredit): string => {
-      const words = [
+      const words = Array.from(new Set([
         ...significantWords(c.description),
         ...significantWords(c.normalizedDescription),
-      ];
+      ]));
       if (words.length === 0) {
-        return `unknown|${Math.round(c.monthlyAmount / 100) * 100}`;
+        return `unknown|${c.category}|${Math.round(c.monthlyAmount / 500) * 500}`;
       }
-      // Mot le plus distinctif = premier mot significatif partagé entre
-      // description + normalized → identifie l'employeur/organisme.
-      const primary = words[0];
-      // Bucket de montant ±10% pour absorber les variations de salaire / primes
-      const amountKey = Math.round(c.monthlyAmount / 100) * 100;
-      return `${primary}|${amountKey}`;
+      const primary = words.slice(0, 2).join(' ');
+      return `${primary}|${c.category}`;
     };
 
     const creditMap = new Map<string, RecurringCredit>();
     for (const statement of statements) {
       for (const credit of statement.recurringCredits) {
+        // Filtre : déblocages de crédit (Sofinco/Floa/Cofidis virements
+        // entrants) ne sont PAS des revenus.
+        if (isLoanDrawdown(credit)) continue;
         const key = bucketKey(credit);
         const existing = creditMap.get(key);
         if (!existing || credit.lastSeenDate > existing.lastSeenDate) {
