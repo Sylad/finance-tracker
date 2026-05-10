@@ -17,10 +17,22 @@ const YEARLY_REGEX = /^\d{4}\.json$/;
 export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
 
+  // Cache mémoire des statements par data-dir. La clé est le chemin du dossier
+  // statements (résolu via RequestDataDirService — varie entre real et demo
+  // selon le contexte ALS). Audit a flaggé que getAllStatements() était
+  // appelé 6× sans cache → readdir + readFile complets sur chaque appel.
+  // Cache invalidé sur tout write/delete sur le bon dataDir.
+  private cacheByDir = new Map<string, MonthlyStatement[]>();
+
   constructor(
     private readonly config: ConfigService,
     private readonly dataDir: RequestDataDirService,
   ) {}
+
+  private invalidateCache(dirKey?: string): void {
+    if (dirKey) this.cacheByDir.delete(dirKey);
+    else this.cacheByDir.clear();
+  }
 
   onModuleInit() {
     // Ensure base dirs exist for both normal AND demo locations.
@@ -51,6 +63,7 @@ export class StorageService implements OnModuleInit {
     }
     const filepath = path.join(this.statementsDir, filename);
     await atomicWriteJson(filepath, statement);
+    this.invalidateCache(this.statementsDir);
     await this.archivePastYears();
   }
 
@@ -71,6 +84,10 @@ export class StorageService implements OnModuleInit {
   }
 
   async getAllStatements(): Promise<MonthlyStatement[]> {
+    const dirKey = this.statementsDir;
+    const cached = this.cacheByDir.get(dirKey);
+    if (cached) return cached;
+
     // Active statements (current year)
     const active = await this.readStatementsInDir(this.statementsDir);
 
@@ -96,10 +113,12 @@ export class StorageService implements OnModuleInit {
     for (const s of archived) byId.set(s.id, s);
     for (const s of active) byId.set(s.id, s); // overwrites archived with same id
 
-    return [...byId.values()].sort((a, b) => {
+    const sorted = [...byId.values()].sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
       return b.month - a.month;
     });
+    this.cacheByDir.set(dirKey, sorted);
+    return sorted;
   }
 
   async getAllSummaries(): Promise<StatementSummary[]> {
@@ -130,6 +149,7 @@ export class StorageService implements OnModuleInit {
     for (const filepath of candidates) {
       try {
         await fs.promises.unlink(filepath);
+        this.invalidateCache(this.statementsDir);
         return true;
       } catch {
         // try next
@@ -286,6 +306,9 @@ export class StorageService implements OnModuleInit {
         await fs.promises.rename(src, dst);
         this.logger.log(`Archived ${s.id} → archive/${year}/`);
       }
+      // Le dataset visible vient de changer (les statements de l'année passée
+      // ne sont plus dans active/) → invalide le cache du dirKey courant.
+      this.invalidateCache(this.statementsDir);
 
       const archived = await this.readStatementsInDir(yearArchiveDir);
       const sorted = archived.sort((a, b) => a.month - b.month);
