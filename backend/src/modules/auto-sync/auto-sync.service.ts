@@ -189,20 +189,31 @@ export class AutoSyncService {
       if (!loan.isActive) continue;
 
       // Build a matcher. We combine signals:
-      // - contractRef must be present in description (substring, case-insensitive)
-      // - AND if matchPattern is set too, the regex must also match
-      // - if only one of the two is set, that one is the sole criterion
-      // - if neither, the loan can't be auto-synced
+      // - At least ONE of (contractRef, rumRefs[]) must appear in description
+      //   (substring, case-insensitive). RUMs are critical for Cofidis/Sofinco
+      //   relevés bank where contractRef is absent.
+      // - AND if matchPattern is set, the regex must also match
+      // - if neither identifier nor regex set, the loan can't be auto-synced
       let regex: RegExp | null = null;
       if (loan.matchPattern) {
         try { regex = new RegExp(loan.matchPattern, 'i'); }
         catch { this.logger.warn(`Invalid regex on loan ${loan.id}: ${loan.matchPattern}`); continue; }
       }
-      const ref = loan.contractRef?.toLowerCase().trim();
-      if (!ref && !regex) continue;
+      // Aggregate all known identifiers (contractRef + rumRefs) in lowercase
+      // form. They are an OR-set : any one of them present in the transaction
+      // description is enough.
+      const identifiers: string[] = [];
+      if (loan.contractRef) identifiers.push(loan.contractRef);
+      if (loan.rumRefs) identifiers.push(...loan.rumRefs);
+      const normalizedIds = identifiers
+        .map((s) => s.toLowerCase().trim())
+        .filter((s) => s.length >= 4); // évite faux matchs sur fragments courts
+      if (normalizedIds.length === 0 && !regex) continue;
       const matcher = (desc: string): boolean => {
         const lower = desc.toLowerCase();
-        if (ref && !lower.includes(ref)) return false;
+        if (normalizedIds.length > 0 && !normalizedIds.some((id) => lower.includes(id))) {
+          return false;
+        }
         if (regex && !regex.test(desc)) return false;
         return true;
       };
