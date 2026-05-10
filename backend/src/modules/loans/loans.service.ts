@@ -720,6 +720,41 @@ export class LoansService {
   }
 
   /**
+   * Évalue la santé des données d'un Loan :
+   *   - 'complete' : tableau d'amortissement présent OU statement récent (≤60j),
+   *                  ET ≥3 occurrences sur les 6 derniers mois
+   *   - 'partial'  : 1-2 critères manquants
+   *   - 'gap'      : 0 statement récent ET ≤1 occurrence
+   *
+   * Permet à l'user d'identifier visuellement les crédits qui manquent de
+   * données pour un suivi fiable.
+   */
+  static getLoanHealth(loan: Loan, now?: string): 'complete' | 'partial' | 'gap' {
+    const today = now ?? new Date().toISOString().slice(0, 10);
+    const todayMs = new Date(today + 'T00:00:00Z').getTime();
+
+    const hasAmortization = (loan.amortizationSchedule?.length ?? 0) > 0;
+    const lastSnapshotDate = loan.lastStatementSnapshot?.date ?? null;
+    const recentSnapshot = lastSnapshotDate
+      ? (todayMs - new Date(lastSnapshotDate).getTime()) <= 60 * 24 * 3600 * 1000
+      : false;
+
+    const sixMonthsAgo = new Date(todayMs - 180 * 24 * 3600 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    const occurrencesRecent = (loan.occurrencesDetected ?? []).filter(
+      (o) => o.date >= sixMonthsAgo && o.date <= today,
+    ).length;
+
+    const dataPresent = hasAmortization || recentSnapshot;
+    const enoughOccurrences = occurrencesRecent >= 3;
+
+    if (dataPresent && enoughOccurrences) return 'complete';
+    if (!dataPresent && occurrencesRecent <= 1) return 'gap';
+    return 'partial';
+  }
+
+  /**
    * Ajoute un RUM à la liste rumRefs[] d'un loan si pas déjà présent
    * (comparaison normalisée). No-op si le RUM est déjà connu.
    * Utilisé après matching réussi quand le relevé courant porte un

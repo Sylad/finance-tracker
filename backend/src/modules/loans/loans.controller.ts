@@ -57,7 +57,10 @@ export class LoansController {
   ) {}
 
   @Get()
-  list() { return this.svc.getAll(); }
+  async list() {
+    const all = await this.svc.getAll();
+    return all.map((l) => ({ ...l, health: LoansService.getLoanHealth(l) }));
+  }
 
   @Get('duplicates')
   detectDuplicates() {
