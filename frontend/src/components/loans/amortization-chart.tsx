@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import type { Loan } from '@/types/api';
 import { formatEUR } from '@/lib/utils';
+import { computeLoanState } from '@/lib/loan-state';
 
 interface Props {
   loan: Loan;
@@ -19,14 +20,15 @@ interface Props {
 
 /**
  * Mini-graphique "capital restant prévu vs réel" pour un crédit classique
- * doté d'un tableau d'amortissement. La courbe "prévu" est l'échéancier
- * banque (statique), la courbe "réel" estime à partir des occurrences
- * détectées : capital_restant_estimé(date) ≈ initialPrincipal − sum(occurrences
- * jusqu'à date) (approximation : on attribue l'intégralité de chaque
- * mensualité au capital, ce qui sous-estime le restant ; pour un suivi
- * exact il faudrait connaître la part intérêts mois par mois).
+ * doté d'un tableau d'amortissement.
  *
- * Affiché collapsed par défaut sur la card classique, déplie au click.
+ * "Prévu" = capitalRemaining direct du schedule (statique, banque).
+ * "Réel" = computeLoanState(loan, asOf=line.date).estimatedFromOccurrences
+ *   qui aligne chaque occurrence sur la portion `capitalPaid` de la ligne
+ *   schedule du même mois (vs naïf qui soustrayait l'amount total et
+ *   sous-estimait le capital restant en incluant les intérêts).
+ *
+ * Affiché collapsed par défaut, déplie au click.
  */
 export function AmortizationChart({ loan }: Props) {
   const [open, setOpen] = useState(false);
@@ -35,26 +37,22 @@ export function AmortizationChart({ loan }: Props) {
   const data = useMemo(() => {
     if (!schedule || schedule.length === 0) return [];
 
-    // Pour chaque échéance prévue, calcule l'état réel à la date :
-    // initialPrincipal − somme(|amount| des occurrences avec date ≤ échéance).
-    const sortedOccurrences = [...loan.occurrencesDetected]
-      .map((o) => ({ date: o.date, amount: Math.abs(o.amount) }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-
     return schedule.map((line) => {
-      const cumulative = sortedOccurrences
-        .filter((o) => o.date <= line.date)
-        .reduce((s, o) => s + o.amount, 0);
-      const realRemaining = Math.max(0, (loan.initialPrincipal ?? 0) - cumulative);
+      // Estimé réel à la date de cette ligne : on appelle le helper qui
+      // utilise la portion capitalPaid alignée. Pour chaque ligne du
+      // schedule, on calcule l'état du loan à cette date.
+      const stateAt = computeLoanState(loan, line.date);
+      const reel = stateAt.capitalRemaining.estimatedFromOccurrences;
+      // Affiche null avant la 1ère occurrence (pas de point sur la courbe
+      // réelle tant qu'on n'a rien détecté).
+      const reelDisplay = stateAt.totalPaid > 0 && reel != null ? Math.round(reel) : null;
       return {
-        // YYYY-MM affichage compact
         month: line.date.slice(0, 7),
         prevu: Math.round(line.capitalRemaining),
-        // Real seulement si on a au moins une occurrence avant cette date
-        reel: cumulative > 0 ? Math.round(realRemaining) : null,
+        reel: reelDisplay,
       };
     });
-  }, [schedule, loan.occurrencesDetected, loan.initialPrincipal]);
+  }, [schedule, loan]);
 
   if (!schedule || schedule.length === 0) return null;
 
