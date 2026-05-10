@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   Info,
   Copy,
+  Sparkles,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
@@ -21,6 +22,7 @@ import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
 import { ScoreRing } from '@/components/score-ring';
 import { CategoryPicker } from '@/components/category-picker';
+import { AutoCategorizeModal } from '@/components/auto-categorize-modal';
 import {
   CATEGORY_LABELS,
   type Transaction,
@@ -75,8 +77,10 @@ export function StatementDetailPage() {
   const [filter, setFilter] = useState<'all' | 'credit' | 'debit'>('all');
   const [activeCat, setActiveCat] = useState<TransactionCategory | null>(null);
   const [pickingTx, setPickingTx] = useState<Transaction | null>(null);
+  const [autoCatOpen, setAutoCatOpen] = useState(false);
 
   const transactions = data?.transactions ?? [];
+  const otherCount = useMemo(() => transactions.filter((t) => t.category === 'other').length, [transactions]);
 
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
@@ -167,9 +171,20 @@ export function StatementDetailPage() {
         title={formatMonth(data.month, data.year)}
         subtitle={`${data.transactions.length} transactions · ${data.accountHolder}`}
         actions={
-          <button onClick={handleDelete} disabled={del.isPending} className="btn-danger">
-            <Trash2 className="h-3.5 w-3.5" /> Supprimer
-          </button>
+          <div className="flex items-center gap-2">
+            {otherCount > 0 && (
+              <button
+                onClick={() => setAutoCatOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent/10 hover:bg-accent/20 text-accent-bright text-xs font-medium border border-accent/30 transition-colors"
+                title={`${otherCount} transaction${otherCount > 1 ? 's' : ''} dans "Autre"`}
+              >
+                <Sparkles className="h-3.5 w-3.5" /> Auto-catégoriser ({otherCount})
+              </button>
+            )}
+            <button onClick={handleDelete} disabled={del.isPending} className="btn-danger">
+              <Trash2 className="h-3.5 w-3.5" /> Supprimer
+            </button>
+          </div>
         }
       />
 
@@ -409,6 +424,10 @@ export function StatementDetailPage() {
 
       {pickingTx && (
         <CategoryPicker statementId={id} tx={pickingTx} onClose={() => setPickingTx(null)} />
+      )}
+
+      {autoCatOpen && (
+        <AutoCategorizeModal statementId={id} onClose={() => setAutoCatOpen(false)} />
       )}
     </>
   );

@@ -496,6 +496,63 @@ export function useYearlyOverview(months = 12) {
   return useQuery({ queryKey: ['dashboard', 'yearly', months], queryFn: () => api.get<YearlyOverview>(`/dashboard/yearly-overview?months=${months}`) });
 }
 
+// ── Auto-categorize ────────────────────────────────────────────────────────
+
+export interface AutoCategorizeSuggestion {
+  transactionId: string;
+  description: string;
+  amount: number;
+  date: string;
+  currentCategory: string;
+  suggestedCategory: string;
+  confidence: number;
+  reasoning: string;
+  proposedRulePattern: string | null;
+}
+
+export interface AutoCategorizePreview {
+  statementId: string;
+  totalOther: number;
+  processed: number;
+  suggestions: AutoCategorizeSuggestion[];
+  availableCategories: string[];
+  warnings: string[];
+}
+
+export interface AutoCategorizeApplyResult {
+  statementId: string;
+  applied: number;
+  rulesCreated: number;
+  replayed: number;
+}
+
+export interface AutoCategorizeDecision {
+  transactionId: string;
+  category: string;
+  rulePattern?: string;
+  replayAll?: boolean;
+}
+
+export function useAutoCategorizePreview() {
+  return useMutation({
+    mutationFn: (statementId: string) =>
+      api.post<AutoCategorizePreview>(`/auto-categorize/${statementId}/preview`),
+  });
+}
+
+export function useAutoCategorizeApply() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ statementId, decisions }: { statementId: string; decisions: AutoCategorizeDecision[] }) =>
+      api.post<AutoCategorizeApplyResult>(`/auto-categorize/${statementId}/apply`, { decisions }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: qk.statement(vars.statementId) });
+      qc.invalidateQueries({ queryKey: qk.statements() });
+      qc.invalidateQueries({ queryKey: ['category-rules'] });
+    },
+  });
+}
+
 export function useImportLogs() {
   return useQuery({
     queryKey: qkImportLogs.all(),
