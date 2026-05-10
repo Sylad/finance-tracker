@@ -331,23 +331,26 @@ export class AutoSyncService {
     }
 
     // For each (creditor, amount) bucket, auto-create one Loan UNLESS a similar
-    // Loan already exists. "Similar" = same creditor field AND monthlyPayment
-    // within ±5€ of the bucket amount, OR a manual loan whose name contains
-    // the creditor string and matching monthlyPayment.
-    const existingLoans = await this.loans.getAll();
-
+    // Loan already exists. Délégué au matcher unifié `findExistingLoan` via
+    // ses signaux creditor+monthlyAmount (confidence 'medium').
     for (const [groupKey, sugs] of byKey.entries()) {
       const [creditorKey, amountStr] = groupKey.split('|');
       const bucketAmount = Number(amountStr);
-      const matchedExisting = existingLoans.some((l) => {
-        const sameAmount = Math.abs(l.monthlyPayment - bucketAmount) < 5;
-        if (!sameAmount) return false;
-        const c = (l.creditor ?? '').toLowerCase().trim();
-        if (c && c === creditorKey) return true;
-        if (l.name.toLowerCase().includes(creditorKey)) return true;
-        return false;
+      const sugCreditor = sugs[0].creditor;
+      const existingMatch = await this.loans.findExistingLoan({
+        creditor: sugCreditor,
+        monthlyAmount: bucketAmount,
       });
-      if (matchedExisting) continue;
+      if (existingMatch) {
+        this.logger.log(
+          `Skipping auto-create for ${creditorKey} @${bucketAmount}€ : matched ${existingMatch.loan.id} (${existingMatch.confidence}, ${existingMatch.reason})`,
+        );
+        // Snooze suggestions liées
+        for (const s of sugs) {
+          try { await this.suggestions.snooze(s.id); } catch { /* noop */ }
+        }
+        continue;
+      }
       // Seuil min d'occurrences : un pay-in-4 a 4 occurrences max.
       // On somme les `occurrencesSeen` du bucket (les suggestions du même
       // creditor+amount fusionnées sur plusieurs statements parses).
