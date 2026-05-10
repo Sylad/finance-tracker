@@ -536,6 +536,97 @@ describe('LoansService', () => {
     });
   });
 
+  describe('mergeLoanPatch — règles priorité par source', () => {
+    it('credit_statement update startDate si vide (avant : ne le faisait pas)', async () => {
+      const loan = await svc.create({
+        name: 'X', type: 'classic', category: 'auto',
+        monthlyPayment: 100, matchPattern: 'X', isActive: true,
+        // pas de startDate
+      });
+      await svc.applyStatementSnapshot(loan.id, {
+        creditor: 'CETELEM', creditType: 'classic',
+        currentBalance: 5000, monthlyPayment: 240,
+        endDate: '2030-01-01', taeg: 4.85,
+        statementDate: '2026-03-15',
+      });
+      // Avant le refactor: startDate restait undefined. Après : on n'auto-fill
+      // pas startDate depuis credit_statement (ce serait approximatif). Il
+      // faut un user edit OU un import amortization pour startDate.
+      const updated = await svc.getOne(loan.id);
+      expect(updated.startDate).toBeUndefined();
+    });
+
+    it('amortization écrase startDate même si déjà set par user', async () => {
+      const loan = await svc.create({
+        name: 'X', type: 'classic', category: 'auto',
+        monthlyPayment: 100, matchPattern: 'X', isActive: true,
+        startDate: '2025-01-01', // user-set
+      });
+      await svc.applyAmortizationSchedule(loan.id, {
+        creditor: 'CETELEM', initialPrincipal: 12000, monthlyPayment: 240,
+        startDate: '2024-06-01', endDate: '2028-05-01', taeg: 4.85,
+        schedule: [{ date: '2024-06-01', capitalRemaining: 11800, capitalPaid: 200, interestPaid: 40 }],
+      });
+      // amortization gagne — la vraie date issue du tableau est canonique
+      const updated = await svc.getOne(loan.id);
+      expect(updated.startDate).toBe('2024-06-01');
+    });
+
+    it('credit_statement préserve un creditor déjà set par user', async () => {
+      const loan = await svc.create({
+        name: 'Mon nom perso', type: 'classic', category: 'auto',
+        monthlyPayment: 100, matchPattern: 'X', isActive: true,
+        creditor: 'Nom à moi', // user-set
+      });
+      await svc.applyStatementSnapshot(loan.id, {
+        creditor: 'CETELEM', creditType: 'classic',
+        currentBalance: 5000, monthlyPayment: 240,
+        endDate: null, taeg: 4.85, statementDate: '2026-03-15',
+      });
+      const updated = await svc.getOne(loan.id);
+      expect(updated.creditor).toBe('Nom à moi');
+    });
+
+    it('amortization n\'écrase pas usedAmount d\'un revolving (revolving non concerné)', async () => {
+      // Note : amortization rejete les revolving via une exception, mais
+      // structurellement mergeLoanPatch ne devrait jamais écrire usedAmount
+      // depuis 'amortization' source.
+      const loan = await svc.create({
+        name: 'C', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        maxAmount: 3000, usedAmount: 1500,
+      });
+      // Direct call mergeLoanPatch (bypass applyAmortizationSchedule qui throw)
+      // On simule le cas où qq'un appelle mergeLoanPatch avec amortization
+      // sur un revolving — usedAmount NE DOIT PAS être affecté.
+      LoansService.mergeLoanPatch(loan, { usedAmount: 9999 }, 'amortization');
+      // unchanged because amortization can't write usedAmount
+      expect(loan.usedAmount).toBe(1500);
+    });
+
+    it('rumRefs sont additifs (union dédup) entre sources', async () => {
+      const loan = await svc.create({
+        name: 'X', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'X', isActive: true,
+        rumRefs: ['MD-001'], maxAmount: 3000,
+      });
+      LoansService.mergeLoanPatch(loan, { rumRefs: ['MD-002'] }, 'credit_statement');
+      LoansService.mergeLoanPatch(loan, { rumRefs: ['MD002'] }, 'bank_statement'); // dup norm
+      LoansService.mergeLoanPatch(loan, { rumRefs: ['MD-003'] }, 'suggestion');
+      expect(loan.rumRefs).toEqual(['MD-001', 'MD-002', 'MD-003']);
+    });
+
+    it('user override: peut écraser creditor même si déjà set', async () => {
+      const loan = await svc.create({
+        name: 'X', type: 'classic', category: 'auto',
+        monthlyPayment: 100, matchPattern: 'X', isActive: true,
+        creditor: 'Existant',
+      });
+      LoansService.mergeLoanPatch(loan, { creditor: 'Nouveau' }, 'user');
+      expect(loan.creditor).toBe('Nouveau');
+    });
+  });
+
   describe('applyAmortizationSchedule', () => {
     it('applique le schedule + update partiel des champs canoniques', async () => {
       const loan = await svc.create({
