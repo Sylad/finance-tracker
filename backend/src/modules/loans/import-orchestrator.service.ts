@@ -123,47 +123,79 @@ export class ImportOrchestratorService {
   /**
    * Pour un Loan installment fraîchement créé : parcourt tous les relevés
    * bancaires stockés, cherche les transactions matchant chaque past dueDate
-   * (date ±3j, amount ±0.50€, description contient creditor), et marque
-   * paid via `markInstallmentPaid`. Idempotent — sans effet si le matcher
-   * ne trouve rien (pas de relevé bancaire couvrant la période).
+   * et marque paid via `markInstallmentPaid`. Idempotent.
+   *
+   * Critères :
+   *   - description contient creditor (case-insensitive, accents normalisés)
+   *     OU contient le merchant (ex: "AMAZON")
+   *   - date dans une fenêtre asymétrique [dueDate-3j, dueDate+15j] :
+   *     Cofidis et autres organismes prélèvent typiquement 7-11 jours APRÈS
+   *     la date d'échéance contractuelle (constaté sur les relevés LBP).
+   *   - montant ±0.50€
+   *   - cross-loan dedup : la transaction n'est pas déjà allouée comme
+   *     occurrence d'un autre loan installment actif (l'invariant 1 débit
+   *     /mois max par crédit s'applique aussi : 1 débit ↔ 1 loan unique).
    */
   private async retroMatchInstallment(loan: Loan): Promise<void> {
     const schedule = loan.installmentSchedule;
     if (!schedule || schedule.length === 0) return;
-    const creditorLower = (loan.creditor ?? '').toLowerCase().trim();
-    if (!creditorLower) return;
+    const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    const creditorNorm = norm(loan.creditor ?? '');
+    const merchantNorm = norm(loan.installmentMerchant ?? '');
+    if (!creditorNorm && !merchantNorm) return;
+
+    // Cross-loan : tx déjà utilisées par d'autres installment loans → exclues.
+    const allLoans = await this.loans.getAll();
+    const usedTxIds = new Set<string>();
+    for (const other of allLoans) {
+      if (other.id === loan.id) continue;
+      for (const occ of other.occurrencesDetected) {
+        if (occ.transactionId) usedTxIds.add(occ.transactionId);
+      }
+    }
 
     const today = new Date().toISOString().slice(0, 10);
     const allStatements = await this.storage.getAllStatements();
+    const localUsed = new Set<string>(); // tx déjà allouées DANS ce retro-match (pour ce loan)
     let marked = 0;
     for (let i = 0; i < schedule.length; i++) {
       const line = schedule[i];
       if (line.paid) continue;
-      if (line.dueDate > today) continue; // future, pas de débit attendu
+      if (line.dueDate > today) continue; // future
 
       const dueMs = new Date(line.dueDate + 'T00:00:00Z').getTime();
-      const tolMs = 3 * 24 * 3600 * 1000;
-      let matched: { tx: { id: string; date: string; amount: number; description: string }; statementId: string } | null = null;
+      const lowerBoundMs = dueMs - 3 * 24 * 3600 * 1000;   // ±3j avant
+      const upperBoundMs = dueMs + 15 * 24 * 3600 * 1000;  // jusqu'à 15j après
+
+      type Candidate = { tx: { id: string; date: string; amount: number; description: string }; statementId: string; deltaMs: number };
+      let best: Candidate | null = null;
       for (const stmt of allStatements) {
         for (const t of stmt.transactions) {
-          if (!t.description.toLowerCase().includes(creditorLower)) continue;
+          if (t.amount >= 0) continue; // débit only
+          if (usedTxIds.has(t.id) || localUsed.has(t.id)) continue;
+          const desc = norm(t.description);
+          const matchesCreditor = creditorNorm && desc.includes(creditorNorm);
+          const matchesMerchant = merchantNorm && desc.includes(merchantNorm);
+          if (!matchesCreditor && !matchesMerchant) continue;
           const txMs = new Date(t.date + 'T00:00:00Z').getTime();
-          if (Math.abs(txMs - dueMs) > tolMs) continue;
+          if (txMs < lowerBoundMs || txMs > upperBoundMs) continue;
           if (Math.abs(Math.abs(t.amount) - line.amount) > 0.5) continue;
-          matched = { tx: t, statementId: stmt.id };
-          break;
+          const delta = Math.abs(txMs - dueMs);
+          if (!best || delta < best.deltaMs) {
+            best = { tx: t, statementId: stmt.id, deltaMs: delta };
+          }
         }
-        if (matched) break;
       }
-      if (!matched) continue;
+      if (!best) continue;
+      localUsed.add(best.tx.id);
       await this.loans.addOccurrence(loan.id, {
-        statementId: matched.statementId,
-        date: matched.tx.date,
-        amount: matched.tx.amount,
-        transactionId: matched.tx.id,
-        description: matched.tx.description,
+        statementId: best.statementId,
+        date: best.tx.date,
+        amount: best.tx.amount,
+        transactionId: best.tx.id,
+        description: best.tx.description,
       });
-      await this.loans.markInstallmentPaid(loan.id, i, matched.statementId);
+      await this.loans.markInstallmentPaid(loan.id, i, best.tx.id);
       marked++;
     }
     if (marked > 0) {

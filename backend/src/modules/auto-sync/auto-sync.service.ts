@@ -250,39 +250,66 @@ export class AutoSyncService {
 
   /**
    * Matcher spécialisé pour les loans `kind='installment'` (paiements en N
-   * fois). Pour chaque ligne `installmentSchedule[i]` non payée et avec
-   * dueDate dans la fenêtre du statement, cherche une transaction qui matche
-   * sur 3 critères stricts :
-   *   - date ±3 jours autour de dueDate
-   *   - amount ±0.50€ autour de la ligne
-   *   - description contient le creditor (case-insensitive)
+   * fois). Pour chaque ligne `installmentSchedule[i]` non payée, cherche une
+   * transaction qui matche dans le statement courant :
+   *   - description contient le creditor OU le merchant (case + accents normalisés)
+   *   - date dans [dueDate-3j, dueDate+15j] : Cofidis prélève typiquement
+   *     7-11j après l'échéance contractuelle
+   *   - amount ±0.50€
+   *   - transactionId pas déjà alloué à un autre loan installment (cross-loan
+   *     dedup, invariant 1 débit ↔ 1 loan)
+   *   - choisit la transaction dont la date est la plus proche de dueDate
    *
-   * Si match → addOccurrence + marque la ligne paid=true. Persistance via
-   * loans.service (pas direct fs).
+   * Si match → addOccurrence + marque la ligne paid=true.
    */
   private async syncInstallmentLoan(loan: Loan, statement: MonthlyStatement): Promise<void> {
     const schedule = loan.installmentSchedule;
     if (!schedule || schedule.length === 0) return;
-    const creditorLower = (loan.creditor ?? '').toLowerCase().trim();
-    if (!creditorLower) return;
+    const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    const creditorNorm = norm(loan.creditor ?? '');
+    const merchantNorm = norm(loan.installmentMerchant ?? '');
+    if (!creditorNorm && !merchantNorm) return;
+
+    // Cross-loan dedup : tx déjà allouées à d'autres loans actifs (toutes kinds)
+    const allLoans = await this.loans.getAll();
+    const usedTxIds = new Set<string>();
+    for (const other of allLoans) {
+      if (other.id === loan.id) continue;
+      for (const occ of other.occurrencesDetected) {
+        if (occ.statementId === statement.id && occ.transactionId) usedTxIds.add(occ.transactionId);
+      }
+    }
 
     const txs = statement.transactions;
+    const localUsed = new Set<string>();
     let mutated = false;
     for (let i = 0; i < schedule.length; i++) {
       const line = schedule[i];
       if (line.paid) continue;
-      // Cherche tx matching dans le statement courant
       const dueDateMs = new Date(line.dueDate + 'T00:00:00Z').getTime();
-      const matchedTx = txs.find((t) => {
-        if (!t.description.toLowerCase().includes(creditorLower)) return false;
+      const lowerMs = dueDateMs - 3 * 24 * 3600 * 1000;
+      const upperMs = dueDateMs + 15 * 24 * 3600 * 1000;
+      let bestTx: typeof txs[number] | null = null;
+      let bestDelta = Infinity;
+      for (const t of txs) {
+        if (t.amount >= 0) continue;
+        if (usedTxIds.has(t.id) || localUsed.has(t.id)) continue;
+        const desc = norm(t.description);
+        const matchesCreditor = creditorNorm && desc.includes(creditorNorm);
+        const matchesMerchant = merchantNorm && desc.includes(merchantNorm);
+        if (!matchesCreditor && !matchesMerchant) continue;
         const txMs = new Date(t.date + 'T00:00:00Z').getTime();
-        const dayDiff = Math.abs(txMs - dueDateMs) / (24 * 3600 * 1000);
-        if (dayDiff > 3) return false;
-        // Bank tx amount est négatif (débit) ; line.amount est positif
+        if (txMs < lowerMs || txMs > upperMs) continue;
         const expected = -Math.abs(line.amount);
-        if (Math.abs(t.amount - expected) > 0.5) return false;
-        return true;
-      });
+        if (Math.abs(t.amount - expected) > 0.5) continue;
+        const delta = Math.abs(txMs - dueDateMs);
+        if (delta < bestDelta) {
+          bestTx = t;
+          bestDelta = delta;
+        }
+      }
+      const matchedTx = bestTx;
+      if (matchedTx) localUsed.add(matchedTx.id);
       if (!matchedTx) continue;
 
       // Add occurrence (la dedup par addOccurrence évite les doublons)
