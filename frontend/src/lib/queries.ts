@@ -1,5 +1,59 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { QueryClient, QueryKey } from '@tanstack/react-query';
 import { api } from './api';
+
+/**
+ * Helpers `onMutate` pour optimistic updates TanStack Query. Pattern :
+ * 1. Cancel queries en cours sur la clé
+ * 2. Snapshot la valeur actuelle (rollback en cas d'erreur)
+ * 3. Mutate optimiste sur le cache via setQueryData
+ * 4. onError → restore snapshot
+ * 5. onSettled → invalidate (force re-fetch pour réconcilier)
+ *
+ * Audit a flaggé que finance-tracker avait 0 mutation optimiste sur ~30 :
+ * chaque action UI subissait round-trip + invalidate. Trois patterns
+ * couvrent 90% des cas : remove from list (delete), update item in list
+ * (update), update item field (patch).
+ */
+
+/**
+ * Optimistic delete : retire l'item dont l'id matche du cache de la liste.
+ */
+async function optimisticListDelete<T extends { id: string }>(
+  qc: QueryClient,
+  key: QueryKey,
+  id: string,
+): Promise<{ previous: T[] | undefined }> {
+  await qc.cancelQueries({ queryKey: key });
+  const previous = qc.getQueryData<T[]>(key);
+  qc.setQueryData<T[]>(key, (old) => (old ?? []).filter((x) => x.id !== id));
+  return { previous };
+}
+
+/**
+ * Optimistic patch : map les items de la liste, fusionne le patch sur celui
+ * qui matche l'id.
+ */
+async function optimisticListPatch<T extends { id: string }>(
+  qc: QueryClient,
+  key: QueryKey,
+  id: string,
+  patch: Partial<T>,
+): Promise<{ previous: T[] | undefined }> {
+  await qc.cancelQueries({ queryKey: key });
+  const previous = qc.getQueryData<T[]>(key);
+  qc.setQueryData<T[]>(key, (old) =>
+    (old ?? []).map((x) => (x.id === id ? { ...x, ...patch } : x)),
+  );
+  return { previous };
+}
+
+/**
+ * Restore le snapshot dans le cache (utilisé dans onError).
+ */
+function restoreSnapshot<T>(qc: QueryClient, key: QueryKey, previous: T | undefined): void {
+  if (previous !== undefined) qc.setQueryData(key, previous);
+}
 import type {
   Budget,
   ClaudeUsage,
@@ -96,7 +150,14 @@ export function useUpdateBudget() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (budget: Budget) => api.put<Budget>('/budgets', budget),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.budget() }),
+    onMutate: async (budget) => {
+      await qc.cancelQueries({ queryKey: qk.budget() });
+      const previous = qc.getQueryData<Budget>(qk.budget());
+      qc.setQueryData<Budget>(qk.budget(), budget);
+      return { previous };
+    },
+    onError: (_err, _budget, context) => restoreSnapshot(qc, qk.budget(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.budget() }),
   });
 }
 
@@ -123,7 +184,10 @@ export function useUpdateDeclaration() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: DeclarationInput }) =>
       api.put<Declaration>(`/declarations/${id}`, input),
-    onSuccess: () => {
+    onMutate: ({ id, input }) =>
+      optimisticListPatch<Declaration>(qc, qk.declarations(), id, input as Partial<Declaration>),
+    onError: (_err, _vars, context) => restoreSnapshot(qc, qk.declarations(), context?.previous),
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: qk.declarations() });
       qc.invalidateQueries({ queryKey: ['forecast'] });
     },
@@ -134,7 +198,9 @@ export function useDeleteDeclaration() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete<void>(`/declarations/${id}`),
-    onSuccess: () => {
+    onMutate: (id) => optimisticListDelete<Declaration>(qc, qk.declarations(), id),
+    onError: (_err, _id, context) => restoreSnapshot(qc, qk.declarations(), context?.previous),
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: qk.declarations() });
       qc.invalidateQueries({ queryKey: ['forecast'] });
     },
@@ -157,6 +223,9 @@ export function useClaudeUsage() {
 
 export function useUpdateClaudeBalance() {
   const qc = useQueryClient();
+  // Pas d'optimistic update : le backend convertit USD→EUR et recalcule
+  // estimatedRemainingEur + remainingPercent côté serveur. Mettre à jour
+  // côté client donnerait des valeurs incohérentes pendant le round-trip.
   return useMutation({
     mutationFn: (balanceUsd: number) => api.put<ClaudeUsage>('/claude/balance', { balanceUsd }),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.claudeUsage() }),
@@ -279,7 +348,10 @@ export function useUpdateSavingsAccount() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: SavingsAccountInput }) =>
       api.put<SavingsAccount>(`/savings-accounts/${id}`, input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qkSavings.all() }),
+    onMutate: ({ id, input }) =>
+      optimisticListPatch<SavingsAccount>(qc, qkSavings.all(), id, input as Partial<SavingsAccount>),
+    onError: (_err, _vars, context) => restoreSnapshot(qc, qkSavings.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkSavings.all() }),
   });
 }
 
@@ -287,7 +359,9 @@ export function useDeleteSavingsAccount() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete<void>(`/savings-accounts/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qkSavings.all() }),
+    onMutate: (id) => optimisticListDelete<SavingsAccount>(qc, qkSavings.all(), id),
+    onError: (_err, _id, context) => restoreSnapshot(qc, qkSavings.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkSavings.all() }),
   });
 }
 
@@ -325,7 +399,10 @@ export function useUpdateLoan() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: LoanInput }) =>
       api.put<Loan>(`/loans/${id}`, input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+    onMutate: ({ id, input }) =>
+      optimisticListPatch<Loan>(qc, qkLoans.all(), id, input as Partial<Loan>),
+    onError: (_err, _vars, context) => restoreSnapshot(qc, qkLoans.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
   });
 }
 
@@ -333,7 +410,9 @@ export function useDeleteLoan() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete<void>(`/loans/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+    onMutate: (id) => optimisticListDelete<Loan>(qc, qkLoans.all(), id),
+    onError: (_err, _id, context) => restoreSnapshot(qc, qkLoans.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
   });
 }
 
@@ -465,7 +544,10 @@ export function useResetRevolving() {
   return useMutation({
     mutationFn: ({ id, usedAmount }: { id: string; usedAmount: number }) =>
       api.post<Loan>(`/loans/${id}/reset-revolving`, { usedAmount }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+    onMutate: ({ id, usedAmount }) =>
+      optimisticListPatch<Loan>(qc, qkLoans.all(), id, { usedAmount } as Partial<Loan>),
+    onError: (_err, _vars, context) => restoreSnapshot(qc, qkLoans.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
   });
 }
 
@@ -506,7 +588,9 @@ export function useRejectSuggestion() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.post<LoanSuggestion>(`/loan-suggestions/${id}/reject`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
+    onMutate: (id) => optimisticListPatch<LoanSuggestion>(qc, qkSuggestions.all(), id, { status: 'rejected' }),
+    onError: (_err, _id, context) => restoreSnapshot(qc, qkSuggestions.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
   });
 }
 
@@ -514,7 +598,9 @@ export function useSnoozeSuggestion() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.post<LoanSuggestion>(`/loan-suggestions/${id}/snooze`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
+    onMutate: (id) => optimisticListPatch<LoanSuggestion>(qc, qkSuggestions.all(), id, { status: 'snoozed' }),
+    onError: (_err, _id, context) => restoreSnapshot(qc, qkSuggestions.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
   });
 }
 
@@ -522,7 +608,9 @@ export function useUnsnoozeSuggestion() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.post<LoanSuggestion>(`/loan-suggestions/${id}/unsnooze`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
+    onMutate: (id) => optimisticListPatch<LoanSuggestion>(qc, qkSuggestions.all(), id, { status: 'pending' }),
+    onError: (_err, _id, context) => restoreSnapshot(qc, qkSuggestions.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
   });
 }
 
@@ -551,7 +639,10 @@ export function useUpdateSubscription() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: SubscriptionInput }) =>
       api.put<Subscription>(`/subscriptions/${id}`, input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qkSubscriptions.all() }),
+    onMutate: ({ id, input }) =>
+      optimisticListPatch<Subscription>(qc, qkSubscriptions.all(), id, input as Partial<Subscription>),
+    onError: (_err, _vars, context) => restoreSnapshot(qc, qkSubscriptions.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkSubscriptions.all() }),
   });
 }
 
@@ -559,7 +650,9 @@ export function useDeleteSubscription() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete<void>(`/subscriptions/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qkSubscriptions.all() }),
+    onMutate: (id) => optimisticListDelete<Subscription>(qc, qkSubscriptions.all(), id),
+    onError: (_err, _id, context) => restoreSnapshot(qc, qkSubscriptions.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkSubscriptions.all() }),
   });
 }
 
