@@ -86,6 +86,17 @@ Pour découper un crédit revolving en sub-credits :
 - Matcher AND si la suggestion porte un `contractRef` (creditor regex AND contractRef in description), pas OR. Sinon toutes les transactions Cofidis taggent le même crédit.
 - Filtre `PAY_IN_N_PATTERN` (loans/loans-patterns.ts) exclut les paiements échelonnés 2-4 fois (4X CB / FacilyPay / KLARNA 4X / ALMA 3X / PAY LATER) — snooze sans création. Seuil min `MIN_OCCURRENCES_AUTO_CREATE = 5` cumulées.
 
+### Invariant métier "1 débit/mois max par crédit" (APEX 06 — 2026-05-10)
+
+Règle first-class : **un crédit (classic, revolving, installment) n'est JAMAIS débité plus d'une fois par mois calendaire**. Cet invariant est appliqué partout où il a un sens :
+
+- **`addOccurrence`** dédupe par mois (Niveau 2) — garde l'occurrence de plus haute priorité (credit_statement > bank_statement > manual).
+- **`detectDuplicates`** : 2 loans actifs partageant ≥1 mois d'occurrence calendaire = forcément doublon (signal `sharesMonth`). S'ajoute au critère mensualité ±5%.
+- **`getSuspiciousLoans` critère 3** : un loan actif (classic/revolving) avec `startDate ≤ lastStatementDate` et **aucune occurrence dans le dernier relevé** est suspect → soit terminé, soit doublon. Reason `Absent du dernier relevé` exposé dans la modal Suspects.
+- **Reset propre** : `POST /api/auto-sync/reset-loans` purge tous les loans + reset toutes les suggestions à `pending`, replay `autoCreateLoansFromSuggestions` puis `syncLoans` sur les relevés existants. Bouton "Reset" (orange) sur `/loans`. Permet de repartir d'une base saine sans re-uploader les PDFs.
+
+Anti-pattern à NE PAS reproduire : empiler des heuristiques (regex pay-in-N, seuil min occurrences, whitelist creditors) à chaque doublon découvert. Si un doublon apparaît, demander : "y a-t-il une règle métier simple qui éliminerait ce bug à la source ?"
+
 ### Synchro robuste 3-sources (APEX 04 — refonte 2026-05-10, étendue APEX 05)
 
 L'app croise 3 sources de données pour un crédit (relevé bancaire, relevé crédit, tableau d'amortissement, contrat installment N×). Pour éviter incohérences/doublons, tout passe par des helpers unifiés :

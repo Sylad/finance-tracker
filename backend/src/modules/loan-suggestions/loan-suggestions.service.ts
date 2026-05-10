@@ -114,6 +114,41 @@ export class LoanSuggestionsService {
     return all[idx];
   }
 
+  /**
+   * Purge totale des suggestions — utilisé par /loans/reset pour repartir
+   * d'une base saine avant replay auto-sync.
+   */
+  async deleteAll(): Promise<{ deletedCount: number }> {
+    const all = await this.getAll();
+    await this.persist([]);
+    this.logger.log(`Deleted all ${all.length} loan suggestions`);
+    return { deletedCount: all.length };
+  }
+
+  /**
+   * Reset toutes les suggestions à status='pending'. Utilisé par /loans/reset
+   * pour donner une seconde chance aux suggestions snoozed/rejected/accepted
+   * lors du replay auto-sync (avec nouvel invariant).
+   * Conserve l'historique (id, occurrencesSeen, dates) — efface seulement
+   * status, resolvedAt, acceptedAsLoanId, acceptedAsSubscriptionId.
+   */
+  async resetAllToPending(): Promise<{ resetCount: number }> {
+    const all = await this.getAll();
+    let resetCount = 0;
+    for (const s of all) {
+      if (s.status !== 'pending') {
+        s.status = 'pending';
+        delete s.resolvedAt;
+        delete s.acceptedAsLoanId;
+        delete s.acceptedAsSubscriptionId;
+        resetCount++;
+      }
+    }
+    if (resetCount > 0) await this.persist(all);
+    this.logger.log(`Reset ${resetCount} loan suggestions to pending`);
+    return { resetCount };
+  }
+
   private async persist(all: LoanSuggestion[]): Promise<void> {
     await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
     this.bus.emit('loan-suggestions-changed');

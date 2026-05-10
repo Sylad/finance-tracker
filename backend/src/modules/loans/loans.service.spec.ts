@@ -5,19 +5,24 @@ import * as path from 'path';
 import { LoansService } from './loans.service';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
+import { StorageService } from '../storage/storage.service';
 import type { Loan } from '../../models/loan.model';
+import type { MonthlyStatement } from '../../models/monthly-statement.model';
 
 describe('LoansService', () => {
   let svc: LoansService;
   let tmpDir: string;
+  let storageStmts: MonthlyStatement[];
 
   beforeEach(async () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ft-loans-'));
+    storageStmts = [];
     const mod = await Test.createTestingModule({
       providers: [
         LoansService,
         { provide: RequestDataDirService, useValue: { getDataDir: () => tmpDir, isDemoMode: () => false, runWith: (_ctx: any, fn: any) => fn() } },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
+        { provide: StorageService, useValue: { getAllStatements: jest.fn(async () => storageStmts) } },
       ],
     }).compile();
     svc = mod.get(LoansService);
@@ -450,6 +455,28 @@ describe('LoansService', () => {
       const groups = await svc.detectDuplicates();
       expect(groups).toHaveLength(0);
     });
+
+    it('flags 2 loans actifs partageant un mois d\'occurrence comme doublon (invariant 1 débit/mois max)', async () => {
+      // 2 Cofidis avec mensualités franchement différentes (>5%) — normalement
+      // pas dedup. Mais ils ont une occurrence dans le MÊME mois → invariant
+      // violé : forcément le même crédit.
+      const a = await svc.create({
+        name: 'Cofidis A', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', maxAmount: 3000, usedAmount: 0,
+      });
+      const b = await svc.create({
+        name: 'Cofidis B', type: 'revolving', category: 'consumer',
+        monthlyPayment: 110, matchPattern: 'COFIDIS', isActive: true, // +37%
+        creditor: 'Cofidis', maxAmount: 3000, usedAmount: 0,
+      });
+      await svc.addOccurrence(a.id, { statementId: '2026-04', date: '2026-04-15', amount: -80, transactionId: 'tx-1' });
+      await svc.addOccurrence(b.id, { statementId: '2026-04', date: '2026-04-20', amount: -110, transactionId: 'tx-2' });
+      const groups = await svc.detectDuplicates();
+      expect(groups).toHaveLength(1);
+      expect(groups[0].loans).toHaveLength(2);
+      expect(groups[0].reasons.some((r) => /Invariant viol|même mois|1 débit\/mois/i.test(r))).toBe(true);
+    });
   });
 
   describe('mergeDuplicates', () => {
@@ -677,6 +704,54 @@ describe('LoansService', () => {
 
     it('cleanupSuspiciousLoans rejette si aucun ID ne correspond', async () => {
       await expect(svc.cleanupSuspiciousLoans(['does-not-exist'])).rejects.toThrow(/Aucun/);
+    });
+
+    it('critère 3 : signale un loan actif absent du dernier relevé (invariant)', async () => {
+      // Setup : un statement de mai 2026 dans storage
+      storageStmts.push({
+        id: 'stmt-2026-05',
+        month: 5,
+        year: 2026,
+        uploadedAt: '2026-05-10T00:00:00Z',
+        bankName: 'LBP',
+        accountHolder: 'Sylvain',
+        currency: 'EUR',
+        openingBalance: 0,
+        closingBalance: 0,
+        totalCredits: 0,
+        totalDebits: 0,
+        transactions: [],
+        healthScore: { score: 0, label: 'ok', explanation: '', strengths: [], weaknesses: [] } as any,
+        recurringCredits: [],
+        analysisNarrative: '',
+      });
+      // Loan actif avec startDate avant le relevé MAIS aucune occurrence
+      const ghost = await svc.create({
+        name: 'GHOST CREDIT', type: 'classic', category: 'consumer',
+        monthlyPayment: 200, matchPattern: 'GHOST', isActive: true,
+        creditor: 'Cetelem', startDate: '2025-11-01',
+      });
+      // Loan avec occurrence dans le mois courant → OK
+      const ok = await svc.create({
+        name: 'OK CREDIT', type: 'classic', category: 'consumer',
+        monthlyPayment: 150, matchPattern: 'OK', isActive: true,
+        creditor: 'Sofinco', startDate: '2025-11-01',
+      });
+      await svc.addOccurrence(ok.id, { statementId: 'stmt-2026-05', date: '2026-05-03', amount: -150, transactionId: 'tx-ok' });
+      // Loan avec startDate posterieur au relevé → faux positif exclu
+      await svc.create({
+        name: 'FRESH', type: 'classic', category: 'consumer',
+        monthlyPayment: 90, matchPattern: 'FRESH', isActive: true,
+        creditor: 'Cofidis', startDate: '2026-06-01',
+      });
+
+      const suspicious = await svc.getSuspiciousLoans('2026-05-15');
+      const ghostFound = suspicious.find((s) => s.id === ghost.id);
+      expect(ghostFound).toBeDefined();
+      expect(ghostFound!.reason).toMatch(/Absent du dernier relevé/);
+      expect(suspicious.find((s) => s.id === ok.id)).toBeUndefined();
+      // FRESH ne doit pas être listé non plus (startDate > lastStmtMonth)
+      expect(suspicious.find((s) => s.name === 'FRESH')).toBeUndefined();
     });
   });
 

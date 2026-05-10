@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { Loan, LoanInput, LoanOccurrence, LoanOccurrenceSource, LoanStatementSnapshot, AmortizationLine, LoanKind, InstallmentLine } from '../../models/loan.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
+import { StorageService } from '../storage/storage.service';
 import { PAY_IN_N_PATTERN } from './loans-patterns';
 
 export interface CreditStatementSnapshotInput {
@@ -95,6 +96,7 @@ export class LoansService {
   constructor(
     private readonly dataDir: RequestDataDirService,
     private readonly bus: EventBusService,
+    private readonly storage: StorageService,
   ) {}
 
   private get filepath(): string {
@@ -745,6 +747,25 @@ export class LoansService {
     const all = await this.getAll();
     const suspicious: Awaited<ReturnType<LoansService['getSuspiciousLoans']>> = [];
 
+    // Pour le critère 3 : récupérer le dernier statement (mois le plus récent)
+    let lastStmtMonth: string | null = null;
+    let lastStmtIds = new Set<string>();
+    try {
+      const allStmts = await this.storage.getAllStatements();
+      if (allStmts.length > 0) {
+        const sortedStmts = [...allStmts].sort((a, b) => {
+          const ka = `${a.year}-${String(a.month).padStart(2, '0')}`;
+          const kb = `${b.year}-${String(b.month).padStart(2, '0')}`;
+          return kb.localeCompare(ka); // desc
+        });
+        const lastStmt = sortedStmts[0];
+        lastStmtMonth = `${lastStmt.year}-${String(lastStmt.month).padStart(2, '0')}`;
+        lastStmtIds = new Set([lastStmt.id]);
+      }
+    } catch {
+      // Sans statement, on skip le critère 3
+    }
+
     for (const loan of all) {
       // Skip les loans déjà modélisés comme installment (légitimes — c'est
       // exactement le pattern qu'on veut détecter, pas un faux positif).
@@ -798,6 +819,46 @@ export class LoansService {
         lastOccurrenceDate: lastDate,
         reason: `${occCount} occurrence(s) sur ${monthsSpan} mois, dernière il y a ${Math.round(daysSinceLast)}j — typique pay-in-N`,
       });
+    }
+
+    // Critère 3 : invariant "absent du dernier relevé"
+    //
+    // Un crédit actif (classic/revolving) avec startDate ≤ date du dernier
+    // relevé DOIT avoir une occurrence dans le dernier relevé. Sinon :
+    //   - soit le crédit est terminé (devrait être inactive)
+    //   - soit c'est un doublon (créé à tort)
+    //   - soit c'est un faux positif (startDate récent post-relevé) — exclu
+    //
+    // Ne s'applique qu'aux loans actifs ; les loans pas encore poussés
+    // dans suspicious[] (pour éviter doublons d'entrée).
+    if (lastStmtMonth) {
+      const alreadySuspectIds = new Set(suspicious.map((s) => s.id));
+      for (const loan of all) {
+        if (!loan.isActive) continue;
+        if (alreadySuspectIds.has(loan.id)) continue;
+        if (LoansService.getLoanKind(loan) === 'installment') continue;
+        // startDate posterieur au dernier relevé → faux positif (loan trop frais)
+        if (loan.startDate) {
+          const startMonth = loan.startDate.slice(0, 7);
+          if (startMonth > lastStmtMonth) continue;
+        }
+        // Le loan a-t-il une occurrence dans le dernier relevé ?
+        const seenInLast = loan.occurrencesDetected.some((o) => {
+          if (lastStmtIds.has(o.statementId)) return true;
+          return o.date.slice(0, 7) === lastStmtMonth;
+        });
+        if (seenInLast) continue;
+        const lastOccDate = LoansService.lastOccurrenceDate(loan);
+        suspicious.push({
+          id: loan.id,
+          name: loan.name,
+          creditor: loan.creditor,
+          monthlyPayment: loan.monthlyPayment,
+          occurrencesCount: loan.occurrencesDetected.length,
+          lastOccurrenceDate: lastOccDate,
+          reason: `Absent du dernier relevé (${lastStmtMonth}) — invariant "1 débit/mois max" violé : soit terminé, soit doublon`,
+        });
+      }
     }
 
     return suspicious;
@@ -1113,20 +1174,16 @@ export class LoansService {
   /**
    * Heuristique : 2 loans sont probablement le même crédit si :
    * - même créancier+type (déjà filtré côté caller)
-   * - mensualité dans une fenêtre de ±5% (les organismes ajustent parfois)
-   * - leurs identifiants ne se contredisent PAS franchement (pas de
-   *   contractRef différents de longueur ≥4 dans les deux). Si l'un a un
-   *   contractRef et l'autre seulement un RUM, c'est précisément le scénario
-   *   des doublons RUM créés avant le matcher étendu — donc fortement
-   *   candidat.
+   * - leurs identifiants ne se contredisent PAS franchement
+   * - ET au moins UN des signaux suivants :
+   *   (a) mensualité dans une fenêtre de ±5%
+   *   (b) **invariant 1 débit/mois max** : ils partagent ≥1 mois
+   *       d'occurrence calendaire — un crédit étant débité au plus 1 fois
+   *       par mois, 2 loans actifs avec une occurrence dans le même mois
+   *       sont forcément le même crédit (ou un faux positif).
    */
   private static areLikelyDuplicates(a: Loan, b: Loan): boolean {
     if (a.id === b.id) return false;
-    const pa = a.monthlyPayment;
-    const pb = b.monthlyPayment;
-    if (pa <= 0 || pb <= 0) return false;
-    const tolerance = Math.max(pa, pb) * 0.05;
-    if (Math.abs(pa - pb) > tolerance) return false;
 
     // Si les deux ont un contractRef et qu'ils sont franchement différents,
     // ce sont des crédits distincts.
@@ -1135,7 +1192,22 @@ export class LoansService {
     if (refA && refB && refA.length >= 4 && refB.length >= 4) {
       if (!LoansService.refsMatch(refA, refB)) return false;
     }
-    return true;
+
+    // Signal (a) : mensualité ±5%
+    const pa = a.monthlyPayment;
+    const pb = b.monthlyPayment;
+    let monthlyClose = false;
+    if (pa > 0 && pb > 0) {
+      const tolerance = Math.max(pa, pb) * 0.05;
+      monthlyClose = Math.abs(pa - pb) <= tolerance;
+    }
+
+    // Signal (b) : invariant — partage d'au moins un mois d'occurrence
+    const monthsA = new Set(a.occurrencesDetected.map((o) => o.date.slice(0, 7)));
+    const monthsB = new Set(b.occurrencesDetected.map((o) => o.date.slice(0, 7)));
+    const sharesMonth = [...monthsA].some((m) => monthsB.has(m));
+
+    return monthlyClose || sharesMonth;
   }
 
   private static duplicateReasons(cluster: Loan[]): string[] {
@@ -1154,6 +1226,24 @@ export class LoansService {
     const withRum = cluster.filter((l) => l.rumRefs && l.rumRefs.length > 0);
     if (withContract.length > 0 && withRum.length > 0 && withContract[0].id !== withRum[0].id) {
       reasons.push("Identifiants partagés : l'un porte un n° de contrat, l'autre un RUM SEPA — pattern typique de doublon RUM.");
+    }
+    // Invariant : mois d'occurrence partagés
+    const monthsByLoan = cluster.map(
+      (l) => new Set(l.occurrencesDetected.map((o) => o.date.slice(0, 7))),
+    );
+    const sharedMonths = new Set<string>();
+    for (let i = 0; i < monthsByLoan.length; i++) {
+      for (let j = i + 1; j < monthsByLoan.length; j++) {
+        for (const m of monthsByLoan[i]) {
+          if (monthsByLoan[j].has(m)) sharedMonths.add(m);
+        }
+      }
+    }
+    if (sharedMonths.size > 0) {
+      const list = [...sharedMonths].sort().join(', ');
+      reasons.push(
+        `Invariant violé "1 débit/mois max" : occurrences dans le(s) même(s) mois (${list}) — forcément le même crédit.`,
+      );
     }
     return reasons;
   }
@@ -1238,6 +1328,18 @@ export class LoansService {
       `Merged ${duplicateIds.length} duplicate(s) into ${canonicalId} (${canonical.name})`,
     );
     return canonical;
+  }
+
+  /**
+   * Purge totale des loans — utilisé par /loans/reset. À combiner avec
+   * `LoanSuggestionsService.deleteAll()` puis replay auto-sync sur les
+   * statements existants.
+   */
+  async deleteAll(): Promise<{ deletedCount: number }> {
+    const all = await this.getAll();
+    await this.persist([]);
+    this.logger.log(`Deleted all ${all.length} loans`);
+    return { deletedCount: all.length };
   }
 
   private async persist(all: Loan[]): Promise<void> {

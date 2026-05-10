@@ -425,6 +425,26 @@ export function useConvertToInstallment() {
   });
 }
 
+export interface ResetLoansResult {
+  deletedLoans: number;
+  resetSuggestions: number;
+  replayedStatements: number;
+  finalLoans: number;
+}
+
+export function useResetLoans() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<ResetLoansResult>('/auto-sync/reset-loans', {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkLoans.all() });
+      qc.invalidateQueries({ queryKey: ['loans', 'suspicious'] });
+      qc.invalidateQueries({ queryKey: ['loans', 'duplicates'] });
+      qc.invalidateQueries({ queryKey: ['loan-suggestions'] });
+    },
+  });
+}
+
 export function useImportAmortization() {
   const qc = useQueryClient();
   return useMutation({
