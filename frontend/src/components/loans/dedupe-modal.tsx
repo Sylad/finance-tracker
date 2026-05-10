@@ -84,10 +84,20 @@ function DedupeGroupCard({
   status: 'idle' | 'merging' | 'merged' | 'error';
   onMerge: (canonicalId: string, dupIds: string[]) => void;
 }) {
-  // Initial : ligne 0 = keep (canonical) ; lignes 1+ = merge (à fusionner)
+  // Tri par createdAt desc : la version la plus récente apparaît en haut
+  // et devient canonical par défaut. Les versions plus récentes ont
+  // généralement les valeurs courantes (RUMs, usedAmount, contractRef
+  // obtenu d'un PDF récent). L'historique d'occurrences sera de toute
+  // façon migré depuis les anciennes lors du merge.
+  const sortedLoans = useMemo(
+    () => [...group.loans].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [group.loans],
+  );
+
+  // Initial : la plus récente (sortedLoans[0]) = keep ; les autres = merge.
   const [rowStatus, setRowStatus] = useState<Record<string, RowStatus>>(() => {
     const init: Record<string, RowStatus> = {};
-    group.loans.forEach((l, i) => {
+    sortedLoans.forEach((l, i) => {
       init[l.id] = i === 0 ? 'keep' : 'merge';
     });
     return init;
@@ -143,7 +153,7 @@ function DedupeGroupCard({
       ) : (
         <>
           <ul className="space-y-2 mb-3 list-none">
-            {group.loans.map((l) => {
+            {sortedLoans.map((l, i) => {
               const s = rowStatus[l.id] ?? 'merge';
               return (
                 <li
@@ -156,7 +166,14 @@ function DedupeGroupCard({
                   )}
                 >
                   <div className="flex-1 min-w-0 text-sm">
-                    <div className="font-display font-semibold text-fg-bright">{l.name}</div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-display font-semibold text-fg-bright">{l.name}</span>
+                      {i === 0 && (
+                        <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-accent/15 text-accent">
+                          plus récent
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-fg-muted tabular space-x-2">
                       <span>{formatEUR(l.monthlyPayment)}/mois</span>
                       {l.contractRef && <span className="font-mono">#{l.contractRef}</span>}
@@ -165,6 +182,7 @@ function DedupeGroupCard({
                       <span className={l.isActive ? 'text-positive' : 'text-fg-dim'}>
                         · {l.isActive ? 'actif' : 'archivé'}
                       </span>
+                      <span className="text-fg-dim">· créé {formatShortDate(l.createdAt)}</span>
                     </div>
                     {l.rumRefs && l.rumRefs.length > 0 && (
                       <div className="text-[11px] text-fg-muted font-mono mt-0.5 break-all">
@@ -202,6 +220,12 @@ function DedupeGroupCard({
       )}
     </div>
   );
+}
+
+function formatShortDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
 }
 
 function SegmentedControl({
