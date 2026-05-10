@@ -84,6 +84,47 @@ Pour découper un crédit revolving en sub-credits :
 - Whitelist `KNOWN_LOAN_CREDITORS` dans `auto-sync.service` — toute suggestion hors liste → snooze auto, pas de création.
 - Regex `NOT_A_CREDIT` exclut `\b(COMPTANT|PAIEMENT CB|ACHAT CB|CB CARREFOUR|RETRAIT)\b` même si la regex de matching est large.
 - Matcher AND si la suggestion porte un `contractRef` (creditor regex AND contractRef in description), pas OR. Sinon toutes les transactions Cofidis taggent le même crédit.
+- Filtre `PAY_IN_N_PATTERN` (loans/loans-patterns.ts) exclut les paiements échelonnés 2-4 fois (4X CB / FacilyPay / KLARNA 4X / ALMA 3X / PAY LATER) — snooze sans création. Seuil min `MIN_OCCURRENCES_AUTO_CREATE = 5` cumulées.
+
+### Synchro robuste 3-sources (APEX 04 — refonte 2026-05-10)
+
+L'app croise 3 sources de données pour un crédit. Pour éviter incohérences/doublons, tout passe par des helpers unifiés :
+
+**1. `findExistingLoan(signals)`** dans `loans.service.ts` — matcher unique avec scoring confidence :
+| Confidence | Critère |
+|---|---|
+| `high` | contractRef match tolérant (lowercase + strip espaces/tirets, substring) |
+| `high` | rumNumber match dans rumRefs[] |
+| `medium` | creditor exact + monthlyAmount ±5% |
+| `low` | description regex match loan.matchPattern |
+
+**2. `mergeLoanPatch(loan, patch, source)`** static, règles priorité par champ :
+
+Priorité sources : `user > amortization > credit_statement > bank_statement > suggestion`.
+
+| Champ | Règle |
+|---|---|
+| `creditor`, `contractRef` | Preserve user-set, auto-fill si vide. |
+| `rumRefs[]` | **Additif** (union dédup-normalisée), jamais écrase. |
+| `startDate` | amortization gagne canonical, credit_statement auto-fill si vide. |
+| `endDate` | amortization > credit_statement, user override. |
+| `initialPrincipal`, `amortizationSchedule` | amortization-only. |
+| `monthlyPayment`, `taeg` | toute source non-revolving. |
+| `maxAmount`, `usedAmount` | credit_statement-only (revolving). |
+| `lastStatementSnapshot` | credit_statement-only. |
+
+**3. `ImportOrchestratorService`** (loans/import-orchestrator.service.ts) — point d'entrée unique pour les 3 paths d'import. Tous appellent `findExistingLoan` AVANT de créer un loan, puis `applyStatementSnapshot` ou `applyAmortizationSchedule` qui délègue à `mergeLoanPatch`.
+
+**4. `computeLoanState(loan, asOfDate?)`** (loans/loans-state.helper.ts + frontend miroir lib/loan-state.ts) — calcul exact du capital restant en alignant chaque occurrence sur la portion `capitalPaid` de la ligne schedule du même mois (vs naïf qui inclut intérêts).
+
+**5. `getLoanHealth(loan)`** + chip 🟢🟡🔴 sur les cards :
+- **complete** : amortization OU statement récent (≤60j) ET ≥3 occurrences sur 6 derniers mois
+- **partial** : 1-2 critères manquants
+- **gap** : 0 statement récent ET ≤1 occurrence
+
+**6. Cleanup pay-in-N rétrospectif** : `GET /api/loans/suspicious` + bouton "Suspects" sur `/loans` détectent les loans probablement créés à tort (≤4 occurrences sur ≤4 mois consécutifs et arrêtés ≥60j, OU name match `PAY_IN_N_PATTERN`).
+
+Doc complète dans `.claude/output/apex/04-loans-synchro-robust/`.
 
 ### Two-phase tool-use Claude
 - Phase 1 = `extract_transactions`, Phase 2 = `analyze_finances`. **Toujours vérifier que phase 1 a retourné > 0 transactions** avant de lancer phase 2 — sinon plantage.
