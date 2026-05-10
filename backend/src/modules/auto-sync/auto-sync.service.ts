@@ -278,6 +278,26 @@ export class AutoSyncService {
     'bnp paribas personal finance',
   ]);
 
+  /**
+   * Patterns de "paiement échelonné" (4X CB / pay-in-N / FacilyPay / PayPal Pay
+   * Later) — qui sont des paiements 2-4 fois SANS frais, pas des crédits.
+   * Ils transitent souvent par des organismes whitelisted (Cofidis, Alma,
+   * Klarna, Floa…), créant des faux positifs si on auto-crée un Loan.
+   *
+   * Si le label/matchPattern d'une suggestion contient l'un de ces marqueurs,
+   * on l'exclut de l'auto-création et on snooze pour tri manuel.
+   */
+  private static readonly PAY_IN_N_PATTERN =
+    /\b([2-9]\s?(X|FOIS)|N\s?FOIS|N FOIS|EN \d+ FOIS|PAY ?LATER|PAY ?PLUS ?TARD|FACILYPAY|3X|4X|3 FOIS|4 FOIS)\b/i;
+
+  /**
+   * Seuil minimum d'occurrences pour auto-créer un Loan depuis une suggestion.
+   * Un paiement en 4 fois a 4 occurrences MAX. Un vrai crédit conso ou auto
+   * dépasse normalement les 6 mois. Au-dessous de ce seuil, snooze pour tri
+   * manuel — l'user peut accepter via UI s'il sait que c'est un vrai crédit.
+   */
+  private static readonly MIN_OCCURRENCES_AUTO_CREATE = 5;
+
   private async autoCreateLoansFromSuggestions(): Promise<void> {
     const suggestions = await this.suggestions.getPending();
 
@@ -291,6 +311,18 @@ export class AutoSyncService {
       if (s.suggestedType !== 'loan' || !s.creditor) continue;
       const creditorKey = s.creditor.toLowerCase().trim();
       if (!this.KNOWN_LOAN_CREDITORS.has(creditorKey)) continue;
+      // Filter pay-in-N (paiements échelonnés 4X/3X/FacilyPay/PayLater)
+      if (
+        AutoSyncService.PAY_IN_N_PATTERN.test(s.label) ||
+        AutoSyncService.PAY_IN_N_PATTERN.test(s.matchPattern)
+      ) {
+        this.logger.log(
+          `Skipping pay-in-N pattern: "${s.label}" (creditor=${s.creditor}) — pas un vrai crédit`,
+        );
+        // Snooze pour ne pas re-proposer en boucle, mais laisser l'user trier
+        try { await this.suggestions.snooze(s.id); } catch { /* noop */ }
+        continue;
+      }
       // Round to nearest euro for the bucket key (accommodates 99.37 vs 99.50 etc.)
       const amountKey = Math.round(s.monthlyAmount).toString();
       const groupKey = `${creditorKey}|${amountKey}`;
@@ -316,6 +348,19 @@ export class AutoSyncService {
         return false;
       });
       if (matchedExisting) continue;
+      // Seuil min d'occurrences : un pay-in-4 a 4 occurrences max.
+      // On somme les `occurrencesSeen` du bucket (les suggestions du même
+      // creditor+amount fusionnées sur plusieurs statements parses).
+      const totalOccurrences = sugs.reduce((s, sg) => s + sg.occurrencesSeen, 0);
+      if (totalOccurrences < AutoSyncService.MIN_OCCURRENCES_AUTO_CREATE) {
+        this.logger.log(
+          `Skipping auto-create for ${creditorKey} @${bucketAmount}€ : ${totalOccurrences} occurrences (< ${AutoSyncService.MIN_OCCURRENCES_AUTO_CREATE}). Snooze pour tri manuel.`,
+        );
+        for (const s of sugs) {
+          try { await this.suggestions.snooze(s.id); } catch { /* noop */ }
+        }
+        continue;
+      }
       const totalMonthly = sugs.reduce((sum, s) => sum + s.monthlyAmount, 0);
       const avgMonthly = Math.round((totalMonthly / sugs.length) * 100) / 100;
       const creditor = sugs[0].creditor;
