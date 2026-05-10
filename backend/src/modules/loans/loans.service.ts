@@ -418,27 +418,94 @@ export class LoansService {
   }
 
   /**
-   * Cherche un Loan dont le contractRef matche l'accountNumber extrait
-   * d'un relevé de crédit. Le matching tolère les variations de format :
-   * - Comparaison case-insensitive
-   * - Strip des espaces et tirets (les N° sont parfois formatés
-   *   "1234 5678 9012" ou "1234-5678-9012" sur les PDFs)
-   * - Substring matching dans les deux sens (loan ref dans account number
-   *   ou inverse) — l'organisme abrège parfois le N° complet.
+   * Normalise une référence (contract / RUM) pour comparaison robuste :
+   * lowercase + strip espaces et tirets. Les références sont parfois
+   * formatées "1234 5678 9012" ou "ABC-DEF-123" sur les PDFs.
+   */
+  private static normalizeRef(s: string): string {
+    return s.toLowerCase().replace(/[\s-]/g, '');
+  }
+
+  /**
+   * Match tolérant entre deux références (substring dans les deux sens),
+   * pour gérer les abréviations côté organisme.
+   */
+  private static refsMatch(a: string, b: string): boolean {
+    const na = LoansService.normalizeRef(a);
+    const nb = LoansService.normalizeRef(b);
+    if (na.length < 4 || nb.length < 4) return false;
+    return na === nb || na.includes(nb) || nb.includes(na);
+  }
+
+  /**
+   * @deprecated utiliser findByIdentifiers — gardée pour rétro-compat
+   * sur d'éventuels appels externes (tests, scripts).
    */
   async findByAccountNumber(accountNumber: string): Promise<Loan | null> {
-    if (!accountNumber) return null;
-    const normalize = (s: string) => s.toLowerCase().replace(/[\s-]/g, '');
-    const target = normalize(accountNumber);
-    if (target.length < 4) return null; // évite les faux matchs sur des N° trop courts
+    return this.findByIdentifiers({ accountNumber });
+  }
+
+  /**
+   * Cherche un Loan dont le contractRef ou un des rumRefs[] matche l'un
+   * des identifiants extraits d'un relevé de crédit.
+   *
+   * Stratégie :
+   *  1. Si accountNumber fourni : chercher par contractRef (match tolérant).
+   *  2. Si pas de hit ET rumNumber fourni : chercher par rumRefs[].
+   *
+   * Cas Cofidis/Sofinco : certains relevés n'affichent que le RUM
+   * (Référence Unique de Mandat SEPA), pas le contractNumber. Sans
+   * fallback RUM, le matcher rate l'existant et créé un doublon.
+   */
+  async findByIdentifiers(args: {
+    accountNumber?: string | null;
+    rumNumber?: string | null;
+  }): Promise<Loan | null> {
+    const { accountNumber, rumNumber } = args;
+    if (!accountNumber && !rumNumber) return null;
     const all = await this.getAll();
-    return (
-      all.find((loan) => {
-        if (!loan.contractRef) return false;
-        const ref = normalize(loan.contractRef);
-        return ref === target || ref.includes(target) || target.includes(ref);
-      }) ?? null
-    );
+
+    if (accountNumber) {
+      const byContract = all.find(
+        (loan) => loan.contractRef && LoansService.refsMatch(loan.contractRef, accountNumber),
+      );
+      if (byContract) return byContract;
+    }
+
+    if (rumNumber) {
+      const byRum = all.find(
+        (loan) =>
+          (loan.rumRefs ?? []).some((rum) => LoansService.refsMatch(rum, rumNumber)),
+      );
+      if (byRum) return byRum;
+    }
+
+    return null;
+  }
+
+  /**
+   * Ajoute un RUM à la liste rumRefs[] d'un loan si pas déjà présent
+   * (comparaison normalisée). No-op si le RUM est déjà connu.
+   * Utilisé après matching réussi quand le relevé courant porte un
+   * nouveau RUM (renouvellement de mandat SEPA).
+   */
+  async attachRumRef(loanId: string, rum: string): Promise<Loan> {
+    const trimmed = rum.trim();
+    if (!trimmed) throw new BadRequestException('RUM vide');
+    const all = await this.getAll();
+    const idx = all.findIndex((x) => x.id === loanId);
+    if (idx === -1) throw new NotFoundException(`Crédit ${loanId} introuvable`);
+    const existing = all[idx].rumRefs ?? [];
+    const alreadyKnown = existing.some((r) => LoansService.refsMatch(r, trimmed));
+    if (alreadyKnown) return all[idx];
+    all[idx] = {
+      ...all[idx],
+      rumRefs: [...existing, trimmed],
+      updatedAt: new Date().toISOString(),
+    };
+    await this.persist(all);
+    this.logger.log(`Attached RUM "${trimmed}" to loan ${loanId}`);
+    return all[idx];
   }
 
   private async persist(all: Loan[]): Promise<void> {

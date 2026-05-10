@@ -24,6 +24,7 @@ export interface CreditStatementAnalysis {
   taeg: number | null;
   statementDate: string;
   accountNumber: string | null;
+  rumNumber: string | null;
 }
 
 const EXTRACT_CREDIT_STATEMENT_TOOL: Anthropic.Tool = {
@@ -77,6 +78,11 @@ const EXTRACT_CREDIT_STATEMENT_TOOL: Anthropic.Tool = {
         description:
           'Numéro de contrat / compte tel qu\'affiché sur le relevé. null si absent.',
       },
+      rumNumber: {
+        type: ['string', 'null'],
+        description:
+          "Référence Unique de Mandat SEPA (RUM) si elle figure sur le relevé. Format typique : suite alphanumérique (ex: 'COFI20240315ABC123', 'FRR0123456789'). Distinct du numéro de contrat. null si absent. Apparaît surtout sur les relevés Cofidis/Sofinco où le contractNumber peut manquer.",
+      },
     },
     required: [
       'creditor',
@@ -114,7 +120,7 @@ export class CreditStatementService {
         max_tokens: 8192,
         temperature: 0,
         system:
-          "Tu es un spécialiste de l'extraction de données de crédits français (Cofidis, Sofinco, Cetelem, Carrefour Banque, Floa, Younited, Franfinance, Oney…). Lis le relevé de crédit fourni en PDF et appelle l'outil `extract_credit_statement` avec les valeurs trouvées.\n\nRÈGLES :\n- creditType = 'revolving' si le PDF mentionne crédit renouvelable, réserve d'argent, compte permanent, plafond/limite autorisée, ou si le solde varie librement. Sinon 'classic' (mensualité fixe, capital restant dû qui décroît, échéancier).\n- currentBalance : pour classic = capital restant dû (POSITIF) ; pour revolving = montant utilisé / utilisation actuelle (POSITIF).\n- maxAmount : plafond autorisé (revolving uniquement, sauf si explicitement affiché sur un classic).\n- monthlyPayment : mensualité courante en euros (positive).\n- endDate : YYYY-MM-DD si affichée. null pour revolving.\n- taeg : pourcentage avec décimales (19,84 → 19.84).\n- statementDate : date d'arrêté du relevé, YYYY-MM-DD. Convertis '15 mars 2026' → '2026-03-15' et '15/03/2026' → '2026-03-15' (format français DD/MM/YYYY).\n- creditor : nom court en MAJUSCULES.\n- accountNumber : numéro de contrat tel qu'affiché.",
+          "Tu es un spécialiste de l'extraction de données de crédits français (Cofidis, Sofinco, Cetelem, Carrefour Banque, Floa, Younited, Franfinance, Oney…). Lis le relevé de crédit fourni en PDF et appelle l'outil `extract_credit_statement` avec les valeurs trouvées.\n\nRÈGLES :\n- creditType = 'revolving' si le PDF mentionne crédit renouvelable, réserve d'argent, compte permanent, plafond/limite autorisée, ou si le solde varie librement. Sinon 'classic' (mensualité fixe, capital restant dû qui décroît, échéancier).\n- currentBalance : pour classic = capital restant dû (POSITIF) ; pour revolving = montant utilisé / utilisation actuelle (POSITIF).\n- maxAmount : plafond autorisé (revolving uniquement, sauf si explicitement affiché sur un classic).\n- monthlyPayment : mensualité courante en euros (positive).\n- endDate : YYYY-MM-DD si affichée. null pour revolving.\n- taeg : pourcentage avec décimales (19,84 → 19.84).\n- statementDate : date d'arrêté du relevé, YYYY-MM-DD. Convertis '15 mars 2026' → '2026-03-15' et '15/03/2026' → '2026-03-15' (format français DD/MM/YYYY).\n- creditor : nom court en MAJUSCULES.\n- accountNumber : numéro de contrat tel qu'affiché. null s'il n'apparaît pas explicitement.\n- rumNumber : Référence Unique de Mandat SEPA si elle figure (souvent sur les relevés Cofidis/Sofinco quand le contractNumber est absent). null si pas de mandat SEPA mentionné.",
         tools: [EXTRACT_CREDIT_STATEMENT_TOOL],
         tool_choice: { type: 'tool', name: 'extract_credit_statement' },
         messages: [
@@ -174,6 +180,7 @@ export class CreditStatementService {
         taeg: parsed.taeg ?? null,
         statementDate: parsed.statementDate,
         accountNumber: parsed.accountNumber ?? null,
+        rumNumber: parsed.rumNumber ?? null,
       };
     } catch (err) {
       if (isAuthError(err)) {

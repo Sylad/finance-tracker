@@ -23,6 +23,7 @@ export const CreditStatementOutputSchema = z
     taeg: z.number().nullable().optional(),
     statementDate: z.string(),
     accountNumber: z.string().nullable().optional(),
+    rumNumber: z.string().nullable().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.creditType === 'revolving' && (value.maxAmount == null || value.maxAmount <= 0)) {

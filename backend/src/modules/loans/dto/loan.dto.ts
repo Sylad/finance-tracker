@@ -37,7 +37,17 @@ export function validateLoanInput(raw: unknown): LoanInput {
   const creditor = typeof r.creditor === 'string' ? r.creditor.trim() : undefined;
   const contractRef = typeof r.contractRef === 'string' ? r.contractRef.trim() : undefined;
 
-  const base: LoanInput = { name, type, category, monthlyPayment, matchPattern, isActive, creditor: creditor || undefined, contractRef: contractRef || undefined };
+  // Optional rumRefs[] (SEPA mandate references, dedup + trim)
+  let rumRefs: string[] | undefined;
+  if (Array.isArray(r.rumRefs)) {
+    const cleaned = r.rumRefs
+      .filter((v): v is string => typeof v === 'string')
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0);
+    rumRefs = cleaned.length > 0 ? Array.from(new Set(cleaned)) : undefined;
+  }
+
+  const base: LoanInput = { name, type, category, monthlyPayment, matchPattern, isActive, creditor: creditor || undefined, contractRef: contractRef || undefined, rumRefs };
 
   if (type === 'classic') {
     const startDate = typeof r.startDate === 'string' ? r.startDate : '';

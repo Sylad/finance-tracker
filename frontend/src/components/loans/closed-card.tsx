@@ -13,7 +13,15 @@ export function ClosedCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () 
           <span className="inline-block w-2 h-2 rounded-full bg-negative shrink-0 mt-1.5" />
           <div>
             <div className="font-display font-semibold text-fg-bright">{loan.name}</div>
-            <>{loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}{loan.contractRef && <span className="text-xs text-fg-dim font-mono ml-2">#{loan.contractRef}</span>}</>
+            <div>
+              {loan.creditor && <span className="text-xs text-fg-dim uppercase tracking-wider">{loan.creditor}</span>}
+              {loan.contractRef && <span className="text-xs text-fg-dim font-mono ml-2">#{loan.contractRef}</span>}
+            </div>
+            {loan.rumRefs && loan.rumRefs.length > 0 && (
+              <div className="text-[11px] text-fg-muted font-mono mt-0.5 break-all" title="Mandats SEPA (RUM) connus pour ce crédit">
+                RUM: {loan.rumRefs.join(' · ')}
+              </div>
+            )}
             <div className="text-xs text-fg-dim">Terminé · {LOAN_CATEGORY_LABELS[loan.category]}</div>
           </div>
         </div>

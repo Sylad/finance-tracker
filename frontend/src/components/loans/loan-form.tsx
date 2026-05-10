@@ -45,6 +45,21 @@ export function LoanForm({ init, onSave, onCancel, busy }: { init: LoanInput; on
             <input className="input font-mono text-xs" placeholder="PRELEVT.*BANQUE" value={form.matchPattern}
                    onChange={(e) => setForm({ ...form, matchPattern: e.target.value })} />
           </Field>
+          <Field label="RUMs (mandats SEPA, 1 par ligne — auto-enrichi à l'import PDF)">
+            <textarea
+              className="input font-mono text-xs"
+              rows={2}
+              placeholder="COFI20240315ABC123"
+              value={(form.rumRefs ?? []).join('\n')}
+              onChange={(e) => {
+                const arr = e.target.value
+                  .split('\n')
+                  .map((s) => s.trim())
+                  .filter((s) => s.length > 0);
+                setForm({ ...form, rumRefs: arr.length > 0 ? arr : undefined });
+              }}
+            />
+          </Field>
           {form.type === 'classic' ? (
             <div className="grid grid-cols-2 gap-3">
               <Field label="Date début">
