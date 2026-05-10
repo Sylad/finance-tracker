@@ -18,6 +18,30 @@ export interface CreditStatementSnapshotInput {
 }
 
 /**
+ * Signaux disponibles pour identifier un Loan existant à partir d'une
+ * source d'import (relevé crédit, tableau d'amortissement, suggestion
+ * Claude). Tous optionnels — la méthode `findExistingLoan` essaie chaque
+ * signal par ordre de spécificité décroissante.
+ */
+export interface MatchSignals {
+  contractRef?: string | null;       // numéro de contrat (ou accountNumber côté credit_statement)
+  rumNumber?: string | null;         // RUM SEPA
+  creditor?: string | null;          // organisme prêteur
+  monthlyAmount?: number | null;     // mensualité (pour matching heuristique)
+  description?: string | null;       // libellé de transaction (pour matchPattern regex)
+}
+
+/**
+ * Résultat d'un match : le Loan trouvé, le niveau de confiance (high/medium/low)
+ * et la raison textuelle (debug + UI).
+ */
+export interface MatchResult {
+  loan: Loan;
+  confidence: 'high' | 'medium' | 'low';
+  reason: string;
+}
+
+/**
  * Payload extrait par AmortizationService.analyzeAmortization() — utilisé
  * par LoansService.applyAmortizationSchedule pour pré-remplir un Loan.
  */
@@ -452,46 +476,88 @@ export class LoansService {
   }
 
   /**
-   * @deprecated utiliser findByIdentifiers — gardée pour rétro-compat
-   * sur d'éventuels appels externes (tests, scripts).
+   * @deprecated utiliser findExistingLoan/findByIdentifiers — gardée pour
+   * rétro-compat sur d'éventuels appels externes (tests, scripts).
    */
   async findByAccountNumber(accountNumber: string): Promise<Loan | null> {
     return this.findByIdentifiers({ accountNumber });
   }
 
   /**
-   * Cherche un Loan dont le contractRef ou un des rumRefs[] matche l'un
-   * des identifiants extraits d'un relevé de crédit.
-   *
-   * Stratégie :
-   *  1. Si accountNumber fourni : chercher par contractRef (match tolérant).
-   *  2. Si pas de hit ET rumNumber fourni : chercher par rumRefs[].
-   *
-   * Cas Cofidis/Sofinco : certains relevés n'affichent que le RUM
-   * (Référence Unique de Mandat SEPA), pas le contractNumber. Sans
-   * fallback RUM, le matcher rate l'existant et créé un doublon.
+   * Wrapper rétro-compat : retourne juste le Loan ou null sans la
+   * confidence ni la raison du match. Délégué à findExistingLoan.
    */
   async findByIdentifiers(args: {
     accountNumber?: string | null;
     rumNumber?: string | null;
   }): Promise<Loan | null> {
-    const { accountNumber, rumNumber } = args;
-    if (!accountNumber && !rumNumber) return null;
-    const all = await this.getAll();
+    const result = await this.findExistingLoan({
+      contractRef: args.accountNumber,
+      rumNumber: args.rumNumber,
+    });
+    return result?.loan ?? null;
+  }
 
-    if (accountNumber) {
-      const byContract = all.find(
-        (loan) => loan.contractRef && LoansService.refsMatch(loan.contractRef, accountNumber),
-      );
-      if (byContract) return byContract;
+  /**
+   * MATCHER UNIFIÉ — point d'entrée unique pour identifier un Loan
+   * existant à partir d'un set de signaux (extrait de relevé crédit,
+   * tableau d'amortissement, ou suggestion bank statement Claude).
+   *
+   * Scoring confidence (descend dès qu'un match est trouvé) :
+   *   high   : contractRef match tolérant (lowercase + strip espaces/tirets, substring)
+   *   high   : rumNumber match dans rumRefs[] (même normalisation)
+   *   medium : creditor exact (case-insensitive trim) ET monthlyAmount ±5%
+   *   low    : description matche loan.matchPattern regex (et pas de meilleur match)
+   *
+   * Utilisé par tous les chemins (importCreditStatementsAuto,
+   * importAmortization, autoCreateLoansFromSuggestions) via
+   * ImportOrchestratorService pour éviter les doublons.
+   */
+  async findExistingLoan(signals: MatchSignals): Promise<MatchResult | null> {
+    const all = await this.getAll();
+    if (all.length === 0) return null;
+
+    // 1. contractRef → high
+    if (signals.contractRef) {
+      const ref = signals.contractRef;
+      const hit = all.find((l) => l.contractRef && LoansService.refsMatch(l.contractRef, ref));
+      if (hit) return { loan: hit, confidence: 'high', reason: 'contractRef match' };
     }
 
-    if (rumNumber) {
-      const byRum = all.find(
-        (loan) =>
-          (loan.rumRefs ?? []).some((rum) => LoansService.refsMatch(rum, rumNumber)),
+    // 2. rumNumber → high
+    if (signals.rumNumber) {
+      const rum = signals.rumNumber;
+      const hit = all.find((l) =>
+        (l.rumRefs ?? []).some((r) => LoansService.refsMatch(r, rum)),
       );
-      if (byRum) return byRum;
+      if (hit) return { loan: hit, confidence: 'high', reason: 'rumNumber match' };
+    }
+
+    // 3. creditor exact + monthlyAmount ±5% → medium
+    if (signals.creditor && signals.monthlyAmount && signals.monthlyAmount > 0) {
+      const cred = signals.creditor.toLowerCase().trim();
+      const target = signals.monthlyAmount;
+      const tol = Math.max(target * 0.05, 0.5); // au moins 0.50€ de marge
+      const hit = all.find((l) => {
+        const lcred = (l.creditor ?? '').toLowerCase().trim();
+        if (lcred !== cred) return false;
+        return Math.abs(l.monthlyPayment - target) <= tol;
+      });
+      if (hit) return { loan: hit, confidence: 'medium', reason: 'creditor + monthlyAmount ±5%' };
+    }
+
+    // 4. description regex match → low
+    if (signals.description) {
+      const desc = signals.description;
+      const hit = all.find((l) => {
+        if (!l.matchPattern) return false;
+        try {
+          return new RegExp(l.matchPattern, 'i').test(desc);
+        } catch {
+          return false;
+        }
+      });
+      if (hit) return { loan: hit, confidence: 'low', reason: 'description regex match' };
     }
 
     return null;
