@@ -5,6 +5,7 @@ import { type Loan, LOAN_CATEGORY_LABELS } from '@/types/api';
 import { formatEUR } from '@/lib/utils';
 import { SplitButton } from './split-button';
 import { ImportStatementModal } from './import-statement-modal';
+import { AmortizationChart } from './amortization-chart';
 
 export function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
   const resync = useResyncLoan();
@@ -85,6 +86,7 @@ export function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: ()
         Importer un relevé crédit (PDF)
       </button>
       {importing && <ImportStatementModal loan={loan} onClose={() => setImporting(false)} />}
+      <AmortizationChart loan={loan} />
     </div>
   );
 }

@@ -26,6 +26,23 @@ export interface LoanOccurrence {
   source?: LoanOccurrenceSource;  // Default 'bank_statement' pour rétro-compat
 }
 
+/**
+ * Une ligne du tableau d'amortissement initial d'un crédit classique
+ * (auto, conso, immo). Reflète la trajectoire prévue par la banque au
+ * moment de la souscription : combien de capital reste dû en fin de
+ * période, quel capital a été amorti et quels intérêts ont été payés.
+ *
+ * Le tableau d'amortissement est statique (calculé une seule fois à
+ * la souscription) ; les remboursements réels (`occurrencesDetected`)
+ * peuvent diverger en cas de remboursements anticipés ou de moratoires.
+ */
+export interface AmortizationLine {
+  date: string;             // YYYY-MM-DD : date de l'échéance
+  capitalRemaining: number; // capital restant dû en fin de période, ≥ 0
+  capitalPaid: number;      // capital amorti dans la période, ≥ 0
+  interestPaid: number;     // intérêts payés dans la période, ≥ 0
+}
+
 export interface LoanStatementSnapshot {
   date: string;          // ISO timestamp de l'import
   source: 'pdf-import' | 'manual' | 'auto-sync';
@@ -66,6 +83,9 @@ export interface Loan {
   occurrencesDetected: LoanOccurrence[];
   // Snapshot du dernier relevé crédit importé
   lastStatementSnapshot?: LoanStatementSnapshot;
+  // Tableau d'amortissement initial (classic uniquement). Source canonique
+  // pour le suivi du capital restant dû — chargé à l'import du PDF banque.
+  amortizationSchedule?: AmortizationLine[];
   createdAt: string;
   updatedAt: string;
 }

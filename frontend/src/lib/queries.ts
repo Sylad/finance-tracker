@@ -384,6 +384,21 @@ export function useMergeLoanDuplicates() {
   });
 }
 
+export function useImportAmortization() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, attachToLoanId }: { file: File; attachToLoanId?: string }) => {
+      const form = new FormData();
+      form.append('file', file);
+      const url = attachToLoanId
+        ? `/loans/import-amortization?attachToLoanId=${encodeURIComponent(attachToLoanId)}`
+        : '/loans/import-amortization';
+      return api.postForm<Loan>(url, form);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkLoans.all() }),
+  });
+}
+
 export function useResetRevolving() {
   const qc = useQueryClient();
   return useMutation({

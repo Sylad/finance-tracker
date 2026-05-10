@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X, GitMerge } from 'lucide-react';
+import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X, GitMerge, FileSpreadsheet } from 'lucide-react';
 import {
   useLoans,
   useCreateLoan,
@@ -7,6 +7,7 @@ import {
   useDeleteLoan,
   useAcceptSuggestion,
   useImportCreditStatements,
+  useImportAmortization,
   type CreditStatementImportResult,
 } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
@@ -42,12 +43,15 @@ export function LoansPage() {
   const remove = useDeleteLoan();
   const acceptSugg = useAcceptSuggestion();
   const importCredit = useImportCreditStatements();
+  const importAmort = useImportAmortization();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const amortInputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState<Loan | null>(null);
   const [creating, setCreating] = useState(false);
   const [suggestionToAccept, setSuggestionToAccept] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState<LoanInput | null>(null);
   const [importResult, setImportResult] = useState<CreditStatementImportResult | null>(null);
+  const [amortResult, setAmortResult] = useState<Loan | null>(null);
   const [dedupeOpen, setDedupeOpen] = useState(false);
 
   const handleCreditUpload = async (files: FileList | null) => {
@@ -59,6 +63,17 @@ export function LoansPage() {
       alert(`Erreur upload : ${(e as Error).message}`);
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleAmortUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    try {
+      const loan = await importAmort.mutateAsync({ file: files[0] });
+      setAmortResult(loan);
+    } catch (e) {
+      alert(`Erreur upload tableau : ${(e as Error).message}`);
+    }
+    if (amortInputRef.current) amortInputRef.current.value = '';
   };
 
   if (isLoading) return <LoadingState />;
@@ -117,6 +132,25 @@ export function LoansPage() {
                 <><Upload className="h-4 w-4" /> Relevés crédit (PDF)</>
               )}
             </button>
+            <input
+              ref={amortInputRef}
+              type="file"
+              accept="application/pdf"
+              hidden
+              onChange={(e) => handleAmortUpload(e.target.files)}
+            />
+            <button
+              onClick={() => amortInputRef.current?.click()}
+              disabled={importAmort.isPending}
+              className="btn-secondary"
+              title="Importer un PDF du tableau d'amortissement (1 crédit classique). Crée un nouveau crédit pré-rempli avec capital initial, taeg, mensualité et échéancier."
+            >
+              {importAmort.isPending ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Analyse…</>
+              ) : (
+                <><FileSpreadsheet className="h-4 w-4" /> Tableau d'amort. (PDF)</>
+              )}
+            </button>
             <button
               onClick={() => setDedupeOpen(true)}
               className="btn-secondary"
@@ -132,6 +166,33 @@ export function LoansPage() {
       />
 
       {dedupeOpen && <DedupeModal onClose={() => setDedupeOpen(false)} />}
+
+      {amortResult && (
+        <div className="card p-5 mb-4 relative">
+          <button
+            onClick={() => setAmortResult(null)}
+            className="absolute top-3 right-3 text-fg-dim hover:text-fg"
+            aria-label="Fermer"
+          ><X className="h-4 w-4" /></button>
+          <h3 className="font-display text-sm font-semibold text-fg-bright mb-3 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-positive" />
+            Tableau d'amortissement importé
+          </h3>
+          <p className="text-sm text-fg-muted">
+            <span className="font-display text-fg-bright">{amortResult.name}</span>
+            {' · '}
+            {amortResult.creditor}
+            {' · '}
+            {formatEUR(amortResult.initialPrincipal ?? 0)} sur {amortResult.startDate} → {amortResult.endDate}
+            {' · '}
+            {formatEUR(amortResult.monthlyPayment)}/mois
+            {' · '}
+            <span className="font-mono text-xs text-fg-dim">
+              {amortResult.amortizationSchedule?.length ?? 0} échéances
+            </span>
+          </p>
+        </div>
+      )}
 
       {importResult && (
         <div className="card p-5 mb-4 relative">
