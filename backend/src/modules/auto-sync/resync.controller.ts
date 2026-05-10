@@ -45,4 +45,9 @@ export class ResyncController {
   resetLoans() {
     return this.autoSync.resetAndReplayLoans();
   }
+
+  @Post('reset-subscriptions')
+  resetSubscriptions() {
+    return this.autoSync.resetSubscriptions();
+  }
 }

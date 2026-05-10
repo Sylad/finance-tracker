@@ -563,6 +563,56 @@ export function useDeleteSubscription() {
   });
 }
 
+export interface SubscriptionDuplicateGroup {
+  normalizedName: string;
+  monthlyAmount: number;
+  subscriptions: Array<{
+    id: string;
+    name: string;
+    monthlyAmount: number;
+    matchPattern: string;
+    occurrencesCount: number;
+    isActive: boolean;
+    createdAt: string;
+  }>;
+  reasons: string[];
+}
+
+export function useSubscriptionDuplicates() {
+  return useQuery({
+    queryKey: ['subscriptions', 'duplicates'] as const,
+    queryFn: () => api.get<SubscriptionDuplicateGroup[]>('/subscriptions/duplicates'),
+  });
+}
+
+export function useMergeSubscriptionDuplicates() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { canonicalId: string; duplicateIds: string[] }) =>
+      api.post<Subscription>('/subscriptions/merge-duplicates', body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkSubscriptions.all() });
+      qc.invalidateQueries({ queryKey: ['subscriptions', 'duplicates'] });
+    },
+  });
+}
+
+export function useResetSubscriptions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api.post<{ deletedSubscriptions: number; resetSuggestions: number }>(
+        '/auto-sync/reset-subscriptions',
+        {},
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkSubscriptions.all() });
+      qc.invalidateQueries({ queryKey: ['subscriptions', 'duplicates'] });
+      qc.invalidateQueries({ queryKey: ['loan-suggestions'] });
+    },
+  });
+}
+
 export function useResyncSavings() {
   const qc = useQueryClient();
   return useMutation({

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SavingsService } from '../savings/savings.service';
 import { LoansService } from '../loans/loans.service';
 import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { StorageService } from '../storage/storage.service';
 import { EventBusService } from '../events/event-bus.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
@@ -24,6 +25,7 @@ export class AutoSyncService {
     private readonly savings: SavingsService,
     private readonly loans: LoansService,
     private readonly suggestions: LoanSuggestionsService,
+    private readonly subscriptions: SubscriptionsService,
     private readonly storage: StorageService,
     private readonly bus: EventBusService,
   ) {}
@@ -32,12 +34,98 @@ export class AutoSyncService {
     await this.autoDiscoverSavings(statement);
     await this.syncSavings(statement);
     await this.syncLoans(statement);
+    await this.syncSubscriptions(statement);
     if (claudeSuggestions.length > 0) {
       await this.suggestions.upsertMany(statement.id, claudeSuggestions);
     }
     await this.autoCreateLoansFromSuggestions();
     await this.autoDeactivateStaleLoans();
     this.bus.emit('accounts-synced');
+  }
+
+  /**
+   * Reset des subscriptions : purge tous les subs, puis (l'user re-accepte
+   * manuellement les suggestions). Pas de auto-create depuis suggestions
+   * pour les subs (contrairement aux loans) — c'est l'user qui valide.
+   */
+  async resetSubscriptions(): Promise<{ deletedSubscriptions: number; resetSuggestions: number }> {
+    const deletedSubscriptions = (await this.subscriptions.deleteAll()).deletedCount;
+    // Reset les suggestions de type 'subscription' à pending (toutes les
+    // suggestions en fait, comme on fait pour loans : leur status sera
+    // re-évalué au prochain accept user).
+    const resetSuggestions = (await this.suggestions.resetAllToPending()).resetCount;
+    this.bus.emit('accounts-synced');
+    this.logger.log(
+      `Reset subscriptions: ${deletedSubscriptions} supprimées, ${resetSuggestions} suggestions reset à pending`,
+    );
+    return { deletedSubscriptions, resetSuggestions };
+  }
+
+  /**
+   * Matcher live pour les subscriptions à l'arrivée d'un nouveau relevé.
+   * Pour chaque sub actif avec matchPattern, parcourt les transactions du
+   * relevé, dédupe per-month (invariant 1 retrait/mois max par sub) +
+   * cross-sub (1 tx ↔ 1 sub unique).
+   */
+  private async syncSubscriptions(statement: MonthlyStatement): Promise<void> {
+    const subs = await this.subscriptions.getAll();
+    if (subs.length === 0) return;
+
+    // Cross-sub dedup : tx déjà attribuées à un autre sub dans ce statement
+    const usedTxIds = new Set<string>();
+    for (const s of subs) {
+      for (const occ of s.occurrencesDetected) {
+        if (occ.statementId === statement.id && occ.transactionId) usedTxIds.add(occ.transactionId);
+      }
+    }
+
+    for (const sub of subs) {
+      if (!sub.isActive) continue;
+      if (!sub.matchPattern) continue;
+      let regex: RegExp | null = null;
+      try {
+        regex = new RegExp(sub.matchPattern, 'i');
+      } catch {
+        this.logger.warn(`Invalid regex on subscription ${sub.id}: ${sub.matchPattern}`);
+        continue;
+      }
+      const monthsAlreadySeen = new Set(
+        sub.occurrencesDetected.map((o) => o.date.slice(0, 7)),
+      );
+      const candidates = statement.transactions.filter((t) => {
+        if (t.amount >= 0) return false;
+        if (usedTxIds.has(t.id)) return false;
+        if (!regex!.test(t.description)) return false;
+        return true;
+      });
+      // Invariant 1 retrait/mois max : 1 tx par mois calendaire pour ce sub.
+      // Si plusieurs candidats dans le même mois, prends celle dont le montant
+      // est le plus proche du sub.monthlyAmount.
+      const candidatesByMonth = new Map<string, typeof candidates>();
+      for (const t of candidates) {
+        const m = t.date.slice(0, 7);
+        if (monthsAlreadySeen.has(m)) continue;
+        const list = candidatesByMonth.get(m) ?? [];
+        list.push(t);
+        candidatesByMonth.set(m, list);
+      }
+      for (const [, list] of candidatesByMonth) {
+        const best = list.reduce((b, t) => {
+          const dB = Math.abs(Math.abs(b.amount) - sub.monthlyAmount);
+          const dT = Math.abs(Math.abs(t.amount) - sub.monthlyAmount);
+          return dT < dB ? t : b;
+        });
+        await this.subscriptions.addOccurrence(sub.id, {
+          statementId: statement.id,
+          date: best.date,
+          amount: best.amount,
+          transactionId: best.id,
+          description: best.description,
+          source: 'bank_statement',
+        });
+        usedTxIds.add(best.id);
+      }
+    }
   }
 
   /**
