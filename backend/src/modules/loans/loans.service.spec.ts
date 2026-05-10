@@ -211,6 +211,86 @@ describe('LoansService', () => {
       expect(found).toBeNull();
     });
 
+    it('findExistingLoan — high confidence on contractRef', async () => {
+      const loan = await svc.create({
+        name: 'X', type: 'classic', category: 'auto',
+        monthlyPayment: 100, matchPattern: 'X', isActive: true,
+        creditor: 'CETELEM', contractRef: '12345678',
+      });
+      const result = await svc.findExistingLoan({ contractRef: '1234-5678' });
+      expect(result?.loan.id).toBe(loan.id);
+      expect(result?.confidence).toBe('high');
+      expect(result?.reason).toMatch(/contractRef/);
+    });
+
+    it('findExistingLoan — high confidence on rumNumber fallback', async () => {
+      const loan = await svc.create({
+        name: 'X', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        rumRefs: ['MD2024030500001234'], maxAmount: 3000,
+      });
+      const result = await svc.findExistingLoan({ rumNumber: 'MD2024030500001234' });
+      expect(result?.loan.id).toBe(loan.id);
+      expect(result?.confidence).toBe('high');
+    });
+
+    it('findExistingLoan — medium confidence on creditor + monthlyAmount ±5%', async () => {
+      const loan = await svc.create({
+        name: 'X', type: 'classic', category: 'auto',
+        monthlyPayment: 100, matchPattern: 'X', isActive: true,
+        creditor: 'SOFINCO',
+      });
+      const result = await svc.findExistingLoan({ creditor: 'sofinco', monthlyAmount: 102 });
+      expect(result?.loan.id).toBe(loan.id);
+      expect(result?.confidence).toBe('medium');
+    });
+
+    it('findExistingLoan — low confidence on description regex match', async () => {
+      const loan = await svc.create({
+        name: 'X', type: 'classic', category: 'auto',
+        monthlyPayment: 100, matchPattern: 'PRELEVT.*COFIDIS', isActive: true,
+      });
+      const result = await svc.findExistingLoan({ description: 'PRELEVT MENSUEL COFIDIS REF XYZ' });
+      expect(result?.loan.id).toBe(loan.id);
+      expect(result?.confidence).toBe('low');
+    });
+
+    it('findExistingLoan — null si aucun signal ne matche', async () => {
+      await svc.create({
+        name: 'X', type: 'classic', category: 'auto',
+        monthlyPayment: 100, matchPattern: 'X', isActive: true,
+        creditor: 'CETELEM', contractRef: '11111111',
+      });
+      const result = await svc.findExistingLoan({
+        contractRef: '99999999',
+        rumNumber: 'WRONG',
+        creditor: 'OTHER-CREDITOR',
+        monthlyAmount: 999,
+        description: 'SOMETHING UNRELATED',
+      });
+      expect(result).toBeNull();
+    });
+
+    it('findExistingLoan — high (contractRef) prioritaire sur medium (creditor+amount)', async () => {
+      const loanA = await svc.create({
+        name: 'A', type: 'classic', category: 'auto',
+        monthlyPayment: 100, matchPattern: 'X', isActive: true,
+        creditor: 'CETELEM', contractRef: '11111111',
+      });
+      // loan B avec mêmes creditor + amount mais contractRef différent
+      await svc.create({
+        name: 'B', type: 'classic', category: 'auto',
+        monthlyPayment: 100, matchPattern: 'Y', isActive: true,
+        creditor: 'CETELEM', contractRef: '22222222',
+      });
+      // signal pointe vers contractRef A — doit gagner même si creditor+amount matchent les 2
+      const result = await svc.findExistingLoan({
+        contractRef: '11111111', creditor: 'CETELEM', monthlyAmount: 100,
+      });
+      expect(result?.loan.id).toBe(loanA.id);
+      expect(result?.confidence).toBe('high');
+    });
+
     it('contractRef takes precedence over rumRefs when both could match', async () => {
       const loanA = await svc.create({
         name: 'Cofidis A',
