@@ -245,4 +245,101 @@ describe('AutoSyncService', () => {
       expect(loans.addOccurrence).not.toHaveBeenCalled();
     });
   });
+
+  describe('autoCreateLoansFromSuggestions — anti pay-in-N + min occurrences', () => {
+    let suggestions: { upsertMany: jest.Mock; getPending: jest.Mock; snooze: jest.Mock };
+
+    beforeEach(async () => {
+      // Recompose with a richer suggestions mock — pour ces tests on a besoin
+      // de getPending qui retourne des suggestions et de snooze tracé.
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([]);
+      const loansCreate = jest.fn();
+      (loans as unknown as { create: jest.Mock }).create = loansCreate;
+
+      suggestions = {
+        upsertMany: jest.fn(),
+        getPending: jest.fn().mockResolvedValue([]),
+        snooze: jest.fn().mockResolvedValue(undefined),
+      };
+      const mod = await Test.createTestingModule({
+        providers: [
+          AutoSyncService,
+          { provide: SavingsService, useValue: savings },
+          { provide: LoansService, useValue: loans },
+          { provide: LoanSuggestionsService, useValue: suggestions },
+          { provide: StorageService, useValue: { getAllStatements: jest.fn().mockResolvedValue([]) } },
+          { provide: EventBusService, useValue: { emit: jest.fn() } },
+        ],
+      }).compile();
+      svc = mod.get(AutoSyncService);
+    });
+
+    it('skip pay-in-4 (label "4X CB AMAZON") + snooze sans création', async () => {
+      suggestions.getPending.mockResolvedValue([
+        {
+          id: 'sg1', label: 'COFIDIS 4X CB AMAZON', monthlyAmount: 81, occurrencesSeen: 4,
+          firstSeenStatementId: '2026-01', firstSeenDate: '2026-01-15', lastSeenDate: '2026-04-15',
+          suggestedType: 'loan', matchPattern: 'COFIDIS', creditor: 'COFIDIS', status: 'pending', createdAt: '',
+        },
+      ]);
+      await svc.syncStatement({ ...baseStatement, transactions: [] });
+      expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
+      expect(suggestions.snooze).toHaveBeenCalledWith('sg1');
+    });
+
+    it('skip pay-in-3 (label "ALMA 3 FOIS") + snooze', async () => {
+      suggestions.getPending.mockResolvedValue([
+        {
+          id: 'sg2', label: 'ALMA 3 FOIS', monthlyAmount: 50, occurrencesSeen: 3,
+          firstSeenStatementId: '2026-01', firstSeenDate: '2026-01-15', lastSeenDate: '2026-03-15',
+          suggestedType: 'loan', matchPattern: 'ALMA', creditor: 'ALMA', status: 'pending', createdAt: '',
+        },
+      ]);
+      await svc.syncStatement({ ...baseStatement, transactions: [] });
+      expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
+      expect(suggestions.snooze).toHaveBeenCalledWith('sg2');
+    });
+
+    it('skip si occurrencesSeen < 5 (sécurise contre pay-in-N non-libellé) + snooze', async () => {
+      suggestions.getPending.mockResolvedValue([
+        {
+          id: 'sg3', label: 'COFIDIS PRELEVT', monthlyAmount: 99, occurrencesSeen: 4,
+          firstSeenStatementId: '2026-01', firstSeenDate: '2026-01-15', lastSeenDate: '2026-04-15',
+          suggestedType: 'loan', matchPattern: 'COFIDIS', creditor: 'COFIDIS', status: 'pending', createdAt: '',
+        },
+      ]);
+      await svc.syncStatement({ ...baseStatement, transactions: [] });
+      expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
+      expect(suggestions.snooze).toHaveBeenCalledWith('sg3');
+    });
+
+    it('crée le loan si occurrencesSeen ≥ 5 et pas de pattern pay-in-N', async () => {
+      suggestions.getPending.mockResolvedValue([
+        {
+          id: 'sg4', label: 'CETELEM ECHEANCE 240', monthlyAmount: 240, occurrencesSeen: 8,
+          firstSeenStatementId: '2025-09', firstSeenDate: '2025-09-15', lastSeenDate: '2026-04-15',
+          suggestedType: 'loan', matchPattern: 'CETELEM', creditor: 'CETELEM', status: 'pending', createdAt: '',
+        },
+      ]);
+      await svc.syncStatement({ ...baseStatement, transactions: [] });
+      expect((loans as unknown as { create: jest.Mock }).create).toHaveBeenCalledWith(
+        expect.objectContaining({ creditor: 'CETELEM', monthlyPayment: 240, type: 'classic' }),
+      );
+      expect(suggestions.snooze).toHaveBeenCalledWith('sg4');
+    });
+
+    it('skip pay-in-N même si occurrencesSeen suffisant (regex prioritaire)', async () => {
+      suggestions.getPending.mockResolvedValue([
+        {
+          id: 'sg5', label: 'KLARNA 4X', monthlyAmount: 30, occurrencesSeen: 8, // dummy >5
+          firstSeenStatementId: '2026-01', firstSeenDate: '2026-01-15', lastSeenDate: '2026-04-15',
+          suggestedType: 'loan', matchPattern: 'KLARNA', creditor: 'KLARNA', status: 'pending', createdAt: '',
+        },
+      ]);
+      await svc.syncStatement({ ...baseStatement, transactions: [] });
+      expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
+      expect(suggestions.snooze).toHaveBeenCalledWith('sg5');
+    });
+  });
 });
