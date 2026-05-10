@@ -469,4 +469,43 @@ describe('AutoSyncService', () => {
       expect(suggestions.snooze).toHaveBeenCalledWith('sg5');
     });
   });
+
+  describe('resetAndReplayLoans', () => {
+    it('purge loans + reset suggestions à pending + replay autoCreate + syncLoans', async () => {
+      const loansApi = loans as unknown as {
+        deleteAll: jest.Mock;
+        create: jest.Mock;
+      };
+      loansApi.deleteAll = jest.fn().mockResolvedValue({ deletedCount: 3 });
+      loansApi.create = jest.fn();
+      // Stub findExistingLoan to return null (no match → can auto-create)
+      (loans as unknown as { findExistingLoan: jest.Mock }).findExistingLoan = jest.fn().mockResolvedValue(null);
+      loans.getAll.mockResolvedValueOnce([]);  // post-reset
+      loans.getAll.mockResolvedValueOnce([]);  // syncLoans iter
+      loans.getAll.mockResolvedValueOnce([]);  // autoDeactivateStale
+      loans.getAll.mockResolvedValueOnce([]);  // final count
+
+      const suggestionsApi = svc['suggestions'] as unknown as {
+        resetAllToPending: jest.Mock;
+        getPending: jest.Mock;
+        snooze: jest.Mock;
+      };
+      suggestionsApi.resetAllToPending = jest.fn().mockResolvedValue({ resetCount: 4 });
+      suggestionsApi.getPending.mockResolvedValue([]);
+
+      const storageApi = svc['storage'] as unknown as { getAllStatements: jest.Mock };
+      storageApi.getAllStatements.mockResolvedValue([
+        baseStatement,
+        { ...baseStatement, id: '2026-04', month: 4 },
+      ]);
+
+      const result = await svc.resetAndReplayLoans();
+
+      expect(loansApi.deleteAll).toHaveBeenCalled();
+      expect(suggestionsApi.resetAllToPending).toHaveBeenCalled();
+      expect(result.deletedLoans).toBe(3);
+      expect(result.resetSuggestions).toBe(4);
+      expect(result.replayedStatements).toBe(2);
+    });
+  });
 });

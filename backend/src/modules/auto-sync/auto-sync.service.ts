@@ -41,6 +41,56 @@ export class AutoSyncService {
   }
 
   /**
+   * Reset total des loans : supprime tous les loans + reset toutes les
+   * suggestions à 'pending', puis :
+   *  1. autoCreateLoansFromSuggestions() avec le nouvel invariant "1 débit
+   *     /mois max par crédit" → recrée des loans propres depuis les patterns
+   *     suggérés (déjà analysés par Claude lors des imports précédents).
+   *  2. syncLoans() sur chaque statement en ordre chronologique → repopule
+   *     les occurrencesDetected sur les loans fraîchement créés.
+   *  3. autoDeactivateStaleLoans() → marque inactifs les loans absents des
+   *     2 derniers relevés (corollaire de l'invariant).
+   *
+   * Suggestions non supprimées (les PDFs sources ne sont pas persistés ;
+   * sans Claude on ne pourrait pas les reconstruire). Si l'user veut un
+   * vrai reset depuis zéro, il peut ré-importer 1-2 relevés pour relancer
+   * l'analyse Claude.
+   */
+  async resetAndReplayLoans(): Promise<{
+    deletedLoans: number;
+    resetSuggestions: number;
+    replayedStatements: number;
+    finalLoans: number;
+  }> {
+    const deletedLoans = (await this.loans.deleteAll()).deletedCount;
+    const resetSuggestions = (await this.suggestions.resetAllToPending()).resetCount;
+
+    // 1. Re-créer les loans depuis les suggestions (avec nouvel invariant)
+    await this.autoCreateLoansFromSuggestions();
+
+    // 2. Replay syncLoans sur statements existants en ordre chronologique
+    const allStatements = await this.storage.getAllStatements();
+    const sorted = [...allStatements].sort((a, b) => {
+      const ka = `${a.year}-${String(a.month).padStart(2, '0')}`;
+      const kb = `${b.year}-${String(b.month).padStart(2, '0')}`;
+      return ka.localeCompare(kb);
+    });
+    for (const stmt of sorted) {
+      await this.syncLoans(stmt);
+    }
+
+    // 3. Désactive les loans absents des 2 derniers relevés
+    await this.autoDeactivateStaleLoans();
+    this.bus.emit('accounts-synced');
+
+    const finalLoans = (await this.loans.getAll()).length;
+    this.logger.log(
+      `Reset+replay loans: deleted=${deletedLoans} loans, reset=${resetSuggestions} suggestions to pending, replayed=${sorted.length} statements, final=${finalLoans} loans`,
+    );
+    return { deletedLoans, resetSuggestions, replayedStatements: sorted.length, finalLoans };
+  }
+
+  /**
    * Re-évalue le statut actif/inactif de tous les crédits sans avoir besoin
    * de ré-importer un PDF. Utile après un changement de seuil ou pour rafraîchir
    * manuellement.

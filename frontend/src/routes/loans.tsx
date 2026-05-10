@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X, GitMerge, FileSpreadsheet, AlertTriangle } from 'lucide-react';
+import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X, GitMerge, FileSpreadsheet, AlertTriangle, RotateCcw } from 'lucide-react';
 import {
   useLoans,
   useCreateLoan,
@@ -8,7 +8,9 @@ import {
   useAcceptSuggestion,
   useImportCreditStatements,
   useImportAmortization,
+  useResetLoans,
   type CreditStatementImportResult,
+  type ResetLoansResult,
 } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
@@ -46,6 +48,7 @@ export function LoansPage() {
   const acceptSugg = useAcceptSuggestion();
   const importCredit = useImportCreditStatements();
   const importAmort = useImportAmortization();
+  const resetLoans = useResetLoans();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const amortInputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState<Loan | null>(null);
@@ -56,6 +59,25 @@ export function LoansPage() {
   const [amortResult, setAmortResult] = useState<Loan | null>(null);
   const [dedupeOpen, setDedupeOpen] = useState(false);
   const [suspiciousOpen, setSuspiciousOpen] = useState(false);
+  const [resetResult, setResetResult] = useState<ResetLoansResult | null>(null);
+
+  const handleReset = async () => {
+    if (!confirm(
+      'Reset des crédits ?\n\n'
+      + 'Cette action :\n'
+      + '  • Supprime TOUS les crédits actuels\n'
+      + '  • Reset toutes les suggestions à pending\n'
+      + '  • Replay l\'auto-sync sur les relevés existants avec le nouvel invariant "1 débit/mois max par crédit"\n\n'
+      + 'Les relevés bancaires et de crédit ne sont PAS touchés. La détection repart de zéro avec une logique propre.\n\n'
+      + 'Continuer ?'
+    )) return;
+    try {
+      const result = await resetLoans.mutateAsync();
+      setResetResult(result);
+    } catch (e) {
+      alert(`Erreur reset : ${(e as Error).message}`);
+    }
+  };
 
   const handleCreditUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -166,9 +188,21 @@ export function LoansPage() {
             <button
               onClick={() => setSuspiciousOpen(true)}
               className="btn-secondary"
-              title="Détecter les crédits suspects (paiements en 4 fois créés à tort comme crédits)"
+              title="Détecter les crédits suspects (paiements en 4 fois créés à tort + loans absents du dernier relevé — invariant 1 débit/mois)"
             >
               <AlertTriangle className="h-4 w-4" /> Suspects
+            </button>
+            <button
+              onClick={handleReset}
+              disabled={resetLoans.isPending}
+              className="btn-secondary text-negative hover:bg-negative/10 hover:text-negative border-negative/30"
+              title="Purge tous les crédits + reset suggestions à pending + replay auto-sync sur relevés existants avec invariant 1 débit/mois max"
+            >
+              {resetLoans.isPending ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Reset…</>
+              ) : (
+                <><RotateCcw className="h-4 w-4" /> Reset</>
+              )}
             </button>
             <button onClick={() => { setCreating(true); setEditing(null); }} className="btn-primary">
               <Plus className="h-4 w-4" /> Nouveau crédit
@@ -179,6 +213,26 @@ export function LoansPage() {
 
       {dedupeOpen && <DedupeModal onClose={() => setDedupeOpen(false)} />}
       {suspiciousOpen && <SuspiciousModal onClose={() => setSuspiciousOpen(false)} />}
+
+      {resetResult && (
+        <div className="card p-5 mb-4 relative border-warning/40">
+          <button
+            onClick={() => setResetResult(null)}
+            className="absolute top-3 right-3 text-fg-dim hover:text-fg"
+            aria-label="Fermer"
+          ><X className="h-4 w-4" /></button>
+          <h3 className="font-display text-sm font-semibold text-fg-bright mb-2 flex items-center gap-2">
+            <RotateCcw className="h-4 w-4 text-warning" />
+            Reset crédits effectué
+          </h3>
+          <p className="text-sm text-fg-muted">
+            {resetResult.deletedLoans} crédit{resetResult.deletedLoans > 1 ? 's supprimés' : ' supprimé'},
+            {' '}{resetResult.resetSuggestions} suggestion{resetResult.resetSuggestions > 1 ? 's reset à pending' : ' reset à pending'},
+            {' '}{resetResult.replayedStatements} relevé{resetResult.replayedStatements > 1 ? 's' : ''} replayés.
+            {' '}<span className="font-display text-fg-bright">{resetResult.finalLoans} crédit{resetResult.finalLoans > 1 ? 's' : ''}</span> recréé{resetResult.finalLoans > 1 ? 's' : ''} avec l'invariant "1 débit/mois max".
+          </p>
+        </div>
+      )}
 
       {amortResult && (
         <div className="card p-5 mb-4 relative">

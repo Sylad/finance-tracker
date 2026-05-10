@@ -32,4 +32,17 @@ export class ResyncController {
   recomputeLoanStatuses() {
     return this.autoSync.recomputeLoanStatuses();
   }
+
+  /**
+   * Reset des loans : purge tous les loans + reset suggestions à 'pending',
+   * puis replay autoCreate + syncLoans sur statements existants. Respecte
+   * l'invariant "1 débit/mois max par crédit".
+   *
+   * Usage : bouton "Reset crédits" sur /loans pour repartir d'une base saine
+   * après un cycle de doublons accumulés.
+   */
+  @Post('reset-loans')
+  resetLoans() {
+    return this.autoSync.resetAndReplayLoans();
+  }
 }

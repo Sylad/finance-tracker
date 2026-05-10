@@ -92,4 +92,33 @@ describe('LoanSuggestionsService', () => {
     expect(updated.acceptedAsSubscriptionId).toBe('sub-456');
     expect(updated.acceptedAsLoanId).toBeUndefined();
   });
+
+  it('resetAllToPending : reset toutes les suggestions snoozed/rejected/accepted à pending', async () => {
+    await svc.upsertMany('2026-03', [
+      { label: 'A', monthlyAmount: 10, occurrencesSeen: 5, firstSeenDate: '2025-11-01', suggestedType: 'loan', matchPattern: 'A' },
+      { label: 'B', monthlyAmount: 20, occurrencesSeen: 5, firstSeenDate: '2025-11-01', suggestedType: 'loan', matchPattern: 'B' },
+      { label: 'C', monthlyAmount: 30, occurrencesSeen: 5, firstSeenDate: '2025-11-01', suggestedType: 'loan', matchPattern: 'C' },
+    ]);
+    const all = await svc.getAll();
+    await svc.reject(all[0].id);
+    await svc.snooze(all[1].id);
+    await svc.accept(all[2].id, { loanId: 'loan-X' });
+
+    const result = await svc.resetAllToPending();
+    expect(result.resetCount).toBe(3);
+    const after = await svc.getAll();
+    expect(after.every((s) => s.status === 'pending')).toBe(true);
+    expect(after.every((s) => s.acceptedAsLoanId === undefined)).toBe(true);
+    expect(after.every((s) => s.resolvedAt === undefined)).toBe(true);
+  });
+
+  it('deleteAll : purge totale', async () => {
+    await svc.upsertMany('2026-03', [
+      { label: 'A', monthlyAmount: 10, occurrencesSeen: 5, firstSeenDate: '2025-11-01', suggestedType: 'loan', matchPattern: 'A' },
+      { label: 'B', monthlyAmount: 20, occurrencesSeen: 5, firstSeenDate: '2025-11-01', suggestedType: 'loan', matchPattern: 'B' },
+    ]);
+    const result = await svc.deleteAll();
+    expect(result.deletedCount).toBe(2);
+    expect(await svc.getAll()).toHaveLength(0);
+  });
 });
