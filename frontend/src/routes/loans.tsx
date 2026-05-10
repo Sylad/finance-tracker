@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X, GitMerge, FileSpreadsheet } from 'lucide-react';
+import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X, GitMerge, FileSpreadsheet, AlertTriangle } from 'lucide-react';
 import {
   useLoans,
   useCreateLoan,
@@ -21,6 +21,7 @@ import { LoanForm } from '@/components/loans/loan-form';
 import { SuggestionsBanner } from '@/components/loans/suggestions-banner';
 import { LoansMonthlyChart } from '@/components/loans/loans-monthly-chart';
 import { DedupeModal } from '@/components/loans/dedupe-modal';
+import { SuspiciousModal } from '@/components/loans/suspicious-modal';
 import { toLoanInput } from '@/components/loans/utils';
 
 const DEFAULT: LoanInput = {
@@ -53,6 +54,7 @@ export function LoansPage() {
   const [importResult, setImportResult] = useState<CreditStatementImportResult | null>(null);
   const [amortResult, setAmortResult] = useState<Loan | null>(null);
   const [dedupeOpen, setDedupeOpen] = useState(false);
+  const [suspiciousOpen, setSuspiciousOpen] = useState(false);
 
   const handleCreditUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -158,6 +160,13 @@ export function LoansPage() {
             >
               <GitMerge className="h-4 w-4" /> Doublons
             </button>
+            <button
+              onClick={() => setSuspiciousOpen(true)}
+              className="btn-secondary"
+              title="Détecter les crédits suspects (paiements en 4 fois créés à tort comme crédits)"
+            >
+              <AlertTriangle className="h-4 w-4" /> Suspects
+            </button>
             <button onClick={() => { setCreating(true); setEditing(null); }} className="btn-primary">
               <Plus className="h-4 w-4" /> Nouveau crédit
             </button>
@@ -166,6 +175,7 @@ export function LoansPage() {
       />
 
       {dedupeOpen && <DedupeModal onClose={() => setDedupeOpen(false)} />}
+      {suspiciousOpen && <SuspiciousModal onClose={() => setSuspiciousOpen(false)} />}
 
       {amortResult && (
         <div className="card p-5 mb-4 relative">

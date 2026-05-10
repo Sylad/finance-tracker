@@ -8,6 +8,7 @@ import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
 import { SavingsAccount } from '../../models/savings-account.model';
 import type { IncomingSuggestion } from '../../models/loan-suggestion.model';
+import { PAY_IN_N_PATTERN as PAY_IN_N_PATTERN_SHARED } from '../loans/loans-patterns';
 
 function normalizeAccountNumber(s: string | null | undefined): string {
   if (!s) return '';
@@ -278,17 +279,9 @@ export class AutoSyncService {
     'bnp paribas personal finance',
   ]);
 
-  /**
-   * Patterns de "paiement échelonné" (4X CB / pay-in-N / FacilyPay / PayPal Pay
-   * Later) — qui sont des paiements 2-4 fois SANS frais, pas des crédits.
-   * Ils transitent souvent par des organismes whitelisted (Cofidis, Alma,
-   * Klarna, Floa…), créant des faux positifs si on auto-crée un Loan.
-   *
-   * Si le label/matchPattern d'une suggestion contient l'un de ces marqueurs,
-   * on l'exclut de l'auto-création et on snooze pour tri manuel.
-   */
-  private static readonly PAY_IN_N_PATTERN =
-    /\b([2-9]\s?(X|FOIS)|N\s?FOIS|N FOIS|EN \d+ FOIS|PAY ?LATER|PAY ?PLUS ?TARD|FACILYPAY|3X|4X|3 FOIS|4 FOIS)\b/i;
+  // Pattern factorisé dans loans/loans-patterns.ts (réutilisé par item 6
+  // cleanup rétrospectif).
+  private static readonly PAY_IN_N_PATTERN = PAY_IN_N_PATTERN_SHARED;
 
   /**
    * Seuil minimum d'occurrences pour auto-créer un Loan depuis une suggestion.

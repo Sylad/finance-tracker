@@ -384,6 +384,35 @@ export function useMergeLoanDuplicates() {
   });
 }
 
+export interface SuspiciousLoan {
+  id: string;
+  name: string;
+  creditor?: string;
+  monthlyPayment: number;
+  occurrencesCount: number;
+  lastOccurrenceDate: string | null;
+  reason: string;
+}
+
+export function useSuspiciousLoans() {
+  return useQuery({
+    queryKey: ['loans', 'suspicious'] as const,
+    queryFn: () => api.get<SuspiciousLoan[]>('/loans/suspicious'),
+  });
+}
+
+export function useCleanupSuspiciousLoans() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (loanIds: string[]) =>
+      api.post<{ deletedCount: number }>('/loans/cleanup-suspicious', { loanIds }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkLoans.all() });
+      qc.invalidateQueries({ queryKey: ['loans', 'suspicious'] });
+    },
+  });
+}
+
 export function useImportAmortization() {
   const qc = useQueryClient();
   return useMutation({

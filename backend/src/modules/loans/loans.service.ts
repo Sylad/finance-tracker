@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { Loan, LoanInput, LoanOccurrence, LoanOccurrenceSource, LoanStatementSnapshot, AmortizationLine } from '../../models/loan.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
+import { PAY_IN_N_PATTERN } from './loans-patterns';
 
 export interface CreditStatementSnapshotInput {
   creditor: string;
@@ -717,6 +718,115 @@ export class LoansService {
     }
 
     return null;
+  }
+
+  /**
+   * Détecte les Loans probablement créés à tort par un pattern pay-in-N
+   * (paiements échelonnés 2-4 fois — Cofidis 4X CB, Alma 4X, Klarna 3X…).
+   * Heuristique :
+   *   1. name OU matchPattern matche PAY_IN_N_PATTERN → suspect
+   *   2. OU : ≤4 occurrences distinctes ET sur ≤4 mois consécutifs ET
+   *      pas d'occurrence depuis ≥60 jours
+   *
+   * Retourne la liste des candidats avec une raison (pour UI). Aucune
+   * suppression — la décision est manuelle (cleanupSuspiciousLoans).
+   */
+  async getSuspiciousLoans(now?: string): Promise<Array<{
+    id: string;
+    name: string;
+    creditor?: string;
+    monthlyPayment: number;
+    occurrencesCount: number;
+    lastOccurrenceDate: string | null;
+    reason: string;
+  }>> {
+    const today = now ?? new Date().toISOString().slice(0, 10);
+    const todayMs = new Date(today + 'T00:00:00Z').getTime();
+    const all = await this.getAll();
+    const suspicious: Awaited<ReturnType<LoansService['getSuspiciousLoans']>> = [];
+
+    for (const loan of all) {
+      // Critère 1 : regex pay-in-N sur name ou matchPattern
+      const nameMatch = PAY_IN_N_PATTERN.test(loan.name);
+      const patternMatch = loan.matchPattern && PAY_IN_N_PATTERN.test(loan.matchPattern);
+      if (nameMatch || patternMatch) {
+        const lastDate = LoansService.lastOccurrenceDate(loan);
+        suspicious.push({
+          id: loan.id,
+          name: loan.name,
+          creditor: loan.creditor,
+          monthlyPayment: loan.monthlyPayment,
+          occurrencesCount: loan.occurrencesDetected.length,
+          lastOccurrenceDate: lastDate,
+          reason: nameMatch ? `Nom matche pattern pay-in-N: "${loan.name}"` : `matchPattern matche pay-in-N`,
+        });
+        continue;
+      }
+
+      // Critère 2 : pattern d'occurrences court + arrêté
+      const occCount = loan.occurrencesDetected.length;
+      if (occCount === 0 || occCount > 4) continue;
+
+      // Mois distincts couverts
+      const months = new Set<string>(loan.occurrencesDetected.map((o) => o.date.slice(0, 7)));
+      if (months.size > 4) continue;
+
+      // Mois consécutifs ?
+      const sortedMonths = Array.from(months).sort();
+      const firstM = sortedMonths[0];
+      const lastM = sortedMonths[sortedMonths.length - 1];
+      const monthsSpan =
+        (Number(lastM.slice(0, 4)) - Number(firstM.slice(0, 4))) * 12 +
+        (Number(lastM.slice(5, 7)) - Number(firstM.slice(5, 7))) + 1;
+      if (monthsSpan > 4) continue; // span > 4 mois → pas un pay-in-4
+
+      // Pas d'occurrence depuis ≥ 60 jours ?
+      const lastDate = LoansService.lastOccurrenceDate(loan);
+      if (!lastDate) continue;
+      const daysSinceLast = (todayMs - new Date(lastDate + 'T00:00:00Z').getTime()) / (24 * 3600 * 1000);
+      if (daysSinceLast < 60) continue;
+
+      suspicious.push({
+        id: loan.id,
+        name: loan.name,
+        creditor: loan.creditor,
+        monthlyPayment: loan.monthlyPayment,
+        occurrencesCount: occCount,
+        lastOccurrenceDate: lastDate,
+        reason: `${occCount} occurrence(s) sur ${monthsSpan} mois, dernière il y a ${Math.round(daysSinceLast)}j — typique pay-in-N`,
+      });
+    }
+
+    return suspicious;
+  }
+
+  private static lastOccurrenceDate(loan: Loan): string | null {
+    if (loan.occurrencesDetected.length === 0) return null;
+    return loan.occurrencesDetected.reduce(
+      (max, o) => (o.date > max ? o.date : max),
+      loan.occurrencesDetected[0].date,
+    );
+  }
+
+  /**
+   * Supprime en bulk les loans marqués comme suspects par l'utilisateur
+   * (validation manuelle via UI). Aucune heuristique automatique — l'user
+   * fournit explicitement les IDs à supprimer.
+   */
+  async cleanupSuspiciousLoans(loanIds: string[]): Promise<{ deletedCount: number }> {
+    if (!loanIds || loanIds.length === 0) {
+      throw new BadRequestException('Aucun loanId fourni');
+    }
+    const all = await this.getAll();
+    const idSet = new Set(loanIds);
+    const filtered = all.filter((l) => !idSet.has(l.id));
+    const deletedCount = all.length - filtered.length;
+    if (deletedCount === 0) {
+      throw new NotFoundException('Aucun des IDs fournis ne correspond à un loan existant');
+    }
+    await this.persist(filtered);
+    this.logger.log(`Cleanup pay-in-N : ${deletedCount} loan(s) supprimé(s)`);
+    return { deletedCount };
   }
 
   /**

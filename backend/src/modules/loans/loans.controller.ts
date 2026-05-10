@@ -43,6 +43,10 @@ const MergeDuplicatesSchema = z.object({
   duplicateIds: z.array(z.string().min(1)).min(1),
 });
 
+const CleanupSuspiciousSchema = z.object({
+  loanIds: z.array(z.string().min(1)).min(1),
+});
+
 @Controller('loans')
 @UseFilters(MulterExceptionFilter)
 export class LoansController {
@@ -65,6 +69,19 @@ export class LoansController {
   @Get('duplicates')
   detectDuplicates() {
     return this.svc.detectDuplicates();
+  }
+
+  @Get('suspicious')
+  getSuspicious() {
+    return this.svc.getSuspiciousLoans();
+  }
+
+  @Post('cleanup-suspicious')
+  cleanupSuspicious(
+    @Body(new ZodValidationPipe(CleanupSuspiciousSchema))
+    body: { loanIds: string[] },
+  ) {
+    return this.svc.cleanupSuspiciousLoans(body.loanIds);
   }
 
   @Get(':id')

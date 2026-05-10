@@ -536,6 +536,65 @@ describe('LoansService', () => {
     });
   });
 
+  describe('getSuspiciousLoans + cleanupSuspiciousLoans', () => {
+    it('détecte un loan dont le name match pay-in-N (4X CB AMAZON)', async () => {
+      await svc.create({
+        name: 'COFIDIS 4X CB AMAZON', type: 'classic', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'COFIDIS',
+      });
+      const suspicious = await svc.getSuspiciousLoans('2026-05-10');
+      expect(suspicious).toHaveLength(1);
+      expect(suspicious[0].reason).toMatch(/pay-in-N/);
+    });
+
+    it('détecte un loan avec ≤4 occurrences sur ≤4 mois consécutifs et arrêté ≥60j', async () => {
+      const loan = await svc.create({
+        name: 'OBSCUR', type: 'classic', category: 'consumer',
+        monthlyPayment: 50, matchPattern: 'X', isActive: true,
+      });
+      // 3 occurrences sur 3 mois (jan, fev, mar 2026), aucune depuis = arrêté
+      await svc.addOccurrence(loan.id, { statementId: 's1', date: '2026-01-15', amount: -50, transactionId: null });
+      await svc.addOccurrence(loan.id, { statementId: 's2', date: '2026-02-15', amount: -50, transactionId: null });
+      await svc.addOccurrence(loan.id, { statementId: 's3', date: '2026-03-15', amount: -50, transactionId: null });
+      const suspicious = await svc.getSuspiciousLoans('2026-05-20'); // > 60 jours après dernière
+      expect(suspicious.length).toBeGreaterThanOrEqual(1);
+      const me = suspicious.find((s) => s.id === loan.id);
+      expect(me?.reason).toMatch(/typique pay-in-N/);
+    });
+
+    it('NE détecte PAS un loan actif (occurrence récente)', async () => {
+      const loan = await svc.create({
+        name: 'CETELEM ECHEANCE', type: 'classic', category: 'auto',
+        monthlyPayment: 240, matchPattern: 'CETELEM', isActive: true,
+      });
+      await svc.addOccurrence(loan.id, { statementId: 's1', date: '2026-04-15', amount: -240, transactionId: null });
+      await svc.addOccurrence(loan.id, { statementId: 's2', date: '2026-05-15', amount: -240, transactionId: null });
+      const suspicious = await svc.getSuspiciousLoans('2026-05-20');
+      expect(suspicious.find((s) => s.id === loan.id)).toBeUndefined();
+    });
+
+    it('cleanupSuspiciousLoans supprime en bulk les IDs fournis', async () => {
+      const a = await svc.create({
+        name: 'A', type: 'classic', category: 'consumer', monthlyPayment: 50, matchPattern: 'A', isActive: true,
+      });
+      const b = await svc.create({
+        name: 'B', type: 'classic', category: 'consumer', monthlyPayment: 50, matchPattern: 'B', isActive: true,
+      });
+      const c = await svc.create({
+        name: 'C', type: 'classic', category: 'consumer', monthlyPayment: 50, matchPattern: 'C', isActive: true,
+      });
+      const result = await svc.cleanupSuspiciousLoans([a.id, c.id]);
+      expect(result.deletedCount).toBe(2);
+      const remaining = await svc.getAll();
+      expect(remaining.map((l) => l.id)).toEqual([b.id]);
+    });
+
+    it('cleanupSuspiciousLoans rejette si aucun ID ne correspond', async () => {
+      await expect(svc.cleanupSuspiciousLoans(['does-not-exist'])).rejects.toThrow(/Aucun/);
+    });
+  });
+
   describe('getLoanHealth', () => {
     const today = '2026-05-10';
     const recent = '2026-04-15';
