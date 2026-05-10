@@ -17,6 +17,7 @@ import { formatEUR } from '@/lib/utils';
 import { ClassicCard } from '@/components/loans/classic-card';
 import { RevolvingCard } from '@/components/loans/revolving-card';
 import { ClosedCard } from '@/components/loans/closed-card';
+import { InstallmentCard } from '@/components/loans/installment-card';
 import { LoanForm } from '@/components/loans/loan-form';
 import { SuggestionsBanner } from '@/components/loans/suggestions-banner';
 import { LoansMonthlyChart } from '@/components/loans/loans-monthly-chart';
@@ -80,8 +81,10 @@ export function LoansPage() {
 
   if (isLoading) return <LoadingState />;
   const items = data ?? [];
-  const classics = items.filter((l) => l.type === 'classic' && l.isActive);
-  const revolvings = items.filter((l) => l.type === 'revolving' && l.isActive);
+  const kindOf = (l: Loan) => l.kind ?? l.type;
+  const installments = items.filter((l) => kindOf(l) === 'installment' && l.isActive);
+  const classics = items.filter((l) => kindOf(l) === 'classic' && l.isActive);
+  const revolvings = items.filter((l) => kindOf(l) === 'revolving' && l.isActive);
   const closed = items.filter((l) => !l.isActive);
   const totalMonthly = items.filter((l) => l.isActive).reduce((s, l) => s + l.monthlyPayment, 0);
 
@@ -244,6 +247,27 @@ export function LoansPage() {
         <EmptyState title="Aucun crédit déclaré" hint="Ajoute ton crédit immobilier, conso ou ta carte revolving." />
       ) : (
         <div className="space-y-8 mb-6">
+          {installments.length > 0 && (
+            <section>
+              <h2 className="font-display text-sm uppercase tracking-wider text-fg-dim mb-3">
+                Paiements échelonnés actifs ({installments.length})
+              </h2>
+              <p className="text-xs text-fg-dim mb-3">
+                Crédits courts en N fois (4XCB Cofidis, Alma 4X, Klarna 3X, FacilyPay…) avec échéancier précis.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {installments.map((l) => (
+                  <InstallmentCard
+                    key={l.id}
+                    loan={l}
+                    onEdit={() => setEditing(l)}
+                    onDelete={() => confirm(`Supprimer ${l.name} ?`) && remove.mutate(l.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
           {classics.length > 0 && (
             <section>
               <h2 className="font-display text-sm uppercase tracking-wider text-fg-dim mb-3">

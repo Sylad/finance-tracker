@@ -833,6 +833,54 @@ export class LoansService {
   }
 
   /**
+   * Convertit un Loan existant (typiquement classic créé à tort) en
+   * `kind='installment'`. Reconstruit `installmentSchedule[]` depuis les
+   * `occurrencesDetected` triées : chaque occurrence devient une échéance
+   * `paid:true`. Désactive le loan si toutes les échéances sont passées
+   * (paiement N fois terminé).
+   *
+   * Use-case : modal Suspects propose "Convertir en paiement échelonné"
+   * pour les loans classic ≤4 occurrences arrêtés ≥60j.
+   */
+  async convertToInstallment(loanId: string): Promise<Loan> {
+    const all = await this.getAll();
+    const idx = all.findIndex((l) => l.id === loanId);
+    if (idx === -1) throw new NotFoundException(`Crédit ${loanId} introuvable`);
+    const loan = all[idx];
+    const occurrences = [...(loan.occurrencesDetected ?? [])].sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
+    if (occurrences.length === 0) {
+      throw new BadRequestException(
+        `Loan ${loanId} sans occurrence — impossible de reconstruire un échéancier`,
+      );
+    }
+    const schedule: InstallmentLine[] = occurrences.map((o) => ({
+      dueDate: o.date,
+      amount: Math.abs(o.amount),
+      paid: true,
+      paidOccurrenceId: o.statementId ?? undefined,
+    }));
+    loan.kind = 'installment';
+    loan.installmentSchedule = schedule;
+    loan.installmentSignatureDate = loan.installmentSignatureDate ?? schedule[0].dueDate;
+    loan.installmentMerchant = loan.installmentMerchant ?? loan.creditor ?? undefined;
+    // Si toutes les échéances sont passées, le paiement N fois est terminé → désactive
+    const today = new Date().toISOString().slice(0, 10);
+    const allPast = schedule.every((s) => s.dueDate <= today);
+    if (allPast) {
+      loan.isActive = false;
+      loan.endDate = schedule[schedule.length - 1].dueDate;
+    }
+    loan.updatedAt = new Date().toISOString();
+    await this.persist(all);
+    this.logger.log(
+      `Converted loan ${loanId} → installment (${schedule.length} échéances, active=${loan.isActive})`,
+    );
+    return loan;
+  }
+
+  /**
    * Retourne le kind canonique d'un Loan : explicit (`loan.kind`) sinon
    * déduit depuis `type` (rétro-compat pré-APEX 05). Pas de mutation.
    */

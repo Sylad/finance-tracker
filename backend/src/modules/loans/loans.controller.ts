@@ -84,6 +84,11 @@ export class LoansController {
     return this.svc.cleanupSuspiciousLoans(body.loanIds);
   }
 
+  @Post(':id/convert-to-installment')
+  convertToInstallment(@Param('id') id: string) {
+    return this.svc.convertToInstallment(id);
+  }
+
   @Get(':id')
   one(@Param('id') id: string) { return this.svc.getOne(id); }
 

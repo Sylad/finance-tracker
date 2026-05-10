@@ -86,9 +86,14 @@ Pour découper un crédit revolving en sub-credits :
 - Matcher AND si la suggestion porte un `contractRef` (creditor regex AND contractRef in description), pas OR. Sinon toutes les transactions Cofidis taggent le même crédit.
 - Filtre `PAY_IN_N_PATTERN` (loans/loans-patterns.ts) exclut les paiements échelonnés 2-4 fois (4X CB / FacilyPay / KLARNA 4X / ALMA 3X / PAY LATER) — snooze sans création. Seuil min `MIN_OCCURRENCES_AUTO_CREATE = 5` cumulées.
 
-### Synchro robuste 3-sources (APEX 04 — refonte 2026-05-10)
+### Synchro robuste 3-sources (APEX 04 — refonte 2026-05-10, étendue APEX 05)
 
-L'app croise 3 sources de données pour un crédit. Pour éviter incohérences/doublons, tout passe par des helpers unifiés :
+L'app croise 3 sources de données pour un crédit (relevé bancaire, relevé crédit, tableau d'amortissement, contrat installment N×). Pour éviter incohérences/doublons, tout passe par des helpers unifiés :
+
+**Modèle Loan : 3 kinds.** Champ `kind: 'classic' | 'revolving' | 'installment'` (fallback sur `type` pour les loans pré-APEX 05). Le kind détermine la stratégie de matching/synchro :
+- `classic` : tableau d'amortissement + mensualités fixes, durée connue
+- `revolving` : carte de crédit renouvelable, balance qui varie, occurrences mensuelles
+- `installment` : paiement N fois (Cofidis 4XCB, Alma 4X, Klarna 3X, FacilyPay…) avec `installmentSchedule[]` ({dueDate, amount, paid, paidOccurrenceId?}). Échéancier extrait directement du contrat 4XCB au moment de l'import (toutes les dates calculées depuis `signatureDate + delta`).
 
 **1. `findExistingLoan(signals)`** dans `loans.service.ts` — matcher unique avec scoring confidence :
 | Confidence | Critère |
@@ -122,9 +127,13 @@ Priorité sources : `user > amortization > credit_statement > bank_statement > s
 - **partial** : 1-2 critères manquants
 - **gap** : 0 statement récent ET ≤1 occurrence
 
-**6. Cleanup pay-in-N rétrospectif** : `GET /api/loans/suspicious` + bouton "Suspects" sur `/loans` détectent les loans probablement créés à tort (≤4 occurrences sur ≤4 mois consécutifs et arrêtés ≥60j, OU name match `PAY_IN_N_PATTERN`).
+**6. Cleanup pay-in-N rétrospectif** : `GET /api/loans/suspicious` + bouton "Suspects" sur `/loans` détectent les loans probablement créés à tort (≤4 occurrences sur ≤4 mois consécutifs et arrêtés ≥60j, OU name match `PAY_IN_N_PATTERN`). Deux actions : suppression bulk OU **conversion en `kind='installment'`** via `POST /api/loans/:id/convert-to-installment` (reconstruit `installmentSchedule[]` depuis les occurrences détectées). Les `kind='installment'` sont skip de la détection suspect (légitimes par construction).
 
-Doc complète dans `.claude/output/apex/04-loans-synchro-robust/`.
+**7. Import contrat installment** (APEX 05) : `CreditStatementService` distingue désormais "contrat de paiement en N fois" (`installmentDetails != null`) vs relevé mensuel revolving. Le tool Claude retourne l'échéancier complet (`count`, `amount`, `installments[]`, `merchant`, `signatureDate`, `totalAmount`). `ImportOrchestratorService.importInstallmentContract()` crée un Loan `kind='installment'` avec `installmentSchedule[]` directement depuis les dates calculées.
+
+**8. Matcher installment dans `auto-sync`** : pour `kind='installment'`, `syncInstallmentLoan()` parcourt chaque ligne non payée et cherche dans le statement courant une transaction (date ±3j de `dueDate`, amount ±0.50€, creditor pattern). Match exact → `markInstallmentPaid(loanId, lineIndex, paidOccurrenceId)` (idempotent). Aucun risque de doublon/auto-création comme pour `classic`/`revolving`.
+
+Doc complète dans `.claude/output/apex/04-loans-synchro-robust/` et `.claude/output/apex/05-loans-installment-kind/`.
 
 ### Two-phase tool-use Claude
 - Phase 1 = `extract_transactions`, Phase 2 = `analyze_finances`. **Toujours vérifier que phase 1 a retourné > 0 transactions** avant de lancer phase 2 — sinon plantage.

@@ -413,6 +413,18 @@ export function useCleanupSuspiciousLoans() {
   });
 }
 
+export function useConvertToInstallment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (loanId: string) =>
+      api.post<Loan>(`/loans/${loanId}/convert-to-installment`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkLoans.all() });
+      qc.invalidateQueries({ queryKey: ['loans', 'suspicious'] });
+    },
+  });
+}
+
 export function useImportAmortization() {
   const qc = useQueryClient();
   return useMutation({
