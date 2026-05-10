@@ -50,6 +50,11 @@ export interface LoanPatch {
   taeg?: number | null;
   amortizationSchedule?: AmortizationLine[];
   lastStatementSnapshot?: LoanStatementSnapshot;
+  /** Type/kind reclassification depuis source PDF — credit_statement peut
+   *  corriger un type erroné (ex. classic→revolving) si l'user n'a pas
+   *  validé manuellement. */
+  type?: 'classic' | 'revolving';
+  kind?: LoanKind;
 }
 
 /**
@@ -474,6 +479,12 @@ export class LoansService {
       creditor: extracted.creditor || undefined,
       taeg: extracted.taeg ?? undefined,
       lastStatementSnapshot: snapshot,
+      // Reclassification : si Claude détecte un creditType différent de ce
+      // qu'on a déjà (ex. un Cofidis Crédit Pass mal classé 'classic' au
+      // premier import, et le re-import révèle le vrai type 'revolving'),
+      // mergeLoanPatch corrige le type. Skipped si l'user a déjà un kind
+      // explicite (kind=installment), qui est plus précis que type.
+      type: extracted.creditType,
     };
     if (extracted.creditType === 'revolving') {
       if (extracted.maxAmount != null && extracted.maxAmount > 0) {
@@ -608,6 +619,28 @@ export class LoansService {
     // lastStatementSnapshot : credit_statement-only
     if (patch.lastStatementSnapshot !== undefined && isCreditStatement) {
       loan.lastStatementSnapshot = patch.lastStatementSnapshot;
+    }
+
+    // type / kind : reclassification autorisée par credit_statement (source
+    // PDF officielle) et user. Skip si le loan a un kind='installment'
+    // explicite — c'est plus précis qu'un type='classic|revolving' et
+    // ne devrait jamais être écrasé par un import de relevé mensuel.
+    if (patch.type !== undefined) {
+      const isInstallmentLocked = loan.kind === 'installment';
+      if ((isUser || isCreditStatement) && !isInstallmentLocked) {
+        if (loan.type !== patch.type) {
+          loan.type = patch.type;
+          // Si type bascule classic↔revolving via PDF, sync kind aussi
+          if (loan.kind && loan.kind !== 'installment') {
+            loan.kind = patch.type;
+          }
+        }
+      }
+    }
+    if (patch.kind !== undefined) {
+      if (isUser || (isCreditStatement && loan.kind !== 'installment')) {
+        loan.kind = patch.kind;
+      }
     }
 
     if (isAuto || isUser) {

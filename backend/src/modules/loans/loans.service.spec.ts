@@ -975,6 +975,36 @@ describe('LoansService', () => {
       LoansService.mergeLoanPatch(loan, { creditor: 'Nouveau' }, 'user');
       expect(loan.creditor).toBe('Nouveau');
     });
+
+    it('credit_statement peut reclasser type classic→revolving', () => {
+      const loan = {
+        id: 'cofidis', type: 'classic', kind: 'classic', creditor: 'COFIDIS',
+        monthlyPayment: 221, occurrencesDetected: [],
+      } as unknown as Loan;
+      LoansService.mergeLoanPatch(
+        loan,
+        { type: 'revolving', maxAmount: 8500, usedAmount: 8612.7 },
+        'credit_statement',
+      );
+      expect(loan.type).toBe('revolving');
+      expect(loan.kind).toBe('revolving');
+      expect(loan.maxAmount).toBe(8500);
+    });
+
+    it('credit_statement NE reclasse PAS un loan kind=installment (plus précis)', () => {
+      const loan = {
+        id: 'cofidis-4xcb', type: 'classic', kind: 'installment',
+        creditor: 'COFIDIS', monthlyPayment: 65.81, occurrencesDetected: [],
+      } as unknown as Loan;
+      LoansService.mergeLoanPatch(
+        loan,
+        { type: 'revolving' },
+        'credit_statement',
+      );
+      // kind=installment locké → type ne bouge pas
+      expect(loan.type).toBe('classic');
+      expect(loan.kind).toBe('installment');
+    });
   });
 
   describe('applyAmortizationSchedule', () => {
