@@ -5,6 +5,7 @@ import { StorageService } from '../storage/storage.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
 import { LoansService } from '../loans/loans.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 const PAST_MONTHS = 6;
 const FUTURE_MONTHS = 5;
@@ -17,11 +18,24 @@ export class ForecastService {
     private readonly declarations: DeclarationsService,
     private readonly storage: StorageService,
     private readonly loans: LoansService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   async compute(): Promise<ForecastMonth[]> {
     const declarations = await this.declarations.getAll();
     const activeLoans = (await this.loans.getAll()).filter((l) => l.isActive);
+    const activeSubs = (await this.subscriptions.getAll()).filter((s) => s.isActive);
+    // Revenus récurrents Claude (Campbell Scientific…) — déjà filtrés des
+    // déblocages crédit + dédupés via getAggregatedRecurringCredits.
+    // Conserve uniquement les sources stables (salaire/pension/rental) en
+    // fréquence régulière. 'irregular' et 'other' sont trop bruités.
+    const allRecurringCredits = await this.storage.getAggregatedRecurringCredits();
+    const recurringIncomes = allRecurringCredits.filter(
+      (c) =>
+        c.isActive
+        && (c.category === 'salary' || c.category === 'pension' || c.category === 'rental')
+        && (c.frequency === 'monthly' || c.frequency === 'bimonthly'),
+    );
     const window = buildWindow(new Date(), PAST_MONTHS, FUTURE_MONTHS);
     const statements = await this.storage.getAllStatements();
     const txByMonth = indexTransactionsByMonth(statements);
@@ -68,6 +82,61 @@ export class ForecastService {
           type: 'loan',
           category: loan.category,
           amountSigned: -loan.monthlyPayment,
+          matched: !!matchedTx,
+          matchedTxId: matchedTx?.id ?? null,
+        });
+      }
+
+      // Active subscriptions = monthly expenses within startDate window.
+      for (const sub of activeSubs) {
+        if (sub.startDate && monthKey < sub.startDate.slice(0, 7)) continue;
+        const txs = txByMonth.get(monthKey) ?? [];
+        let matchedTx: Transaction | null = null;
+        if (sub.matchPattern) {
+          try {
+            const re = new RegExp(sub.matchPattern, 'i');
+            matchedTx = txs.find((t) => {
+              if (consumed.has(t.id)) return false;
+              if (t.amount >= 0) return false;
+              if (!re.test(t.description)) return false;
+              if (Math.abs(Math.abs(t.amount) - sub.monthlyAmount) > Math.max(sub.monthlyAmount * 0.1, 1)) return false;
+              return true;
+            }) ?? null;
+          } catch { /* invalid regex, skip */ }
+        }
+        if (matchedTx) consumed.add(matchedTx.id);
+        occurrences.push({
+          declarationId: `sub:${sub.id}`,
+          label: sub.name,
+          type: 'subscription',
+          category: sub.category,
+          amountSigned: -sub.monthlyAmount,
+          matched: !!matchedTx,
+          matchedTxId: matchedTx?.id ?? null,
+        });
+      }
+
+      // Revenus récurrents détectés par Claude (salaire/pension/rental).
+      for (const credit of recurringIncomes) {
+        if (credit.firstSeenDate && monthKey < credit.firstSeenDate.slice(0, 7)) continue;
+        const txs = txByMonth.get(monthKey) ?? [];
+        const matchedTx = txs.find((t) => {
+          if (consumed.has(t.id)) return false;
+          if (t.amount <= 0) return false;
+          if (Math.abs(t.amount - credit.monthlyAmount) > Math.max(credit.monthlyAmount * 0.15, 50)) return false;
+          // Tente un match sur la description (mot-clé partagé)
+          const cd = `${credit.description} ${credit.normalizedDescription}`.toLowerCase();
+          const td = t.description.toLowerCase();
+          const cdWords = cd.split(/\s+/).filter((w) => w.length >= 4);
+          return cdWords.some((w) => td.includes(w));
+        });
+        if (matchedTx) consumed.add(matchedTx.id);
+        occurrences.push({
+          declarationId: `income:${credit.id}`,
+          label: credit.description,
+          type: 'income',
+          category: credit.category,
+          amountSigned: credit.monthlyAmount,
           matched: !!matchedTx,
           matchedTxId: matchedTx?.id ?? null,
         });
