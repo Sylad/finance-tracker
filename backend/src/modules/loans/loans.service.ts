@@ -508,8 +508,224 @@ export class LoansService {
     return all[idx];
   }
 
+  /**
+   * Détecte les doublons probables dans la base loans.
+   * Heuristique : même créancier (normalisé) + même type + monthlyPayment ±5% +
+   * identifiants (contractRef / rumRefs) qui ne se contredisent PAS.
+   *
+   * Retourne des "groupes" de candidats où le user choisira lequel conserver
+   * comme canonical. Pas d'auto-merge — décision humaine (les faux positifs
+   * pourraient écraser de vrais crédits distincts).
+   */
+  async detectDuplicates(): Promise<DuplicateGroup[]> {
+    const all = await this.getAll();
+    const groups = new Map<string, Loan[]>();
+
+    // Groupage par créancier+type — clé normalisée
+    for (const loan of all) {
+      const creditor = (loan.creditor || '').trim().toLowerCase();
+      if (!creditor) continue; // sans créancier on ne dédupe pas
+      const key = `${creditor}::${loan.type}`;
+      const list = groups.get(key) ?? [];
+      list.push(loan);
+      groups.set(key, list);
+    }
+
+    const results: DuplicateGroup[] = [];
+    for (const [key, list] of groups) {
+      if (list.length < 2) continue;
+      // Pour chaque paire dans le groupe, on construit des sous-groupes
+      // de doublons candidats.
+      const visited = new Set<string>();
+      for (let i = 0; i < list.length; i++) {
+        if (visited.has(list[i].id)) continue;
+        const cluster: Loan[] = [list[i]];
+        for (let j = i + 1; j < list.length; j++) {
+          if (visited.has(list[j].id)) continue;
+          if (LoansService.areLikelyDuplicates(list[i], list[j])) {
+            cluster.push(list[j]);
+            visited.add(list[j].id);
+          }
+        }
+        if (cluster.length >= 2) {
+          visited.add(list[i].id);
+          results.push({
+            creditor: cluster[0].creditor!,
+            type: cluster[0].type,
+            loans: cluster.map((l) => ({
+              id: l.id,
+              name: l.name,
+              monthlyPayment: l.monthlyPayment,
+              contractRef: l.contractRef,
+              rumRefs: l.rumRefs,
+              maxAmount: l.maxAmount,
+              usedAmount: l.usedAmount,
+              startDate: l.startDate,
+              endDate: l.endDate,
+              occurrencesCount: l.occurrencesDetected.length,
+              isActive: l.isActive,
+              createdAt: l.createdAt,
+            })),
+            reasons: LoansService.duplicateReasons(cluster),
+          });
+        }
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Heuristique : 2 loans sont probablement le même crédit si :
+   * - même créancier+type (déjà filtré côté caller)
+   * - mensualité dans une fenêtre de ±5% (les organismes ajustent parfois)
+   * - leurs identifiants ne se contredisent PAS franchement (pas de
+   *   contractRef différents de longueur ≥4 dans les deux). Si l'un a un
+   *   contractRef et l'autre seulement un RUM, c'est précisément le scénario
+   *   des doublons RUM créés avant le matcher étendu — donc fortement
+   *   candidat.
+   */
+  private static areLikelyDuplicates(a: Loan, b: Loan): boolean {
+    if (a.id === b.id) return false;
+    const pa = a.monthlyPayment;
+    const pb = b.monthlyPayment;
+    if (pa <= 0 || pb <= 0) return false;
+    const tolerance = Math.max(pa, pb) * 0.05;
+    if (Math.abs(pa - pb) > tolerance) return false;
+
+    // Si les deux ont un contractRef et qu'ils sont franchement différents,
+    // ce sont des crédits distincts.
+    const refA = a.contractRef?.trim();
+    const refB = b.contractRef?.trim();
+    if (refA && refB && refA.length >= 4 && refB.length >= 4) {
+      if (!LoansService.refsMatch(refA, refB)) return false;
+    }
+    return true;
+  }
+
+  private static duplicateReasons(cluster: Loan[]): string[] {
+    const reasons: string[] = [];
+    const creditor = cluster[0].creditor;
+    if (creditor) reasons.push(`Même créancier : ${creditor}`);
+    const payments = cluster.map((l) => l.monthlyPayment);
+    const minP = Math.min(...payments);
+    const maxP = Math.max(...payments);
+    if (Math.abs(maxP - minP) < 0.01) {
+      reasons.push(`Mensualité identique : ${minP.toFixed(2)} €`);
+    } else {
+      reasons.push(`Mensualités proches : ${payments.map((p) => p.toFixed(2) + ' €').join(' / ')}`);
+    }
+    const withContract = cluster.filter((l) => l.contractRef);
+    const withRum = cluster.filter((l) => l.rumRefs && l.rumRefs.length > 0);
+    if (withContract.length > 0 && withRum.length > 0 && withContract[0].id !== withRum[0].id) {
+      reasons.push("Identifiants partagés : l'un porte un n° de contrat, l'autre un RUM SEPA — pattern typique de doublon RUM.");
+    }
+    return reasons;
+  }
+
+  /**
+   * Fusionne plusieurs loans dans un canonical. Migre les `occurrencesDetected`
+   * (déduplication par `(statementId, transactionId)`), union des `rumRefs[]`,
+   * adoption du `contractRef` du dup si canonical n'en a pas, puis suppression
+   * des duplicates.
+   *
+   * NB : `usedAmount` du canonical est PRESERVÉ (on suppose qu'il est à jour),
+   * `maxAmount` aussi. Les statement snapshots des dups ne sont pas migrés
+   * (un seul snapshot conservé = celui du canonical).
+   */
+  async mergeDuplicates(canonicalId: string, duplicateIds: string[]): Promise<Loan> {
+    if (!duplicateIds || duplicateIds.length === 0) {
+      throw new BadRequestException('Aucun duplicate à merger');
+    }
+    if (duplicateIds.includes(canonicalId)) {
+      throw new BadRequestException('Le canonical ne peut pas figurer dans la liste des duplicates');
+    }
+    const all = await this.getAll();
+    const canonical = all.find((l) => l.id === canonicalId);
+    if (!canonical) throw new NotFoundException(`Canonical ${canonicalId} introuvable`);
+
+    const dups: Loan[] = [];
+    for (const dupId of duplicateIds) {
+      const dup = all.find((l) => l.id === dupId);
+      if (!dup) throw new NotFoundException(`Duplicate ${dupId} introuvable`);
+      if (dup.creditor?.toLowerCase().trim() !== canonical.creditor?.toLowerCase().trim()) {
+        throw new BadRequestException(
+          `Refus de merger : ${dup.id} a un créancier différent de ${canonical.id}`,
+        );
+      }
+      if (dup.type !== canonical.type) {
+        throw new BadRequestException(`Refus de merger : types différents`);
+      }
+      dups.push(dup);
+    }
+
+    // Adoption du contractRef du premier dup qui en a un, si canonical n'en a pas
+    if (!canonical.contractRef) {
+      const dupWithRef = dups.find((d) => d.contractRef);
+      if (dupWithRef?.contractRef) {
+        canonical.contractRef = dupWithRef.contractRef;
+      }
+    }
+
+    // Union des rumRefs[] (déduplication via refsMatch normalisée)
+    const allRums = new Set<string>(canonical.rumRefs ?? []);
+    for (const d of dups) {
+      for (const r of d.rumRefs ?? []) {
+        const known = [...allRums].some((existing) => LoansService.refsMatch(existing, r));
+        if (!known) allRums.add(r);
+      }
+    }
+    canonical.rumRefs = allRums.size > 0 ? [...allRums] : undefined;
+
+    // Migration des occurrencesDetected — dédup par (statementId, transactionId)
+    const seenKey = new Set<string>(
+      canonical.occurrencesDetected.map((o) => `${o.statementId}::${o.transactionId ?? '_'}`),
+    );
+    for (const d of dups) {
+      for (const occ of d.occurrencesDetected) {
+        const key = `${occ.statementId}::${occ.transactionId ?? '_'}`;
+        if (!seenKey.has(key)) {
+          canonical.occurrencesDetected.push(occ);
+          seenKey.add(key);
+        }
+      }
+    }
+    // Re-tri chrono
+    canonical.occurrencesDetected.sort((a, b) => a.date.localeCompare(b.date));
+
+    canonical.updatedAt = new Date().toISOString();
+
+    // Retire les dups de la liste
+    const dupIdSet = new Set(duplicateIds);
+    const next = all.filter((l) => !dupIdSet.has(l.id));
+    await this.persist(next);
+    this.logger.log(
+      `Merged ${duplicateIds.length} duplicate(s) into ${canonicalId} (${canonical.name})`,
+    );
+    return canonical;
+  }
+
   private async persist(all: Loan[]): Promise<void> {
     await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
     this.bus.emit('loans-changed');
   }
+}
+
+export interface DuplicateGroup {
+  creditor: string;
+  type: 'classic' | 'revolving';
+  loans: Array<{
+    id: string;
+    name: string;
+    monthlyPayment: number;
+    contractRef?: string;
+    rumRefs?: string[];
+    maxAmount?: number;
+    usedAmount?: number;
+    startDate?: string;
+    endDate?: string;
+    occurrencesCount: number;
+    isActive: boolean;
+    createdAt: string;
+  }>;
+  reasons: string[];
 }

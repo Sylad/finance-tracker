@@ -30,6 +30,11 @@ import { Loan } from '../../models/loan.model';
 
 const ResetRevolvingSchema = z.object({ usedAmount: z.number().nonnegative() });
 
+const MergeDuplicatesSchema = z.object({
+  canonicalId: z.string().min(1),
+  duplicateIds: z.array(z.string().min(1)).min(1),
+});
+
 @Controller('loans')
 @UseFilters(MulterExceptionFilter)
 export class LoansController {
@@ -42,6 +47,11 @@ export class LoansController {
 
   @Get()
   list() { return this.svc.getAll(); }
+
+  @Get('duplicates')
+  detectDuplicates() {
+    return this.svc.detectDuplicates();
+  }
 
   @Get(':id')
   one(@Param('id') id: string) { return this.svc.getOne(id); }
@@ -69,6 +79,14 @@ export class LoansController {
   @Post(':id/split-by-amount')
   split(@Param('id') id: string) {
     return this.svc.splitByAmount(id);
+  }
+
+  @Post('merge-duplicates')
+  mergeDuplicates(
+    @Body(new ZodValidationPipe(MergeDuplicatesSchema))
+    body: { canonicalId: string; duplicateIds: string[] },
+  ) {
+    return this.svc.mergeDuplicates(body.canonicalId, body.duplicateIds);
   }
 
   @Post(':id/import-statement')

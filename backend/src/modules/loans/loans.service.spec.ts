@@ -303,4 +303,156 @@ describe('LoansService', () => {
       await expect(svc.attachRumRef(loan.id, '   ')).rejects.toThrow();
     });
   });
+
+  describe('detectDuplicates', () => {
+    it('detects duplicates by creditor + type + monthlyPayment ±5%', async () => {
+      // canonical avec contractRef
+      await svc.create({
+        name: 'Cofidis A', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', contractRef: '11111111', maxAmount: 3000, usedAmount: 0,
+      });
+      // dup probable : pas de contractRef, RUM seulement, monthlyPayment idem
+      await svc.create({
+        name: 'Cofidis B', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', rumRefs: ['MD2024030500001234'], maxAmount: 3000, usedAmount: 0,
+      });
+      const groups = await svc.detectDuplicates();
+      expect(groups).toHaveLength(1);
+      expect(groups[0].creditor).toBe('Cofidis');
+      expect(groups[0].loans).toHaveLength(2);
+      expect(groups[0].reasons.length).toBeGreaterThan(0);
+    });
+
+    it('does NOT group when contractRefs are franchement différents', async () => {
+      await svc.create({
+        name: 'Sofinco A', type: 'classic', category: 'auto',
+        monthlyPayment: 240, matchPattern: 'SOFINCO', isActive: true,
+        creditor: 'Sofinco', contractRef: '11111111',
+      });
+      await svc.create({
+        name: 'Sofinco B', type: 'classic', category: 'auto',
+        monthlyPayment: 240, matchPattern: 'SOFINCO', isActive: true,
+        creditor: 'Sofinco', contractRef: '99999999', // distinct
+      });
+      const groups = await svc.detectDuplicates();
+      expect(groups).toHaveLength(0);
+    });
+
+    it('does NOT group when payments differ more than 5%', async () => {
+      await svc.create({
+        name: 'Cofidis A', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', contractRef: '11111111', maxAmount: 3000, usedAmount: 0,
+      });
+      await svc.create({
+        name: 'Cofidis B', type: 'revolving', category: 'consumer',
+        monthlyPayment: 100, matchPattern: 'COFIDIS', isActive: true, // +25%
+        creditor: 'Cofidis', maxAmount: 3000, usedAmount: 0,
+      });
+      const groups = await svc.detectDuplicates();
+      expect(groups).toHaveLength(0);
+    });
+
+    it('skips loans without creditor (cannot dedupe blindly)', async () => {
+      await svc.create({
+        name: 'Crédit ?', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'X', isActive: true,
+        maxAmount: 3000, usedAmount: 0,
+      });
+      await svc.create({
+        name: 'Crédit ?? bis', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'X', isActive: true,
+        maxAmount: 3000, usedAmount: 0,
+      });
+      const groups = await svc.detectDuplicates();
+      expect(groups).toHaveLength(0);
+    });
+  });
+
+  describe('mergeDuplicates', () => {
+    it('migrates occurrences + unions rumRefs + adopts contractRef from dup', async () => {
+      const canonical = await svc.create({
+        name: 'Cofidis canonical', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', maxAmount: 3000, usedAmount: 0,
+        // pas de contractRef → adoption attendue
+      });
+      const dup = await svc.create({
+        name: 'Cofidis dup', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', contractRef: 'CONTRACT-X',
+        rumRefs: ['RUM-A', 'RUM-B'], maxAmount: 3000, usedAmount: 0,
+      });
+      // Ajoute des occurrences au dup
+      await svc.addOccurrence(dup.id, {
+        statementId: '2026-03', date: '2026-03-15', amount: -80, transactionId: 'tx-1',
+      });
+      await svc.addOccurrence(dup.id, {
+        statementId: '2026-04', date: '2026-04-15', amount: -80, transactionId: 'tx-2',
+      });
+
+      const merged = await svc.mergeDuplicates(canonical.id, [dup.id]);
+
+      expect(merged.contractRef).toBe('CONTRACT-X'); // adopté
+      expect(merged.rumRefs).toEqual(expect.arrayContaining(['RUM-A', 'RUM-B']));
+      expect(merged.occurrencesDetected).toHaveLength(2);
+
+      // Le dup a été supprimé
+      const all = await svc.getAll();
+      expect(all.find((l) => l.id === dup.id)).toBeUndefined();
+      expect(all.find((l) => l.id === canonical.id)).toBeDefined();
+    });
+
+    it('dedupes occurrences by (statementId, transactionId) when both have same one', async () => {
+      const canonical = await svc.create({
+        name: 'Cofidis A', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', contractRef: '11111111', maxAmount: 3000, usedAmount: 0,
+      });
+      const dup = await svc.create({
+        name: 'Cofidis B', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', maxAmount: 3000, usedAmount: 0,
+      });
+      // Même clé d'occurrence sur les deux
+      await svc.addOccurrence(canonical.id, {
+        statementId: '2026-03', date: '2026-03-15', amount: -80, transactionId: 'tx-shared',
+      });
+      await svc.addOccurrence(dup.id, {
+        statementId: '2026-03', date: '2026-03-15', amount: -80, transactionId: 'tx-shared',
+      });
+      await svc.addOccurrence(dup.id, {
+        statementId: '2026-04', date: '2026-04-15', amount: -80, transactionId: 'tx-only-dup',
+      });
+
+      const merged = await svc.mergeDuplicates(canonical.id, [dup.id]);
+      // 1 partagée + 1 unique au dup = 2, pas 3
+      expect(merged.occurrencesDetected).toHaveLength(2);
+    });
+
+    it('rejects merge when creditor differs', async () => {
+      const a = await svc.create({
+        name: 'Cofidis', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', maxAmount: 3000, usedAmount: 0,
+      });
+      const b = await svc.create({
+        name: 'Sofinco', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'SOFINCO', isActive: true,
+        creditor: 'Sofinco', maxAmount: 3000, usedAmount: 0,
+      });
+      await expect(svc.mergeDuplicates(a.id, [b.id])).rejects.toThrow(/créancier différent/);
+    });
+
+    it('rejects when canonicalId in duplicateIds', async () => {
+      const a = await svc.create({
+        name: 'Cofidis', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', maxAmount: 3000, usedAmount: 0,
+      });
+      await expect(svc.mergeDuplicates(a.id, [a.id])).rejects.toThrow();
+    });
+  });
 });

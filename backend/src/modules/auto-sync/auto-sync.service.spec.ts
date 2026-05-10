@@ -169,4 +169,80 @@ describe('AutoSyncService', () => {
       amount: 50, source: 'detected', transactionId: 'tx1',
     }));
   });
+
+  describe('syncLoans — RUM matching on bank statements', () => {
+    it('matches loan transaction by rumRefs[] when contractRef absent from description', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([{
+        id: 'loan-cofidis', name: 'Cofidis', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        contractRef: '12345678', // pas dans la description bank
+        rumRefs: ['MD2024030500001234'], // appears in bank libellé
+        maxAmount: 3000, usedAmount: 1200,
+        occurrencesDetected: [], createdAt: '', updatedAt: '',
+      }]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          { id: 'tx1', date: '2026-03-10', description: 'PRELEVT SEPA COFIDIS REF MD2024030500001234',
+            normalizedDescription: 'prelevt sepa cofidis ref md2024030500001234',
+            amount: -80, currency: 'EUR', category: 'subscriptions', subcategory: '', isRecurring: true, confidence: 1 },
+        ],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-cofidis', expect.objectContaining({
+        amount: -80, transactionId: 'tx1',
+      }));
+    });
+
+    it('matches when contractRef OR rumRefs hit (OR-set)', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([{
+        id: 'loan-1', name: 'Cofidis', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        contractRef: 'ABC99999',
+        rumRefs: ['SEPA-RUM-001', 'SEPA-RUM-002'],
+        maxAmount: 3000, usedAmount: 1200,
+        occurrencesDetected: [], createdAt: '', updatedAt: '',
+      }]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          // Contains contractRef ABC99999 → should match
+          { id: 'tx-a', date: '2026-03-10', description: 'PRELEVT COFIDIS ABC99999',
+            normalizedDescription: 'prelevt cofidis abc99999',
+            amount: -80, currency: 'EUR', category: 'subscriptions', subcategory: '', isRecurring: true, confidence: 1 },
+          // Contains rumRefs[1] (SEPA-RUM-002) → should also match
+          { id: 'tx-b', date: '2026-04-10', description: 'PRELEVT COFIDIS SEPA-RUM-002',
+            normalizedDescription: 'prelevt cofidis sepa-rum-002',
+            amount: -80, currency: 'EUR', category: 'subscriptions', subcategory: '', isRecurring: true, confidence: 1 },
+        ],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(2);
+    });
+
+    it('does NOT match when neither contractRef nor any rumRef is in description', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([{
+        id: 'loan-1', name: 'Cofidis', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        contractRef: 'ABC99999',
+        rumRefs: ['SEPA-RUM-001'],
+        maxAmount: 3000, usedAmount: 1200,
+        occurrencesDetected: [], createdAt: '', updatedAt: '',
+      }]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          // Cofidis matches matchPattern but no identifier → no match (regex AND identifier required)
+          { id: 'tx1', date: '2026-03-10', description: 'PRELEVT COFIDIS ENTIRELY-DIFFERENT-REF',
+            normalizedDescription: 'prelevt cofidis entirely-different-ref',
+            amount: -80, currency: 'EUR', category: 'subscriptions', subcategory: '', isRecurring: true, confidence: 1 },
+        ],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).not.toHaveBeenCalled();
+    });
+  });
 });

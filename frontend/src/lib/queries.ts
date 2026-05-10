@@ -345,6 +345,45 @@ export function useSplitLoanByAmount() {
   });
 }
 
+export interface LoanDuplicateGroup {
+  creditor: string;
+  type: 'classic' | 'revolving';
+  reasons: string[];
+  loans: Array<{
+    id: string;
+    name: string;
+    monthlyPayment: number;
+    contractRef?: string;
+    rumRefs?: string[];
+    maxAmount?: number;
+    usedAmount?: number;
+    startDate?: string;
+    endDate?: string;
+    occurrencesCount: number;
+    isActive: boolean;
+    createdAt: string;
+  }>;
+}
+
+export function useLoanDuplicates() {
+  return useQuery({
+    queryKey: ['loans', 'duplicates'] as const,
+    queryFn: () => api.get<LoanDuplicateGroup[]>('/loans/duplicates'),
+  });
+}
+
+export function useMergeLoanDuplicates() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { canonicalId: string; duplicateIds: string[] }) =>
+      api.post<Loan>('/loans/merge-duplicates', body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkLoans.all() });
+      qc.invalidateQueries({ queryKey: ['loans', 'duplicates'] });
+    },
+  });
+}
+
 export function useResetRevolving() {
   const qc = useQueryClient();
   return useMutation({

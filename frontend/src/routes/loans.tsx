@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X, GitMerge } from 'lucide-react';
 import {
   useLoans,
   useCreateLoan,
@@ -19,6 +19,7 @@ import { ClosedCard } from '@/components/loans/closed-card';
 import { LoanForm } from '@/components/loans/loan-form';
 import { SuggestionsBanner } from '@/components/loans/suggestions-banner';
 import { LoansMonthlyChart } from '@/components/loans/loans-monthly-chart';
+import { DedupeModal } from '@/components/loans/dedupe-modal';
 import { toLoanInput } from '@/components/loans/utils';
 
 const DEFAULT: LoanInput = {
@@ -47,6 +48,7 @@ export function LoansPage() {
   const [suggestionToAccept, setSuggestionToAccept] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState<LoanInput | null>(null);
   const [importResult, setImportResult] = useState<CreditStatementImportResult | null>(null);
+  const [dedupeOpen, setDedupeOpen] = useState(false);
 
   const handleCreditUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -115,12 +117,21 @@ export function LoansPage() {
                 <><Upload className="h-4 w-4" /> Relevés crédit (PDF)</>
               )}
             </button>
+            <button
+              onClick={() => setDedupeOpen(true)}
+              className="btn-secondary"
+              title="Détecter et fusionner les doublons (créés avant le matching RUM)"
+            >
+              <GitMerge className="h-4 w-4" /> Doublons
+            </button>
             <button onClick={() => { setCreating(true); setEditing(null); }} className="btn-primary">
               <Plus className="h-4 w-4" /> Nouveau crédit
             </button>
           </div>
         }
       />
+
+      {dedupeOpen && <DedupeModal onClose={() => setDedupeOpen(false)} />}
 
       {importResult && (
         <div className="card p-5 mb-4 relative">
