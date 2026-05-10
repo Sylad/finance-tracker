@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
-import { Loan, LoanInput, LoanOccurrence, LoanOccurrenceSource, LoanStatementSnapshot, AmortizationLine } from '../../models/loan.model';
+import { Loan, LoanInput, LoanOccurrence, LoanOccurrenceSource, LoanStatementSnapshot, AmortizationLine, LoanKind, InstallmentLine } from '../../models/loan.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { PAY_IN_N_PATTERN } from './loans-patterns';
@@ -746,6 +746,9 @@ export class LoansService {
     const suspicious: Awaited<ReturnType<LoansService['getSuspiciousLoans']>> = [];
 
     for (const loan of all) {
+      // Skip les loans déjà modélisés comme installment (légitimes — c'est
+      // exactement le pattern qu'on veut détecter, pas un faux positif).
+      if (LoansService.getLoanKind(loan) === 'installment') continue;
       // Critère 1 : regex pay-in-N sur name ou matchPattern
       const nameMatch = PAY_IN_N_PATTERN.test(loan.name);
       const patternMatch = loan.matchPattern && PAY_IN_N_PATTERN.test(loan.matchPattern);
@@ -830,6 +833,14 @@ export class LoansService {
   }
 
   /**
+   * Retourne le kind canonique d'un Loan : explicit (`loan.kind`) sinon
+   * déduit depuis `type` (rétro-compat pré-APEX 05). Pas de mutation.
+   */
+  static getLoanKind(loan: Pick<Loan, 'kind' | 'type'>): LoanKind {
+    return loan.kind ?? loan.type; // type='classic'|'revolving' → mêmes valeurs valides
+  }
+
+  /**
    * Évalue la santé des données d'un Loan :
    *   - 'complete' : tableau d'amortissement présent OU statement récent (≤60j),
    *                  ET ≥3 occurrences sur les 6 derniers mois
@@ -842,7 +853,24 @@ export class LoansService {
   static getLoanHealth(loan: Loan, now?: string): 'complete' | 'partial' | 'gap' {
     const today = now ?? new Date().toISOString().slice(0, 10);
     const todayMs = new Date(today + 'T00:00:00Z').getTime();
+    const kind = LoansService.getLoanKind(loan);
 
+    // Cas spécial installment : santé = toutes les past dueDates paid ?
+    if (kind === 'installment') {
+      const schedule = loan.installmentSchedule ?? [];
+      if (schedule.length === 0) return 'gap';
+      const past = schedule.filter((l) => l.dueDate <= today);
+      if (past.length === 0) {
+        // Aucune échéance encore due → schedule présent mais en attente
+        return 'complete';
+      }
+      const paid = past.filter((l) => l.paid).length;
+      if (paid === past.length) return 'complete';
+      if (paid === 0) return 'gap';
+      return 'partial';
+    }
+
+    // Classic / revolving : heuristique standard
     const hasAmortization = (loan.amortizationSchedule?.length ?? 0) > 0;
     const lastSnapshotDate = loan.lastStatementSnapshot?.date ?? null;
     const recentSnapshot = lastSnapshotDate
@@ -862,6 +890,32 @@ export class LoansService {
     if (dataPresent && enoughOccurrences) return 'complete';
     if (!dataPresent && occurrencesRecent <= 1) return 'gap';
     return 'partial';
+  }
+
+  /**
+   * Marque la ligne `installmentSchedule[index]` d'un loan kind='installment'
+   * comme `paid: true` avec le `paidOccurrenceId` qui a satisfait l'échéance.
+   * Idempotent — re-marquer une ligne déjà paid est no-op.
+   */
+  async markInstallmentPaid(loanId: string, lineIndex: number, paidOccurrenceId?: string): Promise<Loan> {
+    const all = await this.getAll();
+    const idx = all.findIndex((l) => l.id === loanId);
+    if (idx === -1) throw new NotFoundException(`Crédit ${loanId} introuvable`);
+    const loan = all[idx];
+    if (!loan.installmentSchedule || lineIndex < 0 || lineIndex >= loan.installmentSchedule.length) {
+      throw new BadRequestException(`installmentSchedule[${lineIndex}] introuvable sur loan ${loanId}`);
+    }
+    if (loan.installmentSchedule[lineIndex].paid) {
+      return loan; // idempotent
+    }
+    loan.installmentSchedule[lineIndex] = {
+      ...loan.installmentSchedule[lineIndex],
+      paid: true,
+      paidOccurrenceId,
+    };
+    loan.updatedAt = new Date().toISOString();
+    await this.persist(all);
+    return loan;
   }
 
   /**

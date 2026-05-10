@@ -536,6 +536,90 @@ describe('LoansService', () => {
     });
   });
 
+  describe('getLoanKind + installment kind', () => {
+    it('getLoanKind retourne kind explicite si présent', () => {
+      const loan = { kind: 'installment', type: 'classic' } as Loan;
+      expect(LoansService.getLoanKind(loan)).toBe('installment');
+    });
+
+    it('getLoanKind fallback sur type pour les loans pré-APEX 05', () => {
+      const classicLegacy = { type: 'classic' } as Loan;
+      const revolvingLegacy = { type: 'revolving' } as Loan;
+      expect(LoansService.getLoanKind(classicLegacy)).toBe('classic');
+      expect(LoansService.getLoanKind(revolvingLegacy)).toBe('revolving');
+    });
+
+    it('markInstallmentPaid marque la ligne + paidOccurrenceId', async () => {
+      const loan = await svc.create({
+        name: '4× COFIDIS · AMAZON', type: 'classic', kind: 'installment',
+        category: 'consumer', monthlyPayment: 65.81, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'COFIDIS',
+        installmentSchedule: [
+          { dueDate: '2025-11-02', amount: 65.81, paid: false },
+          { dueDate: '2025-12-03', amount: 65.81, paid: false },
+        ],
+      });
+      const updated = await svc.markInstallmentPaid(loan.id, 0, 'occ-abc');
+      expect(updated.installmentSchedule![0].paid).toBe(true);
+      expect(updated.installmentSchedule![0].paidOccurrenceId).toBe('occ-abc');
+      expect(updated.installmentSchedule![1].paid).toBe(false);
+    });
+
+    it('markInstallmentPaid est idempotent', async () => {
+      const loan = await svc.create({
+        name: '4× COFIDIS', type: 'classic', kind: 'installment',
+        category: 'consumer', monthlyPayment: 65.81, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'COFIDIS',
+        installmentSchedule: [{ dueDate: '2025-11-02', amount: 65.81, paid: true, paidOccurrenceId: 'X' }],
+      });
+      const same = await svc.markInstallmentPaid(loan.id, 0, 'Y');
+      // No change because already paid
+      expect(same.installmentSchedule![0].paidOccurrenceId).toBe('X');
+    });
+
+    it('getLoanHealth installment : complete si toutes past dueDates paid', () => {
+      const loan = {
+        kind: 'installment',
+        type: 'classic',
+        installmentSchedule: [
+          { dueDate: '2025-11-02', amount: 65, paid: true },
+          { dueDate: '2025-12-03', amount: 65, paid: true },
+          { dueDate: '2026-06-03', amount: 65, paid: false }, // future
+        ],
+        occurrencesDetected: [],
+      } as any;
+      expect(LoansService.getLoanHealth(loan, '2026-01-15')).toBe('complete');
+    });
+
+    it('getLoanHealth installment : partial si quelques past dueDates paid', () => {
+      const loan = {
+        kind: 'installment',
+        type: 'classic',
+        installmentSchedule: [
+          { dueDate: '2025-11-02', amount: 65, paid: true },
+          { dueDate: '2025-12-03', amount: 65, paid: false },
+        ],
+        occurrencesDetected: [],
+      } as any;
+      expect(LoansService.getLoanHealth(loan, '2026-01-15')).toBe('partial');
+    });
+
+    it('getSuspiciousLoans skip les kind=installment (légitimes)', async () => {
+      await svc.create({
+        name: 'COFIDIS 4XCB AMAZON', type: 'classic', kind: 'installment',
+        category: 'consumer', monthlyPayment: 65.81, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'COFIDIS',
+        installmentSchedule: [
+          { dueDate: '2025-11-02', amount: 65.81, paid: true },
+          { dueDate: '2025-12-03', amount: 65.81, paid: true },
+        ],
+      });
+      const suspicious = await svc.getSuspiciousLoans('2026-05-10');
+      // Devrait être 0 — l'installment est légitime même avec name match pay-in-N
+      expect(suspicious).toHaveLength(0);
+    });
+  });
+
   describe('getSuspiciousLoans + cleanupSuspiciousLoans', () => {
     it('détecte un loan dont le name match pay-in-N (4X CB AMAZON)', async () => {
       await svc.create({

@@ -7,6 +7,7 @@ import { EventBusService } from '../events/event-bus.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
 import { SavingsAccount } from '../../models/savings-account.model';
+import type { Loan } from '../../models/loan.model';
 import type { IncomingSuggestion } from '../../models/loan-suggestion.model';
 import { PAY_IN_N_PATTERN as PAY_IN_N_PATTERN_SHARED } from '../loans/loans-patterns';
 
@@ -188,53 +189,113 @@ export class AutoSyncService {
     const loans = await this.loans.getAll();
     for (const loan of loans) {
       if (!loan.isActive) continue;
-
-      // Build a matcher. We combine signals:
-      // - At least ONE of (contractRef, rumRefs[]) must appear in description
-      //   (substring, case-insensitive). RUMs are critical for Cofidis/Sofinco
-      //   relevés bank where contractRef is absent.
-      // - AND if matchPattern is set, the regex must also match
-      // - if neither identifier nor regex set, the loan can't be auto-synced
-      let regex: RegExp | null = null;
-      if (loan.matchPattern) {
-        try { regex = new RegExp(loan.matchPattern, 'i'); }
-        catch { this.logger.warn(`Invalid regex on loan ${loan.id}: ${loan.matchPattern}`); continue; }
+      const kind = LoansService.getLoanKind(loan);
+      if (kind === 'installment') {
+        await this.syncInstallmentLoan(loan, statement);
+      } else {
+        await this.syncStandardLoan(loan, statement);
       }
-      // Aggregate all known identifiers (contractRef + rumRefs) in lowercase
-      // form. They are an OR-set : any one of them present in the transaction
-      // description is enough.
-      const identifiers: string[] = [];
-      if (loan.contractRef) identifiers.push(loan.contractRef);
-      if (loan.rumRefs) identifiers.push(...loan.rumRefs);
-      const normalizedIds = identifiers
-        .map((s) => s.toLowerCase().trim())
-        .filter((s) => s.length >= 4); // évite faux matchs sur fragments courts
-      if (normalizedIds.length === 0 && !regex) continue;
-      const matcher = (desc: string): boolean => {
-        const lower = desc.toLowerCase();
-        if (normalizedIds.length > 0 && !normalizedIds.some((id) => lower.includes(id))) {
-          return false;
-        }
-        if (regex && !regex.test(desc)) return false;
+    }
+  }
+
+  /**
+   * Matcher spécialisé pour les loans `kind='installment'` (paiements en N
+   * fois). Pour chaque ligne `installmentSchedule[i]` non payée et avec
+   * dueDate dans la fenêtre du statement, cherche une transaction qui matche
+   * sur 3 critères stricts :
+   *   - date ±3 jours autour de dueDate
+   *   - amount ±0.50€ autour de la ligne
+   *   - description contient le creditor (case-insensitive)
+   *
+   * Si match → addOccurrence + marque la ligne paid=true. Persistance via
+   * loans.service (pas direct fs).
+   */
+  private async syncInstallmentLoan(loan: Loan, statement: MonthlyStatement): Promise<void> {
+    const schedule = loan.installmentSchedule;
+    if (!schedule || schedule.length === 0) return;
+    const creditorLower = (loan.creditor ?? '').toLowerCase().trim();
+    if (!creditorLower) return;
+
+    const txs = statement.transactions;
+    let mutated = false;
+    for (let i = 0; i < schedule.length; i++) {
+      const line = schedule[i];
+      if (line.paid) continue;
+      // Cherche tx matching dans le statement courant
+      const dueDateMs = new Date(line.dueDate + 'T00:00:00Z').getTime();
+      const matchedTx = txs.find((t) => {
+        if (!t.description.toLowerCase().includes(creditorLower)) return false;
+        const txMs = new Date(t.date + 'T00:00:00Z').getTime();
+        const dayDiff = Math.abs(txMs - dueDateMs) / (24 * 3600 * 1000);
+        if (dayDiff > 3) return false;
+        // Bank tx amount est négatif (débit) ; line.amount est positif
+        const expected = -Math.abs(line.amount);
+        if (Math.abs(t.amount - expected) > 0.5) return false;
         return true;
-      };
+      });
+      if (!matchedTx) continue;
 
-      // Anti-pattern: exclude card / immediate-debit transactions that match
-      // the regex but are NOT credit repayments. Common LBP/Carrefour Banque
-      // labels: 'PRLV COMPTANT IMMEDIAT', 'PRELEVT COMPTANT', 'CB <merchant>',
-      // 'PAIEMENT CB'.
-      const NOT_A_CREDIT = /\b(COMPTANT|PAIEMENT CB|ACHAT CB|CB CARREFOUR|RETRAIT)\b/i;
-
-      const matches = statement.transactions.filter((t) => matcher(t.description) && !NOT_A_CREDIT.test(t.description));
-      for (const t of matches) {
-        await this.loans.addOccurrence(loan.id, {
-          statementId: statement.id,
-          date: t.date,
-          amount: t.amount,
-          transactionId: t.id,
-          description: t.description,
-        });
+      // Add occurrence (la dedup par addOccurrence évite les doublons)
+      await this.loans.addOccurrence(loan.id, {
+        statementId: statement.id,
+        date: matchedTx.date,
+        amount: matchedTx.amount,
+        transactionId: matchedTx.id,
+        description: matchedTx.description,
+        source: 'bank_statement',
+      });
+      // Mark line as paid (relit le loan car addOccurrence persiste)
+      const refreshed = await this.loans.getOne(loan.id);
+      const refLine = (refreshed.installmentSchedule ?? [])[i];
+      if (refLine && !refLine.paid) {
+        // Find the just-added occurrence id
+        const newOcc = refreshed.occurrencesDetected.find(
+          (o) => o.transactionId === matchedTx.id && o.date === matchedTx.date,
+        );
+        await this.loans.markInstallmentPaid(loan.id, i, newOcc?.id);
+        mutated = true;
       }
+    }
+    if (mutated) {
+      this.logger.log(`syncInstallmentLoan ${loan.id} : marked ${schedule.filter((l) => l.paid).length}/${schedule.length} as paid`);
+    }
+  }
+
+  /**
+   * Matcher historique pour kind='classic'|'revolving' — inchangé depuis APEX 04.
+   */
+  private async syncStandardLoan(loan: Loan, statement: MonthlyStatement): Promise<void> {
+    let regex: RegExp | null = null;
+    if (loan.matchPattern) {
+      try { regex = new RegExp(loan.matchPattern, 'i'); }
+      catch { this.logger.warn(`Invalid regex on loan ${loan.id}: ${loan.matchPattern}`); return; }
+    }
+    const identifiers: string[] = [];
+    if (loan.contractRef) identifiers.push(loan.contractRef);
+    if (loan.rumRefs) identifiers.push(...loan.rumRefs);
+    const normalizedIds = identifiers
+      .map((s) => s.toLowerCase().trim())
+      .filter((s) => s.length >= 4);
+    if (normalizedIds.length === 0 && !regex) return;
+    const matcher = (desc: string): boolean => {
+      const lower = desc.toLowerCase();
+      if (normalizedIds.length > 0 && !normalizedIds.some((id) => lower.includes(id))) {
+        return false;
+      }
+      if (regex && !regex.test(desc)) return false;
+      return true;
+    };
+
+    const NOT_A_CREDIT = /\b(COMPTANT|PAIEMENT CB|ACHAT CB|CB CARREFOUR|RETRAIT)\b/i;
+    const matches = statement.transactions.filter((t) => matcher(t.description) && !NOT_A_CREDIT.test(t.description));
+    for (const t of matches) {
+      await this.loans.addOccurrence(loan.id, {
+        statementId: statement.id,
+        date: t.date,
+        amount: t.amount,
+        transactionId: t.id,
+        description: t.description,
+      });
     }
   }
 
