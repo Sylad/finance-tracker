@@ -18,6 +18,7 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { atomicWriteJsonSync } from '../../common/atomic-write';
 import { EventBusService } from '../events/event-bus.service';
 
 export interface UsageResponse {
@@ -111,8 +112,7 @@ export class ClaudeUsageService implements OnModuleInit, OnModuleDestroy {
   }
 
   private saveShared(data: SharedData): void {
-    fs.mkdirSync(path.dirname(SHARED_FILE), { recursive: true });
-    fs.writeFileSync(SHARED_FILE, JSON.stringify(data, null, 2));
+    atomicWriteJsonSync(SHARED_FILE, data);
   }
 
   recordUsage(inputTokens: number, outputTokens: number): void {
@@ -123,8 +123,7 @@ export class ClaudeUsageService implements OnModuleInit, OnModuleDestroy {
     this.data[month].inputTokens += inputTokens;
     this.data[month].outputTokens += outputTokens;
     this.data[month].calls += 1;
-    fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
-    fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2));
+    atomicWriteJsonSync(this.filePath, this.data);
 
     const shared = this.loadShared();
     shared.totalConsumedUsd += inputTokens * INPUT_USD_PER_TOKEN + outputTokens * OUTPUT_USD_PER_TOKEN;

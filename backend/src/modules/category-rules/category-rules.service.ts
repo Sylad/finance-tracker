@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
+import { atomicWriteJson } from '../../common/atomic-write';
 import { CategoryRule, CategoryRuleInput, UserCategory } from '../../models/category-rule.model';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
@@ -135,7 +136,7 @@ export class CategoryRulesService {
     if (exists) return exists;
     const cat: UserCategory = { id: randomUUID(), name: trimmed, createdAt: new Date().toISOString() };
     all.push(cat);
-    await fs.promises.writeFile(this.userCatsPath, JSON.stringify(all, null, 2), 'utf8');
+    await atomicWriteJson(this.userCatsPath, all);
     return cat;
   }
 
@@ -143,7 +144,7 @@ export class CategoryRulesService {
     const all = await this.getUserCategories();
     const next = all.filter((c) => c.id !== id);
     if (next.length === all.length) throw new NotFoundException(`Catégorie ${id} introuvable`);
-    await fs.promises.writeFile(this.userCatsPath, JSON.stringify(next, null, 2), 'utf8');
+    await atomicWriteJson(this.userCatsPath, next);
   }
 
   /**
@@ -164,7 +165,7 @@ export class CategoryRulesService {
   }
 
   private async persistRules(all: CategoryRule[]): Promise<void> {
-    await fs.promises.writeFile(this.rulesPath, JSON.stringify(all, null, 2), 'utf8');
+    await atomicWriteJson(this.rulesPath, all);
     this.bus.emit('category-rules-changed');
   }
 }

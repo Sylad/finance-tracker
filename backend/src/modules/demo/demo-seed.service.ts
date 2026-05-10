@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { atomicWriteJsonSync } from '../../common/atomic-write';
 import { RequestDataDirService } from './request-data-dir.service';
 
 @Injectable()
@@ -30,13 +31,13 @@ export class DemoSeedService {
 
     const f = this.loadFixtures();
     for (const stmt of f.statements as { id: string }[]) {
-      fs.writeFileSync(path.join(demoDir, 'statements', `${stmt.id}.json`), JSON.stringify(stmt, null, 2));
+      atomicWriteJsonSync(path.join(demoDir, 'statements', `${stmt.id}.json`), stmt);
     }
-    fs.writeFileSync(path.join(demoDir, 'savings-accounts.json'), JSON.stringify(f['savings-accounts'], null, 2));
-    fs.writeFileSync(path.join(demoDir, 'loans.json'), JSON.stringify(f.loans, null, 2));
-    fs.writeFileSync(path.join(demoDir, 'loan-suggestions.json'), JSON.stringify(f['loan-suggestions'], null, 2));
-    fs.writeFileSync(path.join(demoDir, 'declarations.json'), JSON.stringify(f.declarations, null, 2));
-    fs.writeFileSync(path.join(demoDir, 'budgets.json'), JSON.stringify(f.budgets, null, 2));
+    atomicWriteJsonSync(path.join(demoDir, 'savings-accounts.json'), f['savings-accounts']);
+    atomicWriteJsonSync(path.join(demoDir, 'loans.json'), f.loans);
+    atomicWriteJsonSync(path.join(demoDir, 'loan-suggestions.json'), f['loan-suggestions']);
+    atomicWriteJsonSync(path.join(demoDir, 'declarations.json'), f.declarations);
+    atomicWriteJsonSync(path.join(demoDir, 'budgets.json'), f.budgets);
     fs.writeFileSync(sentinel, new Date().toISOString());
     this.logger.log(`Demo seeded at ${demoDir}`);
     return { seeded: true };

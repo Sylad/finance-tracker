@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { atomicWriteJson } from '../../common/atomic-write';
 import { MonthlyStatement, StatementSummary } from '../../models/monthly-statement.model';
 import { ScoreHistoryEntry } from '../../models/financial-health-score.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
@@ -49,7 +50,7 @@ export class StorageService implements OnModuleInit {
       throw new Error(`Invalid statement id: ${statement.id}`);
     }
     const filepath = path.join(this.statementsDir, filename);
-    await fs.promises.writeFile(filepath, JSON.stringify(statement, null, 2), 'utf8');
+    await atomicWriteJson(filepath, statement);
     await this.archivePastYears();
   }
 
@@ -342,7 +343,7 @@ export class StorageService implements OnModuleInit {
     };
 
     const filepath = path.join(this.yearlyDir, `${year}.json`);
-    await fs.promises.writeFile(filepath, JSON.stringify(summary, null, 2), 'utf8');
+    await atomicWriteJson(filepath, summary);
     this.logger.log(`Generated yearly summary for ${year} (${n} months)`);
   }
 }

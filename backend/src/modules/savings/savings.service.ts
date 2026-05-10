@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
+import { atomicWriteJson } from '../../common/atomic-write';
 import {
   BalanceHistoryEntry,
   SavingsAccount,
@@ -246,7 +247,7 @@ export class SavingsService {
   }
 
   private async persist(all: SavingsAccount[]): Promise<void> {
-    await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
+    await atomicWriteJson(this.filepath, all);
     this.bus.emit('savings-changed');
   }
 }

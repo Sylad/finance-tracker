@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
+import { atomicWriteJson } from '../../common/atomic-write';
 import { FinancialGoal, GoalInput, GoalWithProgress, GoalType } from '../../models/goal.model';
 import { SavingsService } from '../savings/savings.service';
 import { LoansService } from '../loans/loans.service';
@@ -152,7 +153,7 @@ export class GoalsService {
   }
 
   private async persist(all: FinancialGoal[]): Promise<void> {
-    await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
+    await atomicWriteJson(this.filepath, all);
     this.bus.emit('goals-changed');
   }
 }

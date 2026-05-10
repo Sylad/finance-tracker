@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
+import { atomicWriteJson } from '../../common/atomic-write';
 import { ImportLog } from '../../models/import-log.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
@@ -39,7 +40,7 @@ export class ImportLogsService {
     const log: ImportLog = { id: randomUUID(), ...entry };
     all.unshift(log);  // newest first
     if (all.length > MAX_ENTRIES) all.length = MAX_ENTRIES;
-    await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
+    await atomicWriteJson(this.filepath, all);
     this.bus.emit('import-logs-changed');
     return log;
   }
@@ -49,7 +50,7 @@ export class ImportLogsService {
     const idx = all.findIndex((l) => l.id === id);
     if (idx === -1) return null;
     all[idx] = { ...all[idx], ...patch };
-    await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
+    await atomicWriteJson(this.filepath, all);
     this.bus.emit('import-logs-changed');
     return all[idx];
   }

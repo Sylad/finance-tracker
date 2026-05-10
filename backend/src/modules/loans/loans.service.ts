@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
+import { atomicWriteJson } from '../../common/atomic-write';
 import { Loan, LoanInput, LoanOccurrence, LoanOccurrenceSource, LoanStatementSnapshot, AmortizationLine, LoanKind, InstallmentLine } from '../../models/loan.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
@@ -1346,7 +1347,7 @@ export class LoansService {
   }
 
   private async persist(all: Loan[]): Promise<void> {
-    await fs.promises.writeFile(this.filepath, JSON.stringify(all, null, 2), 'utf8');
+    await atomicWriteJson(this.filepath, all);
     this.bus.emit('loans-changed');
   }
 }
