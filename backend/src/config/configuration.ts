@@ -6,6 +6,10 @@ export default () => ({
   uploadDir: process.env.UPLOAD_DIR ?? './data/uploads',
   maxFileSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB ?? '20', 10),
   appPin: process.env.APP_PIN ?? '',
+  // Opt-in explicite pour démarrer sans APP_PIN en production. Sans ça,
+  // l'app refuse de booter pour éviter une fail-open silencieuse.
+  allowNoPin: process.env.ALLOW_NO_PIN ?? 'false',
+  nodeEnv: process.env.NODE_ENV ?? 'development',
   demoModeAvailable: process.env.DEMO_MODE_AVAILABLE !== 'false',
   // Comma-separated list of host patterns that ALWAYS run in demo mode.
   // Any request whose Host header contains one of these substrings is locked
