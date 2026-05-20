@@ -1,0 +1,50 @@
+# .claudeignore — finance-tracker (React + NestJS)
+
+# --- Node ---
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+coverage/
+**/coverage/
+.nyc_output/
+
+# --- React / Vite ---
+.vite/
+**/.vite/
+frontend/dist/
+backend/dist/
+
+# --- Git ---
+.git/
+.svn/
+
+# --- Logs / temp ---
+*.log
+*.tmp
+*.swp
+*.bak
+logs/
+
+# --- IDE ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- Data utilisateur sensible (relevés PDF, JSON métier) ---
+data/uploads/
+data/archive/
+backend/data/uploads/
+backend/data/archive/
+**/*.pdf
+
+# --- Claude state ---
+~/.claude/
+.claude/cache/
+
+# --- Lockfiles bruyants ---
+# (on les garde pour reproduction build, mais Claude n'a pas à les lire)
+package-lock.json

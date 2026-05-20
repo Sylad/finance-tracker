@@ -51,7 +51,7 @@ Curieux de savoir qui (toi / Claude / le backend) décide de quoi dans le pipeli
 | Couche | Tech |
 |---|---|
 | Frontend | React 18 + TypeScript 5 + Vite 5 + Tailwind 3 + TanStack Router/Query + Recharts |
-| Backend | NestJS 10 + TypeScript 5 + Anthropic SDK + Multer |
+| Backend | NestJS 11 + TypeScript 5 + Anthropic SDK + Multer |
 | Storage | JSON local (pas de DB) |
 | Build | Docker multi-stage (node:20-alpine → nginx:alpine) |
 | Déploiement | docker-compose (testé Synology NAS DSM) |
