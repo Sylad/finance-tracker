@@ -4,6 +4,7 @@ import { Trash2, RefreshCw, Loader2, Plus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
+import { CategoryRuleSuggestionsBanner } from '@/components/category-rule-suggestions-banner';
 import { CATEGORY_LABELS, type TransactionCategory } from '@/types/api';
 
 interface Rule {
@@ -89,6 +90,8 @@ export function CategoryRulesPage() {
           Replay terminé : {replayAll.data.updated} relevé(s) modifié(s) sur {replayAll.data.processed} analysé(s).
         </div>
       )}
+
+      <CategoryRuleSuggestionsBanner />
 
       <section className="card p-5 mb-6">
         <div className="stat-label mb-3">Catégories disponibles</div>

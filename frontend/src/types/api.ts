@@ -409,6 +409,22 @@ export interface LoanSuggestion {
   acceptedAsSubscriptionId?: string;
 }
 
+export type CategoryRuleSuggestionStatus = 'pending' | 'accepted' | 'rejected' | 'snoozed';
+
+export interface CategoryRuleSuggestion {
+  id: string;
+  pattern: string;
+  category: string;
+  subcategory?: string;
+  exampleDescriptions: string[];
+  occurrenceCount: number;
+  rationale?: string;
+  status: CategoryRuleSuggestionStatus;
+  createdAt: string;
+  resolvedAt?: string;
+  acceptedAsRuleId?: string;
+}
+
 export type SubscriptionFrequency = 'monthly' | 'quarterly' | 'yearly';
 export type SubscriptionCategory =
   | 'streaming'

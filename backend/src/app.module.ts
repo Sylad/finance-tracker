@@ -21,6 +21,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ImportLogsModule } from './modules/import-logs/import-logs.module';
 import { CategoryRulesModule } from './modules/category-rules/category-rules.module';
 import { AutoCategorizeModule } from './modules/auto-categorize/auto-categorize.module';
+import { CategoryRuleSuggestionsModule } from './modules/category-rule-suggestions/category-rule-suggestions.module';
 import { AnomaliesModule } from './modules/anomalies/anomalies.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
@@ -47,6 +48,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
     ImportLogsModule,
     CategoryRulesModule,
     AutoCategorizeModule,
+    CategoryRuleSuggestionsModule,
     AnomaliesModule,
     GoalsModule,
     SubscriptionsModule,

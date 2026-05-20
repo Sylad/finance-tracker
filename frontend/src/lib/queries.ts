@@ -73,6 +73,7 @@ import type {
   Loan,
   LoanInput,
   LoanSuggestion,
+  CategoryRuleSuggestion,
   Subscription,
   SubscriptionInput,
   NetWorth,
@@ -808,6 +809,73 @@ export function useAutoCategorizeApply() {
       qc.invalidateQueries({ queryKey: qk.statements() });
       qc.invalidateQueries({ queryKey: ['category-rules'] });
     },
+  });
+}
+
+export const qkCategorySuggestions = { all: () => ['category-rule-suggestions'] as const };
+
+export function useCategoryRuleSuggestions() {
+  return useQuery({
+    queryKey: qkCategorySuggestions.all(),
+    queryFn: async () => {
+      const res = await api.get<{ suggestions: CategoryRuleSuggestion[] }>('/category-rule-suggestions');
+      return res.suggestions;
+    },
+  });
+}
+
+export function useGenerateCategorySuggestions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api.post<{ created: number; total: number; otherSeen: number }>(
+        '/category-rule-suggestions/generate',
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkCategorySuggestions.all() }),
+  });
+}
+
+export function useAcceptCategorySuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<{ suggestion: CategoryRuleSuggestion; ruleId: string }>(
+        `/category-rule-suggestions/${id}/accept`,
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkCategorySuggestions.all() });
+      qc.invalidateQueries({ queryKey: ['category-rules'] });
+    },
+  });
+}
+
+export function useRejectCategorySuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<CategoryRuleSuggestion>(`/category-rule-suggestions/${id}/reject`),
+    onMutate: (id) =>
+      optimisticListPatch<CategoryRuleSuggestion>(qc, qkCategorySuggestions.all(), id, {
+        status: 'rejected',
+      }),
+    onError: (_err, _id, context) =>
+      restoreSnapshot(qc, qkCategorySuggestions.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkCategorySuggestions.all() }),
+  });
+}
+
+export function useSnoozeCategorySuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<CategoryRuleSuggestion>(`/category-rule-suggestions/${id}/snooze`),
+    onMutate: (id) =>
+      optimisticListPatch<CategoryRuleSuggestion>(qc, qkCategorySuggestions.all(), id, {
+        status: 'snoozed',
+      }),
+    onError: (_err, _id, context) =>
+      restoreSnapshot(qc, qkCategorySuggestions.all(), context?.previous),
+    onSettled: () => qc.invalidateQueries({ queryKey: qkCategorySuggestions.all() }),
   });
 }
 
