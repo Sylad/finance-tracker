@@ -46,3 +46,4 @@ start-bg.ps1
 Thumbs.db
 desktop.ini
 @eaDir/
+.token-savior-cache.json
