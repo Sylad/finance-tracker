@@ -66,8 +66,8 @@ export function AboutPage() {
     <>
       <PageHeader
         eyebrow="À propos"
-        title="Vibe coded with Claude Code"
-        subtitle="Un projet perso pour suivre mes finances, construit en discutant avec un agent IA."
+        title="Vibe coded with Claude Code & Codex"
+        subtitle="Un projet perso pour suivre mes finances, construit et relu avec des assistants de code."
       />
 
       <section className="card p-6 mb-6 relative overflow-hidden">
@@ -104,6 +104,12 @@ export function AboutPage() {
               {' '}a aidé à générer le logo et les premières maquettes UX qui ont guidé la construction.
               Une vraie collab à trois — humain + ChatGPT (visuels) + Claude Code (code) — l'occasion
               de sortir de ma zone Java pour explorer le front moderne.
+            </p>
+            <p className="text-fg leading-relaxed mt-3">
+              Depuis, <span className="text-accent-bright font-medium">Codex</span> intervient aussi
+              sur la relecture technique, les corrections ciblées, la vérification des builds et les
+              itérations d'interface. Un autre regard dans la boucle, utile quand l'application devient
+              assez dense pour cacher ses propres angles morts.
             </p>
             <div className="mt-4 flex items-center gap-1.5 text-xs text-fg-muted">
               <Sparkles className="h-3 w-3 text-accent" />
@@ -165,7 +171,8 @@ export function AboutPage() {
       <section className="card p-5 mb-6">
         <h3 className="font-display text-lg font-semibold text-fg-bright mb-1">Mes autres sites</h3>
         <p className="text-sm text-fg-muted mb-5">
-          Quatre autres apps perso vibe-codées avec Claude Code. Toutes en open-source.
+          Quatre autres apps perso vibe-codées avec Claude Code, puis enrichies au fil des sessions
+          avec Codex. Toutes en open-source.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
@@ -189,8 +196,9 @@ export function AboutPage() {
 
       <section className="card p-5 text-center">
         <div className="text-fg-muted text-sm leading-relaxed max-w-2xl mx-auto">
-          Si tu veux faire pareil : prends un sujet qui t'énerve, ouvre Claude Code, décris le problème
-          en langage naturel, et itère. Tu seras surpris de ce qu'on peut construire en quelques sessions.
+          Si tu veux faire pareil : prends un sujet qui t'énerve, ouvre un assistant de code, décris
+          le problème en langage naturel, et itère. Tu seras surpris de ce qu'on peut construire en
+          quelques sessions.
         </div>
         <div className="text-[10px] uppercase tracking-[0.2em] text-fg-dim mt-4">
           Made with curiosity · Built on a Synology NAS · v2.0

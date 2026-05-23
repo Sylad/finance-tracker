@@ -16,7 +16,7 @@ services:
       # Hosts (comma-separated substrings) qui sont automatiquement verrouillés
       # en mode démo + bypass PIN. Idéal pour tunnels Cloudflare publics.
       # Ajoute ton domaine perso si besoin (ex: demo.tonsite.fr).
-      DEMO_FORCED_HOSTS: "trycloudflare.com,cfargotunnel.com"
+      DEMO_FORCED_HOSTS: "trycloudflare.com,cfargotunnel.com,finance.sladoire.dev"
     volumes:
       - /volume2/docker/developpeur/data/finance:/app/data
       - /volume2/docker/developpeur/data/shared:/app/shared-data

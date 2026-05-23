@@ -16,7 +16,12 @@ export function Root() {
   useEffect(() => {
     fetch('/api/demo/status')
       .then((r) => (r.ok ? r.json() : null))
-      .then((j: { forced?: boolean } | null) => setForced(j?.forced === true))
+      .then(async (j: { forced?: boolean; seeded?: boolean } | null) => {
+        if (j?.forced === true && j.seeded !== true) {
+          await fetch('/api/demo/seed', { method: 'POST' }).catch(() => null);
+        }
+        setForced(j?.forced === true);
+      })
       .catch(() => setForced(false));
   }, []);
 
