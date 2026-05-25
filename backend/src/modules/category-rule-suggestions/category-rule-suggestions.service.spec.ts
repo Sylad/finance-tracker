@@ -121,4 +121,78 @@ describe('CategoryRuleSuggestionsService', () => {
     expect(restored.status).toBe('pending');
     expect(restored.resolvedAt).toBeUndefined();
   });
+
+  it('generateFromOthers can use Ollama without calling Claude', async () => {
+    const messagesCreate = jest.fn();
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ft-cat-sugg-ollama-'));
+    const fetchMock = jest.spyOn(global, 'fetch' as any).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        response: JSON.stringify({
+          suggestions: [{
+            pattern: 'NETFLIX',
+            category: 'entertainment',
+            subcategory: 'Streaming',
+            exampleDescriptions: ['NETFLIX 10/05', 'NETFLIX 10/04'],
+            occurrenceCount: 2,
+            rationale: 'Service de streaming video.',
+          }],
+        }),
+      }),
+    } as any);
+
+    const mod = await Test.createTestingModule({
+      providers: [
+        CategoryRuleSuggestionsService,
+        CategoryRulesService,
+        {
+          provide: ConfigService,
+          useValue: {
+            get: (key: string) => ({
+              anthropicApiKey: 'sk-test-fake',
+              categoryRuleSuggestionsProvider: 'ollama',
+              ollamaBaseUrl: 'http://ollama.local:11434',
+              ollamaModel: 'qwen-test',
+            })[key],
+          },
+        },
+        { provide: RequestDataDirService, useValue: { getDataDir: () => tmpDir, isDemoMode: () => false, runWith: (_ctx: any, fn: any) => fn() } },
+        { provide: EventBusService, useValue: { emit: jest.fn() } },
+        {
+          provide: StorageService,
+          useValue: {
+            getAllStatements: jest.fn().mockResolvedValue([{
+              transactions: [
+                { id: '1', date: '2026-05-01', description: 'NETFLIX 10/05', normalizedDescription: 'netflix', amount: -12, currency: 'EUR', category: 'other', subcategory: '', isRecurring: false, confidence: 1 },
+                { id: '2', date: '2026-04-01', description: 'NETFLIX 10/04', normalizedDescription: 'netflix', amount: -12, currency: 'EUR', category: 'other', subcategory: '', isRecurring: false, confidence: 1 },
+              ],
+            }]),
+          },
+        },
+        { provide: ClaudeUsageService, useValue: { recordUsage: jest.fn() } },
+      ],
+    })
+      .overrideProvider(CategoryRuleSuggestionsService)
+      .useFactory({
+        factory: (config, dataDir, bus, storage, rulesService, usage) => {
+          const service = new CategoryRuleSuggestionsService(config, dataDir, bus, storage, rulesService, usage);
+          (service as any).client.messages.create = messagesCreate;
+          return service;
+        },
+        inject: [ConfigService, RequestDataDirService, EventBusService, StorageService, CategoryRulesService, ClaudeUsageService],
+      })
+      .compile();
+
+    const ollamaSvc = mod.get(CategoryRuleSuggestionsService);
+    const result = await ollamaSvc.generateFromOthers();
+
+    expect(result.created).toBe(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://ollama.local:11434/api/generate',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(messagesCreate).not.toHaveBeenCalled();
+
+    fetchMock.mockRestore();
+  });
 });

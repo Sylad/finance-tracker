@@ -1,3 +1,17 @@
+## Suggestions locales via Ollama
+
+Les suggestions de règles de catégorisation peuvent utiliser Ollama au lieu de
+Claude, ce qui garde les libellés bancaires textuels sur le LAN.
+
+```env
+CATEGORY_RULE_SUGGESTIONS_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:7b
+```
+
+L'analyse PDF complète reste sur le flux Claude existant : elle dépend du
+support document/PDF et des validations métier déjà en place.
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>

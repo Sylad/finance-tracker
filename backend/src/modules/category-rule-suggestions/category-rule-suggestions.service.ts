@@ -20,6 +20,7 @@ import { isAuthError, isQuotaError } from '../../common/claude-errors';
 const SUGGESTIONS_FILE = 'category-rule-suggestions.json';
 const MAX_DESCRIPTIONS_TO_CLAUDE = 60;
 const MIN_OCCURRENCES_PER_PATTERN = 2;
+type RuleSuggestionProvider = 'claude' | 'ollama';
 
 /**
  * Tool description envoyé à Claude. Demande un array de suggestions de règles
@@ -81,7 +82,7 @@ const SUGGEST_RULES_TOOL: Anthropic.Tool = {
 @Injectable()
 export class CategoryRuleSuggestionsService {
   private readonly logger = new Logger(CategoryRuleSuggestionsService.name);
-  private readonly client: Anthropic;
+  private client?: Anthropic;
 
   constructor(
     private readonly config: ConfigService,
@@ -91,9 +92,10 @@ export class CategoryRuleSuggestionsService {
     private readonly rules: CategoryRulesService,
     private readonly usage: ClaudeUsageService,
   ) {
-    this.client = new Anthropic({
-      apiKey: this.config.get<string>('anthropicApiKey'),
-    });
+    const apiKey = this.config.get<string>('anthropicApiKey');
+    if (apiKey) {
+      this.client = new Anthropic({ apiKey });
+    }
   }
 
   private get filepath(): string {
@@ -162,42 +164,17 @@ export class CategoryRuleSuggestionsService {
 
     const availableCats = await this.rules.getAvailableCategories();
 
-    this.logger.log(`Sending ${sorted.length} unique "other" descriptions to Claude for rule suggestions.`);
+    const provider = this.getSuggestionProvider();
+    this.logger.log(`Sending ${sorted.length} unique "other" descriptions to ${provider} for rule suggestions.`);
 
-    let claudeSuggestions: IncomingCategorySuggestion[] = [];
+    let providerSuggestions: IncomingCategorySuggestion[] = [];
     try {
-      const message = await this.client.messages.create({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 4096,
-        temperature: 0,
-        system:
-          "Tu es un analyste qui propose des règles de catégorisation pour des transactions bancaires françaises. Les transactions fournies sont actuellement classées 'other' (non catégorisées). Ton but : proposer des regex pattern + catégorie cible pour automatiser leur classification future.\n\n" +
-          "Catégories disponibles : " + availableCats.join(', ') + ".\n\n" +
-          "RÈGLES :\n" +
-          "- Pattern regex SIMPLE et DISTINCTIF (1-3 mots-clés, échappés correctement). Pas de '.*' englobant.\n" +
-          "- Une seule catégorie par pattern. Si un libellé est ambigu (ex: PAYPAL : courses ou abonnement ?), ne propose RIEN plutôt qu'une mauvaise règle.\n" +
-          "- Ne propose une règle QUE si le pattern matche ≥2 libellés DISTINCTS du lot fourni.\n" +
-          "- Si un libellé est unique et imprévisible (ex: 'PRLV CHEZ M. DUPONT 28/02'), n'invente pas de règle.\n" +
-          "- exampleDescriptions doit contenir 2-5 libellés EXACTS du lot fourni.\n" +
-          "- rationale en français, 1 phrase max.",
-        tools: [SUGGEST_RULES_TOOL],
-        tool_choice: { type: 'tool', name: 'suggest_category_rules' },
-        messages: [{
-          role: 'user',
-          content:
-            `Transactions actuellement 'other' (format: 'N× libellé', triés par fréquence décroissante) :\n\n${txSummary}\n\nPropose les règles de catégorisation pertinentes (zéro à dix maximum). Si rien ne s'auto-catégorise raisonnablement, retourne un array vide.`,
-        }],
-      });
-
-      this.usage.recordUsage(message.usage.input_tokens, message.usage.output_tokens);
-
-      const block = message.content.find((b) => b.type === 'tool_use');
-      if (!block || block.type !== 'tool_use') {
-        throw new Error('Claude renvoyé sans tool_use block');
-      }
-      const input = block.input as { suggestions?: IncomingCategorySuggestion[] };
-      claudeSuggestions = Array.isArray(input.suggestions) ? input.suggestions : [];
+      providerSuggestions = await this.requestRuleSuggestions(provider, availableCats, txSummary);
     } catch (err) {
+      if (provider === 'ollama') {
+        this.logger.error('Ollama suggest call failed', err);
+        throw new HttpException('Échec analyse Ollama', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
       if (isAuthError(err)) {
         throw new HttpException(
           { code: 'CLAUDE_AUTH_ERROR', message: 'Clé API Claude invalide/révoquée — vérifie ANTHROPIC_API_KEY' },
@@ -225,7 +202,7 @@ export class CategoryRuleSuggestionsService {
 
     const now = new Date().toISOString();
     let created = 0;
-    for (const sug of claudeSuggestions) {
+    for (const sug of providerSuggestions) {
       const key = this.dedupKey(sug.pattern);
       if (knownKeys.has(key)) continue;
       // Validate regex compiles
@@ -324,5 +301,103 @@ export class CategoryRuleSuggestionsService {
   private async persist(all: CategoryRuleSuggestion[]): Promise<void> {
     await atomicWriteJson(this.filepath, all);
     this.bus.emit('category-rule-suggestions-changed');
+  }
+
+  private getSuggestionProvider(): RuleSuggestionProvider {
+    const configured = (this.config.get<string>('categoryRuleSuggestionsProvider') ?? 'claude').toLowerCase();
+    return configured === 'ollama' ? 'ollama' : 'claude';
+  }
+
+  private async requestRuleSuggestions(
+    provider: RuleSuggestionProvider,
+    availableCats: string[],
+    txSummary: string,
+  ): Promise<IncomingCategorySuggestion[]> {
+    if (provider === 'ollama') {
+      return this.requestOllamaRuleSuggestions(availableCats, txSummary);
+    }
+    return this.requestClaudeRuleSuggestions(availableCats, txSummary);
+  }
+
+  private buildRuleSuggestionSystemPrompt(availableCats: string[]): string {
+    return "Tu es un analyste qui propose des règles de catégorisation pour des transactions bancaires françaises. Les transactions fournies sont actuellement classées 'other' (non catégorisées). Ton but : proposer des regex pattern + catégorie cible pour automatiser leur classification future.\n\n" +
+      "Catégories disponibles : " + availableCats.join(', ') + ".\n\n" +
+      "RÈGLES :\n" +
+      "- Pattern regex SIMPLE et DISTINCTIF (1-3 mots-clés, échappés correctement). Pas de '.*' englobant.\n" +
+      "- Une seule catégorie par pattern. Si un libellé est ambigu (ex: PAYPAL : courses ou abonnement ?), ne propose RIEN plutôt qu'une mauvaise règle.\n" +
+      "- Ne propose une règle QUE si le pattern matche ≥2 libellés DISTINCTS du lot fourni.\n" +
+      "- Si un libellé est unique et imprévisible (ex: 'PRLV CHEZ M. DUPONT 28/02'), n'invente pas de règle.\n" +
+      "- exampleDescriptions doit contenir 2-5 libellés EXACTS du lot fourni.\n" +
+      "- rationale en français, 1 phrase max.";
+  }
+
+  private buildRuleSuggestionUserPrompt(txSummary: string): string {
+    return `Transactions actuellement 'other' (format: 'N× libellé', triés par fréquence décroissante) :\n\n${txSummary}\n\nPropose les règles de catégorisation pertinentes (zéro à dix maximum). Si rien ne s'auto-catégorise raisonnablement, retourne un array vide.`;
+  }
+
+  private async requestClaudeRuleSuggestions(
+    availableCats: string[],
+    txSummary: string,
+  ): Promise<IncomingCategorySuggestion[]> {
+    const message = await this.getClaudeClient().messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 4096,
+      temperature: 0,
+      system: this.buildRuleSuggestionSystemPrompt(availableCats),
+      tools: [SUGGEST_RULES_TOOL],
+      tool_choice: { type: 'tool', name: 'suggest_category_rules' },
+      messages: [{
+        role: 'user',
+        content: this.buildRuleSuggestionUserPrompt(txSummary),
+      }],
+    });
+
+    this.usage.recordUsage(message.usage.input_tokens, message.usage.output_tokens);
+
+    const block = message.content.find((b) => b.type === 'tool_use');
+    if (!block || block.type !== 'tool_use') {
+      throw new Error('Claude renvoyé sans tool_use block');
+    }
+    const input = block.input as { suggestions?: IncomingCategorySuggestion[] };
+    return Array.isArray(input.suggestions) ? input.suggestions : [];
+  }
+
+  private async requestOllamaRuleSuggestions(
+    availableCats: string[],
+    txSummary: string,
+  ): Promise<IncomingCategorySuggestion[]> {
+    const baseUrl = this.config.get<string>('ollamaBaseUrl') ?? 'http://localhost:11434';
+    const model = this.config.get<string>('ollamaModel') ?? 'qwen2.5:7b';
+    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/generate`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        stream: false,
+        format: 'json',
+        prompt:
+          this.buildRuleSuggestionSystemPrompt(availableCats) +
+          "\n\nRéponds UNIQUEMENT en JSON valide avec cette forme exacte : " +
+          '{"suggestions":[{"pattern":"string","category":"string","subcategory":"string","exampleDescriptions":["string"],"occurrenceCount":2,"rationale":"string"}]}' +
+          "\n\n" +
+          this.buildRuleSuggestionUserPrompt(txSummary),
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Ollama HTTP ${response.status}`);
+    }
+    const payload = await response.json() as { response?: string };
+    const parsed = JSON.parse(payload.response ?? '{"suggestions":[]}') as { suggestions?: IncomingCategorySuggestion[] };
+    return Array.isArray(parsed.suggestions) ? parsed.suggestions : [];
+  }
+
+  private getClaudeClient(): Anthropic {
+    if (this.client) return this.client;
+    const apiKey = this.config.get<string>('anthropicApiKey');
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY missing');
+    }
+    this.client = new Anthropic({ apiKey });
+    return this.client;
   }
 }
