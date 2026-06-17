@@ -25,15 +25,20 @@ if [ -f "$REPO/backend/.env" ]; then
   echo "==> backend/.env existe déjà localement, conservé tel quel"
 else
   echo "==> Récupération de backend/.env depuis le NAS"
-  ssh -p "$NAS_PORT" "$NAS_HOST" "cat $NAS_ENV" > "$REPO/backend/.env"
-  # Ajustements local : pas de CORS forcé / pas d'hôtes démo
-  {
-    echo ""
-    echo "# --- Overrides locaux (Big-Blue) ajoutés par sync-from-nas.sh ---"
-    echo "NODE_ENV=production"
-    echo "PORT=3000"
-    echo "CORS_ORIGIN=http://localhost:3000"
-  } >> "$REPO/backend/.env"
+  ssh -p "$NAS_PORT" "$NAS_HOST" "cat '$NAS_ENV'" > "$REPO/backend/.env"
+  # Supprimer les clés que la config locale doit contrôler (dotenv = first-wins)
+  sed -i '/^NODE_ENV=/d; /^PORT=/d; /^CORS_ORIGIN=/d; /^DATA_DIR=/d; /^UPLOAD_DIR=/d; /^SHARED_DATA_DIR=/d' "$REPO/backend/.env"
+  # Ajouter un bloc d'overrides locaux avec chemins absolus
+  cat >> "$REPO/backend/.env" <<ENVBLOCK
+
+# --- Overrides locaux (Big-Blue) ---
+NODE_ENV=production
+PORT=3000
+CORS_ORIGIN=http://localhost:3000
+DATA_DIR=$REPO/data
+UPLOAD_DIR=$REPO/data/uploads
+SHARED_DATA_DIR=$REPO/data/shared
+ENVBLOCK
 fi
 
 echo "==> Terminé."
