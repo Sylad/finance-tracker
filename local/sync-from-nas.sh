@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Rapatriement one-shot des données finance-tracker du NAS vers le local (Big-Blue).
+# Idempotent : relançable sans casse (rsync). NE TOUCHE PAS aux données locales plus récentes.
+set -euo pipefail
+
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+NAS_HOST="nas"
+NAS_PORT="22"
+NAS_DATA="/volume2/docker/developpeur/data/finance/"
+NAS_SHARED="/volume2/docker/developpeur/data/shared/claude-shared.json"
+NAS_ENV="/volume2/docker/developpeur/finance-tracker-v2/backend/.env"
+
+echo "==> Rapatriement données finance depuis le NAS ($NAS_HOST:$NAS_PORT)"
+mkdir -p "$REPO/data/shared" "$REPO/data/uploads"
+
+# Données applicatives (relevés, budgets, snapshots, uploads...)
+rsync -az --info=stats1 --rsync-path=/usr/bin/rsync -e "ssh -p $NAS_PORT" "$NAS_HOST:$NAS_DATA" "$REPO/data/"
+
+# Solde Claude partagé → copie standalone locale
+rsync -az --rsync-path=/usr/bin/rsync -e "ssh -p $NAS_PORT" "$NAS_HOST:$NAS_SHARED" "$REPO/data/shared/" || \
+  echo "   (claude-shared.json absent sur le NAS, ignoré)"
+
+# .env : récupérer la vraie ANTHROPIC_API_KEY + APP_PIN (sans écraser un .env local existant)
+if [ -f "$REPO/backend/.env" ]; then
+  echo "==> backend/.env existe déjà localement, conservé tel quel"
+else
+  echo "==> Récupération de backend/.env depuis le NAS"
+  ssh -p "$NAS_PORT" "$NAS_HOST" "cat $NAS_ENV" > "$REPO/backend/.env"
+  # Ajustements local : pas de CORS forcé / pas d'hôtes démo
+  {
+    echo ""
+    echo "# --- Overrides locaux (Big-Blue) ajoutés par sync-from-nas.sh ---"
+    echo "NODE_ENV=production"
+    echo "PORT=3000"
+    echo "CORS_ORIGIN=http://localhost:3000"
+  } >> "$REPO/backend/.env"
+fi
+
+echo "==> Terminé."
+echo "    Données : $REPO/data"
+echo "    Env     : $REPO/backend/.env"
