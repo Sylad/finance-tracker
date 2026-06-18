@@ -87,6 +87,25 @@ Backend API sur `http://localhost:3000/api/health`.
 ### Premier import
 Va sur `/upload`, glisse un PDF de relevé (BNP, Société Générale, La Banque Postale, Crédit Agricole testés). L'analyse prend 30-60s par fichier.
 
+## Lancement local (Big-Blue / WSL)
+
+L'app tourne en local en **un seul process Node** (le backend NestJS sert l'API
+ET le frontend buildé sur `http://localhost:3000`).
+
+### Première installation
+```bash
+./local/sync-from-nas.sh        # rapatrie données + .env depuis le NAS (une fois)
+npm run build                   # build backend + frontend
+```
+Puis, côté Windows (PowerShell) : exécuter `local/install-shortcuts.ps1`
+pour créer les raccourcis Bureau.
+
+### Au quotidien
+- **Double-clic "Finance Tracker"** → démarre + ouvre le navigateur.
+- **Double-clic "Finance Tracker — Stop"** → arrête.
+
+En ligne de commande (WSL) : `./local/run.sh` / `./local/stop.sh`.
+
 ## Sécurité / Vie privée
 
 - **Aucune donnée envoyée ailleurs que vers Anthropic** (analyse PDF)
