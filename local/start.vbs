@@ -15,5 +15,9 @@ For i = 1 To 30
     WScript.Sleep 1000
 Next
 
-' 3) Ouvrir le navigateur par défaut
-ws.Run url, 1, False
+' 3) Ouvrir le navigateur par défaut uniquement si le serveur a répondu
+If rc = 0 Then
+    ws.Run url, 1, False
+Else
+    MsgBox "Finance Tracker n'a pas démarré à temps. Voir logs/finance.log."
+End If

@@ -102,7 +102,7 @@ pour créer les raccourcis Bureau.
 
 ### Au quotidien
 - **Double-clic "Finance Tracker"** → démarre + ouvre le navigateur.
-- **Double-clic "Finance Tracker — Stop"** → arrête.
+- **Double-clic "Finance Tracker - Stop"** → arrête.
 
 En ligne de commande (WSL) : `./local/run.sh` / `./local/stop.sh`.
 

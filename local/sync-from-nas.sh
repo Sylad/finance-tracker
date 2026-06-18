@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Rapatriement one-shot des données finance-tracker du NAS vers le local (Big-Blue).
-# Idempotent : relançable sans casse (rsync). NE TOUCHE PAS aux données locales plus récentes.
+# Idempotent (rsync). NAS = source de vérité : écrase les fichiers locaux divergents avec l'état du NAS.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
