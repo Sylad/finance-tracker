@@ -8,9 +8,16 @@ import { DemoCoreModule } from '../demo/demo-core.module';
 import { LoansModule } from '../loans/loans.module';
 import { StorageModule } from '../storage/storage.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { SavingsModule } from '../savings/savings.module';
 
 @Module({
-  imports: [DemoCoreModule, LoansModule, StorageModule, SubscriptionsModule],
+  imports: [
+    DemoCoreModule,
+    LoansModule,
+    StorageModule,
+    SubscriptionsModule,
+    SavingsModule,
+  ],
   controllers: [HealthStatusController, HealthCheckController],
   providers: [HealthThresholdsService, HealthService, HealthAdviceService],
   exports: [HealthThresholdsService, HealthService, HealthAdviceService],

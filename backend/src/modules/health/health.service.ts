@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { LoansService } from '../loans/loans.service';
 import { StorageService } from '../storage/storage.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { SavingsService } from '../savings/savings.service';
 import { HealthThresholdsService } from './health-thresholds.service';
 import {
   collectDrawTxIds,
@@ -42,21 +43,34 @@ export class HealthService {
     private readonly loansService: LoansService,
     private readonly storageService: StorageService,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly savingsService: SavingsService,
     private readonly thresholdsService: HealthThresholdsService,
   ) {}
 
   /** Une seule lecture de chaque service source pour construire le contexte du diagnostic. */
   async buildContext(): Promise<HealthContext> {
-    const [statements, loans, subscriptions, thresholds] = await Promise.all([
-      this.storageService.getAllStatements(),
-      this.loansService.getAll(),
-      this.subscriptionsService.getAll(),
-      this.thresholdsService.get(),
-    ]);
-    const drawTxIds = collectDrawTxIds(loans);
+    const [statements, loans, subscriptions, savingsAccounts, thresholds] =
+      await Promise.all([
+        this.storageService.getAllStatements(),
+        this.loansService.getAll(),
+        this.subscriptionsService.getAll(),
+        this.savingsService.getAll(),
+        this.thresholdsService.get(),
+      ]);
+    // Revenu : exclut les tirages sur réserve (dette qui rentre, pas un
+    // revenu) ET les mouvements d'épargne entrants (spec §1 : « hors
+    // mouvements d'épargne entrants » — F7, 2026-08-12). Un virement
+    // récurrent vers un Livret A/PEL/etc. ne doit jamais être détecté
+    // comme un cluster de revenu stable.
+    const excludedTxIds = collectDrawTxIds(loans);
+    for (const account of savingsAccounts) {
+      for (const movement of account.movements) {
+        if (movement.transactionId) excludedTxIds.add(movement.transactionId);
+      }
+    }
     const income = detectStableIncome(
       statements,
-      drawTxIds,
+      excludedTxIds,
       thresholds.manualMonthlyIncome,
     );
     return { statements, loans, subscriptions, thresholds, income };
@@ -83,14 +97,35 @@ export class HealthService {
     return ids;
   }
 
-  /** Moyenne sur les 3 derniers relevés des dépenses courantes (débits) hors occurrences de crédits. */
+  /** Ensemble des transactionId qui sont des occurrences d'abonnements. */
+  private subscriptionOccurrenceTxIds(
+    subscriptions: Subscription[],
+  ): Set<string> {
+    const ids = new Set<string>();
+    for (const sub of subscriptions) {
+      for (const occ of sub.occurrencesDetected) {
+        if (occ.transactionId) ids.add(occ.transactionId);
+      }
+    }
+    return ids;
+  }
+
+  /**
+   * Moyenne sur les 3 derniers relevés des dépenses courantes (débits) hors
+   * occurrences de crédits ET hors occurrences d'abonnements (F4) — les
+   * abonnements sont comptés séparément (`abonnementsMensuels`), les
+   * inclure aussi ici les compterait deux fois dans le reste à vivre.
+   */
   private averageDepensesCourantesHorsCredits(ctx: HealthContext): number {
     const recent = this.lastStatements(ctx, RECENT_STATEMENTS_COUNT);
     if (recent.length === 0) return 0;
     const loanTxIds = this.loanOccurrenceTxIds(ctx.loans);
+    const subTxIds = this.subscriptionOccurrenceTxIds(ctx.subscriptions);
     const totalPerStatement = recent.map((st) =>
       st.transactions
-        .filter((t) => t.amount < 0 && !loanTxIds.has(t.id))
+        .filter(
+          (t) => t.amount < 0 && !loanTxIds.has(t.id) && !subTxIds.has(t.id),
+        )
         .reduce((sum, t) => sum + Math.abs(t.amount), 0),
     );
     const total = totalPerStatement.reduce((sum, v) => sum + v, 0);
@@ -111,7 +146,8 @@ export class HealthService {
       .filter((s) => s.isActive)
       .reduce((sum, s) => sum + s.monthlyAmount, 0);
 
-    const resteAVivre = income - mensualites - depensesCourantes;
+    const resteAVivre =
+      income - mensualites - abonnementsMensuels - depensesCourantes;
     const pctIncome = income > 0 ? (resteAVivre / income) * 100 : 0;
     const { orangeBelowPctIncome } = ctx.thresholds.resteAVivre;
 
@@ -152,8 +188,12 @@ export class HealthService {
     let sumUsed = 0;
     let sumMax = 0;
     for (const loan of revolvings) {
+      // Le ratio plafond n'a de sens que pour les réserves avec un plafond
+      // connu — skip silencieux ici (leurs tirages/remboursements sont
+      // comptés ailleurs, dans computeFluxTirages/computeTrajectoire).
+      if (loan.maxAmount == null || loan.maxAmount <= 0) continue;
       const used = loan.usedAmount ?? 0;
-      const max = loan.maxAmount as number;
+      const max = loan.maxAmount;
       sumUsed += used;
       sumMax += max;
       const pct = (used / max) * 100;
@@ -166,7 +206,10 @@ export class HealthService {
 
     const { orangeAbovePct: tauxOrange, redAbovePct: tauxRed } =
       ctx.thresholds.tauxEffort;
-    const { orangeAbovePct: plafondOrange, redAbovePct: plafondRed } =
+    // F2 : plus de seuil orange dédié pour les plafonds — vert si pire <
+    // greenBelowPct, orange si pire >= greenBelowPct, rouge si pire >=
+    // redAbovePct (décision d'auteur).
+    const { greenBelowPct: plafondOrange, redAbovePct: plafondRed } =
       ctx.thresholds.plafonds;
 
     const tauxStatus: HealthStatus =
@@ -187,31 +230,40 @@ export class HealthService {
       orange: 1,
       red: 2,
     };
-    let status: HealthStatus;
-    let thresholdHit: string | null = null;
 
-    if (
+    const status: HealthStatus =
       severity[plafondStatus] > severity[tauxStatus] ||
       (severity[plafondStatus] === severity[tauxStatus] &&
         plafondStatus !== 'green')
-    ) {
-      status = plafondStatus;
-      if (status !== 'green') {
-        const limit = status === 'red' ? plafondRed : plafondOrange;
-        const label = status === 'red' ? 'rouge' : 'orange';
-        // Plafonds : comparateur réel toujours ≥ (rouge "≥ 95 % ou dépassé", orange "≥ 80 %").
-        thresholdHit = `${label} car ${pireReserveNom} utilisé à ${round1(pireReservePct)} % ≥ ${limit} %`;
-      }
-    } else {
-      status = tauxStatus;
-      if (status !== 'green') {
-        const label = status === 'red' ? 'rouge' : 'orange';
-        // Taux d'effort : rouge est strictement > (borne 50 % pile = orange), orange démarre à ≥ 33 %.
-        const comparator = status === 'red' ? '>' : '≥';
-        const limit = status === 'red' ? tauxRed : tauxOrange;
-        thresholdHit = `${label} car taux d'effort ${round1(tauxEffortPct)} % ${comparator} ${limit} %`;
-      }
+        ? plafondStatus
+        : tauxStatus;
+
+    let plafondReason: string | null = null;
+    if (plafondStatus !== 'green') {
+      const limit = plafondStatus === 'red' ? plafondRed : plafondOrange;
+      const label = plafondStatus === 'red' ? 'rouge' : 'orange';
+      // Plafonds : comparateur réel toujours ≥ (rouge "≥ 95 % ou dépassé", orange "≥ 60 %").
+      plafondReason = `${label} car ${pireReserveNom} utilisé à ${round1(pireReservePct)} % ≥ ${limit} %`;
     }
+    let tauxReason: string | null = null;
+    if (tauxStatus !== 'green') {
+      const label = tauxStatus === 'red' ? 'rouge' : 'orange';
+      // Taux d'effort : rouge est strictement > (borne 50 % pile = orange), orange démarre à ≥ 33 %.
+      const comparator = tauxStatus === 'red' ? '>' : '≥';
+      const limit = tauxStatus === 'red' ? tauxRed : tauxOrange;
+      tauxReason = `${label} car taux d'effort ${round1(tauxEffortPct)} % ${comparator} ${limit} %`;
+    }
+
+    // F9 : quand taux d'effort ET plafonds sont non-verts simultanément, les
+    // deux causes sont exposées (concaténées) plutôt que de n'en montrer
+    // qu'une seule et masquer l'autre — le pire des deux (déterminant
+    // `status`) est cité en premier.
+    const reasons =
+      status === plafondStatus
+        ? [plafondReason, tauxReason]
+        : [tauxReason, plafondReason];
+    const thresholdHit =
+      reasons.filter((r): r is string => r != null).join(' ; ') || null;
 
     return {
       status,
@@ -226,10 +278,18 @@ export class HealthService {
     };
   }
 
-  /** Réserves renouvelables actives — même critère que le bloc chargeDette. */
+  /**
+   * Réserves renouvelables actives — même critère que le producteur des
+   * tirages (`auto-sync.service.syncDraws`) : `isActive` + `getLoanKind`.
+   * Ne filtre PAS sur `maxAmount` : une réserve sans plafond connu doit
+   * quand même voir ses tirages/remboursements comptés dans flux et
+   * trajectoire (finding review F1, 2026-08-12). Les ratios qui nécessitent
+   * un plafond (pireReservePct, projection de saturation) sont eux filtrés
+   * localement dans `computeChargeDette`/`computeTrajectoire`.
+   */
   private revolvingsActifs(loans: Loan[]): Loan[] {
     return loans.filter(
-      (l) => l.isActive && l.maxAmount != null && l.maxAmount > 0,
+      (l) => l.isActive && LoansService.getLoanKind(l) === 'revolving',
     );
   }
 
@@ -360,16 +420,25 @@ export class HealthService {
     let saturatedLoanName: string | null = null;
     for (const loan of revolvings) {
       const used = loan.usedAmount ?? 0;
-      const max = loan.maxAmount as number;
       const { tirages, remboursements } = metrics.perLoan.get(loan.id) ?? {
         tirages: 0,
         remboursements: 0,
       };
+      // Le trend (tirages - remboursements) compte pour TOUTE réserve active,
+      // avec ou sans plafond connu. Seule la détection de saturation
+      // (comparaison au plafond) nécessite un `maxAmount` — skip pour les
+      // réserves sans plafond connu (finding review F1, 2026-08-12).
       const trend = (tirages - remboursements) / 3;
       const projected = used + horizonMonths * trend;
       sumUsed += used;
       sumProjected += projected;
-      if (saturatedLoanName === null && projected >= max) {
+      const max = loan.maxAmount;
+      if (
+        max != null &&
+        max > 0 &&
+        saturatedLoanName === null &&
+        projected >= max
+      ) {
         saturatedLoanName = loan.name;
       }
     }
@@ -422,6 +491,18 @@ export class HealthService {
   async getDiagnostic(): Promise<HealthDiagnostic> {
     const ctx = await this.buildContext();
     const computedAt = new Date().toISOString();
+
+    // Un revenu <= 0 (ex : manualMonthlyIncome persisté avant le clamp
+    // d'écriture F3, ou tout futur chemin produisant un montant invalide)
+    // est traité comme un revenu indisponible plutôt que de fausser
+    // silencieusement les ratios (division par un nombre <= 0).
+    if (ctx.income.monthly != null && ctx.income.monthly <= 0) {
+      ctx.income = {
+        monthly: null,
+        source: 'unavailable',
+        label: ctx.income.label,
+      };
+    }
 
     if (ctx.income.monthly == null) {
       const emptyBlock = (): HealthBlockResult => ({

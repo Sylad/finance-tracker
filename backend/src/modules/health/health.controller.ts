@@ -1,4 +1,12 @@
-import { BadGatewayException, Body, Controller, Get, Post, Put, Res } from '@nestjs/common';
+import {
+  BadGatewayException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Res,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { HealthAdviceService } from './health-advice.service';
 import { HealthThresholdsService } from './health-thresholds.service';
@@ -14,23 +22,33 @@ export class HealthCheckController {
   ) {}
 
   @Get('thresholds')
-  getThresholds() { return this.thresholds.get(); }
+  getThresholds() {
+    return this.thresholds.get();
+  }
 
   @Put('thresholds')
-  putThresholds(@Body() body: Partial<HealthThresholds>) { return this.thresholds.update(body); }
+  putThresholds(@Body() body: Partial<HealthThresholds>) {
+    return this.thresholds.update(body);
+  }
 
   @Post('thresholds/reset')
-  resetThresholds() { return this.thresholds.reset(); }
+  resetThresholds() {
+    return this.thresholds.reset();
+  }
 
   @Get('diagnostic')
-  getDiagnostic() { return this.health.getDiagnostic(); }
+  getDiagnostic() {
+    return this.health.getDiagnostic();
+  }
 
   @Post('advice')
   async generateAdvice() {
     try {
       return await this.advice.generate();
     } catch (err) {
-      throw new BadGatewayException(`Ollama indisponible : ${(err as Error).message}`);
+      throw new BadGatewayException(
+        `Ollama indisponible : ${(err as Error).message}`,
+      );
     }
   }
 

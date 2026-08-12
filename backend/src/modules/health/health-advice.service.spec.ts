@@ -15,7 +15,11 @@ const DIAGNOSTIC_STUB: HealthDiagnostic = {
   verdict: 'orange',
   causes: ['orange car reste à vivre 5.0 % du revenu < 10 %'],
   blocks: {
-    resteAVivre: { status: 'orange', thresholdHit: 'orange car reste à vivre 5.0 % du revenu < 10 %', details: {} },
+    resteAVivre: {
+      status: 'orange',
+      thresholdHit: 'orange car reste à vivre 5.0 % du revenu < 10 %',
+      details: {},
+    },
     chargeDette: { status: 'green', thresholdHit: null, details: {} },
     fluxTirages: { status: 'green', thresholdHit: null, details: {} },
     trajectoire: { status: 'green', thresholdHit: null, details: {} },
@@ -44,7 +48,9 @@ function makeLoan(overrides: Partial<Loan> = {}): Loan {
   };
 }
 
-function makeStatement(overrides: Partial<MonthlyStatement> = {}): MonthlyStatement {
+function makeStatement(
+  overrides: Partial<MonthlyStatement> = {},
+): MonthlyStatement {
   return {
     id: '2026-07',
     month: 7,
@@ -86,10 +92,16 @@ describe('HealthAdviceService', () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ft-health-advice-'));
-    const dataDir = { getDataDir: () => tmpDir } as unknown as RequestDataDirService;
-    healthService = { getDiagnostic: jest.fn().mockResolvedValue(DIAGNOSTIC_STUB) };
+    const dataDir = {
+      getDataDir: () => tmpDir,
+    } as unknown as RequestDataDirService;
+    healthService = {
+      getDiagnostic: jest.fn().mockResolvedValue(DIAGNOSTIC_STUB),
+    };
     loansService = { getAll: jest.fn().mockResolvedValue([makeLoan()]) };
-    storageService = { getAllStatements: jest.fn().mockResolvedValue([makeStatement()]) };
+    storageService = {
+      getAllStatements: jest.fn().mockResolvedValue([makeStatement()]),
+    };
     svc = new HealthAdviceService(
       makeConfig(),
       dataDir,
@@ -109,8 +121,18 @@ describe('HealthAdviceService', () => {
       json: async () => ({
         response: JSON.stringify({
           advices: [
-            { priority: 2, title: 'B', explanation: 'exp B', estimatedImpact: 'impact B' },
-            { priority: 1, title: 'A', explanation: 'exp A', estimatedImpact: 'impact A' },
+            {
+              priority: 2,
+              title: 'B',
+              explanation: 'exp B',
+              estimatedImpact: 'impact B',
+            },
+            {
+              priority: 1,
+              title: 'A',
+              explanation: 'exp A',
+              estimatedImpact: 'impact A',
+            },
           ],
         }),
       }),
@@ -142,13 +164,24 @@ describe('HealthAdviceService', () => {
 
   it('generate : creditsActifs expose le kind canonique (installment), pas le type brut', async () => {
     loansService.getAll.mockResolvedValue([
-      makeLoan({ id: 'l2', name: '4XCB Amazon', type: 'classic', kind: 'installment', taeg: null }),
+      makeLoan({
+        id: 'l2',
+        name: '4XCB Amazon',
+        type: 'classic',
+        kind: 'installment',
+        taeg: null,
+      }),
     ]);
     let capturedPrompt = '';
-    const fetchMock = jest.spyOn(global, 'fetch' as any).mockImplementation((async (_url: string, init: any) => {
-      capturedPrompt = JSON.parse(init.body).prompt;
-      return { ok: true, json: async () => ({ response: JSON.stringify({ advices: [] }) }) };
-    }) as any);
+    const fetchMock = jest
+      .spyOn(global, 'fetch' as any)
+      .mockImplementation((async (_url: string, init: any) => {
+        capturedPrompt = JSON.parse(init.body).prompt;
+        return {
+          ok: true,
+          json: async () => ({ response: JSON.stringify({ advices: [] }) }),
+        };
+      }) as any);
 
     await svc.generate();
 
@@ -159,7 +192,9 @@ describe('HealthAdviceService', () => {
   });
 
   it('generate : HTTP 500 -> throw contenant "Ollama"', async () => {
-    const fetchMock = jest.spyOn(global, 'fetch' as any).mockResolvedValue({ ok: false, status: 500 } as any);
+    const fetchMock = jest
+      .spyOn(global, 'fetch' as any)
+      .mockResolvedValue({ ok: false, status: 500 } as any);
     await expect(svc.generate()).rejects.toThrow(/Ollama/);
     fetchMock.mockRestore();
   });
@@ -178,7 +213,9 @@ describe('HealthAdviceService', () => {
       ok: true,
       json: async () => ({
         response: JSON.stringify({
-          advices: [{ priority: 1, title: '', explanation: 'x', estimatedImpact: 'y' }],
+          advices: [
+            { priority: 1, title: '', explanation: 'x', estimatedImpact: 'y' },
+          ],
         }),
       }),
     } as any);
@@ -202,22 +239,29 @@ describe('HealthAdviceService', () => {
     const advice = {
       generatedAt: '2026-08-12T10:00:00Z',
       model: 'qwen-test',
-      advices: [{ priority: 1, title: 'T', explanation: 'E', estimatedImpact: 'I' }],
+      advices: [
+        { priority: 1, title: 'T', explanation: 'E', estimatedImpact: 'I' },
+      ],
     };
-    fs.writeFileSync(path.join(tmpDir, 'health-advice-cache.json'), JSON.stringify(advice));
+    fs.writeFileSync(
+      path.join(tmpDir, 'health-advice-cache.json'),
+      JSON.stringify(advice),
+    );
     expect(await svc.getCached()).toEqual(advice);
   });
 
   it('contexte prompt : agrégats uniquement, aucun libellé (sentinelle tx + sentinelle income.label)', async () => {
     let capturedPrompt = '';
-    const fetchMock = jest.spyOn(global, 'fetch' as any).mockImplementation((async (_url: string, init: any) => {
-      const body = JSON.parse(init.body);
-      capturedPrompt = body.prompt;
-      return {
-        ok: true,
-        json: async () => ({ response: JSON.stringify({ advices: [] }) }),
-      };
-    }) as any);
+    const fetchMock = jest
+      .spyOn(global, 'fetch' as any)
+      .mockImplementation((async (_url: string, init: any) => {
+        const body = JSON.parse(init.body);
+        capturedPrompt = body.prompt;
+        return {
+          ok: true,
+          json: async () => ({ response: JSON.stringify({ advices: [] }) }),
+        };
+      }) as any);
 
     // Sentinelle #1 : income.label (nom d'employeur détecté depuis le libellé
     // de la transaction de salaire) ne doit JAMAIS partir vers le LLM, même

@@ -111,7 +111,9 @@ export class HealthAdviceService {
    * Ne lit JAMAIS `description`/`normalizedDescription` — seule la
    * `category` (enum fermée) et le montant agrégé sortent de cette fonction.
    */
-  private buildTopCategories(statements: MonthlyStatement[]): CategoryContext[] {
+  private buildTopCategories(
+    statements: MonthlyStatement[],
+  ): CategoryContext[] {
     const recent = [...statements]
       .sort((a, b) => b.year - a.year || b.month - a.month)
       .slice(0, RECENT_STATEMENTS_COUNT);
@@ -120,20 +122,26 @@ export class HealthAdviceService {
     for (const s of recent) {
       for (const t of s.transactions) {
         if (t.amount < 0) {
-          catTotals.set(t.category, (catTotals.get(t.category) ?? 0) + Math.abs(t.amount));
+          catTotals.set(
+            t.category,
+            (catTotals.get(t.category) ?? 0) + Math.abs(t.amount),
+          );
         }
       }
     }
 
     return [...catTotals.entries()]
-      .map(([category, total]) => ({ category, total: Math.round(total * 100) / 100 }))
+      .map(([category, total]) => ({
+        category,
+        total: Math.round(total * 100) / 100,
+      }))
       .sort((a, b) => b.total - a.total)
       .slice(0, TOP_CATEGORIES_COUNT);
   }
 
   private buildSystemPrompt(): string {
     return (
-      "Tu es un conseiller budgétaire francophone qui aide un particulier à améliorer sa santé financière.\n\n" +
+      'Tu es un conseiller budgétaire francophone qui aide un particulier à améliorer sa santé financière.\n\n' +
       'Le contexte fourni contient UNIQUEMENT des agrégats : un diagnostic de santé financière calculé (verdict, ' +
       'blocs, seuils déclenchés, revenu mensuel sans libellé), la liste des crédits actifs résumés (nom, nature, ' +
       'encours, plafond, TAEG, mensualité) et le top 5 des catégories de dépenses des 3 derniers mois. Tu ne reçois ' +
@@ -159,7 +167,10 @@ export class HealthAdviceService {
   private stripIncomeLabel(diagnostic: HealthDiagnostic): SafeDiagnostic {
     return {
       ...diagnostic,
-      income: { monthly: diagnostic.income.monthly, source: diagnostic.income.source },
+      income: {
+        monthly: diagnostic.income.monthly,
+        source: diagnostic.income.source,
+      },
     };
   }
 
@@ -182,7 +193,9 @@ export class HealthAdviceService {
   }
 
   private async requestOllamaAdvice(prompt: string): Promise<HealthAdvice> {
-    const baseUrl = this.config.get<string>('ollamaAdviceBaseUrl') ?? 'http://localhost:11434';
+    const baseUrl =
+      this.config.get<string>('ollamaAdviceBaseUrl') ??
+      'http://localhost:11434';
     const model = this.config.get<string>('ollamaAdviceModel') ?? 'qwen3:32b';
 
     const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/generate`, {

@@ -5,8 +5,11 @@ export interface HealthThresholds {
   resteAVivre: { orangeBelowPctIncome: number };
   // Taux d'effort (mensualités / revenus)
   tauxEffort: { orangeAbovePct: number; redAbovePct: number };
-  // Utilisation des plafonds revolving
-  plafonds: { greenBelowPct: number; orangeAbovePct: number; redAbovePct: number };
+  // Utilisation des plafonds revolving : vert < greenBelowPct, orange
+  // [greenBelowPct, redAbovePct), rouge >= redAbovePct (F2 : plus de
+  // seuil orange dédié — décision d'auteur, greenBelowPct sert de borne
+  // basse pour l'orange).
+  plafonds: { greenBelowPct: number; redAbovePct: number };
   // Flux tirages : orange si > 0 (fixe), rouge si > redAbovePctIncome % des revenus
   tirages: { redAbovePctIncome: number };
   // Trajectoire
@@ -18,7 +21,7 @@ export interface HealthThresholds {
 export const DEFAULT_THRESHOLDS: HealthThresholds = {
   resteAVivre: { orangeBelowPctIncome: 10 },
   tauxEffort: { orangeAbovePct: 33, redAbovePct: 50 },
-  plafonds: { greenBelowPct: 60, orangeAbovePct: 80, redAbovePct: 95 },
+  plafonds: { greenBelowPct: 60, redAbovePct: 95 },
   tirages: { redAbovePctIncome: 15 },
   trajectoire: { horizonMonths: 6, stableBandPct: 5 },
   manualMonthlyIncome: null,

@@ -7,10 +7,25 @@ export interface IncomeDetection {
   label: string | null;
 }
 
-const MONTH_WORDS = /\b(janvier|fevrier|février|mars|avril|mai|juin|juillet|aout|août|septembre|octobre|novembre|decembre|décembre|january|february|march|april|may|june|july|august|september|october|november|december)\b/g;
+const MONTH_WORDS =
+  /\b(janvier|fevrier|février|mars|avril|mai|juin|juillet|aout|août|septembre|octobre|novembre|decembre|décembre|january|february|march|april|may|june|july|august|september|october|november|december)\b/g;
 const GENERIC_TOKENS = new Set([
-  'salaire', 'salary', 'wage', 'wages', 'paie', 'remuneration', 'rémunération',
-  'virement', 'vir', 'de', 'du', 'sepa', 'sa', 'sas', 's.a.s.', 's.a.s'
+  'salaire',
+  'salary',
+  'wage',
+  'wages',
+  'paie',
+  'remuneration',
+  'rémunération',
+  'virement',
+  'vir',
+  'de',
+  'du',
+  'sepa',
+  'sa',
+  'sas',
+  's.a.s.',
+  's.a.s',
 ]);
 const MIN_AMOUNT = 200;
 const STABILITY_TOLERANCE = 0.25;
@@ -27,7 +42,8 @@ export function collectDrawTxIds(loans: Loan[]): Set<string> {
 }
 
 function clusterKey(description: string): string {
-  const cleaned = description.toLowerCase()
+  const cleaned = description
+    .toLowerCase()
     .replace(MONTH_WORDS, ' ')
     .replace(/\d+/g, ' ')
     .replace(/[^a-zà-ÿ.\s-]/g, ' ')
@@ -44,9 +60,17 @@ function median(values: number[]): number {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
+/**
+ * @param excludedTxIds transactionId à ignorer lors de la détection du
+ *   revenu — union des tirages sur réserve renouvelable (`collectDrawTxIds`,
+ *   ce ne sont pas des revenus mais de la dette qui rentre) ET des
+ *   mouvements d'épargne entrants (F7, spec §1 : « hors mouvements
+ *   d'épargne entrants »). Anciennement `drawTxIds` — renommé car la
+ *   sémantique s'est élargie au-delà des seuls tirages.
+ */
 export function detectStableIncome(
   statements: MonthlyStatement[],
-  drawTxIds: Set<string>,
+  excludedTxIds: Set<string>,
   manualMonthlyIncome: number | null,
 ): IncomeDetection {
   if (manualMonthlyIncome != null) {
@@ -63,7 +87,7 @@ export function detectStableIncome(
   const clusters = new Map<string, Candidate[]>();
   for (const st of statements) {
     for (const t of st.transactions) {
-      if (t.amount < MIN_AMOUNT || drawTxIds.has(t.id)) continue;
+      if (t.amount < MIN_AMOUNT || excludedTxIds.has(t.id)) continue;
       const key = clusterKey(t.description);
       if (!key) continue;
       const month = t.date.slice(0, 7);
@@ -73,13 +97,20 @@ export function detectStableIncome(
     }
   }
 
-  const qualified: { key: string; medianAmount: number; months: Set<string> }[] = [];
+  const qualified: {
+    key: string;
+    medianAmount: number;
+    months: Set<string>;
+  }[] = [];
   for (const [key, occs] of clusters) {
     const months = new Set(occs.map((o) => o.month));
     if (months.size < MIN_DISTINCT_MONTHS) continue;
     if (occs.length / months.size > 1.5) continue;
     const med = median(occs.map((o) => o.amount));
-    if (!occs.every((o) => Math.abs(o.amount - med) <= med * STABILITY_TOLERANCE)) continue;
+    if (
+      !occs.every((o) => Math.abs(o.amount - med) <= med * STABILITY_TOLERANCE)
+    )
+      continue;
 
     // Aggregate amounts by calendar month, then compute median of last 3 distinct months
     const amountsByMonth = new Map<string, number[]>();
@@ -89,27 +120,51 @@ export function detectStableIncome(
       amountsByMonth.set(occ.month, arr);
     }
     const monthSums = Array.from(amountsByMonth.entries())
-      .map(([m, amounts]) => ({ month: m, sum: amounts.reduce((a, b) => a + b, 0) }))
+      .map(([m, amounts]) => ({
+        month: m,
+        sum: amounts.reduce((a, b) => a + b, 0),
+      }))
       .sort((a, b) => a.month.localeCompare(b.month));
     const last3Sums = monthSums.slice(-3).map((ms) => ms.sum);
     const medianAmount = median(last3Sums);
 
     qualified.push({ key, medianAmount, months });
   }
-  if (qualified.length === 0) return { monthly: null, source: 'unavailable', label: null };
+  if (qualified.length === 0)
+    return { monthly: null, source: 'unavailable', label: null };
 
   qualified.sort((a, b) => b.medianAmount - a.medianAmount);
   const main = qualified[0];
   // Transition emploi : cluster principal absent du dernier mois couvert,
   // mais un crédit non-tirage ≥ 50 % de sa médiane existe dans ce mois.
   if (latestMonth && !main.months.has(latestMonth)) {
-    const successor = statements.some((st) => st.transactions.some((t) =>
-      t.date.slice(0, 7) === latestMonth && t.amount >= main.medianAmount * 0.5 && !drawTxIds.has(t.id)));
+    const successor = statements.some((st) =>
+      st.transactions.some(
+        (t) =>
+          t.date.slice(0, 7) === latestMonth &&
+          t.amount >= main.medianAmount * 0.5 &&
+          !excludedTxIds.has(t.id),
+      ),
+    );
     if (successor) {
       const total = qualified.reduce((s, q) => s + q.medianAmount, 0);
-      return { monthly: Math.round(total * 100) / 100, source: 'transition', label: main.key };
+      return {
+        monthly: Math.round(total * 100) / 100,
+        source: 'transition',
+        label: main.key,
+      };
     }
+    // Revenu fantôme (F5) : le cluster principal a disparu du dernier mois
+    // couvert et aucun successeur ne s'y substitue — retourner la médiane
+    // historique fabriquerait un revenu qui n'existe plus. `label` est
+    // conservé (contrairement à l'autre branche unavailable ci-dessous) :
+    // il permet à l'UI d'afficher QUEL revenu a disparu.
+    return { monthly: null, source: 'unavailable', label: main.key };
   }
   const total = qualified.reduce((s, q) => s + q.medianAmount, 0);
-  return { monthly: Math.round(total * 100) / 100, source: 'detected', label: main.key };
+  return {
+    monthly: Math.round(total * 100) / 100,
+    source: 'detected',
+    label: main.key,
+  };
 }

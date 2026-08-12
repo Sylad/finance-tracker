@@ -3,12 +3,14 @@ import { HealthService, HealthContext } from './health.service';
 import { LoansService } from '../loans/loans.service';
 import { StorageService } from '../storage/storage.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { SavingsService } from '../savings/savings.service';
 import { HealthThresholdsService } from './health-thresholds.service';
 import { DEFAULT_THRESHOLDS } from '../../models/health.model';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
 import { Loan } from '../../models/loan.model';
 import { Subscription } from '../../models/subscription.model';
+import { SavingsAccount } from '../../models/savings-account.model';
 import { HealthThresholds } from '../../models/health.model';
 
 function mkTx(
@@ -128,6 +130,7 @@ async function mkServiceWith(data: {
   statements?: MonthlyStatement[];
   loans?: Loan[];
   subscriptions?: Subscription[];
+  savings?: SavingsAccount[];
   thresholds?: HealthThresholds;
 }): Promise<HealthService> {
   const mod = await Test.createTestingModule({
@@ -147,6 +150,12 @@ async function mkServiceWith(data: {
         provide: SubscriptionsService,
         useValue: {
           getAll: jest.fn().mockResolvedValue(data.subscriptions ?? []),
+        },
+      },
+      {
+        provide: SavingsService,
+        useValue: {
+          getAll: jest.fn().mockResolvedValue(data.savings ?? []),
         },
       },
       {
@@ -192,6 +201,10 @@ describe('HealthService', () => {
         },
         {
           provide: SubscriptionsService,
+          useValue: { getAll: jest.fn().mockResolvedValue([]) },
+        },
+        {
+          provide: SavingsService,
           useValue: { getAll: jest.fn().mockResolvedValue([]) },
         },
         {
@@ -281,6 +294,67 @@ describe('HealthService', () => {
     expect(block.status).toBe('orange');
     expect(block.thresholdHit).toContain('10');
     expect(block.details.resteAVivre).toBe(100);
+  });
+
+  it('(c5) reste à vivre : abonnements exclus de depensesCourantes ET soustraits une seule fois de la formule (F4)', () => {
+    // Pas de crédit. Revenu 3000. 1 abonnement actif 50 €/mois avec des
+    // occurrences bancaires détectées (transactionId présents dans les
+    // relevés) + une dépense courante "autre" de 200 €/mois.
+    const months = [
+      { y: 2026, m: 1 },
+      { y: 2026, m: 2 },
+      { y: 2026, m: 3 },
+    ];
+    const subTxIds: string[] = [];
+    const statements = months.map(({ y, m }) => {
+      const subTxId = `sub-tx-${y}-${m}`;
+      subTxIds.push(subTxId);
+      return mkStatement(y, m, [
+        mkTx(
+          `exp-${y}-${m}`,
+          `${y}-${String(m).padStart(2, '0')}-05`,
+          -200,
+          'DEPENSES COURANTES',
+        ),
+        mkTx(
+          subTxId,
+          `${y}-${String(m).padStart(2, '0')}-15`,
+          -50,
+          'NETFLIX ABONNEMENT',
+        ),
+      ]);
+    });
+    const subscription: Subscription = {
+      id: 'sub-1',
+      name: 'Netflix',
+      monthlyAmount: 50,
+      frequency: 'monthly',
+      category: 'streaming',
+      matchPattern: 'NETFLIX',
+      isActive: true,
+      occurrencesDetected: subTxIds.map((txId, i) => ({
+        id: `subocc-${i}`,
+        statementId: statements[i].id,
+        date: statements[i].transactions[1].date,
+        amount: -50,
+        transactionId: txId,
+      })),
+      createdAt: '',
+      updatedAt: '',
+    };
+    const ctx = mkCtx({
+      statements,
+      subscriptions: [subscription],
+      income: { monthly: 3000, source: 'detected', label: 'Employer' },
+    });
+
+    const block = svc.computeResteAVivre(ctx);
+
+    // depensesCourantes hors crédits ET hors occurrences d'abonnements = 200
+    expect(block.details.depensesCourantes).toBe(200);
+    expect(block.details.abonnementsMensuels).toBe(50);
+    // 3000 - 0 (mensualités) - 50 (abos) - 200 (dépenses hors crédits/abos) = 2750
+    expect(block.details.resteAVivre).toBe(2750);
   });
 
   it("(d) taux d'effort 40 % → orange, 60 % → rouge", () => {
@@ -374,6 +448,48 @@ describe('HealthService', () => {
     expect(block.details.pireReservePct).toBe(95);
     expect(block.status).toBe('red');
     expect(block.thresholdHit).toContain('95');
+  });
+
+  it('(i) plafond revolving à 70 % (entre greenBelowPct 60 et redAbovePct 95) → orange (F2)', () => {
+    const loan = mkLoan({
+      id: 'loan-1',
+      monthlyPayment: 0,
+      type: 'revolving',
+      maxAmount: 1000,
+      usedAmount: 700,
+    });
+    const ctx = mkCtx({
+      loans: [loan],
+      income: { monthly: 5000, source: 'detected', label: 'Employer' }, // taux d'effort 0 % → vert
+    });
+
+    const block = svc.computeChargeDette(ctx);
+
+    expect(block.details.pireReservePct).toBe(70);
+    expect(block.status).toBe('orange');
+    expect(block.thresholdHit).toContain('70');
+  });
+
+  it("(j) chargeDette : taux d'effort ET plafonds non-verts simultanément → thresholdHit concatène les deux raisons (F9)", () => {
+    const loan = mkLoan({
+      id: 'loan-1',
+      monthlyPayment: 800, // 800/2000 = 40 % → orange (orangeAbovePct 33, redAbovePct 50)
+      type: 'revolving',
+      maxAmount: 1000,
+      usedAmount: 700, // 70 % → orange (greenBelowPct 60, redAbovePct 95)
+    });
+    const ctx = mkCtx({
+      loans: [loan],
+      income: { monthly: 2000, source: 'detected', label: 'Employer' },
+    });
+
+    const block = svc.computeChargeDette(ctx);
+
+    expect(block.status).toBe('orange');
+    expect(block.thresholdHit).not.toBeNull();
+    expect(block.thresholdHit).toContain(';');
+    expect(block.thresholdHit).toContain("taux d'effort");
+    expect(block.thresholdHit).toContain('utilisé à');
   });
 
   it('(a) flux tirages : tirages > remboursements sur 3 mois glissants → orange, valeurs exposées dans details', () => {
@@ -503,6 +619,55 @@ describe('HealthService', () => {
 
     expect(block.details.tiragesMensuels).toBe(100);
     expect(block.status).toBe('orange');
+  });
+
+  it('(c3) flux tirages : revolving actif SANS maxAmount avec tirage → compté dans le flux (F1)', () => {
+    const loan = mkLoan({
+      id: 'loan-1',
+      monthlyPayment: 0,
+      type: 'revolving',
+      // Pas de maxAmount : le prédicat de sélection des réserves actives
+      // (revolvingsActifs) doit se baser sur getLoanKind, pas sur maxAmount.
+      occurrencesDetected: [
+        {
+          id: 'o1',
+          statementId: 's',
+          date: daysAgo(10),
+          amount: 300,
+          transactionId: 'tx1',
+          source: 'draw',
+        },
+      ],
+    });
+    const ctx = mkCtx({
+      loans: [loan],
+      income: { monthly: 3000, source: 'detected', label: 'Employer' },
+    });
+
+    const block = svc.computeFluxTirages(ctx);
+
+    expect(block.details.tiragesMensuels).toBe(100);
+    expect(block.status).toBe('orange');
+  });
+
+  it('(c4) chargeDette : revolving actif SANS maxAmount → exclu du ratio plafond, pas de crash (F1)', () => {
+    const loan = mkLoan({
+      id: 'loan-1',
+      monthlyPayment: 0,
+      type: 'revolving',
+      // Pas de maxAmount ni usedAmount.
+    });
+    const ctx = mkCtx({
+      loans: [loan],
+      income: { monthly: 3000, source: 'detected', label: 'Employer' },
+    });
+
+    const block = svc.computeChargeDette(ctx);
+
+    expect(block.details.pireReservePct).toBe(0);
+    expect(block.details.pireReserveNom).toBeNull();
+    expect(block.details.utilisationGlobalePct).toBe(0);
+    expect(block.status).toBe('green');
   });
 
   it('(d) trajectoire : revolving 5000/6000 avec trend +400/mois → plafond saturé sous horizon → rouge', () => {
@@ -640,6 +805,69 @@ describe('HealthService', () => {
       thresholdHit: null,
       details: {},
     });
+  });
+
+  it("(h2) getDiagnostic : manualMonthlyIncome <= 0 persisté sur disque (contournant le clamp d'écriture) → traité comme indisponible (F3)", async () => {
+    const thresholds = structuredClone(DEFAULT_THRESHOLDS);
+    thresholds.manualMonthlyIncome = 0;
+    const svcH = await mkServiceWith({ thresholds });
+
+    const diag = await svcH.getDiagnostic();
+
+    expect(diag.income.monthly).toBeNull();
+    expect(diag.reliability).toBe('unavailable');
+    expect(diag.verdict).toBe('orange');
+  });
+
+  it("(i) buildContext : virement entrant récurrent d'épargne exclu du calcul du revenu (F7)", async () => {
+    const months = [
+      { y: 2026, m: 1 },
+      { y: 2026, m: 2 },
+      { y: 2026, m: 3 },
+    ];
+    const txIds: string[] = [];
+    const statements = months.map(({ y, m }) => {
+      const txId = `sav-tx-${y}-${m}`;
+      txIds.push(txId);
+      return mkStatement(y, m, [
+        mkTx(
+          txId,
+          `${y}-${String(m).padStart(2, '0')}-15`,
+          500,
+          'Virement vers Livret A',
+        ),
+      ]);
+    });
+    const savingsAccount: SavingsAccount = {
+      id: 'sav-1',
+      name: 'Livret A',
+      type: 'livret-a',
+      initialBalance: 0,
+      initialBalanceDate: '2025-01-01',
+      matchPattern: 'LIVRET',
+      interestRate: 0.015,
+      interestAnniversaryMonth: 12,
+      currentBalance: 1500,
+      lastSyncedStatementId: null,
+      movements: txIds.map((txId, i) => ({
+        id: `mv-${i}`,
+        date: statements[i].transactions[0].date,
+        amount: 500,
+        source: 'bank-extract',
+        statementId: statements[i].id,
+        transactionId: txId,
+      })),
+      createdAt: '',
+      updatedAt: '',
+    };
+    const svcI = await mkServiceWith({ statements, savings: [savingsAccount] });
+
+    const ctx = await svcI.buildContext();
+
+    // Sans l'exclusion, ce virement stable 3 mois serait détecté comme
+    // revenu — avec l'exclusion, aucun autre cluster ne qualifie → unavailable.
+    expect(ctx.income.source).toBe('unavailable');
+    expect(ctx.income.monthly).toBeNull();
   });
 
   it('(g) getDiagnostic : seulement 2 relevés disponibles → reliability reduced', async () => {
