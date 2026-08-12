@@ -8,6 +8,8 @@ import { DEFAULT_THRESHOLDS } from '../../models/health.model';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
 import { Loan } from '../../models/loan.model';
+import { Subscription } from '../../models/subscription.model';
+import { HealthThresholds } from '../../models/health.model';
 
 function mkTx(
   id: string,
@@ -114,6 +116,52 @@ function mkThreeStatementsWithExpenses(
     ]);
   });
   return { statements, loanTxIds };
+}
+
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+async function mkServiceWith(data: {
+  statements?: MonthlyStatement[];
+  loans?: Loan[];
+  subscriptions?: Subscription[];
+  thresholds?: HealthThresholds;
+}): Promise<HealthService> {
+  const mod = await Test.createTestingModule({
+    providers: [
+      HealthService,
+      {
+        provide: LoansService,
+        useValue: { getAll: jest.fn().mockResolvedValue(data.loans ?? []) },
+      },
+      {
+        provide: StorageService,
+        useValue: {
+          getAllStatements: jest.fn().mockResolvedValue(data.statements ?? []),
+        },
+      },
+      {
+        provide: SubscriptionsService,
+        useValue: {
+          getAll: jest.fn().mockResolvedValue(data.subscriptions ?? []),
+        },
+      },
+      {
+        provide: HealthThresholdsService,
+        useValue: {
+          get: jest
+            .fn()
+            .mockResolvedValue(
+              data.thresholds ?? structuredClone(DEFAULT_THRESHOLDS),
+            ),
+        },
+      },
+    ],
+  }).compile();
+  return mod.get(HealthService);
 }
 
 function mkCtx(over: Partial<HealthContext>): HealthContext {
@@ -326,5 +374,225 @@ describe('HealthService', () => {
     expect(block.details.pireReservePct).toBe(95);
     expect(block.status).toBe('red');
     expect(block.thresholdHit).toContain('95');
+  });
+
+  it('(a) flux tirages : tirages > remboursements sur 3 mois glissants → orange, valeurs exposées dans details', () => {
+    const loan = mkLoan({
+      id: 'loan-1',
+      monthlyPayment: 0,
+      type: 'revolving',
+      maxAmount: 5000,
+      usedAmount: 1000,
+      occurrencesDetected: [
+        {
+          id: 'o1',
+          statementId: 's',
+          date: daysAgo(10),
+          amount: 300,
+          transactionId: 'tx1',
+          source: 'draw',
+        },
+        {
+          id: 'o2',
+          statementId: 's',
+          date: daysAgo(40),
+          amount: -90,
+          transactionId: 'tx2',
+          source: 'bank_statement',
+        },
+      ],
+    });
+    const ctx = mkCtx({
+      loans: [loan],
+      income: { monthly: 3000, source: 'detected', label: 'Employer' },
+    });
+
+    const block = svc.computeFluxTirages(ctx);
+
+    expect(block.status).toBe('orange');
+    expect(block.thresholdHit).not.toBeNull();
+    expect(block.details.tiragesMensuels).toBe(100);
+    expect(block.details.remboursementsMensuels).toBe(30);
+    expect(block.details.flux).toBe(70);
+  });
+
+  it('(b) flux tirages : flux > 15 % du revenu → rouge', () => {
+    const loan = mkLoan({
+      id: 'loan-1',
+      monthlyPayment: 0,
+      type: 'revolving',
+      maxAmount: 5000,
+      usedAmount: 1000,
+      occurrencesDetected: [
+        {
+          id: 'o1',
+          statementId: 's',
+          date: daysAgo(5),
+          amount: 600,
+          transactionId: 'tx1',
+          source: 'draw',
+        },
+      ],
+    });
+    const ctx = mkCtx({
+      loans: [loan],
+      income: { monthly: 1000, source: 'detected', label: 'Employer' },
+    });
+
+    const block = svc.computeFluxTirages(ctx);
+
+    expect(block.status).toBe('red');
+    expect(block.thresholdHit).toContain('rouge');
+    expect(block.details.flux).toBe(200);
+  });
+
+  it('(c) flux tirages : aucune occurrence de tirage → vert', () => {
+    const loan = mkLoan({
+      id: 'loan-1',
+      monthlyPayment: 0,
+      type: 'revolving',
+      maxAmount: 5000,
+      usedAmount: 1000,
+      occurrencesDetected: [
+        {
+          id: 'o1',
+          statementId: 's',
+          date: daysAgo(20),
+          amount: -50,
+          transactionId: 'tx1',
+          source: 'bank_statement',
+        },
+      ],
+    });
+    const ctx = mkCtx({
+      loans: [loan],
+      income: { monthly: 3000, source: 'detected', label: 'Employer' },
+    });
+
+    const block = svc.computeFluxTirages(ctx);
+
+    expect(block.status).toBe('green');
+    expect(block.thresholdHit).toBeNull();
+    expect(block.details.tiragesMensuels).toBe(0);
+  });
+
+  it('(d) trajectoire : revolving 5000/6000 avec trend +400/mois → plafond saturé sous horizon → rouge', () => {
+    const loan = mkLoan({
+      id: 'loan-1',
+      monthlyPayment: 0,
+      type: 'revolving',
+      maxAmount: 6000,
+      usedAmount: 5000,
+      occurrencesDetected: [
+        {
+          id: 'o1',
+          statementId: 's',
+          date: daysAgo(5),
+          amount: 400,
+          transactionId: 'tx1',
+          source: 'draw',
+        },
+        {
+          id: 'o2',
+          statementId: 's',
+          date: daysAgo(35),
+          amount: 400,
+          transactionId: 'tx2',
+          source: 'draw',
+        },
+        {
+          id: 'o3',
+          statementId: 's',
+          date: daysAgo(65),
+          amount: 400,
+          transactionId: 'tx3',
+          source: 'draw',
+        },
+      ],
+    });
+    const ctx = mkCtx({ loans: [loan] });
+
+    const block = svc.computeTrajectoire(ctx);
+
+    expect(block.status).toBe('red');
+    expect(block.thresholdHit).not.toBeNull();
+    expect(block.details.sumUsed).toBe(5000);
+    expect(block.details.sumProjected).toBe(7400);
+  });
+
+  it('(e) getDiagnostic : verdict = pire bloc, causes agrégées en ordre fixe (resteAVivre → chargeDette → trajectoire)', async () => {
+    const thresholds = structuredClone(DEFAULT_THRESHOLDS);
+    thresholds.manualMonthlyIncome = 2000;
+    const loanA = mkLoan({ id: 'loan-a', monthlyPayment: 2200 });
+    const loanB = mkLoan({
+      id: 'loan-b',
+      monthlyPayment: 0,
+      type: 'revolving',
+      maxAmount: 5000,
+      usedAmount: 1000,
+    });
+    const svcE = await mkServiceWith({ loans: [loanA, loanB], thresholds });
+
+    const diag = await svcE.getDiagnostic();
+
+    expect(diag.verdict).toBe('red');
+    expect(diag.blocks.resteAVivre.status).toBe('red');
+    expect(diag.blocks.chargeDette.status).toBe('red');
+    expect(diag.blocks.fluxTirages.status).toBe('green');
+    expect(diag.blocks.trajectoire.status).toBe('orange');
+    expect(diag.causes).toEqual([
+      diag.blocks.resteAVivre.thresholdHit,
+      diag.blocks.chargeDette.thresholdHit,
+      diag.blocks.trajectoire.thresholdHit,
+    ]);
+    expect(diag.reliability).toBe('reduced');
+  });
+
+  it('(f) getDiagnostic : revenu non configuré → orange, cause unique, reliability unavailable, sans exception', async () => {
+    const svcF = await mkServiceWith({});
+
+    const diag = await svcF.getDiagnostic();
+
+    expect(diag.verdict).toBe('orange');
+    expect(diag.causes).toEqual([
+      'revenus non configurés — diagnostic impossible',
+    ]);
+    expect(diag.reliability).toBe('unavailable');
+    expect(diag.income.monthly).toBeNull();
+    expect(diag.blocks.resteAVivre).toEqual({
+      status: 'orange',
+      thresholdHit: null,
+      details: {},
+    });
+    expect(diag.blocks.chargeDette).toEqual({
+      status: 'orange',
+      thresholdHit: null,
+      details: {},
+    });
+    expect(diag.blocks.fluxTirages).toEqual({
+      status: 'orange',
+      thresholdHit: null,
+      details: {},
+    });
+    expect(diag.blocks.trajectoire).toEqual({
+      status: 'orange',
+      thresholdHit: null,
+      details: {},
+    });
+  });
+
+  it('(g) getDiagnostic : seulement 2 relevés disponibles → reliability reduced', async () => {
+    const thresholds = structuredClone(DEFAULT_THRESHOLDS);
+    thresholds.manualMonthlyIncome = 2500;
+    const { statements } = mkThreeStatementsWithExpenses(500, 0);
+    const svcG = await mkServiceWith({
+      statements: statements.slice(0, 2),
+      thresholds,
+    });
+
+    const diag = await svcG.getDiagnostic();
+
+    expect(diag.reliability).toBe('reduced');
+    expect(diag.income.monthly).toBe(2500);
   });
 });
