@@ -782,6 +782,8 @@ describe('DetectionValidatorService', () => {
   });
 
   it('(s) suggestion loan standard (revolving) porte evidence', async () => {
+    // 3 mois distincts, 1 occurrence/mois — satisfait le garde de
+    // récurrence mensuelle (Round 6 fix) en plus du reste.
     const cluster = makeCluster({
       creditor: 'sofinco',
       occurrences: [
@@ -798,6 +800,13 @@ describe('DetectionValidatorService', () => {
           description: 'CA CONSUMER FINANCE',
           transactionId: 'b',
           statementId: '2026-02',
+        },
+        {
+          date: '2026-03-10',
+          amount: -60,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'c',
+          statementId: '2026-03',
         },
       ],
     });
@@ -822,9 +831,10 @@ describe('DetectionValidatorService', () => {
       occurrences: [
         { date: '2026-01-10', amount: 60, description: 'CA CONSUMER FINANCE' },
         { date: '2026-02-10', amount: 60, description: 'CA CONSUMER FINANCE' },
+        { date: '2026-03-10', amount: 60, description: 'CA CONSUMER FINANCE' },
       ],
       rationale: 'Prélèvements réguliers CA Consumer Finance',
-      lastSeenDate: '2026-02-10',
+      lastSeenDate: '2026-03-10',
     });
   });
 
@@ -862,6 +872,264 @@ describe('DetectionValidatorService', () => {
     expect(incoming[0].evidence!.occurrences).toHaveLength(12);
     expect(incoming[0].evidence!.occurrences[0].date).toBe(occurrences[3].date);
     expect(incoming[0].evidence!.lastSeenDate).toBe(occurrences[14].date);
+  });
+
+  it('(u) invariant 1 débit/mois : cluster 38 occurrences sur 10 mois (plusieurs/mois), classé revolving -> rejeté loan_multiple_per_month', async () => {
+    // Round 6 fix : la branche standard-loan ne vérifiait pas la
+    // récurrence mensuelle — un cluster à ~4 occurrences/mois, montants
+    // variables, pouvait être suggéré comme crédit malgré l'invariant
+    // métier "1 débit/mois max par crédit" (cf CLAUDE.md APEX 06).
+    const occurrences: ReturnType<typeof makeCluster>['occurrences'] = [];
+    let idx = 0;
+    for (let m = 1; m <= 10; m++) {
+      const countThisMonth = m <= 8 ? 4 : 3; // 8*4 + 2*3 = 38
+      for (let d = 0; d < countThisMonth; d++) {
+        idx++;
+        const day = String(2 + d * 5).padStart(2, '0');
+        const month = String(m).padStart(2, '0');
+        occurrences.push({
+          date: `2026-${month}-${day}`,
+          amount: -(20 + (idx % 7) * 3),
+          description: 'SOFINCO PRLV',
+          transactionId: `t${idx}`,
+          statementId: `2026-${month}`,
+        });
+      }
+    }
+    expect(occurrences).toHaveLength(38);
+    const cluster = makeCluster({
+      creditor: 'sofinco',
+      merchant: null,
+      occurrences,
+    });
+    const classification = makeClassification({
+      classification: 'revolving',
+      creditor: 'sofinco',
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.85,
+    });
+
+    const result = await svc.validate(
+      cluster,
+      classification,
+      cluster.occurrences[cluster.occurrences.length - 1].date,
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'loan_multiple_per_month',
+    });
+    expect(loansService.getAll).not.toHaveBeenCalled();
+    expect(loansService.findExistingLoan).not.toHaveBeenCalled();
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('(v) invariant 1 débit/mois : cluster 1/mois sur 2 mois seulement -> rejeté loan_insufficient_recurrence', async () => {
+    const cluster = makeCluster({
+      creditor: 'sofinco',
+      merchant: null,
+      occurrences: [
+        {
+          date: '2026-01-10',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'a',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-02-10',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'b',
+          statementId: '2026-02',
+        },
+      ],
+    });
+    const classification = makeClassification({
+      classification: 'classic',
+      creditor: 'sofinco',
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.8,
+    });
+
+    const result = await svc.validate(
+      cluster,
+      classification,
+      cluster.occurrences[cluster.occurrences.length - 1].date,
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'loan_insufficient_recurrence',
+    });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('(w) invariant 1 débit/mois : cluster 1/mois sur 5 mois -> suggestion créée (comportement conservé)', async () => {
+    const cluster = makeCluster({
+      creditor: 'sofinco2',
+      merchant: null,
+      occurrences: [
+        {
+          date: '2026-01-10',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'a',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-02-10',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'b',
+          statementId: '2026-02',
+        },
+        {
+          date: '2026-03-10',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'c',
+          statementId: '2026-03',
+        },
+        {
+          date: '2026-04-10',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'd',
+          statementId: '2026-04',
+        },
+        {
+          date: '2026-05-10',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'e',
+          statementId: '2026-05',
+        },
+      ],
+    });
+    const classification = makeClassification({
+      classification: 'revolving',
+      creditor: 'sofinco2',
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.85,
+    });
+
+    const result = await svc.validate(
+      cluster,
+      classification,
+      cluster.occurrences[cluster.occurrences.length - 1].date,
+    );
+
+    expect(result).toEqual({ created: true });
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('(x) stabilité du jour du mois : occurrences les 3, 5, 4, 6 du mois -> OK, suggestion créée', async () => {
+    // Décalages week-ends/fériés typiques — médiane 4.5, écarts max 1.5j,
+    // largement sous MAX_DAY_OF_MONTH_DRIFT (5j).
+    const cluster = makeCluster({
+      creditor: 'sofinco3',
+      merchant: null,
+      occurrences: [
+        {
+          date: '2026-01-03',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'a',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-02-05',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'b',
+          statementId: '2026-02',
+        },
+        {
+          date: '2026-03-04',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'c',
+          statementId: '2026-03',
+        },
+        {
+          date: '2026-04-06',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'd',
+          statementId: '2026-04',
+        },
+      ],
+    });
+    const classification = makeClassification({
+      classification: 'classic',
+      creditor: 'sofinco3',
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.85,
+    });
+
+    const result = await svc.validate(
+      cluster,
+      classification,
+      cluster.occurrences[cluster.occurrences.length - 1].date,
+    );
+
+    expect(result).toEqual({ created: true });
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('(y) stabilité du jour du mois : occurrences les 5, 18, 27 du mois -> rejetée loan_irregular_day', async () => {
+    const cluster = makeCluster({
+      creditor: 'sofinco4',
+      merchant: null,
+      occurrences: [
+        {
+          date: '2026-01-05',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'a',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-02-18',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'b',
+          statementId: '2026-02',
+        },
+        {
+          date: '2026-03-27',
+          amount: -100,
+          description: 'CA CONSUMER FINANCE',
+          transactionId: 'c',
+          statementId: '2026-03',
+        },
+      ],
+    });
+    const classification = makeClassification({
+      classification: 'revolving',
+      creditor: 'sofinco4',
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.85,
+    });
+
+    const result = await svc.validate(
+      cluster,
+      classification,
+      cluster.occurrences[cluster.occurrences.length - 1].date,
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'loan_irregular_day',
+    });
+    expect(loansService.getAll).not.toHaveBeenCalled();
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
   });
 });
 

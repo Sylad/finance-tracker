@@ -30,6 +30,16 @@ const MAX_EVIDENCE_OCCURRENCES = 12;
  *  fois — c'est un abonnement récurrent que le LLM a mal classé
  *  `installment` (ex. Prime Video 1.99/mois). */
 const LONG_SERIES_SUBSCRIPTION_MIN_OCCURRENCES = 6;
+/** Round 6 fix : nombre minimum de mois calendaires distincts pour que la
+ *  branche standard-loan (revolving/classic) affirme une récurrence
+ *  mensuelle suffisante pour un crédit — cf CLAUDE.md invariant "1 débit/
+ *  mois max par crédit" (APEX 06). En dessous, pas assez de signal. */
+const MIN_LOAN_DISTINCT_MONTHS = 3;
+/** Round 6 fix : un crédit se débite le même jour du mois (± quelques
+ *  jours pour les décalages week-ends/fériés) — au-delà de cet écart
+ *  (distance circulaire, gère la fin de mois) par rapport à la médiane
+ *  des jours-du-mois observés, la série n'a pas le profil d'un crédit. */
+const MAX_DAY_OF_MONTH_DRIFT = 5;
 
 export interface ValidationResult {
   created: boolean;
@@ -348,11 +358,51 @@ export class DetectionValidatorService {
     );
   }
 
+  /**
+   * Round 6 fix : la branche standard-loan (revolving/classic) ne
+   * vérifiait pas l'invariant métier "1 débit/mois max par crédit"
+   * (cf CLAUDE.md APEX 06) ni la stabilité du jour de prélèvement — un
+   * cluster à plusieurs occurrences/mois et montants variables (38 occ
+   * sur 10 mois observées en prod) pouvait être suggéré comme crédit.
+   * Trois checks structurels, APRÈS le garde fraîcheur de `validate()` et
+   * AVANT tout appel à `loansService` :
+   *  1. ≤1 occurrence par mois calendaire (un crédit ne se débite jamais
+   *     2× le même mois) -> `loan_multiple_per_month`.
+   *  2. ≥MIN_LOAN_DISTINCT_MONTHS mois calendaires distincts (sinon pas
+   *     assez de récurrence pour affirmer un crédit — les N× courts
+   *     restent gérés par la branche installment, non touchée ici) ->
+   *     `loan_insufficient_recurrence`.
+   *  3. Jour du mois stable : un crédit tombe le même jour à quelques
+   *     jours près (décalages week-ends/fériés). Écart à la médiane des
+   *     jours-du-mois, en distance circulaire (gère la fin de mois,
+   *     ex. 28 vs 2) -> `loan_irregular_day` si un écart dépasse
+   *     MAX_DAY_OF_MONTH_DRIFT.
+   */
   private async validateStandardLoan(
     cluster: CandidateCluster,
     classification: ClusterClassification,
   ): Promise<ValidationResult> {
     const occurrences = cluster.occurrences;
+
+    const months = occurrences.map((o) => o.date.slice(0, 7));
+    const distinctMonths = new Set(months);
+    if (distinctMonths.size !== months.length) {
+      return { created: false, reason: 'loan_multiple_per_month' };
+    }
+    if (distinctMonths.size < MIN_LOAN_DISTINCT_MONTHS) {
+      return { created: false, reason: 'loan_insufficient_recurrence' };
+    }
+
+    const daysOfMonth = occurrences.map((o) => Number(o.date.slice(8, 10)));
+    const medianDay = DetectionValidatorService.median(daysOfMonth);
+    const hasIrregularDay = daysOfMonth.some((d) => {
+      const diff = Math.abs(d - medianDay);
+      return Math.min(diff, 31 - diff) > MAX_DAY_OF_MONTH_DRIFT;
+    });
+    if (hasIrregularDay) {
+      return { created: false, reason: 'loan_irregular_day' };
+    }
+
     const amountsAbs = occurrences.map((o) => Math.abs(o.amount));
     const medianAmount = DetectionValidatorService.round2(
       DetectionValidatorService.median(amountsAbs),
