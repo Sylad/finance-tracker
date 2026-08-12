@@ -52,4 +52,22 @@ describe('CandidateClusteringService', () => {
     expect(clusters[0].creditor).toBe('almi');
     expect(clusters[0].occurrences).toHaveLength(2);
   });
+
+  it('normalise ponctuation/chiffres en branche sans étoile', () => {
+    const clusters = svc.buildClusters([stmt('2026-01', 1, [
+      tx('a', '2026-01-10', 'Prélèvement Almi/Ref123', -91),
+      tx('b', '2026-02-12', 'Achat CB Almi.', -91.5),
+    ])], new Set());
+    expect(clusters).toHaveLength(1);
+    expect(clusters[0].creditor).toBe('almi');
+    expect(clusters[0].occurrences).toHaveLength(2);
+  });
+
+  it('déduplique par transactionId : même tx dans 2 statements = 1 occ', () => {
+    const clusters = svc.buildClusters([
+      stmt('2026-01', 1, [tx('same-id', '2026-01-10', 'Almi payment', -50)]),
+      stmt('2026-02', 2, [tx('same-id', '2026-02-10', 'Almi payment', -50)]),
+    ], new Set());
+    expect(clusters).toHaveLength(0); // 1 occ après dédup → < MIN_OCCURRENCES
+  });
 });

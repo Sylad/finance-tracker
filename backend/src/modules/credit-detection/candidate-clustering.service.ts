@@ -19,11 +19,13 @@ export class CandidateClusteringService {
 
   buildClusters(statements: MonthlyStatement[], excludedTxIds: Set<string>): CandidateCluster[] {
     const byKey = new Map<string, { creditor: string; merchant: string | null; occ: ClusterOccurrence[] }>();
+    const seenTxIds = new Set<string>(); // Dedup by transactionId
     for (const st of statements) {
       for (const t of st.transactions) {
-        if (t.amount >= 0 || excludedTxIds.has(t.id)) continue;
+        if (t.amount >= 0 || excludedTxIds.has(t.id) || seenTxIds.has(t.id)) continue;
         const parsed = this.parseCounterpart(t.description);
         if (!parsed) continue;
+        seenTxIds.add(t.id); // Mark as seen to prevent duplicates in next statement
         const key = `${parsed.creditor}|${parsed.merchant ?? ''}`;
         const entry = byKey.get(key) ?? { creditor: parsed.creditor, merchant: parsed.merchant, occ: [] };
         entry.occ.push({ date: t.date, amount: t.amount, description: t.description, transactionId: t.id, statementId: st.id });
@@ -49,8 +51,8 @@ export class CandidateClusteringService {
       const merchant = this.clean(right).split(' ')[0] || null;
       return creditor ? { creditor, merchant } : null;
     }
-    // No asterisk: only extract creditor, merchant stays null
-    const tokens = d.split(/\s+/).filter(Boolean).filter(t => !/^\d+$/.test(t));
+    // No asterisk: clean first to normalize punctuation/digits, then extract creditor only
+    const tokens = this.clean(d).split(' ').filter(Boolean);
     if (tokens.length === 0) return null;
     return { creditor: tokens[0], merchant: null };
   }
