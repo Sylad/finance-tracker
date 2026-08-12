@@ -3,7 +3,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 import { atomicWriteJson } from '../../common/atomic-write';
-import { IncomingSuggestion, LoanSuggestion } from '../../models/loan-suggestion.model';
+import {
+  IncomingSuggestion,
+  LoanSuggestion,
+} from '../../models/loan-suggestion.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 
@@ -11,7 +14,10 @@ import { RequestDataDirService } from '../demo/request-data-dir.service';
 export class LoanSuggestionsService {
   private readonly logger = new Logger(LoanSuggestionsService.name);
 
-  constructor(private readonly dataDir: RequestDataDirService, private readonly bus: EventBusService) {}
+  constructor(
+    private readonly dataDir: RequestDataDirService,
+    private readonly bus: EventBusService,
+  ) {}
 
   private get filepath(): string {
     return path.resolve(this.dataDir.getDataDir(), 'loan-suggestions.json');
@@ -19,21 +25,30 @@ export class LoanSuggestionsService {
 
   async getAll(): Promise<LoanSuggestion[]> {
     try {
-      return JSON.parse(await fs.promises.readFile(this.filepath, 'utf8')) as LoanSuggestion[];
+      return JSON.parse(
+        await fs.promises.readFile(this.filepath, 'utf8'),
+      ) as LoanSuggestion[];
     } catch (err: unknown) {
       const e = err as NodeJS.ErrnoException;
       if (e?.code !== 'ENOENT') {
-        this.logger.warn(`Failed to read ${this.filepath}: ${e?.message ?? err}`);
+        this.logger.warn(
+          `Failed to read ${this.filepath}: ${e?.message ?? err}`,
+        );
       }
       return [];
     }
   }
 
   async getPending(): Promise<LoanSuggestion[]> {
-    return (await this.getAll()).filter((s) => s.status === 'pending' || s.status === 'snoozed');
+    return (await this.getAll()).filter(
+      (s) => s.status === 'pending' || s.status === 'snoozed',
+    );
   }
 
-  async upsertMany(statementId: string, incoming: IncomingSuggestion[]): Promise<void> {
+  async upsertMany(
+    statementId: string,
+    incoming: IncomingSuggestion[],
+  ): Promise<void> {
     if (incoming.length === 0) return;
     const all = await this.getAll();
     const now = new Date().toISOString();
@@ -46,7 +61,13 @@ export class LoanSuggestionsService {
         existing.lastSeenDate = inc.firstSeenDate;
         existing.monthlyAmount = inc.monthlyAmount;
         existing.label = inc.label;
-        if (inc.creditor && !existing.creditor) existing.creditor = inc.creditor;
+        if (inc.creditor && !existing.creditor)
+          existing.creditor = inc.creditor;
+        // Pass-through simple : ne clobber jamais un installment/source déjà
+        // présent avec un incoming qui n'en porte pas (ex. relevé standard
+        // qui re-matche une suggestion créée par la détection LLM).
+        if (inc.installment) existing.installment = inc.installment;
+        if (inc.source) existing.source = inc.source;
         dirty = true;
       } else {
         all.push({
@@ -60,6 +81,8 @@ export class LoanSuggestionsService {
           suggestedType: inc.suggestedType,
           matchPattern: inc.matchPattern,
           ...(inc.creditor ? { creditor: inc.creditor } : {}),
+          ...(inc.installment ? { installment: inc.installment } : {}),
+          ...(inc.source ? { source: inc.source } : {}),
           status: 'pending',
           createdAt: now,
         });
@@ -70,8 +93,11 @@ export class LoanSuggestionsService {
   }
 
   private dedupKey(s: { creditor?: string; matchPattern: string }): string {
-    if (s.creditor && s.creditor.trim()) return 'creditor:' + s.creditor.toLowerCase().trim();
-    return 'pattern:' + s.matchPattern.toLowerCase().replace(/\s+/g, ' ').trim();
+    if (s.creditor && s.creditor.trim())
+      return 'creditor:' + s.creditor.toLowerCase().trim();
+    return (
+      'pattern:' + s.matchPattern.toLowerCase().replace(/\s+/g, ' ').trim()
+    );
   }
 
   async accept(
@@ -110,7 +136,8 @@ export class LoanSuggestionsService {
     all[idx].status = status;
     all[idx].resolvedAt = new Date().toISOString();
     if (target?.loanId) all[idx].acceptedAsLoanId = target.loanId;
-    if (target?.subscriptionId) all[idx].acceptedAsSubscriptionId = target.subscriptionId;
+    if (target?.subscriptionId)
+      all[idx].acceptedAsSubscriptionId = target.subscriptionId;
     await this.persist(all);
     return all[idx];
   }

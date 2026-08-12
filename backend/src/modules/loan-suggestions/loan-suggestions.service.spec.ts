@@ -15,7 +15,14 @@ describe('LoanSuggestionsService', () => {
     const mod = await Test.createTestingModule({
       providers: [
         LoanSuggestionsService,
-        { provide: RequestDataDirService, useValue: { getDataDir: () => tmpDir, isDemoMode: () => false, runWith: (_ctx: any, fn: any) => fn() } },
+        {
+          provide: RequestDataDirService,
+          useValue: {
+            getDataDir: () => tmpDir,
+            isDemoMode: () => false,
+            runWith: (_ctx: any, fn: any) => fn(),
+          },
+        },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
@@ -25,14 +32,16 @@ describe('LoanSuggestionsService', () => {
   afterEach(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
 
   it('upserts a new pending suggestion', async () => {
-    await svc.upsertMany('2026-03', [{
-      label: 'PRELEVT CETELEM',
-      monthlyAmount: 320,
-      occurrencesSeen: 5,
-      firstSeenDate: '2025-11-15',
-      suggestedType: 'loan',
-      matchPattern: 'PRELEVT.*CETELEM',
-    }]);
+    await svc.upsertMany('2026-03', [
+      {
+        label: 'PRELEVT CETELEM',
+        monthlyAmount: 320,
+        occurrencesSeen: 5,
+        firstSeenDate: '2025-11-15',
+        suggestedType: 'loan',
+        matchPattern: 'PRELEVT.*CETELEM',
+      },
+    ]);
     const all = await svc.getAll();
     expect(all).toHaveLength(1);
     expect(all[0].status).toBe('pending');
@@ -49,7 +58,9 @@ describe('LoanSuggestionsService', () => {
       matchPattern: 'PRELEVT.*CETELEM',
     };
     await svc.upsertMany('2026-03', [incoming]);
-    await svc.upsertMany('2026-04', [{ ...incoming, occurrencesSeen: 6, firstSeenDate: '2026-04-01' }]);
+    await svc.upsertMany('2026-04', [
+      { ...incoming, occurrencesSeen: 6, firstSeenDate: '2026-04-01' },
+    ]);
     const all = await svc.getAll();
     expect(all).toHaveLength(1);
     expect(all[0].occurrencesSeen).toBe(6);
@@ -58,8 +69,12 @@ describe('LoanSuggestionsService', () => {
 
   it('does not resurrect rejected suggestions', async () => {
     const incoming = {
-      label: 'X', monthlyAmount: 10, occurrencesSeen: 3, firstSeenDate: '2025-11-01',
-      suggestedType: 'loan' as const, matchPattern: 'X',
+      label: 'X',
+      monthlyAmount: 10,
+      occurrencesSeen: 3,
+      firstSeenDate: '2025-11-01',
+      suggestedType: 'loan' as const,
+      matchPattern: 'X',
     };
     await svc.upsertMany('2026-03', [incoming]);
     const [s] = await svc.getAll();
@@ -70,10 +85,16 @@ describe('LoanSuggestionsService', () => {
   });
 
   it('accept marks resolvedAt and stores acceptedAsLoanId', async () => {
-    await svc.upsertMany('2026-03', [{
-      label: 'Y', monthlyAmount: 50, occurrencesSeen: 4, firstSeenDate: '2025-11-01',
-      suggestedType: 'loan', matchPattern: 'Y',
-    }]);
+    await svc.upsertMany('2026-03', [
+      {
+        label: 'Y',
+        monthlyAmount: 50,
+        occurrencesSeen: 4,
+        firstSeenDate: '2025-11-01',
+        suggestedType: 'loan',
+        matchPattern: 'Y',
+      },
+    ]);
     const [s] = await svc.getAll();
     const updated = await svc.accept(s.id, { loanId: 'loan-123' });
     expect(updated.status).toBe('accepted');
@@ -82,10 +103,16 @@ describe('LoanSuggestionsService', () => {
   });
 
   it('accept routes a subscription suggestion to acceptedAsSubscriptionId', async () => {
-    await svc.upsertMany('2026-03', [{
-      label: 'NETFLIX', monthlyAmount: 17.99, occurrencesSeen: 4, firstSeenDate: '2025-11-01',
-      suggestedType: 'subscription', matchPattern: 'NETFLIX',
-    }]);
+    await svc.upsertMany('2026-03', [
+      {
+        label: 'NETFLIX',
+        monthlyAmount: 17.99,
+        occurrencesSeen: 4,
+        firstSeenDate: '2025-11-01',
+        suggestedType: 'subscription',
+        matchPattern: 'NETFLIX',
+      },
+    ]);
     const [s] = await svc.getAll();
     const updated = await svc.accept(s.id, { subscriptionId: 'sub-456' });
     expect(updated.status).toBe('accepted');
@@ -95,9 +122,30 @@ describe('LoanSuggestionsService', () => {
 
   it('resetAllToPending : reset toutes les suggestions snoozed/rejected/accepted à pending', async () => {
     await svc.upsertMany('2026-03', [
-      { label: 'A', monthlyAmount: 10, occurrencesSeen: 5, firstSeenDate: '2025-11-01', suggestedType: 'loan', matchPattern: 'A' },
-      { label: 'B', monthlyAmount: 20, occurrencesSeen: 5, firstSeenDate: '2025-11-01', suggestedType: 'loan', matchPattern: 'B' },
-      { label: 'C', monthlyAmount: 30, occurrencesSeen: 5, firstSeenDate: '2025-11-01', suggestedType: 'loan', matchPattern: 'C' },
+      {
+        label: 'A',
+        monthlyAmount: 10,
+        occurrencesSeen: 5,
+        firstSeenDate: '2025-11-01',
+        suggestedType: 'loan',
+        matchPattern: 'A',
+      },
+      {
+        label: 'B',
+        monthlyAmount: 20,
+        occurrencesSeen: 5,
+        firstSeenDate: '2025-11-01',
+        suggestedType: 'loan',
+        matchPattern: 'B',
+      },
+      {
+        label: 'C',
+        monthlyAmount: 30,
+        occurrencesSeen: 5,
+        firstSeenDate: '2025-11-01',
+        suggestedType: 'loan',
+        matchPattern: 'C',
+      },
     ]);
     const all = await svc.getAll();
     await svc.reject(all[0].id);
@@ -112,10 +160,90 @@ describe('LoanSuggestionsService', () => {
     expect(after.every((s) => s.resolvedAt === undefined)).toBe(true);
   });
 
+  it('round-trip installment/source : persistés à la création, conservés au dédup', async () => {
+    const incoming = {
+      label: '4× klarni · zoland',
+      monthlyAmount: 44.98,
+      occurrencesSeen: 3,
+      firstSeenDate: '2026-01-10',
+      suggestedType: 'loan' as const,
+      matchPattern: 'klarni',
+      creditor: 'klarni',
+      installment: {
+        count: 4,
+        merchant: 'zoland',
+        occurrenceTxIds: ['a', 'b', 'c'],
+        amounts: [44.98, 44.5, 45.1],
+        dates: ['2026-01-10', '2026-02-08', '2026-03-07'],
+      },
+      source: 'llm_detection' as const,
+    };
+
+    await svc.upsertMany('2026-03', [incoming]);
+    const [created] = await svc.getPending();
+    expect(created.installment).toEqual(incoming.installment);
+    expect(created.source).toBe('llm_detection');
+
+    // second upsertMany identique (dédup par creditor) : pas de doublon, champs conservés
+    await svc.upsertMany('2026-03', [incoming]);
+    const pending = await svc.getPending();
+    expect(pending).toHaveLength(1);
+    expect(pending[0].installment).toEqual(incoming.installment);
+    expect(pending[0].source).toBe('llm_detection');
+  });
+
+  it("dédup : incoming sans installment ne détruit pas un installment déjà présent sur l'existante", async () => {
+    const withInstallment = {
+      label: '4× klarni · zoland',
+      monthlyAmount: 44.98,
+      occurrencesSeen: 3,
+      firstSeenDate: '2026-01-10',
+      suggestedType: 'loan' as const,
+      matchPattern: 'klarni',
+      creditor: 'klarni',
+      installment: {
+        count: 4,
+        merchant: 'zoland',
+        occurrenceTxIds: ['a', 'b', 'c'],
+        amounts: [44.98, 44.5, 45.1],
+        dates: ['2026-01-10', '2026-02-08', '2026-03-07'],
+      },
+      source: 'llm_detection' as const,
+    };
+    await svc.upsertMany('2026-03', [withInstallment]);
+
+    const { installment, ...rest } = withInstallment;
+    void installment;
+    const withoutInstallment = {
+      ...rest,
+      occurrencesSeen: 4,
+      firstSeenDate: '2026-04-07',
+    };
+    await svc.upsertMany('2026-04', [withoutInstallment]);
+
+    const [s] = await svc.getPending();
+    expect(s.occurrencesSeen).toBe(4);
+    expect(s.installment).toEqual(withInstallment.installment);
+  });
+
   it('deleteAll : purge totale', async () => {
     await svc.upsertMany('2026-03', [
-      { label: 'A', monthlyAmount: 10, occurrencesSeen: 5, firstSeenDate: '2025-11-01', suggestedType: 'loan', matchPattern: 'A' },
-      { label: 'B', monthlyAmount: 20, occurrencesSeen: 5, firstSeenDate: '2025-11-01', suggestedType: 'loan', matchPattern: 'B' },
+      {
+        label: 'A',
+        monthlyAmount: 10,
+        occurrencesSeen: 5,
+        firstSeenDate: '2025-11-01',
+        suggestedType: 'loan',
+        matchPattern: 'A',
+      },
+      {
+        label: 'B',
+        monthlyAmount: 20,
+        occurrencesSeen: 5,
+        firstSeenDate: '2025-11-01',
+        suggestedType: 'loan',
+        matchPattern: 'B',
+      },
     ]);
     const result = await svc.deleteAll();
     expect(result.deletedCount).toBe(2);
