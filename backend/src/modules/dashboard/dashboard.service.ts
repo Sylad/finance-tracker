@@ -40,6 +40,17 @@ export class DashboardService {
     let estimatedDebt = 0;
     const now = new Date();
     for (const l of loans.filter((x) => x.isActive && x.type === 'classic')) {
+      // Restant dû officiel (relevé/situation créancier) prioritaire :
+      // l'estimation mensualités × mois restants inclut les intérêts futurs
+      // et surestime le montant d'un remboursement anticipé. Un snapshot de
+      // plus de 90 jours est périmé (les mensualités ont continué) → fallback.
+      const snap = l.lastStatementSnapshot?.extractedValues;
+      const snapDate = snap?.statementDate ? new Date(snap.statementDate).getTime() : null;
+      const snapFresh = snapDate != null && now.getTime() - snapDate <= 90 * 24 * 3600 * 1000;
+      if (snap?.currentBalance != null && snapFresh) {
+        estimatedDebt += snap.currentBalance;
+        continue;
+      }
       if (!l.endDate || !l.monthlyPayment) {
         ignoredLoanIds.push(l.id);
         continue;
