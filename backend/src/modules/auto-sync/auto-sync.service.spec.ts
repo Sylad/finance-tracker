@@ -284,9 +284,10 @@ describe('AutoSyncService', () => {
       amount, currency: 'EUR', category: 'subscriptions', subcategory: '', isRecurring: true, confidence: 1,
     });
 
-    it('ignore les crédits entrants (amount ≥ 0) même si la regex matche', async () => {
-      // Un virement ENTRANT du créancier n'est pas une échéance ; l'ajouter
-      // décrémenterait usedAmount (addOccurrence fait Math.abs) → encours faux.
+    it('un crédit entrant n\'est JAMAIS compté comme mensualité — il devient un tirage', async () => {
+      // Un virement ENTRANT du créancier n'est pas une échéance ; le compter
+      // comme paiement décrémenterait usedAmount → encours faux. Sur un
+      // revolving, c'est un tirage (source='draw') qui AUGMENTE l'encours.
       savings.getAll.mockResolvedValue([]);
       loans.getAll.mockResolvedValue([mkLoan({})]);
       const stmt: MonthlyStatement = {
@@ -294,7 +295,8 @@ describe('AutoSyncService', () => {
         transactions: [mkTx('tx-in', '2026-03-10', 'Virement CREDITOR deblocage', 650)],
       };
       await svc.syncStatement(stmt);
-      expect(loans.addOccurrence).not.toHaveBeenCalled();
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(1);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-1', expect.objectContaining({ source: 'draw', amount: 650 }));
     });
 
     it('2 débits regex-only le même mois → seule la tx la plus proche du monthlyPayment est soumise', async () => {
@@ -378,6 +380,86 @@ describe('AutoSyncService', () => {
       expect(loans.addOccurrence).toHaveBeenCalledWith('loan-a', expect.objectContaining({ transactionId: 'tx-186' }));
       expect(loans.addOccurrence).toHaveBeenCalledWith('loan-b', expect.objectContaining({ transactionId: 'tx-127' }));
       expect(loans.addOccurrence).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('syncLoans — tirages (draws) sur revolving', () => {
+    const mkRev = (over: Record<string, unknown>) => ({
+      id: 'rev-1', name: 'Réserve', type: 'revolving', category: 'consumer',
+      monthlyPayment: 100, matchPattern: 'CREDITOR', isActive: true,
+      maxAmount: 5000, usedAmount: 2000,
+      occurrencesDetected: [], createdAt: '', updatedAt: '', ...over,
+    });
+    const mkTx = (id: string, date: string, description: string, amount: number) => ({
+      id, date, description, normalizedDescription: description.toLowerCase(),
+      amount, currency: 'EUR', category: 'other', subcategory: '', isRecurring: false, confidence: 1,
+    });
+
+    it('virement entrant matchant un revolving → occurrence source=draw', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([mkRev({})]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [mkTx('tx-draw', '2026-03-10', 'Virement CREDITOR', 650)],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('rev-1', expect.objectContaining({
+        amount: 650, transactionId: 'tx-draw', source: 'draw',
+      }));
+    });
+
+    it('tirage ambigu (2 réserves même créancier) → affecté à la plus grande marge sous plafond, une seule fois', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([
+        mkRev({ id: 'rev-small', name: 'Petite marge', maxAmount: 7000, usedAmount: 6500 }),
+        mkRev({ id: 'rev-big', name: 'Grande marge', maxAmount: 10000, usedAmount: 6000 }),
+      ]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [mkTx('tx-draw', '2026-03-10', 'Virement CREDITOR', 650)],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(1);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('rev-big', expect.objectContaining({
+        amount: 650, source: 'draw',
+      }));
+    });
+
+    it('tirage antérieur à la date du relevé de crédit de baseline → ignoré (déjà dans le solde)', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([mkRev({
+        lastStatementSnapshot: {
+          date: '2026-03-25T00:00:00Z', source: 'pdf-import',
+          extractedValues: { currentBalance: 2000, statementDate: '2026-03-20' },
+        },
+      })]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          mkTx('tx-before', '2026-03-15', 'Virement CREDITOR', 500),
+          mkTx('tx-after', '2026-03-29', 'Virement CREDITOR', 800),
+        ],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(1);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('rev-1', expect.objectContaining({
+        transactionId: 'tx-after', source: 'draw',
+      }));
+    });
+
+    it('pas de tirage sur un classic (les crédits amortissables ne créditent jamais le compte)', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([{
+        id: 'cls-1', name: 'Prêt', type: 'classic', category: 'consumer',
+        monthlyPayment: 250, matchPattern: 'CREDITOR', isActive: true,
+        occurrencesDetected: [], createdAt: '', updatedAt: '',
+      }]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [mkTx('tx-in', '2026-03-10', 'Virement CREDITOR deblocage', 650)],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).not.toHaveBeenCalled();
     });
   });
 
@@ -682,10 +764,7 @@ describe('AutoSyncService', () => {
       loansApi.create = jest.fn();
       // Stub findExistingLoan to return null (no match → can auto-create)
       (loans as unknown as { findExistingLoan: jest.Mock }).findExistingLoan = jest.fn().mockResolvedValue(null);
-      loans.getAll.mockResolvedValueOnce([]);  // post-reset
-      loans.getAll.mockResolvedValueOnce([]);  // syncLoans iter
-      loans.getAll.mockResolvedValueOnce([]);  // autoDeactivateStale
-      loans.getAll.mockResolvedValueOnce([]);  // final count
+      loans.getAll.mockResolvedValue([]); // post-reset, syncLoans, syncDraws, deactivate, final count
 
       const suggestionsApi = svc['suggestions'] as unknown as {
         resetAllToPending: jest.Mock;

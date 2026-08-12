@@ -342,6 +342,64 @@ export class AutoSyncService {
         await this.syncStandardLoan(loan, statement, allocatedTxIds);
       }
     }
+    await this.syncDraws(statement, allocatedTxIds);
+  }
+
+  /**
+   * Tirages sur réserves renouvelables : un virement ENTRANT (amount > 0) dont
+   * le libellé matche un revolving actif = argent tiré de la réserve vers le
+   * compte → usedAmount augmente (occurrence source='draw').
+   *
+   * - Ignoré si daté ≤ statementDate du dernier relevé de crédit (le tirage
+   *   est déjà compté dans le solde de baseline).
+   * - Si plusieurs réserves du même créancier matchent (2 SOFINCO…), affecté à
+   *   celle qui a la plus grande marge sous plafond, avec un warn — le TOTAL
+   *   reste juste, le prochain relevé de crédit recale la répartition.
+   */
+  private async syncDraws(statement: MonthlyStatement, allocatedTxIds: Set<string>): Promise<void> {
+    const loans = await this.loans.getAll();
+    const revolvings = loans.filter((l) => l.isActive && LoansService.getLoanKind(l) === 'revolving');
+    if (revolvings.length === 0) return;
+
+    const matchesLoan = (loan: Loan, desc: string): boolean => {
+      const lower = desc.toLowerCase();
+      const ids = [loan.contractRef ?? '', ...(loan.rumRefs ?? [])]
+        .map((s) => s.toLowerCase().trim())
+        .filter((s) => s.length >= 4);
+      if (ids.some((id) => lower.includes(id))) return true;
+      if (!loan.matchPattern) return false;
+      try { return new RegExp(loan.matchPattern, 'i').test(desc); }
+      catch { return false; }
+    };
+    const afterBaseline = (loan: Loan, date: string): boolean => {
+      const baseline = loan.lastStatementSnapshot?.extractedValues?.statementDate;
+      return !baseline || date > baseline;
+    };
+
+    for (const t of statement.transactions) {
+      if (t.amount <= 0 || allocatedTxIds.has(t.id)) continue;
+      const candidates = revolvings.filter((l) => matchesLoan(l, t.description) && afterBaseline(l, t.date));
+      if (candidates.length === 0) continue;
+      const headroom = (l: Loan) => (l.maxAmount ?? 0) - (l.usedAmount ?? 0);
+      const target = candidates.reduce((best, l) => (headroom(l) > headroom(best) ? l : best));
+      if (candidates.length > 1) {
+        this.logger.warn(
+          `Tirage +${t.amount}€ "${t.description}" ambigu entre ${candidates.map((l) => l.name).join(' / ')} — affecté à ${target.name} (plus grande marge sous plafond)`,
+        );
+      }
+      allocatedTxIds.add(t.id);
+      await this.loans.addOccurrence(target.id, {
+        statementId: statement.id,
+        date: t.date,
+        amount: t.amount,
+        transactionId: t.id,
+        description: t.description,
+        source: 'draw',
+      });
+      // Répercute localement pour que le choix de marge des tirages suivants
+      // du même statement reste cohérent.
+      target.usedAmount = (target.usedAmount ?? 0) + t.amount;
+    }
   }
 
   /**

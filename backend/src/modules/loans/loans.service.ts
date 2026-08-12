@@ -197,9 +197,22 @@ export class LoansService {
       return loan;
     }
 
-    // Niveau 2 : dédup mensuelle (YYYY-MM, loanId) — gère les décalages temporels
+    // Niveau 2 : dédup mensuelle (YYYY-MM, loanId) — gère les décalages temporels.
+    // Ne s'applique qu'aux DÉBITS (invariant "1 débit/mois") : les tirages
+    // (amount > 0) peuvent être multiples dans le mois et ne bloquent pas la
+    // mensualité du même mois.
     const monthOf = (d: string) => d.slice(0, 7); // 'YYYY-MM-DD' → 'YYYY-MM'
     const newMonth = monthOf(occ.date);
+    if (occ.amount > 0) {
+      const newDraw: LoanOccurrence = { id: randomUUID(), ...occ, source };
+      loan.occurrencesDetected.push(newDraw);
+      if (loan.type === 'revolving' && loan.usedAmount != null) {
+        loan.usedAmount = Math.round((loan.usedAmount + occ.amount) * 100) / 100;
+      }
+      loan.updatedAt = new Date().toISOString();
+      await this.persist(all);
+      return loan;
+    }
     const sourcePriority = (s: LoanOccurrenceSource | undefined): number => {
       // Plus haut = plus prioritaire. credit_statement = source canonique
       // (émis par l'organisme prêteur), donc remplace bank_statement et manual.
@@ -208,7 +221,7 @@ export class LoansService {
       return 1; // manual
     };
     const existingSameMonth = loan.occurrencesDetected.find(
-      (o) => monthOf(o.date) === newMonth,
+      (o) => o.amount < 0 && monthOf(o.date) === newMonth,
     );
     if (existingSameMonth) {
       const existingPrio = sourcePriority(existingSameMonth.source);
@@ -1239,9 +1252,11 @@ export class LoansService {
       monthlyClose = Math.abs(pa - pb) <= tolerance;
     }
 
-    // Signal (b) : invariant — partage d'au moins un mois d'occurrence
-    const monthsA = new Set(a.occurrencesDetected.map((o) => o.date.slice(0, 7)));
-    const monthsB = new Set(b.occurrencesDetected.map((o) => o.date.slice(0, 7)));
+    // Signal (b) : invariant — partage d'au moins un mois d'occurrence.
+    // Débits uniquement : les tirages (amount > 0) peuvent légitimement
+    // tomber le même mois sur 2 réserves distinctes du même créancier.
+    const monthsA = new Set(a.occurrencesDetected.filter((o) => o.amount < 0).map((o) => o.date.slice(0, 7)));
+    const monthsB = new Set(b.occurrencesDetected.filter((o) => o.amount < 0).map((o) => o.date.slice(0, 7)));
     const sharesMonth = [...monthsA].some((m) => monthsB.has(m));
 
     return monthlyClose || sharesMonth;

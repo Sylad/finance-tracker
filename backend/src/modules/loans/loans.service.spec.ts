@@ -390,6 +390,47 @@ describe('LoansService', () => {
     });
   });
 
+  describe('addOccurrence — tirages (draws)', () => {
+    it('un tirage (amount > 0) sur un revolving AUGMENTE usedAmount', async () => {
+      const loan = await svc.create({
+        name: 'Réserve', type: 'revolving', category: 'consumer',
+        monthlyPayment: 100, matchPattern: 'CREDITOR', isActive: true,
+        creditor: 'Creditor', maxAmount: 5000, usedAmount: 2000,
+      });
+      await svc.addOccurrence(loan.id, {
+        statementId: '2026-04', date: '2026-04-29', amount: 1500, transactionId: 'tx-d', source: 'draw',
+      });
+      const after = await svc.getOne(loan.id);
+      expect(after.usedAmount).toBe(3500);
+    });
+
+    it('les tirages ne sont pas soumis à la dédup mensuelle (2 tirages + 1 mensualité le même mois coexistent)', async () => {
+      const loan = await svc.create({
+        name: 'Réserve', type: 'revolving', category: 'consumer',
+        monthlyPayment: 100, matchPattern: 'CREDITOR', isActive: true,
+        creditor: 'Creditor', maxAmount: 5000, usedAmount: 2000,
+      });
+      await svc.addOccurrence(loan.id, { statementId: '2026-04', date: '2026-04-05', amount: -100, transactionId: 'tx-p' });
+      await svc.addOccurrence(loan.id, { statementId: '2026-04', date: '2026-04-10', amount: 650, transactionId: 'tx-d1', source: 'draw' });
+      await svc.addOccurrence(loan.id, { statementId: '2026-04', date: '2026-04-16', amount: 650, transactionId: 'tx-d2', source: 'draw' });
+      const after = await svc.getOne(loan.id);
+      expect(after.occurrencesDetected).toHaveLength(3);
+      expect(after.usedAmount).toBe(2000 - 100 + 650 + 650);
+    });
+
+    it('un tirage existant dans le mois ne bloque pas la mensualité du même mois', async () => {
+      const loan = await svc.create({
+        name: 'Réserve', type: 'revolving', category: 'consumer',
+        monthlyPayment: 100, matchPattern: 'CREDITOR', isActive: true,
+        creditor: 'Creditor', maxAmount: 5000, usedAmount: 2000,
+      });
+      await svc.addOccurrence(loan.id, { statementId: '2026-04', date: '2026-04-02', amount: 650, transactionId: 'tx-d', source: 'draw' });
+      await svc.addOccurrence(loan.id, { statementId: '2026-04', date: '2026-04-05', amount: -100, transactionId: 'tx-p' });
+      const after = await svc.getOne(loan.id);
+      expect(after.occurrencesDetected).toHaveLength(2);
+    });
+  });
+
   describe('detectDuplicates', () => {
     it('detects duplicates by creditor + type + monthlyPayment ±5%', async () => {
       // canonical avec contractRef
@@ -452,6 +493,24 @@ describe('LoansService', () => {
         monthlyPayment: 80, matchPattern: 'X', isActive: true,
         maxAmount: 3000, usedAmount: 0,
       });
+      const groups = await svc.detectDuplicates();
+      expect(groups).toHaveLength(0);
+    });
+
+    it('ne flag PAS 2 réserves partageant seulement un mois de TIRAGE (l\'invariant porte sur les débits)', async () => {
+      const a = await svc.create({
+        name: 'Réserve A', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'CREDITOR', isActive: true,
+        creditor: 'Creditor', maxAmount: 5000, usedAmount: 1000,
+      });
+      const b = await svc.create({
+        name: 'Réserve B', type: 'revolving', category: 'consumer',
+        monthlyPayment: 200, matchPattern: 'CREDITOR', isActive: true, // mensualités très différentes
+        creditor: 'Creditor', maxAmount: 8000, usedAmount: 2000,
+      });
+      // tirages le même mois — pas des débits, pas un signal de doublon
+      await svc.addOccurrence(a.id, { statementId: '2026-04', date: '2026-04-10', amount: 650, transactionId: 'tx-d1', source: 'draw' });
+      await svc.addOccurrence(b.id, { statementId: '2026-04', date: '2026-04-16', amount: 1105, transactionId: 'tx-d2', source: 'draw' });
       const groups = await svc.detectDuplicates();
       expect(groups).toHaveLength(0);
     });
