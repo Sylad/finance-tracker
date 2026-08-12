@@ -8,7 +8,10 @@ export interface IncomeDetection {
 }
 
 const MONTH_WORDS = /\b(janvier|fevrier|février|mars|avril|mai|juin|juillet|aout|août|septembre|octobre|novembre|decembre|décembre|january|february|march|april|may|june|july|august|september|october|november|december)\b/g;
-const GENERIC_PREFIX = new Set(['virement', 'de', 'du', 'sepa', 'vir', 'sa', 'sas', 's.a.s.', 's.a.s']);
+const GENERIC_TOKENS = new Set([
+  'salaire', 'salary', 'wage', 'wages', 'paie', 'remuneration', 'rémunération',
+  'virement', 'vir', 'de', 'du', 'sepa', 'sa', 'sas', 's.a.s.', 's.a.s'
+]);
 const MIN_AMOUNT = 200;
 const STABILITY_TOLERANCE = 0.25;
 const MIN_DISTINCT_MONTHS = 3;
@@ -23,12 +26,6 @@ export function collectDrawTxIds(loans: Loan[]): Set<string> {
   return ids;
 }
 
-function normalizeToken(token: string): string {
-  // Normalize salary-related variants to a common form
-  if (['salary', 'salaire', 'wage', 'wages', 'paie'].includes(token)) return 'salary';
-  return token;
-}
-
 function clusterKey(description: string): string {
   const cleaned = description.toLowerCase()
     .replace(MONTH_WORDS, ' ')
@@ -36,13 +33,8 @@ function clusterKey(description: string): string {
     .replace(/[^a-zà-ÿ.\s-]/g, ' ')
     .split(/\s+/)
     .filter(Boolean)
-    .map(normalizeToken);
-  const tokens: string[] = [];
-  for (const t of cleaned) {
-    if (tokens.length === 0 && GENERIC_PREFIX.has(t)) continue;
-    tokens.push(t);
-    if (tokens.length === 4) break;
-  }
+    .filter((t) => !GENERIC_TOKENS.has(t));
+  const tokens = cleaned.slice(0, 4);
   return tokens.join(' ');
 }
 
@@ -60,21 +52,27 @@ export function detectStableIncome(
   if (manualMonthlyIncome != null) {
     return { monthly: manualMonthlyIncome, source: 'manual', label: null };
   }
-  type Candidate = { month: string; amount: number };
-  const clusters = new Map<string, Candidate[]>();
+  // Determine latestMonth from statement year/month (not transaction dates)
   let latestMonth = '';
   for (const st of statements) {
+    const stmtMonth = `${st.year}-${String(st.month).padStart(2, '0')}`;
+    if (stmtMonth > latestMonth) latestMonth = stmtMonth;
+  }
+
+  type Candidate = { month: string; amount: number };
+  const clusters = new Map<string, Candidate[]>();
+  for (const st of statements) {
     for (const t of st.transactions) {
-      const month = t.date.slice(0, 7);
-      if (month > latestMonth) latestMonth = month;
       if (t.amount < MIN_AMOUNT || drawTxIds.has(t.id)) continue;
       const key = clusterKey(t.description);
       if (!key) continue;
+      const month = t.date.slice(0, 7);
       const arr = clusters.get(key);
       if (arr) arr.push({ month, amount: t.amount });
       else clusters.set(key, [{ month, amount: t.amount }]);
     }
   }
+
   const qualified: { key: string; medianAmount: number; months: Set<string> }[] = [];
   for (const [key, occs] of clusters) {
     const months = new Set(occs.map((o) => o.month));
@@ -82,8 +80,21 @@ export function detectStableIncome(
     if (occs.length / months.size > 1.5) continue;
     const med = median(occs.map((o) => o.amount));
     if (!occs.every((o) => Math.abs(o.amount - med) <= med * STABILITY_TOLERANCE)) continue;
-    const last3 = occs.sort((a, b) => a.month.localeCompare(b.month)).slice(-3);
-    qualified.push({ key, medianAmount: median(last3.map((o) => o.amount)), months });
+
+    // Aggregate amounts by calendar month, then compute median of last 3 distinct months
+    const amountsByMonth = new Map<string, number[]>();
+    for (const occ of occs) {
+      const arr = amountsByMonth.get(occ.month) || [];
+      arr.push(occ.amount);
+      amountsByMonth.set(occ.month, arr);
+    }
+    const monthSums = Array.from(amountsByMonth.entries())
+      .map(([m, amounts]) => ({ month: m, sum: amounts.reduce((a, b) => a + b, 0) }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+    const last3Sums = monthSums.slice(-3).map((ms) => ms.sum);
+    const medianAmount = median(last3Sums);
+
+    qualified.push({ key, medianAmount, months });
   }
   if (qualified.length === 0) return { monthly: null, source: 'unavailable', label: null };
 
@@ -95,7 +106,8 @@ export function detectStableIncome(
     const successor = statements.some((st) => st.transactions.some((t) =>
       t.date.slice(0, 7) === latestMonth && t.amount >= main.medianAmount * 0.5 && !drawTxIds.has(t.id)));
     if (successor) {
-      return { monthly: Math.round(main.medianAmount * 100) / 100, source: 'transition', label: main.key };
+      const total = qualified.reduce((s, q) => s + q.medianAmount, 0);
+      return { monthly: Math.round(total * 100) / 100, source: 'transition', label: main.key };
     }
   }
   const total = qualified.reduce((s, q) => s + q.medianAmount, 0);

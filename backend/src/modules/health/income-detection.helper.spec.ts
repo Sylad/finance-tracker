@@ -67,4 +67,39 @@ describe('detectStableIncome', () => {
     const out = detectStableIncome(drawsOnly, new Set(['d1', 'd2', 'd3']), null);
     expect(out.source).toBe('unavailable');
   });
+
+  it('médiane sur 3 derniers MOIS calendaires distincts (pas occurrences)', () => {
+    // Cluster salaire stable sur 4 mois, avec 2 occurrences en avril
+    // Tous les montants doivent être dans ±25% de la médiane globale pour passer le test de stabilité
+    const months = [
+      stmt('2026-01', 1, [tx('s1', '2026-01-15', 'Virement ACME salary', 1000)]),
+      stmt('2026-02', 2, [tx('s2', '2026-02-15', 'Virement ACME salary', 1000)]),
+      stmt('2026-03', 3, [tx('s3', '2026-03-15', 'Virement ACME salary', 1000)]),
+      stmt('2026-04', 4, [tx('s4a', '2026-04-05', 'Virement ACME salary', 1000),
+                           tx('s4b', '2026-04-25', 'Virement ACME salary', 1000)]),
+    ];
+    const out = detectStableIncome(months, new Set(), null);
+    // Médiane sur 3 derniers MOIS (Fév:1000, Mar:1000, Avr:1000) = 1000
+    // Pas sur les 3 dernières occurrences (qui seraient Mar:1000, Avr:1000, Avr:1000)
+    expect(out.source).toBe('detected');
+    expect(out.monthly).toBe(1000);
+  });
+
+  it('transition multi-cluster : somme médianes tous clusters', () => {
+    const months = [
+      stmt('2026-01', 1, [tx('s1', '2026-01-15', 'Virement ACME salary', 2800),
+                           tx('b1', '2026-01-10', 'Bonus Consulting', 400)]),
+      stmt('2026-02', 2, [tx('s2', '2026-02-15', 'Virement ACME salary', 2800),
+                           tx('b2', '2026-02-10', 'Bonus Consulting', 400)]),
+      stmt('2026-03', 3, [tx('s3', '2026-03-15', 'Virement ACME salary', 2800),
+                           tx('b3', '2026-03-10', 'Bonus Consulting', 400)]),
+      stmt('2026-04', 4, [tx('s4', '2026-04-10', 'Bonus Consulting', 400),
+                           tx('n1', '2026-04-28', 'Virement NewJob salary', 3200)]),
+    ];
+    const out = detectStableIncome(months, new Set(), null);
+    // ACME cluster absent de 2026-04, NewJob présent (3200 ≥ 2800 * 0.5) → transition
+    // Monthly = somme: ACME(2800) + Consulting(400) = 3200
+    expect(out.source).toBe('transition');
+    expect(out.monthly).toBe(3200);
+  });
 });
