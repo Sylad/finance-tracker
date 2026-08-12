@@ -57,10 +57,20 @@ Le `HealthService` calcule donc SES revenus lui-même, sans faire confiance aux
    ponctuels ;
 3. Revenu mensuel = **médiane des 3 derniers mois** du/des cluster(s) retenu(s).
 
-Sur les données actuelles : seul le cluster « S.A.S. Campbell Scientific » survit
-(3 424 / 3 861 / 3 382 € → médiane ≈ 3 424 €). Si aucun cluster ne survit ou si le
-résultat semble ambigu (2+ clusters de tailles proches), la page affiche « revenus à
-confirmer » avec lien `/income` — jamais de verdict sur des revenus douteux.
+La détection est **entièrement générique** — aucune contrepartie codée en dur (sur les
+données actuelles c'est le cluster employeur qui survit, médiane ≈ 3 424 €, mais Sylvain
+va changer d'employeur : le nom ne doit apparaître nulle part dans le code).
+
+**Règle de transition (changement d'employeur)** : si le cluster stable historique
+disparaît sur le dernier mois ET qu'un nouveau crédit non-tirage ≥ 50 % de l'ancien
+revenu apparaît, le bandeau affiche « changement de revenu détecté — confirme le
+montant sur /income » et utilise le nouveau montant confirmé manuellement en attendant
+que le nouveau cluster atteigne 3 mois. Le montant confirmé à la main prime toujours
+sur la détection.
+
+Si aucun cluster ne survit ou si le résultat est ambigu (2+ clusters de tailles
+proches), la page affiche « revenus à confirmer » avec lien `/income` — jamais de
+verdict sur des revenus douteux.
 
 Précision anti-faux-positif : les revenus n'incluent JAMAIS les virements marqués
 `draw` — sinon ~2 000 €/mois de tirages seraient comptés comme revenus (observé sur
