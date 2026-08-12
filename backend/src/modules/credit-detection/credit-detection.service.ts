@@ -37,11 +37,26 @@ export class CreditDetectionService {
     return this.runScan(clusters);
   }
 
+  /**
+   * Round 4 fix I-3 : clusteriser uniquement sur `[statement]` rendait ce
+   * hook post-import structurellement inutile — un plan mensuel classique
+   * (1 occurrence par relevé) n'atteint jamais MIN_OCCURRENCES=2 du
+   * clustering si on ne regarde que le relevé du jour. On clusterise donc
+   * sur `getAllStatements()` (comme `scanAll`) pour que l'historique
+   * complet forme les clusters, puis on filtre pour ne garder QUE les
+   * clusters ayant au moins une occurrence sur le relevé fraîchement
+   * importé — pas de re-scan LLM inutile de clusters purement anciens déjà
+   * couverts par un `scanAll` précédent.
+   */
   async scanStatement(
     statement: MonthlyStatement,
   ): Promise<DetectionScanResult> {
-    const clusters = await this.buildClustersFor([statement]);
-    return this.runScan(clusters);
+    const allStatements = await this.storage.getAllStatements();
+    const clusters = await this.buildClustersFor(allStatements);
+    const touchedClusters = clusters.filter((c) =>
+      c.occurrences.some((o) => o.statementId === statement.id),
+    );
+    return this.runScan(touchedClusters);
   }
 
   private async buildClustersFor(

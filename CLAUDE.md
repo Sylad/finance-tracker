@@ -156,6 +156,7 @@ Doc complète dans `.claude/output/apex/04-loans-synchro-robust/` et `.claude/ou
 - Revenus : détection générique par cluster stable ≥ 3 mois hors tirages (`income-detection.helper.ts`) — aucun nom d'employeur en dur ; override manuel `manualMonthlyIncome` dans les seuils prime sur tout.
 - Conseils IA **locale** : Ollama Big-Blue (RTX 5090), modèle `qwen3:32b` (bench 2026-08-12 vs gemma3:27b : meilleure fidélité chiffres + priorisation TAEG ; ~8 s à chaud, ~53 s à froid). Config `OLLAMA_ADVICE_BASE_URL`/`OLLAMA_ADVICE_MODEL` (défaut localhost:11434 — à surcharger si déploiement hors Big-Blue). Fail-loud : Ollama down → HTTP 502 explicite, AUCUN fallback cloud.
 - Frontend : page `/health` (bandeau verdict + 4 cartes + conseils + drawer seuils), tuile dashboard.
+- Les virements vers l'épargne ne comptent pas dans les dépenses courantes du reste à vivre (décision 2026-08-12 : épargner ≠ consommer).
 
 ### Détection crédits & N× par LLM local (module `credit-detection/`, 2026-08-12)
 

@@ -297,6 +297,36 @@ describe('HealthService', () => {
     expect(block.details.resteAVivre).toBe(100);
   });
 
+  it('(c2) débit = virement vers épargne (txId dans savingsMovementTxIds) exclu des dépenses courantes, RAV inchangé (round 4 I-4, décision Sylvain : épargner ≠ dépenser)', () => {
+    // Un virement -500 vers un Livret A ne doit PAS être compté comme une
+    // dépense courante — comparé à un contexte identique où ce virement
+    // n'existerait simplement pas dans le relevé, le reste à vivre doit
+    // être STRICTEMENT le même : épargner ne réduit pas le RAV, ce n'est
+    // pas de la consommation.
+    const statementSansVirement = mkStatement(2026, 3, [
+      mkTx('depense-1', '2026-03-05', -300, 'DEPENSES COURANTES'),
+    ]);
+    const statementAvecVirement = mkStatement(2026, 3, [
+      mkTx('depense-1', '2026-03-05', -300, 'DEPENSES COURANTES'),
+      mkTx('virement-epargne', '2026-03-12', -500, 'VIREMENT VERS LIVRET A'),
+    ]);
+    const ctxSansVirement = mkCtx({
+      statements: [statementSansVirement],
+      income: { monthly: 3000, source: 'detected', label: 'Employer' },
+    });
+    const ctxAvecVirement = mkCtx({
+      statements: [statementAvecVirement],
+      savingsMovementTxIds: new Set(['virement-epargne']),
+      income: { monthly: 3000, source: 'detected', label: 'Employer' },
+    });
+
+    const blockSans = svc.computeResteAVivre(ctxSansVirement);
+    const blockAvec = svc.computeResteAVivre(ctxAvecVirement);
+
+    expect(blockAvec.details.depensesCourantes).toBe(300);
+    expect(blockAvec.details.resteAVivre).toBe(blockSans.details.resteAVivre);
+  });
+
   it('(c5) reste à vivre : abonnements exclus de depensesCourantes ET soustraits une seule fois de la formule (F4)', () => {
     // Pas de crédit. Revenu 3000. 1 abonnement actif 50 €/mois avec des
     // occurrences bancaires détectées (transactionId présents dans les

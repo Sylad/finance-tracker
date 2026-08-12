@@ -752,6 +752,27 @@ describe('AutoSyncService', () => {
       expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
       expect(suggestions.snooze).toHaveBeenCalledWith('sg5');
     });
+
+    it("I-1 : suggestion source llm_detection (creditor whitelisté, occurrencesSeen ≥5) -> jamais auto-créée ni snoozée par ce flux, reste pending", async () => {
+      // Round 4 fix I-1 : le verrou "suggestions only" de credit-detection
+      // était contournable — une suggestion llm_detection avec un creditor
+      // whitelisté (ex. CETELEM) et ≥5 occurrencesSeen passait par le même
+      // bucketing que les suggestions du flux Claude classique et se
+      // faisait auto-créer en Loan (ou snoozer si <5 occ, ce qui lui fait
+      // perdre son badge dans la section masquée). Les suggestions de la
+      // détection LLM doivent attendre le clic utilisateur, point final.
+      suggestions.getPending.mockResolvedValue([
+        {
+          id: 'sg-llm', label: '6× klarni · zoland', monthlyAmount: 44.98, occurrencesSeen: 6,
+          firstSeenStatementId: '2026-01', firstSeenDate: '2026-01-15', lastSeenDate: '2026-06-15',
+          suggestedType: 'loan', matchPattern: 'CETELEM', creditor: 'CETELEM', status: 'pending', createdAt: '',
+          source: 'llm_detection',
+        },
+      ]);
+      await svc.syncStatement({ ...baseStatement, transactions: [] });
+      expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
+      expect(suggestions.snooze).not.toHaveBeenCalled();
+    });
   });
 
   describe('resetAndReplayLoans', () => {

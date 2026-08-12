@@ -181,17 +181,67 @@ describe('CreditDetectionService', () => {
     expect(validator.validate).not.toHaveBeenCalled();
   });
 
-  it('d) scanStatement : ne cluster que le statement passé', async () => {
-    clustering.buildClusters.mockReturnValue([]);
+  it('d) scanStatement : clusterise sur tous les relevés (comme scanAll) mais ne garde que les clusters touchant le relevé importé', async () => {
+    // Round 4 fix I-3 : scanStatement ne clusterisait QUE le nouveau relevé
+    // → un plan mensuel (1 occurrence/relevé) n'atteignait jamais
+    // MIN_OCCURRENCES=2 du clustering, rendant le hook post-import
+    // structurellement inutile pour tout créancier récurrent normal.
+    // Fix : clusterise sur getAllStatements() (comme scanAll), puis filtre
+    // pour ne garder que les clusters ayant au moins une occurrence dont
+    // statementId === statement.id — seuls les clusters "touchés" par le
+    // nouveau relevé partent au LLM (pas de re-scan inutile de l'historique
+    // entier à chaque import).
     const single = stmt('2026-03');
+    storage.getAllStatements.mockResolvedValue([
+      stmt('2026-01'),
+      stmt('2026-02'),
+      single,
+    ]);
 
-    await svc.scanStatement(single);
+    // Cluster à cheval sur l'ancien relevé (2026-02) et le nouveau (2026-03)
+    // -> doit être analysé.
+    const straddlingCluster: CandidateCluster = {
+      key: 'straddling',
+      creditor: 'straddling',
+      merchant: null,
+      occurrences: [
+        {
+          date: '2026-02-10',
+          amount: -50,
+          description: 'straddling 1',
+          transactionId: 'straddling-a',
+          statementId: '2026-02',
+        },
+        {
+          date: '2026-03-10',
+          amount: -50,
+          description: 'straddling 2',
+          transactionId: 'straddling-b',
+          statementId: '2026-03',
+        },
+      ],
+    };
+    // Cluster purement ancien (2026-01/2026-02 uniquement) -> pas touché par
+    // l'import de 2026-03, ne doit PAS être analysé.
+    const oldOnlyCluster = makeCluster('old-only');
 
-    expect(storage.getAllStatements).not.toHaveBeenCalled();
+    clustering.buildClusters.mockReturnValue([
+      straddlingCluster,
+      oldOnlyCluster,
+    ]);
+    classifier.classify.mockResolvedValue(makeClassification());
+    validator.validate.mockResolvedValue({ created: true });
+
+    const result = await svc.scanStatement(single);
+
+    expect(storage.getAllStatements).toHaveBeenCalled();
     expect(clustering.buildClusters).toHaveBeenCalledWith(
-      [single],
+      [stmt('2026-01'), stmt('2026-02'), single],
       expect.any(Set),
     );
+    expect(classifier.classify).toHaveBeenCalledTimes(1);
+    expect(classifier.classify).toHaveBeenCalledWith(straddlingCluster);
+    expect(result.clustersAnalyzed).toBe(1);
   });
 
   it('e) confidence basse -> suggestionsCreated 0 sans erreur', async () => {

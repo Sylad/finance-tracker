@@ -636,6 +636,15 @@ export class AutoSyncService {
     type SuggWithCreditor = (typeof suggestions)[number] & { creditor: string };
     const byKey = new Map<string, SuggWithCreditor[]>();
     for (const s of suggestions) {
+      // Round 4 fix I-1 : verrou "suggestions only" — les suggestions de la
+      // détection LLM (credit-detection module) ne sont JAMAIS auto-créées
+      // ni snoozées par ce flux, quel que soit le creditor ou le nombre
+      // d'occurrences. Elles attendent le clic explicite de l'user
+      // (`/loan-suggestions/:id/accept` ou `/accept-installment`). Avant ce
+      // fix, une suggestion llm_detection avec un creditor whitelisté et
+      // ≥5 occurrencesSeen était auto-créée en Loan comme n'importe quelle
+      // suggestion du flux Claude classique — contournant le verrou.
+      if (s.source === 'llm_detection') continue;
       if (s.suggestedType !== 'loan' || !s.creditor) continue;
       const creditorKey = s.creditor.toLowerCase().trim();
       if (!this.KNOWN_LOAN_CREDITORS.has(creditorKey)) continue;
