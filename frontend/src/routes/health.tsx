@@ -263,6 +263,8 @@ export function HealthPage() {
 function TrajectoireCard({ block }: { block: HealthBlockResult }) {
   const sumUsed = typeof block.details.sumUsed === 'number' ? block.details.sumUsed : null;
   const sumProjected = typeof block.details.sumProjected === 'number' ? block.details.sumProjected : null;
+  const horizonMonths =
+    typeof block.details.horizonMonths === 'number' ? block.details.horizonMonths : null;
   const chartData =
     sumUsed !== null && sumProjected !== null
       ? [
@@ -273,7 +275,7 @@ function TrajectoireCard({ block }: { block: HealthBlockResult }) {
 
   return (
     <BlockCard
-      title="Trajectoire 6-12 mois"
+      title={horizonMonths !== null ? `Trajectoire ${horizonMonths} mois` : 'Trajectoire'}
       block={block}
       mainFigure={sumProjected !== null ? `${formatEUR(sumProjected)} projeté` : '—'}
     >

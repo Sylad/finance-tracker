@@ -519,7 +519,7 @@ export type HealthStatus = 'green' | 'orange' | 'red';
 export interface HealthThresholds {
   resteAVivre: { orangeBelowPctIncome: number };
   tauxEffort: { orangeAbovePct: number; redAbovePct: number };
-  plafonds: { greenBelowPct: number; orangeAbovePct: number; redAbovePct: number };
+  plafonds: { greenBelowPct: number; redAbovePct: number };
   tirages: { redAbovePctIncome: number };
   trajectoire: { horizonMonths: number; stableBandPct: number };
   manualMonthlyIncome: number | null;

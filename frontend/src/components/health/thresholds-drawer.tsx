@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 type ThresholdsDraft = {
   resteAVivre: { orangeBelowPctIncome: number | '' };
   tauxEffort: { orangeAbovePct: number | ''; redAbovePct: number | '' };
-  plafonds: { greenBelowPct: number | ''; orangeAbovePct: number | ''; redAbovePct: number | '' };
+  plafonds: { greenBelowPct: number | ''; redAbovePct: number | '' };
   tirages: { redAbovePctIncome: number | '' };
   trajectoire: { horizonMonths: number | ''; stableBandPct: number | '' };
   manualMonthlyIncome: number | null;
@@ -23,7 +23,6 @@ type FieldKey =
   | 'tauxEffort.orangeAbovePct'
   | 'tauxEffort.redAbovePct'
   | 'plafonds.greenBelowPct'
-  | 'plafonds.orangeAbovePct'
   | 'plafonds.redAbovePct'
   | 'tirages.redAbovePctIncome'
   | 'trajectoire.horizonMonths'
@@ -34,11 +33,12 @@ type ValidationResult =
   | { ok: false; message: string; invalidKeys: Set<FieldKey> };
 
 /**
- * Valide les 9 seuils du form avant envoi : (1) tous doivent être des
+ * Valide les 8 seuils du form avant envoi : (1) tous doivent être des
  * nombres finis ≥ 0 — un champ vidé ou négatif ne mute JAMAIS le backend
  * silencieusement ; (2) cohérence orange ≤ rouge pour le taux d'effort et
- * les plafonds (sinon le bloc correspondant ne pourrait jamais atteindre
- * l'état rouge).
+ * vert ≤ rouge pour les plafonds (sinon le bloc correspondant ne pourrait
+ * jamais atteindre l'état rouge). Les plafonds n'ont plus de seuil orange
+ * dédié (F2) : `greenBelowPct` sert de borne basse pour l'orange.
  */
 function validateThresholdsForm(form: ThresholdsDraft): ValidationResult {
   const entries: [FieldKey, number | ''][] = [
@@ -46,7 +46,6 @@ function validateThresholdsForm(form: ThresholdsDraft): ValidationResult {
     ['tauxEffort.orangeAbovePct', form.tauxEffort.orangeAbovePct],
     ['tauxEffort.redAbovePct', form.tauxEffort.redAbovePct],
     ['plafonds.greenBelowPct', form.plafonds.greenBelowPct],
-    ['plafonds.orangeAbovePct', form.plafonds.orangeAbovePct],
     ['plafonds.redAbovePct', form.plafonds.redAbovePct],
     ['tirages.redAbovePctIncome', form.tirages.redAbovePctIncome],
     ['trajectoire.horizonMonths', form.trajectoire.horizonMonths],
@@ -67,7 +66,6 @@ function validateThresholdsForm(form: ThresholdsDraft): ValidationResult {
   };
   const plafonds = {
     greenBelowPct: form.plafonds.greenBelowPct as number,
-    orangeAbovePct: form.plafonds.orangeAbovePct as number,
     redAbovePct: form.plafonds.redAbovePct as number,
   };
 
@@ -78,11 +76,11 @@ function validateThresholdsForm(form: ThresholdsDraft): ValidationResult {
       invalidKeys: new Set<FieldKey>(['tauxEffort.orangeAbovePct', 'tauxEffort.redAbovePct']),
     };
   }
-  if (plafonds.redAbovePct < plafonds.orangeAbovePct) {
+  if (plafonds.redAbovePct < plafonds.greenBelowPct) {
     return {
       ok: false,
-      message: 'Le seuil rouge doit être ≥ au seuil orange (plafonds).',
-      invalidKeys: new Set<FieldKey>(['plafonds.orangeAbovePct', 'plafonds.redAbovePct']),
+      message: 'Le seuil rouge doit être ≥ au seuil vert (plafonds).',
+      invalidKeys: new Set<FieldKey>(['plafonds.greenBelowPct', 'plafonds.redAbovePct']),
     };
   }
 
@@ -218,12 +216,6 @@ export function ThresholdsDrawer({ onClose }: { onClose: () => void }) {
                 value={form.plafonds.greenBelowPct}
                 invalid={invalidKeys.has('plafonds.greenBelowPct')}
                 onChange={(v) => patchForm({ plafonds: { ...form.plafonds, greenBelowPct: v } })}
-              />
-              <NumField
-                label="Orange au-dessus de (%)"
-                value={form.plafonds.orangeAbovePct}
-                invalid={invalidKeys.has('plafonds.orangeAbovePct')}
-                onChange={(v) => patchForm({ plafonds: { ...form.plafonds, orangeAbovePct: v } })}
               />
               <NumField
                 label="Rouge au-dessus de (%)"
