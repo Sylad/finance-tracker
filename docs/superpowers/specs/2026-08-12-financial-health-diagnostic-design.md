@@ -40,6 +40,28 @@ Tous les seuils sont modifiables (drawer UI) et persistés dans
 phrases** (« Rouge parce que : reste à vivre −340 €/mois, Carrefour à 110 % du
 plafond »). Pas de score agrégé opaque.
 
+### Détection des revenus (règle métier confirmée par Sylvain, 2026-08-12)
+
+Sylvain a **un seul revenu mensuel stable** (salaire). Tout autre crédit entrant est soit
+un tirage de réserve, soit un remboursement ponctuel (mutuelle, régularisation). Constat
+dans la data réelle : les `recurringCredits` du relevé 2026-07 (détectés par Claude à
+l'import) incluent à tort les tirages Sofinco et un remboursement MHP santé.
+
+Le `HealthService` calcule donc SES revenus lui-même, sans faire confiance aux
+`recurringCredits` bruts :
+
+1. Candidats = crédits entrants **hors** transactions marquées `draw` (occurrences des
+   loans) ;
+2. Cluster par contrepartie normalisée : garder les clusters présents sur **≥ 3 mois**
+   avec ~1 occurrence/mois et montant stable (±25 %) → élimine les remboursements
+   ponctuels ;
+3. Revenu mensuel = **médiane des 3 derniers mois** du/des cluster(s) retenu(s).
+
+Sur les données actuelles : seul le cluster « S.A.S. Campbell Scientific » survit
+(3 424 / 3 861 / 3 382 € → médiane ≈ 3 424 €). Si aucun cluster ne survit ou si le
+résultat semble ambigu (2+ clusters de tailles proches), la page affiche « revenus à
+confirmer » avec lien `/income` — jamais de verdict sur des revenus douteux.
+
 Précision anti-faux-positif : les revenus n'incluent JAMAIS les virements marqués
 `draw` — sinon ~2 000 €/mois de tirages seraient comptés comme revenus (observé sur
 juin-juillet 2026) et le diagnostic serait faussement rassurant.
