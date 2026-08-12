@@ -6,7 +6,10 @@ import {
 } from '../../models/credit-detection.model';
 import { LoansService } from '../loans/loans.service';
 import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
-import { IncomingSuggestion } from '../../models/loan-suggestion.model';
+import {
+  IncomingSuggestion,
+  SuggestionEvidence,
+} from '../../models/loan-suggestion.model';
 import { escapeRegex } from '../../common/regex.util';
 
 const MIN_CONFIDENCE = 0.6;
@@ -15,6 +18,12 @@ const INTERVAL_MULTI_MIN_DAYS = 25;
 const INTERVAL_MULTI_MAX_DAYS = 35;
 const INTERVAL_SINGLE_MIN_DAYS = 20;
 const INTERVAL_SINGLE_MAX_DAYS = 40;
+/** Round 5 fix 3 : au-delà de ce nombre de jours entre la dernière
+ *  occurrence d'un cluster et la date la plus récente observée sur tous
+ *  les relevés, la série est considérée terminée — pas de suggestion. */
+const SERIES_ENDED_MAX_DAYS = 60;
+/** Round 5 fix 1 : nombre max d'occurrences persistées dans `evidence`. */
+const MAX_EVIDENCE_OCCURRENCES = 12;
 /** Round 3 fix 1 : une sous-série installment avec ≥6 occurrences (donc
  *  ≥6 mois calendaires distincts, déjà garanti par le check mensuel) à
  *  montant stable (garanti par splitByAmount) n'est pas un paiement en N
@@ -47,9 +56,25 @@ export class DetectionValidatorService {
   async validate(
     cluster: CandidateCluster,
     classification: ClusterClassification,
+    latestStatementDate: string,
   ): Promise<ValidationResult> {
     if (classification.confidence < MIN_CONFIDENCE) {
       return { created: false, reason: 'low_confidence' };
+    }
+
+    // Round 5 fix 3 : garde de fraîcheur, AVANT la classification par type —
+    // une série dont la dernière occurrence est trop ancienne par rapport
+    // au relevé le plus récent est terminée, peu importe sa classification.
+    const lastOccurrenceDate = DetectionValidatorService.maxDate(
+      cluster.occurrences.map((o) => o.date),
+    );
+    if (
+      DetectionValidatorService.daysBetween(
+        lastOccurrenceDate,
+        latestStatementDate,
+      ) > SERIES_ENDED_MAX_DAYS
+    ) {
+      return { created: false, reason: 'series_ended' };
     }
 
     switch (classification.classification) {
@@ -138,7 +163,7 @@ export class DetectionValidatorService {
     // subscription incluse) — si c'est un crédit déjà suivi, on ne veut
     // jamais le re-suggérer, peu importe sous quelle forme.
     if (
-      await this.hasFuzzyActiveLoanPayment(
+      await this.hasFuzzyKnownLoanPayment(
         classification.creditor,
         medianAmount,
       )
@@ -200,6 +225,10 @@ export class DetectionValidatorService {
         dates: occurrences.map((o) => o.date),
       },
       source: 'llm_detection',
+      evidence: DetectionValidatorService.buildEvidence(
+        occurrences,
+        classification.rationale,
+      ),
     };
 
     await this.loanSuggestionsService.upsertMany(
@@ -234,6 +263,10 @@ export class DetectionValidatorService {
       matchPattern: escapeRegex(classification.creditor),
       creditor: classification.creditor,
       source: 'llm_detection',
+      evidence: DetectionValidatorService.buildEvidence(
+        occurrences,
+        classification.rationale,
+      ),
     };
 
     await this.loanSuggestionsService.upsertMany(
@@ -249,13 +282,18 @@ export class DetectionValidatorService {
    * creditor+matchPattern). `findExistingLoan` ratait des crédits réels
    * quand le creditor extrait par le LLM du cluster ('carrefour') diverge
    * du creditor stocké sur le Loan ('CARREFOUR BANQUE'). Normalise
-   * (lowercase, trim) et matche par containment dans les deux sens ; ne
-   * considère que les loans ACTIFS, et exige un montant proche (±5%) du
-   * `monthlyPayment` du loan pour éviter de bloquer un cluster sans
-   * rapport chez le même créancier (ex. Carrefour Market vs Carrefour
-   * Banque).
+   * (lowercase, trim) et matche par containment dans les deux sens, et
+   * exige un montant proche (±5%) du `monthlyPayment` du loan pour éviter
+   * de bloquer un cluster sans rapport chez le même créancier (ex.
+   * Carrefour Market vs Carrefour Banque).
+   *
+   * Round 5 fix 2 : matche TOUS les loans, actifs ET inactifs (renommé en
+   * conséquence — ex-`hasFuzzyActiveLoanPayment`). Un crédit tracké puis
+   * clôturé (ex. LBP Consumer Finance) ne doit jamais être re-suggéré : le
+   * fait qu'il soit `isActive:false` ne le rend pas invisible pour ce
+   * garde, seulement pour le reste de l'app.
    */
-  private async hasFuzzyActiveLoanPayment(
+  private async hasFuzzyKnownLoanPayment(
     creditor: string,
     medianAmount: number,
   ): Promise<boolean> {
@@ -263,7 +301,7 @@ export class DetectionValidatorService {
     if (!normalizedCluster) return false;
     const loans = await this.loansService.getAll();
     return loans.some((loan) => {
-      if (!loan.isActive || !loan.creditor) return false;
+      if (!loan.creditor) return false;
       const normalizedLoan = loan.creditor.toLowerCase().trim();
       if (!normalizedLoan) return false;
       const contains =
@@ -321,7 +359,7 @@ export class DetectionValidatorService {
     );
 
     if (
-      await this.hasFuzzyActiveLoanPayment(
+      await this.hasFuzzyKnownLoanPayment(
         classification.creditor,
         medianAmount,
       )
@@ -364,6 +402,10 @@ export class DetectionValidatorService {
       matchPattern: escapeRegex(classification.creditor),
       creditor: classification.creditor,
       source: 'llm_detection',
+      evidence: DetectionValidatorService.buildEvidence(
+        occurrences,
+        classification.rationale,
+      ),
     };
 
     await this.loanSuggestionsService.upsertMany(
@@ -419,6 +461,37 @@ export class DetectionValidatorService {
     return Math.round(
       (new Date(to).getTime() - new Date(from).getTime()) / 86_400_000,
     );
+  }
+
+  private static maxDate(dates: string[]): string {
+    return dates.reduce((max, d) => (d > max ? d : max), dates[0]);
+  }
+
+  /**
+   * Round 5 fix 1 : preuves persistées derrière une suggestion — occurrences
+   * plafonnées aux MAX_EVIDENCE_OCCURRENCES plus récentes, rationale de la
+   * ClusterClassification, lastSeenDate = dernière occurrence observée.
+   * Appelée depuis les 3 points de création de suggestion (installment,
+   * subscription reroutée depuis une série longue, loan/subscription
+   * standard) pour que TOUTE suggestion issue de la détection en porte une.
+   */
+  private static buildEvidence(
+    occurrences: ClusterOccurrence[],
+    rationale: string,
+  ): SuggestionEvidence {
+    const sorted = [...occurrences].sort((a, b) =>
+      a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+    );
+    const capped = sorted.slice(-MAX_EVIDENCE_OCCURRENCES);
+    return {
+      occurrences: capped.map((o) => ({
+        date: o.date,
+        amount: Math.abs(o.amount),
+        description: o.description,
+      })),
+      rationale,
+      lastSeenDate: sorted[sorted.length - 1].date,
+    };
   }
 
   private static median(values: number[]): number {

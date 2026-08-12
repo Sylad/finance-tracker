@@ -77,6 +77,7 @@ export class LoanSuggestionsService {
         // qui re-matche une suggestion créée par la détection LLM).
         if (inc.installment) existing.installment = inc.installment;
         if (inc.source) existing.source = inc.source;
+        if (inc.evidence) existing.evidence = inc.evidence;
         dirty = true;
       } else {
         all.push({
@@ -92,6 +93,7 @@ export class LoanSuggestionsService {
           ...(inc.creditor ? { creditor: inc.creditor } : {}),
           ...(inc.installment ? { installment: inc.installment } : {}),
           ...(inc.source ? { source: inc.source } : {}),
+          ...(inc.evidence ? { evidence: inc.evidence } : {}),
           status: 'pending',
           createdAt: now,
         });

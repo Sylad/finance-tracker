@@ -302,6 +302,59 @@ describe('LoanSuggestionsService', () => {
     expect(s.installment).toEqual(withInstallment.installment);
   });
 
+  it('round-trip evidence : persisté à la création, conservé au dédup, non clobbé par un incoming sans evidence', async () => {
+    const withEvidence = {
+      label: '4× klarni · zoland',
+      monthlyAmount: 44.98,
+      occurrencesSeen: 3,
+      firstSeenDate: '2026-01-10',
+      suggestedType: 'loan' as const,
+      matchPattern: 'klarni',
+      creditor: 'klarni',
+      evidence: {
+        occurrences: [
+          {
+            date: '2026-01-10',
+            amount: 44.98,
+            description: 'Achat CB Klarni*Zoland 4X 1/3',
+          },
+          {
+            date: '2026-02-08',
+            amount: 44.5,
+            description: 'Klarni*Zoland 4X 2/3',
+          },
+          {
+            date: '2026-03-07',
+            amount: 45.1,
+            description: 'Klarni*Zoland 4X 3/3',
+          },
+        ],
+        rationale: 'Trois débits quasi identiques',
+        lastSeenDate: '2026-03-07',
+      },
+    };
+
+    await svc.upsertMany('2026-03', [withEvidence]);
+    const [created] = await svc.getPending();
+    expect(created.evidence).toEqual(withEvidence.evidence);
+
+    // dédup identique (même creditor) -> conservé
+    await svc.upsertMany('2026-03', [withEvidence]);
+    const pending = await svc.getPending();
+    expect(pending).toHaveLength(1);
+    expect(pending[0].evidence).toEqual(withEvidence.evidence);
+
+    // incoming sans evidence ne détruit pas l'evidence déjà présente
+    const { evidence, ...rest } = withEvidence;
+    void evidence;
+    await svc.upsertMany('2026-04', [
+      { ...rest, occurrencesSeen: 4, firstSeenDate: '2026-04-07' },
+    ]);
+    const [s] = await svc.getPending();
+    expect(s.occurrencesSeen).toBe(4);
+    expect(s.evidence).toEqual(withEvidence.evidence);
+  });
+
   it('deleteAll : purge totale', async () => {
     await svc.upsertMany('2026-03', [
       {

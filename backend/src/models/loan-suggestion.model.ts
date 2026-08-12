@@ -19,6 +19,23 @@ export interface InstallmentSuggestionInfo {
   dates: string[]; // dates observées YYYY-MM-DD
 }
 
+/**
+ * Preuves brutes derrière une suggestion issue de la détection LLM
+ * (Round 5 fix 1) — permet à l'utilisateur de juger une suggestion sans
+ * deviner ce qu'il y a derrière un simple « vu N fois ». Rempli par
+ * DetectionValidatorService pour TOUTE suggestion issue de la détection
+ * (installment, loan, subscription), jamais pour les suggestions
+ * `claude_import` historiques.
+ */
+export interface SuggestionEvidence {
+  /** Occurrences observées, plafonnées aux 12 plus récentes. */
+  occurrences: { date: string; amount: number; description: string }[];
+  /** Rationale de la ClusterClassification LLM — null si absent. */
+  rationale: string | null;
+  /** Date de la dernière occurrence observée. */
+  lastSeenDate: string;
+}
+
 export interface LoanSuggestion {
   id: string;
   label: string;
@@ -38,6 +55,8 @@ export interface LoanSuggestion {
   installment?: InstallmentSuggestionInfo;
   /** Origine de la suggestion — absent = comportement historique (claude_import). */
   source?: LoanSuggestionSource;
+  /** Preuves (opérations + rationale) — absent = comportement historique. */
+  evidence?: SuggestionEvidence;
 }
 
 export interface IncomingSuggestion {
@@ -50,4 +69,5 @@ export interface IncomingSuggestion {
   creditor?: string;
   installment?: InstallmentSuggestionInfo;
   source?: LoanSuggestionSource;
+  evidence?: SuggestionEvidence;
 }

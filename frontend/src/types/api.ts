@@ -402,6 +402,15 @@ export interface InstallmentSuggestionInfo {
   dates: string[];
 }
 
+/** Preuves persistées derrière une suggestion issue de la détection LLM
+ *  (occurrences plafonnées aux 12 plus récentes, rationale, dernière
+ *  échéance vue). Absent = suggestion historique claude_import. */
+export interface SuggestionEvidence {
+  occurrences: { date: string; amount: number; description: string }[];
+  rationale: string | null;
+  lastSeenDate: string;
+}
+
 export interface LoanSuggestion {
   id: string;
   label: string;
@@ -422,6 +431,8 @@ export interface LoanSuggestion {
   installment?: InstallmentSuggestionInfo;
   /** Absent = comportement historique (suggestion issue de l'import Claude des relevés). */
   source?: LoanSuggestionSource;
+  /** Preuves (opérations + rationale) — présent pour les suggestions issues de la détection LLM. */
+  evidence?: SuggestionEvidence;
 }
 
 /** Résultat de POST /credit-detection/scan — un Ollama démarré-mais-cassé renvoie du 200

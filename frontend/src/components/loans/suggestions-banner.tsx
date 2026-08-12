@@ -8,7 +8,14 @@ import {
   useAcceptInstallmentSuggestion,
 } from '@/lib/queries';
 import type { LoanSuggestion } from '@/types/api';
-import { formatEUR, cn } from '@/lib/utils';
+import { formatEUR, formatDate, cn } from '@/lib/utils';
+
+/** Libellés français des types suggérés — remplace l'affichage brut « type loan ». */
+const SUGGESTED_TYPE_LABELS: Record<LoanSuggestion['suggestedType'], string> = {
+  loan: 'crédit',
+  subscription: 'abonnement',
+  utility: 'facture',
+};
 
 export function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) => void }) {
   const { data } = useLoanSuggestions();
@@ -61,8 +68,28 @@ export function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) 
                 <div className="text-xs text-fg-dim tabular">
                   {s.installment
                     ? `${formatEUR(s.monthlyAmount)}/mois · ${n}× chez ${s.installment.merchant ?? s.creditor ?? '?'}`
-                    : `${formatEUR(s.monthlyAmount)}/mois · vu ${s.occurrencesSeen} fois · type ${s.suggestedType}`}
+                    : `${formatEUR(s.monthlyAmount)}/mois · vu ${s.occurrencesSeen} fois · ${SUGGESTED_TYPE_LABELS[s.suggestedType]}`}
                 </div>
+                {s.evidence && (
+                  <details className="mt-1 text-xs">
+                    <summary className="cursor-pointer text-fg-dim hover:text-fg-bright select-none">
+                      Voir les opérations ({s.evidence.occurrences.length})
+                    </summary>
+                    <ul className="mt-1 space-y-0.5 pl-3 text-fg-dim tabular">
+                      {s.evidence.occurrences.map((o, i) => (
+                        <li key={i}>
+                          {formatDate(o.date)} · {formatEUR(o.amount)} · {o.description}
+                        </li>
+                      ))}
+                    </ul>
+                    {s.evidence.rationale && (
+                      <div className="mt-1 italic text-fg-dim">{s.evidence.rationale}</div>
+                    )}
+                    <div className="mt-1 text-fg-dim">
+                      Dernière échéance vue : {formatDate(s.evidence.lastSeenDate)}
+                    </div>
+                  </details>
+                )}
               </div>
               <div className="flex gap-1 shrink-0">
                 {s.installment ? (

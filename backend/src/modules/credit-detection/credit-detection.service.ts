@@ -34,7 +34,9 @@ export class CreditDetectionService {
   async scanAll(): Promise<DetectionScanResult> {
     const statements = await this.storage.getAllStatements();
     const clusters = await this.buildClustersFor(statements);
-    return this.runScan(clusters);
+    const latestStatementDate =
+      CreditDetectionService.computeLatestTransactionDate(statements);
+    return this.runScan(clusters, latestStatementDate);
   }
 
   /**
@@ -56,7 +58,28 @@ export class CreditDetectionService {
     const touchedClusters = clusters.filter((c) =>
       c.occurrences.some((o) => o.statementId === statement.id),
     );
-    return this.runScan(touchedClusters);
+    const latestStatementDate =
+      CreditDetectionService.computeLatestTransactionDate(allStatements);
+    return this.runScan(touchedClusters, latestStatementDate);
+  }
+
+  /**
+   * Round 5 fix 3 : calculée une seule fois par scan (pas par cluster) —
+   * max des `t.date` de toutes les transactions de tous les relevés
+   * considérés. Sert de référence pour la garde de fraîcheur du
+   * validateur (`series_ended`). Fallback sur la date du jour si aucune
+   * transaction (statements vides) pour ne jamais planter le scan.
+   */
+  private static computeLatestTransactionDate(
+    statements: MonthlyStatement[],
+  ): string {
+    let max: string | null = null;
+    for (const statement of statements) {
+      for (const t of statement.transactions) {
+        if (!max || t.date > max) max = t.date;
+      }
+    }
+    return max ?? new Date().toISOString().slice(0, 10);
   }
 
   private async buildClustersFor(
@@ -75,6 +98,7 @@ export class CreditDetectionService {
 
   private async runScan(
     clusters: CandidateCluster[],
+    latestStatementDate: string,
   ): Promise<DetectionScanResult> {
     const errors: { clusterKey: string; message: string }[] = [];
     let suggestionsCreated = 0;
@@ -101,6 +125,7 @@ export class CreditDetectionService {
         const validation = await this.validator.validate(
           cluster,
           classification,
+          latestStatementDate,
         );
         if (validation.created) {
           suggestionsCreated += validation.createdCount ?? 1;
