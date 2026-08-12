@@ -293,4 +293,38 @@ describe('HealthService', () => {
     expect(block.status).toBe('orange');
     expect(block.details.tauxEffortPct).toBe(25);
   });
+
+  it("(g) taux d'effort exactement 50.0 % (borne) → orange, pas rouge", () => {
+    const loan = mkLoan({ id: 'loan-1', monthlyPayment: 500 }); // 500/1000 = 50.0%
+    const ctx = mkCtx({
+      loans: [loan],
+      income: { monthly: 1000, source: 'detected', label: 'Employer' },
+    });
+
+    const block = svc.computeChargeDette(ctx);
+
+    expect(block.details.tauxEffortPct).toBe(50);
+    expect(block.status).toBe('orange');
+    expect(block.thresholdHit).toContain('50');
+  });
+
+  it('(h) plafond revolving exactement 95.0 % (borne) → rouge', () => {
+    const loan = mkLoan({
+      id: 'loan-1',
+      monthlyPayment: 100,
+      type: 'revolving',
+      maxAmount: 1000,
+      usedAmount: 950,
+    });
+    const ctx = mkCtx({
+      loans: [loan],
+      income: { monthly: 5000, source: 'detected', label: 'Employer' }, // taux d'effort 2 % → vert
+    });
+
+    const block = svc.computeChargeDette(ctx);
+
+    expect(block.details.pireReservePct).toBe(95);
+    expect(block.status).toBe('red');
+    expect(block.thresholdHit).toContain('95');
+  });
 });

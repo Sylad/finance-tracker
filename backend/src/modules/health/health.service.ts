@@ -171,7 +171,7 @@ export class HealthService {
       ctx.thresholds.plafonds;
 
     const tauxStatus: HealthStatus =
-      tauxEffortPct >= tauxRed
+      tauxEffortPct > tauxRed
         ? 'red'
         : tauxEffortPct >= tauxOrange
           ? 'orange'
@@ -200,14 +200,17 @@ export class HealthService {
       if (status !== 'green') {
         const limit = status === 'red' ? plafondRed : plafondOrange;
         const label = status === 'red' ? 'rouge' : 'orange';
-        thresholdHit = `${label} car ${pireReserveNom} utilisé à ${round1(pireReservePct)} % > ${limit} %`;
+        // Plafonds : comparateur réel toujours ≥ (rouge "≥ 95 % ou dépassé", orange "≥ 80 %").
+        thresholdHit = `${label} car ${pireReserveNom} utilisé à ${round1(pireReservePct)} % ≥ ${limit} %`;
       }
     } else {
       status = tauxStatus;
       if (status !== 'green') {
-        const limit = status === 'red' ? tauxRed : tauxOrange;
         const label = status === 'red' ? 'rouge' : 'orange';
-        thresholdHit = `${label} car taux d'effort ${round1(tauxEffortPct)} % > ${limit} %`;
+        // Taux d'effort : rouge est strictement > (borne 50 % pile = orange), orange démarre à ≥ 33 %.
+        const comparator = status === 'red' ? '>' : '≥';
+        const limit = status === 'red' ? tauxRed : tauxOrange;
+        thresholdHit = `${label} car taux d'effort ${round1(tauxEffortPct)} % ${comparator} ${limit} %`;
       }
     }
 
