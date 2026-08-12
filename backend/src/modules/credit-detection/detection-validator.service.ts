@@ -91,7 +91,11 @@ export class DetectionValidatorService {
       case 'not_credit':
         return { created: false, reason: 'not_credit' };
       case 'installment':
-        return this.validateInstallment(cluster, classification);
+        return this.validateInstallment(
+          cluster,
+          classification,
+          latestStatementDate,
+        );
       case 'subscription':
         return this.createSuggestion(cluster, classification, 'subscription');
       case 'revolving':
@@ -110,10 +114,21 @@ export class DetectionValidatorService {
    * de LoansService) puis chaque sous-série ≥2 occurrences est validée
    * indépendamment et produit sa propre suggestion. Une sous-série isolée
    * (1 occurrence) est silencieusement ignorée sans invalider les autres.
+   *
+   * Round 7 fix 1 : le garde de fraîcheur cluster-niveau de `validate()`
+   * ne teste que la date max de TOUT le cluster — un cluster creditor
+   * (ex. 'carrefour') dont une sous-série est vivante laissait passer ses
+   * sous-séries mortes (montant différent, plus revu depuis des mois).
+   * `latestStatementDate` est donc propagé jusqu'à
+   * `validateInstallmentSubSeries` qui applique le même garde par
+   * sous-série — une sous-série morte est rejetée `series_ended` sans
+   * invalider les autres (même logique que les autres rejets ici : la
+   * boucle continue, `lastReason` est mis à jour).
    */
   private async validateInstallment(
     cluster: CandidateCluster,
     classification: ClusterClassification,
+    latestStatementDate: string,
   ): Promise<ValidationResult> {
     const subSeries = DetectionValidatorService.splitByAmount(
       cluster.occurrences,
@@ -132,6 +147,7 @@ export class DetectionValidatorService {
         occurrences,
         classification,
         disambiguate,
+        latestStatementDate,
       );
       if (result.created) {
         createdCount++;
@@ -153,7 +169,24 @@ export class DetectionValidatorService {
     occurrences: ClusterOccurrence[],
     classification: ClusterClassification,
     disambiguate: boolean,
+    latestStatementDate: string,
   ): Promise<ValidationResult> {
+    // Round 7 fix 1 : garde de fraîcheur PAR sous-série (le check
+    // cluster-niveau de `validate()` reste en early-exit économe, mais ne
+    // suffit pas dès qu'une sous-série vivante masque des sous-séries
+    // mortes du même cluster).
+    const subSeriesLastDate = DetectionValidatorService.maxDate(
+      occurrences.map((o) => o.date),
+    );
+    if (
+      DetectionValidatorService.daysBetween(
+        subSeriesLastDate,
+        latestStatementDate,
+      ) > SERIES_ENDED_MAX_DAYS
+    ) {
+      return { created: false, reason: 'series_ended' };
+    }
+
     const months = occurrences.map((o) => o.date.slice(0, 7));
     if (new Set(months).size !== months.length) {
       return { created: false, reason: 'installment_multiple_per_month' };

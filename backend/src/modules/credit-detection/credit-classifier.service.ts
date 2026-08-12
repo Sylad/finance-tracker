@@ -86,7 +86,9 @@ export class CreditClassifierService {
       '- Impôts et administrations (DGFIP, trésor public, amendes) → `not_credit`\n' +
       '- Transports (SNCF, Navigo) → `subscription` si récurrent à montant fixe, sinon `not_credit`\n' +
       '- Streaming/presse (Canal+, Netflix…) et commerces → `subscription` si récurrent à montant fixe, ' +
-      'sinon `not_credit`\n\n' +
+      'sinon `not_credit`\n' +
+      '- Assurances (IARD, prévoyance, mutuelle, assurance-vie, garanties accidents de la vie) → ' +
+      '`subscription` si récurrent à montant fixe, sinon `not_credit` — ce ne sont JAMAIS des crédits\n\n' +
       'Un cluster peut contenir PLUSIEURS plans de paiement N× entremêlés (montants différents, même ' +
       'créancier/marchand) — si la série ressemble à des paiements échelonnés BNPL malgré des montants ' +
       'hétérogènes, classe `installment` quand même : le découpage par montant en sous-séries est fait en ' +

@@ -1131,6 +1131,79 @@ describe('DetectionValidatorService', () => {
     expect(loansService.getAll).not.toHaveBeenCalled();
     expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
   });
+
+  it('(z) fraîcheur PAR sous-série : cluster "carrefour" 2 sous-séries (une vivante, une morte) -> 1 seule suggestion créée', async () => {
+    // Round 7 fix 1 : reproduit le scan réel — le garde cluster-niveau de
+    // validate() ne voit que la date max globale (juillet, portée par la
+    // sous-série vivante 4.99€) et laissait donc passer la sous-série
+    // morte 9.79€ (dernière occurrence en novembre 2025).
+    const aliveOccurrences = [
+      {
+        date: '2026-05-05',
+        amount: -4.99,
+        description: 'CB CARREFOUR MARKET',
+        transactionId: 'alive-1',
+        statementId: '2026-05',
+      },
+      {
+        date: '2026-06-05',
+        amount: -4.99,
+        description: 'CB CARREFOUR MARKET',
+        transactionId: 'alive-2',
+        statementId: '2026-06',
+      },
+      {
+        date: '2026-07-05',
+        amount: -4.99,
+        description: 'CB CARREFOUR MARKET',
+        transactionId: 'alive-3',
+        statementId: '2026-07',
+      },
+    ];
+    const deadOccurrences = [
+      {
+        date: '2025-09-26',
+        amount: -9.79,
+        description: 'CB CARREFOUR MARKET',
+        transactionId: 'dead-1',
+        statementId: '2025-09',
+      },
+      {
+        date: '2025-10-26',
+        amount: -9.79,
+        description: 'CB CARREFOUR MARKET',
+        transactionId: 'dead-2',
+        statementId: '2025-10',
+      },
+      {
+        date: '2025-11-26',
+        amount: -9.79,
+        description: 'CB CARREFOUR MARKET',
+        transactionId: 'dead-3',
+        statementId: '2025-11',
+      },
+    ];
+    const cluster = makeCluster({
+      creditor: 'carrefour',
+      merchant: null,
+      occurrences: [...aliveOccurrences, ...deadOccurrences],
+    });
+    const classification = makeClassification({
+      creditor: 'carrefour',
+      merchant: null,
+      installmentCount: null,
+    });
+
+    // Date la plus récente observée sur tous les relevés — proche de la
+    // dernière occurrence vivante (10j), donc le garde cluster-niveau ne
+    // rejette PAS d'emblée (early-exit économe préservé).
+    const result = await svc.validate(cluster, classification, '2026-07-15');
+
+    expect(result).toEqual({ created: true, createdCount: 1 });
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
+    const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
+    expect(incoming[0].monthlyAmount).toBeCloseTo(4.99, 2);
+  });
 });
 
 describe('DetectionValidatorService (intégration — vrai LoanSuggestionsService, tmpdir)', () => {

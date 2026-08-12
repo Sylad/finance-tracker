@@ -115,6 +115,10 @@ describe('CreditClassifierService', () => {
     expect(prompt).toMatch(/DGFIP|trésor public/i);
     expect(prompt).toMatch(/SNCF|Navigo/);
     expect(prompt).toMatch(/Canal\+|Netflix/);
+    // round 7 fix 2 : assurances (IARD, prévoyance, mutuelle...) routées
+    // subscription et non loan — "LBP Assurances IARD Accidents de la vie"
+    // classé loan à tort dans le scan réel
+    expect(prompt).toMatch(/IARD|assurance/i);
     // le découpage par montant des plans N× entremêlés est fait en aval (validateur)
     expect(prompt).toMatch(/découpage.*aval|aval.*découpage/i);
     // round 3 fix 3(a) : qwen3 répond parfois "loan" hors enum -> consigne explicite
