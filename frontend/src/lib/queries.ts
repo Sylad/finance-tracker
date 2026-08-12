@@ -80,6 +80,9 @@ import type {
   DashboardAlert,
   YearlyOverview,
   ImportLog,
+  HealthDiagnostic,
+  HealthThresholds,
+  HealthAdvice,
 } from '@/types/api';
 
 export const qk = {
@@ -876,6 +879,72 @@ export function useSnoozeCategorySuggestion() {
     onError: (_err, _id, context) =>
       restoreSnapshot(qc, qkCategorySuggestions.all(), context?.previous),
     onSettled: () => qc.invalidateQueries({ queryKey: qkCategorySuggestions.all() }),
+  });
+}
+
+// ── Santé financière (health-check) ────────────────────────────────────────
+
+export const qkHealth = {
+  diagnostic: () => ['health', 'diagnostic'] as const,
+  thresholds: () => ['health', 'thresholds'] as const,
+  advice: () => ['health', 'advice'] as const,
+};
+
+export function useHealthDiagnostic() {
+  return useQuery({
+    queryKey: qkHealth.diagnostic(),
+    queryFn: () => api.get<HealthDiagnostic>('/health-check/diagnostic'),
+  });
+}
+
+export function useHealthThresholds() {
+  return useQuery({
+    queryKey: qkHealth.thresholds(),
+    queryFn: () => api.get<HealthThresholds>('/health-check/thresholds'),
+  });
+}
+
+export function useUpdateThresholds() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: Partial<HealthThresholds>) =>
+      api.put<HealthThresholds>('/health-check/thresholds', patch),
+    onSuccess: (data) => {
+      qc.setQueryData(qkHealth.thresholds(), data);
+      qc.invalidateQueries({ queryKey: qkHealth.diagnostic() });
+    },
+  });
+}
+
+export function useResetThresholds() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<HealthThresholds>('/health-check/thresholds/reset'),
+    onSuccess: (data) => {
+      qc.setQueryData(qkHealth.thresholds(), data);
+      qc.invalidateQueries({ queryKey: qkHealth.diagnostic() });
+    },
+  });
+}
+
+/**
+ * GET /health-check/advice renvoie 204 (corps vide) tant qu'aucun conseil n'a
+ * été généré — `request<T>` (lib/api.ts) traduit déjà un 204 en `undefined`,
+ * donc le type de données reste `HealthAdvice | undefined` sans traitement
+ * spécial ici.
+ */
+export function useHealthAdvice() {
+  return useQuery({
+    queryKey: qkHealth.advice(),
+    queryFn: () => api.get<HealthAdvice | undefined>('/health-check/advice'),
+  });
+}
+
+export function useGenerateAdvice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<HealthAdvice>('/health-check/advice'),
+    onSuccess: (data) => qc.setQueryData(qkHealth.advice(), data),
   });
 }
 
