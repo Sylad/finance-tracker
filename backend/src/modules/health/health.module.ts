@@ -1,5 +1,12 @@
 import { Module } from '@nestjs/common';
-import { HealthController } from './health.controller';
+import { HealthCheckController } from './health.controller';
+import { HealthThresholdsService } from './health-thresholds.service';
+import { DemoCoreModule } from '../demo/demo-core.module';
 
-@Module({ controllers: [HealthController] })
-export class HealthModule {}
+@Module({
+  imports: [DemoCoreModule],
+  controllers: [HealthCheckController],
+  providers: [HealthThresholdsService],
+  exports: [HealthThresholdsService],
+})
+export class HealthCheckModule {}

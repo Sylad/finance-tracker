@@ -9,7 +9,7 @@ import { DemoModeMiddleware } from './modules/demo/demo-mode.middleware';
 import { StorageModule } from './modules/storage/storage.module';
 import { AnalysisModule } from './modules/analysis/analysis.module';
 import { StatementsModule } from './modules/statements/statements.module';
-import { HealthModule } from './modules/health/health.module';
+import { HealthCheckModule } from './modules/health/health.module';
 import { BudgetModule } from './modules/budget/budget.module';
 import { ClaudeUsageModule } from './modules/claude-usage/claude-usage.module';
 import { SnapshotsModule } from './modules/snapshots/snapshots.module';
@@ -45,7 +45,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
     StorageModule,
     AnalysisModule,
     StatementsModule,
-    HealthModule,
+    HealthCheckModule,
     BudgetModule,
     DeclarationsModule,
     SavingsModule,
