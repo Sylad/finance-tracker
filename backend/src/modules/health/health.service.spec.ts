@@ -421,6 +421,118 @@ describe('HealthService', () => {
     expect(block.details.resteAVivre).toBe(2750);
   });
 
+  describe('opérations neutres (Task 7)', () => {
+    it('(n-a) paire crédit +1980.55 / débit -1980.55 à 1 jour → jambe sortante exclue, operationsNeutres = 1980.55', () => {
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-10', 1980.55, 'VIREMENT REMBOURSEMENT'),
+        mkTx('debit-1', '2026-03-11', -1980.55, 'VIREMENT SORTANT'),
+        mkTx('autre-1', '2026-03-05', -300, 'DEPENSES COURANTES'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(300);
+      expect(block.details.operationsNeutres).toBe(1980.55);
+      expect(block.details.resteAVivre).toBe(2700);
+    });
+
+    it('(n-b) 2 débits identiques sans crédit entrant → comptés normalement, operationsNeutres = 0', () => {
+      const statement = mkStatement(2026, 3, [
+        mkTx('debit-1', '2026-03-05', -500, 'DEPENSE A'),
+        mkTx('debit-2', '2026-03-12', -500, 'DEPENSE B'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(1000);
+      expect(block.details.operationsNeutres).toBe(0);
+    });
+
+    it('(n-c) paire à 8 jours d\'écart → non appariée, les deux jambes comptées normalement', () => {
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-01', 800, 'VIREMENT REMBOURSEMENT'),
+        mkTx('debit-1', '2026-03-09', -800, 'VIREMENT SORTANT'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(800);
+      expect(block.details.operationsNeutres).toBe(0);
+    });
+
+    it('(n-d) crédit entrant seul (aucun débit correspondant) → dépenses courantes inchangées, operationsNeutres = 0', () => {
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-10', 500, 'VIREMENT REMBOURSEMENT'),
+        mkTx('autre-1', '2026-03-05', -200, 'DEPENSES COURANTES'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(200);
+      expect(block.details.operationsNeutres).toBe(0);
+    });
+
+    it('(n-e) 2 débits candidats pour 1 crédit de même montant → seul le plus proche en date est apparié', () => {
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-10', 600, 'VIREMENT REMBOURSEMENT'),
+        mkTx('debit-proche', '2026-03-11', -600, 'VIREMENT SORTANT PROCHE'),
+        mkTx('debit-loin', '2026-03-15', -600, 'VIREMENT SORTANT LOIN'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      // Seul debit-proche (1 jour d'écart) est apparié et exclu ; debit-loin
+      // (5 jours) reste compté normalement dans les dépenses courantes.
+      expect(block.details.depensesCourantes).toBe(600);
+      expect(block.details.operationsNeutres).toBe(600);
+    });
+
+    it("(n-f) débit dont la description matche le matchPattern d'un loan ACTIF → exclu des candidats, pas apparié", () => {
+      const loan = mkLoan({
+        id: 'loan-1',
+        monthlyPayment: 0,
+        matchPattern: 'SOFINCO',
+        isActive: true,
+      });
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-10', 300, 'VIREMENT REMBOURSEMENT'),
+        mkTx('debit-1', '2026-03-11', -300, 'CA CONSUMER SOFINCO PRLV'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        loans: [loan],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      // debit-1 matche le matchPattern d'un loan actif → n'est pas un
+      // candidat de paire neutre → reste compté normalement.
+      expect(block.details.depensesCourantes).toBe(300);
+      expect(block.details.operationsNeutres).toBe(0);
+    });
+  });
+
   it("(d) taux d'effort 40 % → orange, 60 % → rouge", () => {
     const orangeCtx = mkCtx({
       loans: [mkLoan({ id: 'loan-1', monthlyPayment: 800 })], // 800/2000 = 40%

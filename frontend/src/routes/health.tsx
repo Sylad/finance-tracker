@@ -37,6 +37,7 @@ const DETAIL_LABELS: Record<string, string> = {
   mensualitesTotal: 'Mensualités crédits',
   depensesCourantes: 'Dépenses courantes',
   abonnementsMensuels: 'Abonnements',
+  operationsNeutres: 'Opérations neutres (exclues)',
   pctIncome: '% du revenu',
   tauxEffortPct: "Taux d'effort",
   pireReserveNom: 'Réserve la plus chargée',

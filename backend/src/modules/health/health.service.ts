@@ -125,7 +125,10 @@ export class HealthService {
    * abonnements sont comptés séparément (`abonnementsMensuels`), les
    * inclure aussi ici les compterait deux fois dans le reste à vivre.
    */
-  private averageDepensesCourantesHorsCredits(ctx: HealthContext): number {
+  private averageDepensesCourantesHorsCredits(
+    ctx: HealthContext,
+    extraExcludedTxIds: Set<string> = new Set(),
+  ): number {
     const recent = this.lastStatements(ctx, RECENT_STATEMENTS_COUNT);
     if (recent.length === 0) return 0;
     const loanTxIds = this.loanOccurrenceTxIds(ctx.loans);
@@ -133,7 +136,11 @@ export class HealthService {
     const totalPerStatement = recent.map((st) =>
       st.transactions
         .filter(
-          (t) => t.amount < 0 && !loanTxIds.has(t.id) && !subTxIds.has(t.id),
+          (t) =>
+            t.amount < 0 &&
+            !loanTxIds.has(t.id) &&
+            !subTxIds.has(t.id) &&
+            !extraExcludedTxIds.has(t.id),
         )
         .reduce((sum, t) => sum + Math.abs(t.amount), 0),
     );
@@ -147,10 +154,118 @@ export class HealthService {
       .reduce((sum, l) => sum + l.monthlyPayment, 0);
   }
 
+  /**
+   * Appariement (crédit entrant, débit sortant) sur la fenêtre des 3 derniers
+   * relevés — mouvements « neutres » (ex : remboursement d'un proche suivi du
+   * virement correspondant) qui ne sont ni une dépense ni un revenu réels.
+   *
+   * Règle (Task 7, 2026-08-12) : `|montant_in| - |montant_out| ≤ 0.01 €` et
+   * écart de dates ≤ 7 jours. Exclusions : tx déjà exclues (loans/subs/
+   * épargne, via `excludedTxIds`) et tx dont la description matche le
+   * `matchPattern` d'un loan ACTIF (regex insensible à la casse, try/catch
+   * sur pattern invalide — c'est un input utilisateur libre). Appariement
+   * GLOUTON par proximité de date : les paires candidates sont triées par
+   * écart croissant, chaque tx entre dans au plus une paire.
+   *
+   * Seule la jambe sortante est retournée pour exclusion : la jambe entrante
+   * n'était de toute façon jamais comptée dans les dépenses courantes
+   * (filtrées sur `amount < 0`) — l'effet net de l'appariement est donc le
+   * retrait de la jambe sortante des dépenses courantes.
+   */
+  private findNeutralPairs(
+    recent: MonthlyStatement[],
+    loans: Loan[],
+    excludedTxIds: Set<string>,
+  ): { neutralOutgoingTxIds: Set<string>; operationsNeutres: number } {
+    const activePatterns: RegExp[] = [];
+    for (const loan of loans) {
+      if (!loan.isActive || !loan.matchPattern) continue;
+      try {
+        activePatterns.push(new RegExp(loan.matchPattern, 'i'));
+      } catch {
+        // matchPattern invalide (saisie libre côté user) — ignoré silencieusement.
+      }
+    }
+    const matchesActiveLoanPattern = (description: string): boolean =>
+      activePatterns.some((re) => re.test(description));
+
+    interface Candidate {
+      id: string;
+      date: number;
+      amount: number;
+    }
+    const incoming: Candidate[] = [];
+    const outgoing: Candidate[] = [];
+    for (const st of recent) {
+      for (const t of st.transactions) {
+        if (t.amount === 0) continue;
+        if (excludedTxIds.has(t.id)) continue;
+        if (matchesActiveLoanPattern(t.description)) continue;
+        const candidate: Candidate = {
+          id: t.id,
+          date: new Date(t.date).getTime(),
+          amount: t.amount,
+        };
+        if (t.amount > 0) incoming.push(candidate);
+        else outgoing.push(candidate);
+      }
+    }
+
+    interface PairCandidate {
+      inId: string;
+      outId: string;
+      outAmount: number;
+      dateDiffDays: number;
+    }
+    const pairCandidates: PairCandidate[] = [];
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+    for (const inTx of incoming) {
+      for (const outTx of outgoing) {
+        const amountDiff = Math.abs(Math.abs(inTx.amount) - Math.abs(outTx.amount));
+        if (amountDiff > 0.01) continue;
+        const dateDiffDays = Math.abs(inTx.date - outTx.date) / MS_PER_DAY;
+        if (dateDiffDays > 7) continue;
+        pairCandidates.push({
+          inId: inTx.id,
+          outId: outTx.id,
+          outAmount: Math.abs(outTx.amount),
+          dateDiffDays,
+        });
+      }
+    }
+    pairCandidates.sort((a, b) => a.dateDiffDays - b.dateDiffDays);
+
+    const usedIn = new Set<string>();
+    const usedOut = new Set<string>();
+    const neutralOutgoingTxIds = new Set<string>();
+    let operationsNeutres = 0;
+    for (const pc of pairCandidates) {
+      if (usedIn.has(pc.inId) || usedOut.has(pc.outId)) continue;
+      usedIn.add(pc.inId);
+      usedOut.add(pc.outId);
+      neutralOutgoingTxIds.add(pc.outId);
+      operationsNeutres += pc.outAmount;
+    }
+
+    return { neutralOutgoingTxIds, operationsNeutres };
+  }
+
   computeResteAVivre(ctx: HealthContext): HealthBlockResult {
     const income = ctx.income.monthly as number;
     const mensualites = this.mensualitesTotal(ctx.loans);
-    const depensesCourantes = this.averageDepensesCourantesHorsCredits(ctx);
+    const loanTxIds = this.loanOccurrenceTxIds(ctx.loans);
+    const subTxIds = this.subscriptionOccurrenceTxIds(ctx.subscriptions);
+    const excludedTxIds = new Set<string>([...loanTxIds, ...subTxIds]);
+    const recent = this.lastStatements(ctx, RECENT_STATEMENTS_COUNT);
+    const { neutralOutgoingTxIds, operationsNeutres } = this.findNeutralPairs(
+      recent,
+      ctx.loans,
+      excludedTxIds,
+    );
+    const depensesCourantes = this.averageDepensesCourantesHorsCredits(
+      ctx,
+      neutralOutgoingTxIds,
+    );
     const abonnementsMensuels = ctx.subscriptions
       .filter((s) => s.isActive)
       .reduce((sum, s) => sum + s.monthlyAmount, 0);
@@ -182,6 +297,7 @@ export class HealthService {
         depensesCourantes: round2(depensesCourantes),
         abonnementsMensuels: round2(abonnementsMensuels),
         pctIncome: round1(pctIncome),
+        operationsNeutres: round2(operationsNeutres),
       },
     };
   }
