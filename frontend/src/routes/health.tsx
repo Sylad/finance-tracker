@@ -52,7 +52,12 @@ function formatDetailValue(key: string, value: number | string | null): string {
   if (value === null) return '—';
   if (typeof value === 'string') return value;
   if (key === 'horizonMonths') return `${value} mois`;
-  if (key.toLowerCase().endsWith('pct')) return `${value} %`;
+  // `includes` (pas `endsWith`) : couvre les deux formes de nommage backend,
+  // suffixe ("tauxEffortPct", "pireReservePct", "utilisationGlobalePct") et
+  // préfixe ("pctIncome"). Vérifié contre les `details` réels de
+  // health.service.ts — toutes les clés contenant "pct" sont des pourcentages,
+  // aucune n'est un montant en euros.
+  if (key.toLowerCase().includes('pct')) return `${value} %`;
   return formatEUR(value);
 }
 
