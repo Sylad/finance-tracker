@@ -18,6 +18,8 @@ import { MulterExceptionFilter } from '../../filters/multer-exception.filter';
 import { AnalysisResponse } from '../../models/monthly-statement.model';
 import { StorageService } from '../storage/storage.service';
 import { ImportLogsService } from '../import-logs/import-logs.service';
+import { CreditDetectionService } from '../credit-detection/credit-detection.service';
+import { MonthlyStatement } from '../../models/monthly-statement.model';
 
 // Detects only the unambiguous YYYY-MM pattern (real period).
 // YYYYMMDD/YYYYMM patterns were removed: bank PDFs (e.g. La Banque Postale) are named by
@@ -41,7 +43,36 @@ export class AnalysisController {
     private readonly analysisService: AnalysisService,
     private readonly storage: StorageService,
     private readonly importLogs: ImportLogsService,
+    private readonly creditDetection: CreditDetectionService,
   ) {}
+
+  /**
+   * Fire-and-forget : lance la détection IA crédits/abonnements sur le
+   * relevé fraîchement importé. Ne DOIT jamais faire échouer ni ralentir
+   * l'import — erreurs capturées et journalisées à part.
+   */
+  private triggerDetection(statement: MonthlyStatement): void {
+    void this.creditDetection
+      .scanStatement(statement)
+      .then((r) =>
+        this.importLogs.log({
+          filename: `Détection IA — ${statement.id}`,
+          uploadedAt: new Date().toISOString(),
+          durationMs: 0,
+          status: 'success',
+          note: `détection IA : ${r.suggestionsCreated} suggestions, ${r.errors.length} erreurs`,
+        }),
+      )
+      .catch((e) =>
+        this.importLogs.log({
+          filename: `Détection IA — ${statement.id}`,
+          uploadedAt: new Date().toISOString(),
+          durationMs: 0,
+          status: 'error',
+          error: `détection IA échouée: ${(e as Error).message ?? 'Unknown error'}`,
+        }),
+      );
+  }
 
   @Post('upload')
   @UseInterceptors(
@@ -121,6 +152,7 @@ export class AnalysisController {
           replaced: response.replaced,
         });
         results.push({ filename: file.originalname, response });
+        this.triggerDetection(response.statement);
         this.logger.log(`Processed ${file.originalname} → ${response.statement.id} (replaced=${response.replaced})`);
       } catch (e) {
         const message =

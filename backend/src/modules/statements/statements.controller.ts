@@ -8,7 +8,9 @@ import { AutoSyncService } from '../auto-sync/auto-sync.service';
 import { ImportLogsService } from '../import-logs/import-logs.service';
 import { CategoryRulesService } from '../category-rules/category-rules.service';
 import { ScoreCalculatorService } from '../score/score-calculator.service';
+import { CreditDetectionService } from '../credit-detection/credit-detection.service';
 import { TransactionCategory } from '../../models/transaction.model';
+import { MonthlyStatement } from '../../models/monthly-statement.model';
 
 @Controller('statements')
 export class StatementsController {
@@ -20,7 +22,36 @@ export class StatementsController {
     private readonly importLogs: ImportLogsService,
     private readonly categoryRules: CategoryRulesService,
     private readonly scoreCalc: ScoreCalculatorService,
+    private readonly creditDetection: CreditDetectionService,
   ) {}
+
+  /**
+   * Fire-and-forget : lance la détection IA crédits/abonnements sur le
+   * relevé fraîchement importé/re-analysé. Ne DOIT jamais faire échouer ni
+   * ralentir l'import — erreurs capturées et journalisées à part.
+   */
+  private triggerDetection(statement: MonthlyStatement): void {
+    void this.creditDetection
+      .scanStatement(statement)
+      .then((r) =>
+        this.importLogs.log({
+          filename: `Détection IA — ${statement.id}`,
+          uploadedAt: new Date().toISOString(),
+          durationMs: 0,
+          status: 'success',
+          note: `détection IA : ${r.suggestionsCreated} suggestions, ${r.errors.length} erreurs`,
+        }),
+      )
+      .catch((e) =>
+        this.importLogs.log({
+          filename: `Détection IA — ${statement.id}`,
+          uploadedAt: new Date().toISOString(),
+          durationMs: 0,
+          status: 'error',
+          error: `détection IA échouée: ${(e as Error).message ?? 'Unknown error'}`,
+        }),
+      );
+  }
 
   @Post('rescore-all')
   async rescoreAll() {
@@ -198,6 +229,7 @@ export class StatementsController {
         statementYear: result.statement.year,
         replaced: result.replaced,
       });
+      this.triggerDetection(result.statement);
       return result;
     } catch (e) {
       await this.importLogs.update(pendingLog.id, {

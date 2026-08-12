@@ -7,9 +7,10 @@ import { AutoSyncModule } from '../auto-sync/auto-sync.module';
 import { ImportLogsModule } from '../import-logs/import-logs.module';
 import { CategoryRulesModule } from '../category-rules/category-rules.module';
 import { ScoreCalculatorModule } from '../score/score-calculator.module';
+import { CreditDetectionModule } from '../credit-detection/credit-detection.module';
 
 @Module({
-  imports: [AnalysisModule, StorageModule, SnapshotsModule, AutoSyncModule, ImportLogsModule, CategoryRulesModule, ScoreCalculatorModule],
+  imports: [AnalysisModule, StorageModule, SnapshotsModule, AutoSyncModule, ImportLogsModule, CategoryRulesModule, ScoreCalculatorModule, CreditDetectionModule],
   controllers: [StatementsController],
 })
 export class StatementsModule {}

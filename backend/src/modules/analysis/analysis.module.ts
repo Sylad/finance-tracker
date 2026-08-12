@@ -6,9 +6,10 @@ import { AutoSyncModule } from '../auto-sync/auto-sync.module';
 import { ImportLogsModule } from '../import-logs/import-logs.module';
 import { CategoryRulesModule } from '../category-rules/category-rules.module';
 import { ScoreCalculatorModule } from '../score/score-calculator.module';
+import { CreditDetectionModule } from '../credit-detection/credit-detection.module';
 
 @Module({
-  imports: [AutoSyncModule, ImportLogsModule, CategoryRulesModule, ScoreCalculatorModule],
+  imports: [AutoSyncModule, ImportLogsModule, CategoryRulesModule, ScoreCalculatorModule, CreditDetectionModule],
   controllers: [AnalysisController],
   providers: [AnalysisService, AnthropicService],
   exports: [AnalysisService],

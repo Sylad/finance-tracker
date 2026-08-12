@@ -13,4 +13,6 @@ export interface ImportLog {
   replaced?: boolean;
   // Error-only field
   error?: string;
+  // Free-form status note (e.g. post-import async hooks like credit detection)
+  note?: string;
 }

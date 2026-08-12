@@ -510,6 +510,7 @@ export interface ImportLog {
   statementYear?: number | null;
   replaced?: boolean;
   error?: string;
+  note?: string;
 }
 
 // ── Santé financière (health-check) ────────────────────────────────────────
