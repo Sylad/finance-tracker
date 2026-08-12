@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { EyeOff, RotateCcw } from 'lucide-react';
-import { useLoanSuggestions, useRejectSuggestion, useSnoozeSuggestion, useUnsnoozeSuggestion } from '@/lib/queries';
+import {
+  useLoanSuggestions,
+  useRejectSuggestion,
+  useSnoozeSuggestion,
+  useUnsnoozeSuggestion,
+  useAcceptInstallmentSuggestion,
+} from '@/lib/queries';
 import type { LoanSuggestion } from '@/types/api';
 import { formatEUR, cn } from '@/lib/utils';
 
@@ -9,6 +15,7 @@ export function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) 
   const reject = useRejectSuggestion();
   const snooze = useSnoozeSuggestion();
   const unsnooze = useUnsnoozeSuggestion();
+  const acceptInstallment = useAcceptInstallmentSuggestion();
   const [showHidden, setShowHidden] = useState(false);
   // Cette page concerne les CRÉDITS uniquement.
   // Les suggestions de type subscription/utility appartiennent à la page /subscriptions.
@@ -35,21 +42,48 @@ export function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) 
         )}
       </div>
       <div className="space-y-2">
-        {items.map((s) => (
-          <div key={s.id} className="flex items-center justify-between gap-3 p-2 bg-surface-2/40 rounded flex-wrap">
-            <div className="flex-1 min-w-0">
-              <div className="text-sm text-fg-bright truncate">{s.label}</div>
-              <div className="text-xs text-fg-dim tabular">
-                {formatEUR(s.monthlyAmount)}/mois · vu {s.occurrencesSeen} fois · type {s.suggestedType}
+        {items.map((s) => {
+          const n = s.installment?.count ?? s.installment?.dates.length ?? null;
+          return (
+            <div key={s.id} className="flex items-center justify-between gap-3 p-2 bg-surface-2/40 rounded flex-wrap">
+              <div className="flex-1 min-w-0">
+                <div className="text-sm text-fg-bright truncate flex items-center gap-1.5">
+                  {s.label}
+                  {s.installment && n != null && (
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 rounded bg-accent/15 text-accent-bright text-[10px] font-mono font-semibold border border-accent/30 shrink-0"
+                      title="Détecté par le scan IA locale comme paiement échelonné"
+                    >
+                      {n}×
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-fg-dim tabular">
+                  {s.installment
+                    ? `${formatEUR(s.monthlyAmount)}/mois · ${n}× chez ${s.installment.merchant ?? s.creditor ?? '?'}`
+                    : `${formatEUR(s.monthlyAmount)}/mois · vu ${s.occurrencesSeen} fois · type ${s.suggestedType}`}
+                </div>
+              </div>
+              <div className="flex gap-1 shrink-0">
+                {s.installment ? (
+                  <button
+                    onClick={() => acceptInstallment.mutate(s.id, {
+                      onError: (e) => alert(`Erreur : ${(e as Error).message}`),
+                    })}
+                    disabled={acceptInstallment.isPending}
+                    className="btn-primary text-xs"
+                  >
+                    C'est un paiement en {n} fois
+                  </button>
+                ) : (
+                  <button onClick={() => onAccept(s)} className="btn-primary text-xs">C'est un crédit</button>
+                )}
+                <button onClick={() => snooze.mutate(s.id)} className="btn-ghost text-xs">Plus tard</button>
+                <button onClick={() => reject.mutate(s.id)} className="btn-ghost text-xs hover:text-negative">Pas un crédit</button>
               </div>
             </div>
-            <div className="flex gap-1 shrink-0">
-              <button onClick={() => onAccept(s)} className="btn-primary text-xs">C'est un crédit</button>
-              <button onClick={() => snooze.mutate(s.id)} className="btn-ghost text-xs">Plus tard</button>
-              <button onClick={() => reject.mutate(s.id)} className="btn-ghost text-xs hover:text-negative">Pas un crédit</button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {showHidden && hidden.map((s) => (
           <div key={s.id} className="flex items-center justify-between gap-3 p-2 bg-surface-2/20 rounded flex-wrap opacity-70">
             <div className="flex-1 min-w-0">

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X, GitMerge, FileSpreadsheet, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X, GitMerge, FileSpreadsheet, AlertTriangle, RotateCcw, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   useLoans,
   useCreateLoan,
@@ -9,12 +9,14 @@ import {
   useImportCreditStatements,
   useImportAmortization,
   useResetLoans,
+  useDetectionScan,
   type CreditStatementImportResult,
   type ResetLoansResult,
 } from '@/lib/queries';
+import { ApiError } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
-import { type Loan, type LoanInput } from '@/types/api';
+import { type Loan, type LoanInput, type DetectionScanResult } from '@/types/api';
 import { formatEUR } from '@/lib/utils';
 import { ClassicCard } from '@/components/loans/classic-card';
 import { RevolvingCard } from '@/components/loans/revolving-card';
@@ -49,6 +51,7 @@ export function LoansPage() {
   const importCredit = useImportCreditStatements();
   const importAmort = useImportAmortization();
   const resetLoans = useResetLoans();
+  const detectionScan = useDetectionScan();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const amortInputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState<Loan | null>(null);
@@ -60,6 +63,25 @@ export function LoansPage() {
   const [dedupeOpen, setDedupeOpen] = useState(false);
   const [suspiciousOpen, setSuspiciousOpen] = useState(false);
   const [resetResult, setResetResult] = useState<ResetLoansResult | null>(null);
+  const [scanResult, setScanResult] = useState<DetectionScanResult | null>(null);
+  const [scanErrorsOpen, setScanErrorsOpen] = useState(false);
+  const [scanOllamaDown, setScanOllamaDown] = useState<string | null>(null);
+
+  const handleScan = async () => {
+    setScanOllamaDown(null);
+    setScanErrorsOpen(false);
+    try {
+      const result = await detectionScan.mutateAsync();
+      setScanResult(result);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 502) {
+        setScanResult(null);
+        setScanOllamaDown(e.message);
+      } else {
+        alert(`Erreur scan détection : ${(e as Error).message}`);
+      }
+    }
+  };
 
   const handleReset = async () => {
     if (!confirm(
@@ -179,6 +201,18 @@ export function LoansPage() {
               )}
             </button>
             <button
+              onClick={handleScan}
+              disabled={detectionScan.isPending}
+              className="btn-secondary"
+              title="Analyse les clusters de transactions non-rattachées via un LLM local (Ollama) pour détecter des paiements en plusieurs fois. Peut durer 1-3 min."
+            >
+              {detectionScan.isPending ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Analyse en cours sur la 5090…</>
+              ) : (
+                <><Sparkles className="h-4 w-4" /> Détecter les crédits (IA locale)</>
+              )}
+            </button>
+            <button
               onClick={() => setDedupeOpen(true)}
               className="btn-secondary"
               title="Détecter et fusionner les doublons (créés avant le matching RUM)"
@@ -231,6 +265,63 @@ export function LoansPage() {
             {' '}{resetResult.replayedStatements} relevé{resetResult.replayedStatements > 1 ? 's' : ''} replayés.
             {' '}<span className="font-display text-fg-bright">{resetResult.finalLoans} crédit{resetResult.finalLoans > 1 ? 's' : ''}</span> recréé{resetResult.finalLoans > 1 ? 's' : ''} avec l'invariant "1 débit/mois max".
           </p>
+        </div>
+      )}
+
+      {scanOllamaDown && (
+        <div className="card p-5 mb-4 relative border-negative/40">
+          <button
+            onClick={() => setScanOllamaDown(null)}
+            className="absolute top-3 right-3 text-fg-dim hover:text-fg"
+            aria-label="Fermer"
+          ><X className="h-4 w-4" /></button>
+          <h3 className="font-display text-sm font-semibold text-negative mb-2 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            Ollama éteint ?
+          </h3>
+          <p className="text-sm text-fg-muted">
+            Le scan IA locale n'a pas pu joindre Ollama (RTX 5090). Vérifie que le service tourne, puis réessaie.
+          </p>
+          <p className="text-xs text-fg-dim font-mono mt-1">{scanOllamaDown}</p>
+        </div>
+      )}
+
+      {scanResult && (
+        <div className={`card p-5 mb-4 relative ${scanResult.errors.length > 0 ? 'border-warning/40' : ''}`}>
+          <button
+            onClick={() => setScanResult(null)}
+            className="absolute top-3 right-3 text-fg-dim hover:text-fg"
+            aria-label="Fermer"
+          ><X className="h-4 w-4" /></button>
+          <h3 className="font-display text-sm font-semibold text-fg-bright mb-2 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-accent" />
+            Scan IA locale terminé
+          </h3>
+          <p className="text-sm text-fg-muted">
+            <span className="font-display text-fg-bright">{scanResult.clustersAnalyzed}</span> cluster{scanResult.clustersAnalyzed > 1 ? 's' : ''} analysé{scanResult.clustersAnalyzed > 1 ? 's' : ''},
+            {' '}<span className="font-display text-fg-bright">{scanResult.suggestionsCreated}</span> suggestion{scanResult.suggestionsCreated > 1 ? 's créées' : ' créée'},
+            {' '}<span className={scanResult.errors.length > 0 ? 'font-display text-warning' : 'font-display text-fg-bright'}>{scanResult.errors.length}</span> erreur{scanResult.errors.length > 1 ? 's' : ''}.
+          </p>
+          {scanResult.errors.length > 0 && (
+            <div className="mt-2">
+              <button
+                onClick={() => setScanErrorsOpen((o) => !o)}
+                className="inline-flex items-center gap-1 text-xs font-medium text-warning hover:text-warning/80"
+              >
+                {scanErrorsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                {scanErrorsOpen ? 'Masquer' : 'Voir'} les erreurs ({scanResult.errors.length})
+              </button>
+              {scanErrorsOpen && (
+                <ul className="mt-2 space-y-1">
+                  {scanResult.errors.map((err, i) => (
+                    <li key={i} className="text-xs text-fg-muted">
+                      <span className="font-mono text-fg-dim">{err.clusterKey}</span> — {err.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       )}
 

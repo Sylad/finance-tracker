@@ -73,6 +73,7 @@ import type {
   Loan,
   LoanInput,
   LoanSuggestion,
+  DetectionScanResult,
   CategoryRuleSuggestion,
   Subscription,
   SubscriptionInput,
@@ -615,6 +616,37 @@ export function useUnsnoozeSuggestion() {
     onMutate: (id) => optimisticListPatch<LoanSuggestion>(qc, qkSuggestions.all(), id, { status: 'pending' }),
     onError: (_err, _id, context) => restoreSnapshot(qc, qkSuggestions.all(), context?.previous),
     onSettled: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
+  });
+}
+
+/**
+ * Scan IA locale (Ollama) : analyse les clusters de transactions non-rattachées
+ * pour détecter des paiements en N fois. Peut durer 1-3 min (modèle local sur
+ * la 5090) — pas de timeout côté client (cf `lib/api.ts`, fetch sans AbortController).
+ * 502 si Ollama injoignable ; 200 avec `errors[]` plein si Ollama répond mais
+ * échoue sur certains clusters (UI doit afficher errors dans les deux cas).
+ */
+export function useDetectionScan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<DetectionScanResult>('/credit-detection/scan'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qkSuggestions.all() }),
+  });
+}
+
+/**
+ * Accepte une suggestion `installment` : crée le Loan kind='installment' +
+ * son échéancier depuis `installment.dates`/`amounts`. 400 si la suggestion
+ * n'a pas de champ `installment`.
+ */
+export function useAcceptInstallmentSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<LoanSuggestion>(`/loan-suggestions/${id}/accept-installment`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qkSuggestions.all() });
+      qc.invalidateQueries({ queryKey: qkLoans.all() });
+    },
   });
 }
 

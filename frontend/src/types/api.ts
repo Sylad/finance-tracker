@@ -391,6 +391,17 @@ export interface ImportLoanStatementResult {
 
 export type LoanSuggestionStatus = 'pending' | 'accepted' | 'rejected' | 'snoozed';
 
+export type LoanSuggestionSource = 'claude_import' | 'llm_detection';
+
+/** Détail d'un cluster détecté comme paiement en N fois par le scan IA locale. */
+export interface InstallmentSuggestionInfo {
+  count: number | null;
+  merchant: string | null;
+  occurrenceTxIds: string[];
+  amounts: number[];
+  dates: string[];
+}
+
 export interface LoanSuggestion {
   id: string;
   label: string;
@@ -407,6 +418,19 @@ export interface LoanSuggestion {
   resolvedAt?: string;
   acceptedAsLoanId?: string;
   acceptedAsSubscriptionId?: string;
+  /** Présent si la suggestion vient du scan IA locale (credit-detection) sur un cluster N fois. */
+  installment?: InstallmentSuggestionInfo;
+  /** Absent = comportement historique (suggestion issue de l'import Claude des relevés). */
+  source?: LoanSuggestionSource;
+}
+
+/** Résultat de POST /credit-detection/scan — un Ollama démarré-mais-cassé renvoie du 200
+ *  avec `errors` plein : TOUJOURS afficher errors côté UI, sinon un scan raté ressemble
+ *  à un scan vide (0 suggestion sans explication). */
+export interface DetectionScanResult {
+  clustersAnalyzed: number;
+  suggestionsCreated: number;
+  errors: Array<{ clusterKey: string; message: string }>;
 }
 
 export type CategoryRuleSuggestionStatus = 'pending' | 'accepted' | 'rejected' | 'snoozed';
