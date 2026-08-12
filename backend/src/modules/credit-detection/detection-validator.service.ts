@@ -40,6 +40,15 @@ const MIN_LOAN_DISTINCT_MONTHS = 3;
  *  (distance circulaire, gère la fin de mois) par rapport à la médiane
  *  des jours-du-mois observés, la série n'a pas le profil d'un crédit. */
 const MAX_DAY_OF_MONTH_DRIFT = 5;
+/** Round 8 fix 1 : découpages N× français usuels — un installmentCount
+ *  hors de cette liste est jugé fabriqué par le LLM (cas réel : "8×" puis
+ *  "6×" inventés pour des plans Klarna qui étaient en réalité des 3×,
+ *  vérité confirmée par l'utilisateur sur Zalando). */
+const ALLOWED_INSTALLMENT_COUNTS = new Set([2, 3, 4, 5, 6, 10, 12]);
+/** Round 8 fix 1 : marge de projection au-delà des occurrences déjà
+ *  observées — au-delà, pas de preuve qu'il y ait vraiment ce nombre
+ *  d'échéances futures, l'installmentCount est jugé halluciné. */
+const INSTALLMENT_COUNT_PROJECTION_MARGIN = 2;
 
 export interface ValidationResult {
   created: boolean;
@@ -226,9 +235,17 @@ export class DetectionValidatorService {
       );
     }
 
+    // Round 8 fix 1 : normalise l'installmentCount AVANT tout usage —
+    // signal non fiable, jamais de chiffre fabriqué dans la suggestion.
+    const normalizedInstallmentCount =
+      DetectionValidatorService.normalizeInstallmentCount(
+        classification.installmentCount,
+        occurrences.length,
+      );
+
     if (
-      classification.installmentCount != null &&
-      occurrences.length > classification.installmentCount
+      normalizedInstallmentCount != null &&
+      occurrences.length > normalizedInstallmentCount
     ) {
       return { created: false, reason: 'installment_count_exceeded' };
     }
@@ -245,7 +262,7 @@ export class DetectionValidatorService {
       return { created: false, reason: 'existing_loan_match' };
     }
 
-    const count = classification.installmentCount ?? occurrences.length;
+    const count = normalizedInstallmentCount ?? occurrences.length;
     const base = DetectionValidatorService.buildLabel(
       classification,
       `${count}×`,
@@ -261,7 +278,7 @@ export class DetectionValidatorService {
       matchPattern: escapeRegex(classification.creditor),
       creditor: classification.creditor,
       installment: {
-        count: classification.installmentCount,
+        count: normalizedInstallmentCount,
         merchant: classification.merchant,
         occurrenceTxIds: occurrences.map((o) => o.transactionId),
         amounts: amountsAbs,
@@ -586,5 +603,27 @@ export class DetectionValidatorService {
 
   private static round2(value: number): number {
     return Math.round(value * 100) / 100;
+  }
+
+  /**
+   * Round 8 fix 1 : l'installmentCount du LLM est un signal NON FIABLE —
+   * cas réel où qwen3 a inventé "8×" (puis "6×") pour des plans Klarna qui
+   * étaient en réalité des 3× (vérité Zalando confirmée par l'utilisateur).
+   * Ramène à `null` (jamais de chiffre fabriqué dans la suggestion) tout
+   * count qui n'appartient pas aux découpages français usuels
+   * `ALLOWED_INSTALLMENT_COUNTS`, OU qui dépasse les occurrences déjà
+   * observées + `INSTALLMENT_COUNT_PROJECTION_MARGIN` (le plafond +2 borne
+   * les échéances futures projetables — pas de preuve au-delà).
+   */
+  private static normalizeInstallmentCount(
+    rawCount: number | null,
+    observedCount: number,
+  ): number | null {
+    if (rawCount == null) return null;
+    if (!ALLOWED_INSTALLMENT_COUNTS.has(rawCount)) return null;
+    if (rawCount > observedCount + INSTALLMENT_COUNT_PROJECTION_MARGIN) {
+      return null;
+    }
+    return rawCount;
   }
 }

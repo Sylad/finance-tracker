@@ -1204,6 +1204,79 @@ describe('DetectionValidatorService', () => {
     const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
     expect(incoming[0].monthlyAmount).toBeCloseTo(4.99, 2);
   });
+
+  it('(aa) installmentCount fabriqué par le LLM (8×) sur un plan à 2 occurrences observées -> normalisé à null, label utilise le nombre observé', async () => {
+    // Round 8 fix 1 : cas réel — qwen3 a inventé "8×" (puis "6×") pour des
+    // plans Klarna qui étaient en réalité des 3× (vérité Zalando confirmée
+    // par l'utilisateur). 8 n'appartient pas à {2,3,4,5,6,10,12} -> null.
+    const cluster = makeCluster({
+      occurrences: [
+        {
+          date: '2026-01-10',
+          amount: -44.98,
+          description: 'Klarni*Zoland 1/3',
+          transactionId: 'a',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-02-08',
+          amount: -44.5,
+          description: 'Klarni*Zoland 2/3',
+          transactionId: 'b',
+          statementId: '2026-02',
+        },
+      ],
+    });
+    const classification = makeClassification({ installmentCount: 8 });
+
+    const result = await svc.validate(
+      cluster,
+      classification,
+      cluster.occurrences[cluster.occurrences.length - 1].date,
+    );
+
+    expect(result).toEqual({ created: true, createdCount: 1 });
+    const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
+    expect(incoming[0].installment!.count).toBeNull();
+    expect(incoming[0].label).toBe('2× klarni · zoland');
+    expect(incoming[0].label).not.toContain('8×');
+  });
+});
+
+describe('DetectionValidatorService.normalizeInstallmentCount (Round 8 fix 1 — fonction pure, accès direct)', () => {
+  // normalizeInstallmentCount est `private static` : accès via cast pour
+  // verrouiller exactement la matrice de cas demandée, y compris
+  // count=12/observées=11 qui n'est pas atteignable en bout en bout via
+  // validate() (11 occurrences déclenchent le reroute vers subscription à
+  // LONG_SERIES_SUBSCRIPTION_MIN_OCCURRENCES=6, avant tout usage du count).
+  const normalize = (
+    DetectionValidatorService as unknown as {
+      normalizeInstallmentCount: (
+        rawCount: number | null,
+        observedCount: number,
+      ) => number | null;
+    }
+  ).normalizeInstallmentCount;
+
+  it('count 8 (hors {2,3,4,5,6,10,12}) avec 2 occurrences observées -> null', () => {
+    expect(normalize(8, 2)).toBeNull();
+  });
+
+  it('count 3 (dans la liste, sous le plafond observées+2) avec 2 occurrences observées -> conservé', () => {
+    expect(normalize(3, 2)).toBe(3);
+  });
+
+  it('count 12 (dans la liste, sous le plafond observées+2) avec 11 occurrences observées -> conservé', () => {
+    expect(normalize(12, 11)).toBe(12);
+  });
+
+  it('count null -> null', () => {
+    expect(normalize(null, 5)).toBeNull();
+  });
+
+  it('count dans la liste mais > observées + 2 (ex. 12 avec 2 observées) -> null', () => {
+    expect(normalize(12, 2)).toBeNull();
+  });
 });
 
 describe('DetectionValidatorService (intégration — vrai LoanSuggestionsService, tmpdir)', () => {

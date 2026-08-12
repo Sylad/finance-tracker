@@ -93,6 +93,9 @@ export class CreditClassifierService {
       'créancier/marchand) — si la série ressemble à des paiements échelonnés BNPL malgré des montants ' +
       'hétérogènes, classe `installment` quand même : le découpage par montant en sous-séries est fait en ' +
       'aval, pas à ta charge.\n\n' +
+      'Les paiements en plusieurs fois français sont typiquement 2×, 3×, 4×, 10× ou 12× ; si le nombre ' +
+      "exact d'échéances n'est pas déductible avec certitude des données, réponds installmentCount: null " +
+      '— ne devine JAMAIS.\n\n' +
       'N\'utilise JAMAIS la valeur "loan" comme classification — ce n\'est pas une catégorie valide, ' +
       'choisis `classic` ou `revolving` selon le type de crédit.\n\n' +
       'Si les libellés semblent mélanger plusieurs séries distinctes (montants incohérents, marchands ' +

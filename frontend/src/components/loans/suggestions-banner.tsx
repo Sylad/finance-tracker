@@ -51,6 +51,14 @@ export function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) 
       <div className="space-y-2">
         {items.map((s) => {
           const n = s.installment?.count ?? s.installment?.dates.length ?? null;
+          // Round 8 fix 4 : installmentCount peut dépasser le nombre
+          // d'occurrences réellement observées (échéances futures
+          // projetées, cf validateur) — le badge doit le dire explicitement
+          // plutôt que d'afficher "N×" comme si toutes avaient été vues.
+          const isEstimated =
+            s.installment != null &&
+            s.installment.count != null &&
+            s.installment.count > s.installment.dates.length;
           return (
             <div key={s.id} className="flex items-center justify-between gap-3 p-2 bg-surface-2/40 rounded flex-wrap">
               <div className="flex-1 min-w-0">
@@ -59,9 +67,13 @@ export function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) 
                   {s.installment && n != null && (
                     <span
                       className="inline-flex items-center px-1.5 py-0.5 rounded bg-accent/15 text-accent-bright text-[10px] font-mono font-semibold border border-accent/30 shrink-0"
-                      title="Détecté par le scan IA locale comme paiement échelonné"
+                      title={
+                        isEstimated
+                          ? `${n} échéances estimées — seules ${s.installment.dates.length} ont été observées à ce jour`
+                          : 'Détecté par le scan IA locale comme paiement échelonné'
+                      }
                     >
-                      {n}×
+                      {n}×{isEstimated ? ' estimé' : ''}
                     </span>
                   )}
                 </div>

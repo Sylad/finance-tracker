@@ -123,6 +123,10 @@ describe('CreditClassifierService', () => {
     expect(prompt).toMatch(/découpage.*aval|aval.*découpage/i);
     // round 3 fix 3(a) : qwen3 répond parfois "loan" hors enum -> consigne explicite
     expect(prompt).toMatch(/jamais.*"loan"|"loan".*jamais/i);
+    // round 8 fix 1 : installmentCount du LLM peu fiable (cas réel "8×"
+    // inventé pour un plan Klarna 3×) -> consigne explicite null si incertain
+    expect(prompt).toMatch(/2×.*3×.*4×/);
+    expect(prompt).toMatch(/ne devine jamais/i);
   });
 
   it('HTTP 500 -> throw', async () => {

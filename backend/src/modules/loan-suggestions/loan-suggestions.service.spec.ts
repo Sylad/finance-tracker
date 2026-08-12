@@ -521,6 +521,41 @@ describe('LoanSuggestionsService', () => {
       expect(loan.isActive).toBe(true);
     });
 
+    it('(c) count null (installmentCount LLM normalisé à null par le validateur, round 8) -> échéancier = observées uniquement, pas de projection', async () => {
+      // Round 8 fix 3 : verrouille le comportement quand le validateur a
+      // ramené un installmentCount non fiable à null (cf
+      // DetectionValidatorService.normalizeInstallmentCount) — même
+      // trajectoire que le comportement historique de convertToInstallment
+      // (count inconnu -> buildInstallmentSchedule ne projette rien).
+      await svc.upsertMany('2026-03', [
+        {
+          label: '3× klarni · zoland',
+          monthlyAmount: 44.98,
+          occurrencesSeen: 3,
+          firstSeenDate: '2026-06-14',
+          suggestedType: 'loan' as const,
+          matchPattern: 'klarni',
+          creditor: 'klarni',
+          installment: {
+            count: null,
+            merchant: 'zoland',
+            occurrenceTxIds: ['a', 'b', 'c'],
+            amounts: [44.98, 44.5, 45.1],
+            dates: ['2026-06-14', '2026-07-13', '2026-08-10'],
+          },
+          source: 'llm_detection' as const,
+        },
+      ]);
+      const [s] = await svc.getPending();
+
+      await svc.acceptInstallment(s.id);
+
+      const [loan] = await loansSvc.getAll();
+      expect(loan.installmentSchedule).toHaveLength(3); // count null -> aucune projection
+      expect(loan.installmentSchedule!.every((l) => l.paid)).toBe(true);
+      expect(loan.isActive).toBe(false); // toutes les échéances observées sont passées
+    });
+
     it('(d) série terminée (count = occurrences observées, toutes échéances passées) → loan créé inactif', async () => {
       await svc.upsertMany('2026-03', [
         {
