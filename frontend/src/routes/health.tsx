@@ -1,9 +1,12 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
+import { SlidersHorizontal } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { useHealthDiagnostic, useUpdateThresholds } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, ErrorState } from '@/components/loading-state';
+import { AdviceSection } from '@/components/health/advice-section';
+import { ThresholdsDrawer } from '@/components/health/thresholds-drawer';
 import { formatEUR, cn, chartTooltipProps } from '@/lib/utils';
 import type { HealthBlockResult, HealthStatus } from '@/types/api';
 import { HEALTH_STATUS_LABELS } from '@/types/api';
@@ -142,6 +145,13 @@ function BlockCard({
 
 export function HealthPage() {
   const { data, isLoading, isError } = useHealthDiagnostic();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const headerActions = (
+    <button type="button" onClick={() => setDrawerOpen(true)} className="btn-secondary text-sm">
+      <SlidersHorizontal className="h-4 w-4" /> Ajuster les seuils
+    </button>
+  );
 
   if (isLoading) return <LoadingState />;
   if (isError || !data) return <ErrorState message="Impossible de charger le diagnostic de santé financière." />;
@@ -151,7 +161,11 @@ export function HealthPage() {
   if (reliability === 'unavailable') {
     return (
       <>
-        <PageHeader title="Santé financière" subtitle="Diagnostic automatique basé sur tes revenus, crédits et abonnements." />
+        <PageHeader
+          title="Santé financière"
+          subtitle="Diagnostic automatique basé sur tes revenus, crédits et abonnements."
+          actions={headerActions}
+        />
         <div className="card p-5 bg-surface-2 border-l-4 border-l-border-strong">
           <div className="font-display font-semibold text-fg-bright mb-1">
             Diagnostic impossible — configure tes revenus
@@ -165,6 +179,7 @@ export function HealthPage() {
           </p>
           <ManualIncomeField />
         </div>
+        {drawerOpen && <ThresholdsDrawer onClose={() => setDrawerOpen(false)} />}
       </>
     );
   }
@@ -174,6 +189,7 @@ export function HealthPage() {
       <PageHeader
         title="Santé financière"
         subtitle="Diagnostic automatique basé sur tes revenus, crédits et abonnements."
+        actions={headerActions}
       />
 
       <div className={cn('card p-5 mb-6 border-l-4', VERDICT_BANNER[verdict])}>
@@ -236,6 +252,10 @@ export function HealthPage() {
         />
         <TrajectoireCard block={blocks.trajectoire} />
       </div>
+
+      <AdviceSection />
+
+      {drawerOpen && <ThresholdsDrawer onClose={() => setDrawerOpen(false)} />}
     </>
   );
 }

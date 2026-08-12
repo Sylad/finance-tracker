@@ -22,6 +22,7 @@ import {
   useNetWorth,
   useAlerts,
   useYearlyOverview,
+  useHealthDiagnostic,
 } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
@@ -34,6 +35,7 @@ import { ScoreTrendChart } from '@/components/dashboard/score-trend-chart';
 import { BalanceTrendChart } from '@/components/dashboard/balance-trend-chart';
 import { RecentStatements } from '@/components/dashboard/recent-statements';
 import { YearlyCharts } from '@/components/dashboard/yearly-charts';
+import { HealthTile } from '@/components/dashboard/health-tile';
 
 export function DashboardPage() {
   const stmts = useStatements();
@@ -45,6 +47,7 @@ export function DashboardPage() {
   const netWorth = useNetWorth();
   const alerts = useAlerts();
   const yearly = useYearlyOverview(12);
+  const health = useHealthDiagnostic();
 
   const totalSavings = (savings.data ?? []).reduce((s, a) => s + a.currentBalance, 0);
   const activeLoans = (loans.data ?? []).filter((l) => l.isActive);
@@ -204,6 +207,7 @@ export function DashboardPage() {
           icon={<CreditCard className="h-4 w-4 text-warning" />}
           tone="negative"
         />
+        <HealthTile diagnostic={health.data} />
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
