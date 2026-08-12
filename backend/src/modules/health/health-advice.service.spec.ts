@@ -129,9 +129,31 @@ describe('HealthAdviceService', () => {
     expect(body.model).toBe('qwen-test');
     expect(body.stream).toBe(false);
     expect(body.format).toBe('json');
+    // income.label ('EMPLOYEUR' dans DIAGNOSTIC_STUB) est un libellé bancaire
+    // — jamais envoyé au LLM, même quand ce n'est pas le test sentinelle dédié.
+    expect(body.prompt).not.toContain('EMPLOYEUR');
+    expect(body.prompt).toContain('"monthly": 2500');
 
     const cached = await svc.getCached();
     expect(cached).toEqual(result);
+
+    fetchMock.mockRestore();
+  });
+
+  it('generate : creditsActifs expose le kind canonique (installment), pas le type brut', async () => {
+    loansService.getAll.mockResolvedValue([
+      makeLoan({ id: 'l2', name: '4XCB Amazon', type: 'classic', kind: 'installment', taeg: null }),
+    ]);
+    let capturedPrompt = '';
+    const fetchMock = jest.spyOn(global, 'fetch' as any).mockImplementation((async (_url: string, init: any) => {
+      capturedPrompt = JSON.parse(init.body).prompt;
+      return { ok: true, json: async () => ({ response: JSON.stringify({ advices: [] }) }) };
+    }) as any);
+
+    await svc.generate();
+
+    expect(capturedPrompt).toContain('"kind": "installment"');
+    expect(capturedPrompt).not.toMatch(/"type":\s*"classic"/);
 
     fetchMock.mockRestore();
   });
@@ -186,7 +208,7 @@ describe('HealthAdviceService', () => {
     expect(await svc.getCached()).toEqual(advice);
   });
 
-  it('contexte prompt : agrégats uniquement, aucun libellé de transaction (sentinelle)', async () => {
+  it('contexte prompt : agrégats uniquement, aucun libellé (sentinelle tx + sentinelle income.label)', async () => {
     let capturedPrompt = '';
     const fetchMock = jest.spyOn(global, 'fetch' as any).mockImplementation((async (_url: string, init: any) => {
       const body = JSON.parse(init.body);
@@ -197,6 +219,15 @@ describe('HealthAdviceService', () => {
       };
     }) as any);
 
+    // Sentinelle #1 : income.label (nom d'employeur détecté depuis le libellé
+    // de la transaction de salaire) ne doit JAMAIS partir vers le LLM, même
+    // agrégé — c'est un libellé bancaire comme un autre.
+    healthService.getDiagnostic.mockResolvedValue({
+      ...DIAGNOSTIC_STUB,
+      income: { ...DIAGNOSTIC_STUB.income, label: 'SENTINELLE-PRIVEE' },
+    });
+
+    // Sentinelle #2 : le vecteur historique (libellé de transaction brute).
     storageService.getAllStatements.mockResolvedValue([
       makeStatement({
         transactions: [

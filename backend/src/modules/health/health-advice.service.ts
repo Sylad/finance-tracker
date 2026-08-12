@@ -11,6 +11,13 @@ import { HealthService } from './health.service';
 import { LoansService } from '../loans/loans.service';
 import { StorageService } from '../storage/storage.service';
 
+/** Diagnostic tel qu'envoyé au LLM : `income.label` (dérivé du libellé de la
+ *  transaction de salaire, ex. nom de l'employeur) est expurgé — seul un
+ *  agrégat (`monthly`, `source`) part dans le prompt. */
+type SafeDiagnostic = Omit<HealthDiagnostic, 'income'> & {
+  income: Pick<HealthDiagnostic['income'], 'monthly' | 'source'>;
+};
+
 const FILE = 'health-advice-cache.json';
 const RECENT_STATEMENTS_COUNT = 3;
 const TOP_CATEGORIES_COUNT = 5;
@@ -18,7 +25,7 @@ const OLLAMA_TIMEOUT_MS = 120_000;
 
 interface LoanContext {
   name: string;
-  type: string;
+  kind: string;
   usedAmount: number | null;
   maxAmount: number | null;
   taeg: number | null;
@@ -78,13 +85,19 @@ export class HealthAdviceService {
     return advice;
   }
 
-  /** Résumé d'un crédit actif — aucun libellé de transaction, seulement les agrégats du modèle Loan. */
+  /**
+   * Résumé d'un crédit actif — aucun libellé de transaction, seulement les
+   * agrégats du modèle Loan. `kind` (via `LoansService.getLoanKind`, gère le
+   * fallback legacy `type`) plutôt que le `type` brut : distingue les
+   * paiements en N fois (`installment`, ex. 4X Cofidis) des vrais revolvings,
+   * ce que `type` seul ('classic'|'revolving') ne peut pas exprimer.
+   */
   private buildLoanContext(loans: Loan[]): LoanContext[] {
     return loans
       .filter((l) => l.isActive)
       .map((l) => ({
         name: l.name,
-        type: l.type,
+        kind: LoansService.getLoanKind(l),
         usedAmount: l.usedAmount ?? null,
         maxAmount: l.maxAmount ?? null,
         taeg: l.taeg ?? null,
@@ -122,8 +135,9 @@ export class HealthAdviceService {
     return (
       "Tu es un conseiller budgétaire francophone qui aide un particulier à améliorer sa santé financière.\n\n" +
       'Le contexte fourni contient UNIQUEMENT des agrégats : un diagnostic de santé financière calculé (verdict, ' +
-      'blocs, seuils déclenchés), la liste des crédits actifs résumés (nom, type, encours, plafond, TAEG, mensualité) ' +
-      'et le top 5 des catégories de dépenses des 3 derniers mois. Tu ne reçois AUCUNE transaction individuelle.\n\n' +
+      'blocs, seuils déclenchés, revenu mensuel sans libellé), la liste des crédits actifs résumés (nom, nature, ' +
+      'encours, plafond, TAEG, mensualité) et le top 5 des catégories de dépenses des 3 derniers mois. Tu ne reçois ' +
+      'AUCUNE transaction individuelle ni aucun libellé bancaire.\n\n' +
       'RÈGLES STRICTES :\n' +
       "- N'invente JAMAIS un chiffre qui n'est pas présent dans le contexte fourni. Si une donnée manque, ne la mentionne pas.\n" +
       '- Priorise les conseils par impact : commence par les crédits au TAEG le plus élevé, puis par les postes de ' +
@@ -135,13 +149,27 @@ export class HealthAdviceService {
     );
   }
 
+  /**
+   * Expurge `income.label` du diagnostic avant de l'envoyer au LLM — ce champ
+   * est dérivé du libellé de la transaction de salaire (ex. nom de
+   * l'employeur) et documenté comme "jamais utilisée en logique" côté
+   * `HealthDiagnostic`, mais un prompt LLM n'est pas de la "logique" : il ne
+   * doit JAMAIS voir un libellé bancaire, agrégé ou non.
+   */
+  private stripIncomeLabel(diagnostic: HealthDiagnostic): SafeDiagnostic {
+    return {
+      ...diagnostic,
+      income: { monthly: diagnostic.income.monthly, source: diagnostic.income.source },
+    };
+  }
+
   private buildUserPrompt(
     diagnostic: HealthDiagnostic,
     loans: Loan[],
     statements: MonthlyStatement[],
   ): string {
     const context = {
-      diagnostic,
+      diagnostic: this.stripIncomeLabel(diagnostic),
       creditsActifs: this.buildLoanContext(loans),
       topCategoriesDepenses: this.buildTopCategories(statements),
     };
