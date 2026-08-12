@@ -187,12 +187,9 @@ export class LoanSuggestionsService {
       sortedOccurrences.map((o) => ({ date: o.date, amount: o.amount })),
       installment.count,
     );
-    // Aligne paidOccurrenceId sur les lignes observées, comme
-    // convertToInstallment (schedule[0..N-1] = sortedOccurrences par
-    // construction, mêmes tris stables sur `date`).
-    sortedOccurrences.forEach((o, i) => {
-      schedule[i].paidOccurrenceId = o.statementId;
-    });
+    // paidOccurrenceId n'est renseigné qu'après le seed des occurrences
+    // ci-dessous — il doit référencer le vrai id (uuid) de la
+    // LoanOccurrence créée par addOccurrence, pas un id synthétique.
 
     const today = new Date().toISOString().slice(0, 10);
     const allPast = schedule.every((s) => s.dueDate <= today);
@@ -221,7 +218,8 @@ export class LoanSuggestionsService {
 
     // Seed occurrencesDetected — 1 par occurrence observée. amounts stockés
     // positifs côté InstallmentSuggestionInfo, l'occurrence porte le débit
-    // (négatif). Ordre = ordre trié (aligné avec paidOccurrenceId ci-dessus).
+    // (négatif). statementId synthétique 'YYYY-MM' (pas d'original porté
+    // par InstallmentSuggestionInfo).
     for (const o of sortedOccurrences) {
       await this.loans.addOccurrence(loan.id, {
         statementId: o.statementId,
@@ -229,6 +227,44 @@ export class LoanSuggestionsService {
         amount: -Math.abs(o.amount),
         transactionId: o.transactionId,
         source: 'bank_statement',
+      });
+    }
+
+    // paidOccurrenceId doit référencer le vrai id (uuid) de la
+    // LoanOccurrence créée ci-dessus (contrat du champ — cf loan.model.ts),
+    // pas le statementId synthétique. On relit le loan après le seed et on
+    // retrouve chaque occurrence par son transactionId (pas par position :
+    // addOccurrence peut dédupliquer/rejeter une occurrence).
+    const seededLoan = await this.loans.getOne(loan.id);
+    const occIdByTxId = new Map(
+      seededLoan.occurrencesDetected
+        .filter((occ) => occ.transactionId)
+        .map((occ) => [occ.transactionId as string, occ.id]),
+    );
+    let scheduleDirty = false;
+    for (let i = 0; i < sortedOccurrences.length && i < schedule.length; i++) {
+      const txId = sortedOccurrences[i].transactionId;
+      const realOccurrenceId = txId ? occIdByTxId.get(txId) : undefined;
+      if (realOccurrenceId) {
+        schedule[i] = { ...schedule[i], paidOccurrenceId: realOccurrenceId };
+        scheduleDirty = true;
+      }
+    }
+    if (scheduleDirty) {
+      const {
+        id: _id,
+        occurrencesDetected: _occ,
+        createdAt: _createdAt,
+        updatedAt: _updatedAt,
+        ...loanInput
+      } = seededLoan;
+      void _id;
+      void _occ;
+      void _createdAt;
+      void _updatedAt;
+      await this.loans.update(loan.id, {
+        ...loanInput,
+        installmentSchedule: schedule,
       });
     }
 

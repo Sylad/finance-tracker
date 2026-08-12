@@ -260,10 +260,43 @@ describe('LoanSuggestionsService', () => {
   });
 
   describe('acceptInstallment', () => {
-    // Dates volontairement récentes (proches de "aujourd'hui" au moment
-    // d'écriture, 2026-08) — 3 observées + 1 projetée qui tombe APRÈS
-    // aujourd'hui, pour représenter une série pas encore terminée (isActive
-    // attendu = true). Cf test (d) ci-dessous pour le cas série terminée.
+    // Horloge figée à 2026-08-12 — les fixtures ci-dessous (dates, projection
+    // du schedule, isActive attendu) sont calculées relativement à cette
+    // date fixe, pas à la date système réelle du run (sinon le test casse
+    // dès que la vraie horloge dépasse la fenêtre observée/projetée).
+    // On ne fake QUE Date (doNotFake = tout le reste) pour ne pas geler les
+    // I/O async (fs, Test.createTestingModule().compile()) utilisés par le
+    // spec.
+    beforeEach(() => {
+      jest.useFakeTimers({
+        doNotFake: [
+          'hrtime',
+          'nextTick',
+          'performance',
+          'queueMicrotask',
+          'requestAnimationFrame',
+          'cancelAnimationFrame',
+          'requestIdleCallback',
+          'cancelIdleCallback',
+          'setImmediate',
+          'clearImmediate',
+          'setInterval',
+          'clearInterval',
+          'setTimeout',
+          'clearTimeout',
+        ],
+      });
+      jest.setSystemTime(new Date('2026-08-12T00:00:00Z'));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    // 3 occurrences observées + 1 projetée qui tombe APRÈS le "aujourd'hui"
+    // figé ci-dessus, pour représenter une série pas encore terminée
+    // (isActive attendu = true). Cf test (d) ci-dessous pour le cas série
+    // terminée.
     const installmentIncoming = {
       label: '4× klarni · zoland',
       monthlyAmount: 44.98,
@@ -348,10 +381,20 @@ describe('LoanSuggestionsService', () => {
         source: 'bank_statement',
       });
 
-      // paidOccurrenceId aligné sur les 3 lignes payées (comme convertToInstallment)
-      expect(schedule[0].paidOccurrenceId).toBeDefined();
-      expect(schedule[1].paidOccurrenceId).toBeDefined();
-      expect(schedule[2].paidOccurrenceId).toBeDefined();
+      // (fix round 2, finding 1) paidOccurrenceId doit être le vrai id
+      // (uuid) de la LoanOccurrence dont le transactionId correspond — pas
+      // le statementId synthétique. On retrouve chaque occurrence par
+      // transactionId plutôt que par position.
+      const byTxId = new Map(
+        loan.occurrencesDetected
+          .filter((o) => o.transactionId)
+          .map((o) => [o.transactionId as string, o]),
+      );
+      expect(schedule[0].paidOccurrenceId).toBe(byTxId.get('a')?.id);
+      expect(schedule[1].paidOccurrenceId).toBe(byTxId.get('b')?.id);
+      expect(schedule[2].paidOccurrenceId).toBe(byTxId.get('c')?.id);
+      // Un vrai uuid, pas '2026-06' (l'ancien statementId synthétique)
+      expect(schedule[0].paidOccurrenceId).not.toBe('2026-06');
       expect(schedule[3].paidOccurrenceId).toBeUndefined();
 
       // Série pas encore terminée (échéance projetée dans le futur) → actif
