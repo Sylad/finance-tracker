@@ -117,6 +117,8 @@ describe('CreditClassifierService', () => {
     expect(prompt).toMatch(/Canal\+|Netflix/);
     // le découpage par montant des plans N× entremêlés est fait en aval (validateur)
     expect(prompt).toMatch(/découpage.*aval|aval.*découpage/i);
+    // round 3 fix 3(a) : qwen3 répond parfois "loan" hors enum -> consigne explicite
+    expect(prompt).toMatch(/jamais.*"loan"|"loan".*jamais/i);
   });
 
   it('HTTP 500 -> throw', async () => {
@@ -137,13 +139,24 @@ describe('CreditClassifierService', () => {
     await expect(svc.classify(CLUSTER)).rejects.toThrow(/invalide/i);
   });
 
-  it('classification hors enum (loan) -> throw', async () => {
+  it('classification hors enum générique (mortgage) -> throw', async () => {
+    jest.spyOn(global, 'fetch' as never).mockResolvedValue({
+      ok: true,
+      json: async () => validResponseBody({ classification: 'mortgage' }),
+    } as never);
+
+    await expect(svc.classify(CLUSTER)).rejects.toThrow();
+  });
+
+  it('round 3 fix 3(b) : classification "loan" (alias hors enum de qwen3) -> mappée sur "classic", pas d\'erreur', async () => {
     jest.spyOn(global, 'fetch' as never).mockResolvedValue({
       ok: true,
       json: async () => validResponseBody({ classification: 'loan' }),
     } as never);
 
-    await expect(svc.classify(CLUSTER)).rejects.toThrow();
+    const result = await svc.classify(CLUSTER);
+
+    expect(result.classification).toBe('classic');
   });
 
   it('confidence 1.4 -> throw', async () => {

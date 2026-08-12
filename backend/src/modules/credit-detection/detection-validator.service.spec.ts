@@ -62,14 +62,19 @@ function makeClassification(
 }
 
 describe('DetectionValidatorService', () => {
-  let loansService: jest.Mocked<Pick<LoansService, 'findExistingLoan'>>;
+  let loansService: jest.Mocked<
+    Pick<LoansService, 'findExistingLoan' | 'getAll'>
+  >;
   let loanSuggestionsService: jest.Mocked<
     Pick<LoanSuggestionsService, 'upsertMany'>
   >;
   let svc: DetectionValidatorService;
 
   beforeEach(() => {
-    loansService = { findExistingLoan: jest.fn().mockResolvedValue(null) };
+    loansService = {
+      findExistingLoan: jest.fn().mockResolvedValue(null),
+      getAll: jest.fn().mockResolvedValue([]),
+    };
     loanSuggestionsService = {
       upsertMany: jest.fn().mockResolvedValue(undefined),
     };
@@ -412,6 +417,134 @@ describe('DetectionValidatorService', () => {
     const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
     expect(incoming[0].label).toBe('4× klarni · zoland');
     expect(incoming[0].label).not.toMatch(/\(\d/);
+  });
+
+  it('(k) sous-série 9 occurrences / 9 mois distincts à montant stable -> routée en subscription, pas installment', async () => {
+    // Round 3 fix 1 : une série longue à prix fixe (ex. Prime Video
+    // 1.99/mois) n'est pas un paiement en N fois même si le LLM a dit
+    // installment. installmentCount volontairement plus petit (4) que le
+    // nombre d'occurrences (9) pour prouver que le reroute intervient
+    // AVANT le check installmentCount (sinon 'installment_count_exceeded'
+    // aurait rejeté la série au lieu de la router en subscription).
+    const occurrences = Array.from({ length: 9 }, (_, i) => {
+      const month = String(i + 1).padStart(2, '0');
+      return {
+        date: `2026-${month}-05`,
+        amount: -1.99,
+        description: 'PRIME VIDEO CHANNELS',
+        transactionId: `p${i}`,
+        statementId: `2026-${month}`,
+      };
+    });
+    const cluster = makeCluster({
+      creditor: 'amazon',
+      merchant: 'primevideo',
+      occurrences,
+    });
+    const classification = makeClassification({
+      creditor: 'amazon',
+      merchant: 'primevideo',
+      installmentCount: 4,
+    });
+
+    const result = await svc.validate(cluster, classification);
+
+    expect(result).toEqual({ created: true, createdCount: 1 });
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
+    const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
+    expect(incoming[0].suggestedType).toBe('subscription');
+    expect(incoming[0].label).toBe('amazon · primevideo');
+    expect(incoming[0].installment).toBeUndefined();
+    expect(incoming[0].monthlyAmount).toBeCloseTo(1.99, 2);
+  });
+
+  it('(l) sous-série "carrefour" à un montant proche de la mensualité d\'un loan actif "CARREFOUR BANQUE" -> rejetée (existing_loan_payment)', async () => {
+    // Round 3 fix 2 : creditor cluster 'carrefour' != creditor loan exact
+    // 'CARREFOUR BANQUE' -> findExistingLoan (match exact) ne le voyait
+    // pas. Garde fuzzy AVANT findExistingLoan : normalise + containment +
+    // montant ±5%.
+    loansService.getAll.mockResolvedValue([
+      {
+        id: 'loan-cb',
+        creditor: 'CARREFOUR BANQUE',
+        isActive: true,
+        monthlyPayment: 221,
+      } as unknown as Awaited<ReturnType<LoansService['getAll']>>[number],
+    ]);
+    const cluster = makeCluster({
+      creditor: 'carrefour',
+      merchant: null,
+      occurrences: [
+        {
+          date: '2026-01-10',
+          amount: -221,
+          description: 'CB CARREFOUR BANQUE',
+          transactionId: 'a',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-02-10',
+          amount: -221,
+          description: 'CB CARREFOUR BANQUE',
+          transactionId: 'b',
+          statementId: '2026-02',
+        },
+      ],
+    });
+    const classification = makeClassification({
+      creditor: 'carrefour',
+      merchant: null,
+      installmentCount: 12,
+    });
+
+    const result = await svc.validate(cluster, classification);
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'existing_loan_payment',
+    });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('(m) sous-série "carrefour" à un montant différent (4.99) de la mensualité du loan actif -> PAS rejetée', async () => {
+    loansService.getAll.mockResolvedValue([
+      {
+        id: 'loan-cb',
+        creditor: 'CARREFOUR BANQUE',
+        isActive: true,
+        monthlyPayment: 221,
+      } as unknown as Awaited<ReturnType<LoansService['getAll']>>[number],
+    ]);
+    const cluster = makeCluster({
+      creditor: 'carrefour',
+      merchant: null,
+      occurrences: [
+        {
+          date: '2026-01-10',
+          amount: -4.99,
+          description: 'CB CARREFOUR MARKET',
+          transactionId: 'a',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-02-10',
+          amount: -4.99,
+          description: 'CB CARREFOUR MARKET',
+          transactionId: 'b',
+          statementId: '2026-02',
+        },
+      ],
+    });
+    const classification = makeClassification({
+      creditor: 'carrefour',
+      merchant: null,
+      installmentCount: null,
+    });
+
+    const result = await svc.validate(cluster, classification);
+
+    expect(result).toEqual({ created: true, createdCount: 1 });
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -91,6 +91,8 @@ export class CreditClassifierService {
       'créancier/marchand) — si la série ressemble à des paiements échelonnés BNPL malgré des montants ' +
       'hétérogènes, classe `installment` quand même : le découpage par montant en sous-séries est fait en ' +
       'aval, pas à ta charge.\n\n' +
+      'N\'utilise JAMAIS la valeur "loan" comme classification — ce n\'est pas une catégorie valide, ' +
+      'choisis `classic` ou `revolving` selon le type de crédit.\n\n' +
       'Si les libellés semblent mélanger plusieurs séries distinctes (montants incohérents, marchands ' +
       'différents), réponds not_credit avec une confidence basse et explique dans rationale : le cluster ' +
       'peut fusionner deux marchands distincts du même créancier.\n\n' +
@@ -124,9 +126,19 @@ export class CreditClassifierService {
     }
     const r = raw as Record<string, unknown>;
 
+    if (typeof r.classification !== 'string') {
+      throw new Error(
+        `Réponse Ollama invalide: classification "${String(r.classification)}" hors enum`,
+      );
+    }
+    // Alias robustesse (round 3 fix 3b) : qwen3 répond parfois "loan" —
+    // hors enum malgré la consigne explicite du prompt — au lieu de
+    // classic/revolving. Mappé sur `classic` plutôt que de faire échouer
+    // tout le cluster (2 clusters perdus au bench réel pour cette raison).
+    const normalizedClassification =
+      r.classification === 'loan' ? 'classic' : r.classification;
     if (
-      typeof r.classification !== 'string' ||
-      !DETECTION_CLASSES.includes(r.classification as DetectionClass)
+      !DETECTION_CLASSES.includes(normalizedClassification as DetectionClass)
     ) {
       throw new Error(
         `Réponse Ollama invalide: classification "${String(r.classification)}" hors enum`,
@@ -169,7 +181,7 @@ export class CreditClassifierService {
     }
 
     return {
-      classification: r.classification as DetectionClass,
+      classification: normalizedClassification as DetectionClass,
       creditor: r.creditor,
       merchant: r.merchant ?? null,
       installmentCount: r.installmentCount ?? null,

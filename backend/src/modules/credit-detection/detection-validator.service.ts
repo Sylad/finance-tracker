@@ -15,6 +15,12 @@ const INTERVAL_MULTI_MIN_DAYS = 25;
 const INTERVAL_MULTI_MAX_DAYS = 35;
 const INTERVAL_SINGLE_MIN_DAYS = 20;
 const INTERVAL_SINGLE_MAX_DAYS = 40;
+/** Round 3 fix 1 : une sous-série installment avec ≥6 occurrences (donc
+ *  ≥6 mois calendaires distincts, déjà garanti par le check mensuel) à
+ *  montant stable (garanti par splitByAmount) n'est pas un paiement en N
+ *  fois — c'est un abonnement récurrent que le LLM a mal classé
+ *  `installment` (ex. Prime Video 1.99/mois). */
+const LONG_SERIES_SUBSCRIPTION_MIN_OCCURRENCES = 6;
 
 export interface ValidationResult {
   created: boolean;
@@ -123,17 +129,41 @@ export class DetectionValidatorService {
       return { created: false, reason: 'installment_interval_out_of_range' };
     }
 
+    const amountsAbs = occurrences.map((o) => Math.abs(o.amount));
+    const medianAmount = DetectionValidatorService.round2(
+      DetectionValidatorService.median(amountsAbs),
+    );
+
+    // Round 3 fix 2 : vérifié AVANT toute autre décision (reroute
+    // subscription incluse) — si c'est un crédit déjà suivi, on ne veut
+    // jamais le re-suggérer, peu importe sous quelle forme.
+    if (
+      await this.hasFuzzyActiveLoanPayment(
+        classification.creditor,
+        medianAmount,
+      )
+    ) {
+      return { created: false, reason: 'existing_loan_payment' };
+    }
+
+    // Round 3 fix 1 — reroute AVANT le check installmentCount : le
+    // installmentCount du LLM n'est pas pertinent pour juger une série
+    // qu'il a de toute façon mal classée.
+    if (occurrences.length >= LONG_SERIES_SUBSCRIPTION_MIN_OCCURRENCES) {
+      return this.createSubscriptionFromLongSeries(
+        occurrences,
+        classification,
+        medianAmount,
+        disambiguate,
+      );
+    }
+
     if (
       classification.installmentCount != null &&
       occurrences.length > classification.installmentCount
     ) {
       return { created: false, reason: 'installment_count_exceeded' };
     }
-
-    const amountsAbs = occurrences.map((o) => Math.abs(o.amount));
-    const medianAmount = DetectionValidatorService.round2(
-      DetectionValidatorService.median(amountsAbs),
-    );
 
     const match = await this.loansService.findExistingLoan({
       creditor: classification.creditor,
@@ -180,6 +210,72 @@ export class DetectionValidatorService {
   }
 
   /**
+   * Round 3 fix 1 : route une sous-série longue (≥6 occurrences, montant
+   * stable par construction de `splitByAmount`) vers une suggestion
+   * `subscription` plutôt qu'`installment` — sans champ `installment`
+   * (ce n'est pas un plan N×), label désambiguïsé par montant seulement
+   * si le cluster porte plusieurs sous-séries.
+   */
+  private async createSubscriptionFromLongSeries(
+    occurrences: ClusterOccurrence[],
+    classification: ClusterClassification,
+    medianAmount: number,
+    disambiguate: boolean,
+  ): Promise<ValidationResult> {
+    const base = DetectionValidatorService.buildLabel(classification);
+    const label = disambiguate ? `${base} (${medianAmount}€)` : base;
+
+    const incoming: IncomingSuggestion = {
+      label,
+      monthlyAmount: medianAmount,
+      occurrencesSeen: occurrences.length,
+      firstSeenDate: occurrences[0].date,
+      suggestedType: 'subscription',
+      matchPattern: escapeRegex(classification.creditor),
+      creditor: classification.creditor,
+      source: 'llm_detection',
+    };
+
+    await this.loanSuggestionsService.upsertMany(
+      occurrences[occurrences.length - 1].statementId,
+      [incoming],
+    );
+    return { created: true };
+  }
+
+  /**
+   * Round 3 fix 2 : garde créancier existant fuzzy, vérifiée AVANT
+   * `findExistingLoan` (qui exige un match exact/heuristique sur
+   * creditor+matchPattern). `findExistingLoan` ratait des crédits réels
+   * quand le creditor extrait par le LLM du cluster ('carrefour') diverge
+   * du creditor stocké sur le Loan ('CARREFOUR BANQUE'). Normalise
+   * (lowercase, trim) et matche par containment dans les deux sens ; ne
+   * considère que les loans ACTIFS, et exige un montant proche (±5%) du
+   * `monthlyPayment` du loan pour éviter de bloquer un cluster sans
+   * rapport chez le même créancier (ex. Carrefour Market vs Carrefour
+   * Banque).
+   */
+  private async hasFuzzyActiveLoanPayment(
+    creditor: string,
+    medianAmount: number,
+  ): Promise<boolean> {
+    const normalizedCluster = creditor.toLowerCase().trim();
+    if (!normalizedCluster) return false;
+    const loans = await this.loansService.getAll();
+    return loans.some((loan) => {
+      if (!loan.isActive || !loan.creditor) return false;
+      const normalizedLoan = loan.creditor.toLowerCase().trim();
+      if (!normalizedLoan) return false;
+      const contains =
+        normalizedLoan.includes(normalizedCluster) ||
+        normalizedCluster.includes(normalizedLoan);
+      if (!contains) return false;
+      const tolerance = loan.monthlyPayment * AMOUNT_TOLERANCE;
+      return Math.abs(medianAmount - loan.monthlyPayment) <= tolerance;
+    });
+  }
+
+  /**
    * Regroupe les occurrences en sous-séries par montant : clustering
    * glouton sur les montants triés, deux occurrences dans la même
    * sous-série si leurs montants absolus sont à ±5 % l'un de l'autre
@@ -223,6 +319,15 @@ export class DetectionValidatorService {
     const medianAmount = DetectionValidatorService.round2(
       DetectionValidatorService.median(amountsAbs),
     );
+
+    if (
+      await this.hasFuzzyActiveLoanPayment(
+        classification.creditor,
+        medianAmount,
+      )
+    ) {
+      return { created: false, reason: 'existing_loan_payment' };
+    }
 
     const match = await this.loansService.findExistingLoan({
       creditor: classification.creditor,
