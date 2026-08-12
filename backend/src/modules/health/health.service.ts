@@ -318,10 +318,11 @@ export class HealthService {
     const { start, end } = this.rollingWindow();
     const { horizonMonths, stableBandPct } = ctx.thresholds.trajectoire;
 
+    const revolvings = this.revolvingsActifs(ctx.loans);
     let sumUsed = 0;
     let sumProjected = 0;
     let saturatedLoanName: string | null = null;
-    for (const loan of this.revolvingsActifs(ctx.loans)) {
+    for (const loan of revolvings) {
       const used = loan.usedAmount ?? 0;
       const max = loan.maxAmount as number;
       const { tirages, remboursements } = this.tiragesEtRemboursements(
@@ -349,7 +350,16 @@ export class HealthService {
 
     let status: HealthStatus;
     let thresholdHit: string | null = null;
-    if (saturatedLoanName !== null) {
+    if (revolvings.length === 0) {
+      // Aucune réserve active : la trajectoire ne dépend que du solde
+      // (jamais orange dans ce cas — décision d'auteur du plan 2026-08-12).
+      if (avgMonthlyBalance < 0) {
+        status = 'red';
+        thresholdHit = `rouge car le solde mensuel moyen est structurellement négatif (${round2(avgMonthlyBalance)} €)`;
+      } else {
+        status = 'green';
+      }
+    } else if (saturatedLoanName !== null) {
       status = 'red';
       thresholdHit = `rouge car l'encours projeté de ${saturatedLoanName} atteint le plafond sous ${horizonMonths} mois`;
     } else if (avgMonthlyBalance < 0) {

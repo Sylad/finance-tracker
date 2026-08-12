@@ -520,6 +520,38 @@ describe('HealthService', () => {
     expect(block.details.sumProjected).toBe(7400);
   });
 
+  it('(d2) trajectoire : 0 réserve active + solde mensuel moyen positif → vert (jamais orange sans réserve)', () => {
+    const statements = [
+      mkStatement(2026, 1, []),
+      mkStatement(2026, 2, []),
+      mkStatement(2026, 3, []),
+    ].map((st) => ({ ...st, totalCredits: 2500, totalDebits: 2200 })); // solde +300/mois
+    const ctx = mkCtx({ loans: [], statements });
+
+    const block = svc.computeTrajectoire(ctx);
+
+    expect(block.status).toBe('green');
+    expect(block.thresholdHit).toBeNull();
+    expect(block.details.sumUsed).toBe(0);
+    expect(block.details.sumProjected).toBe(0);
+    expect(block.details.avgMonthlyBalance).toBe(300);
+  });
+
+  it('(d3) trajectoire : 0 réserve active + solde mensuel moyen négatif → rouge', () => {
+    const statements = [
+      mkStatement(2026, 1, []),
+      mkStatement(2026, 2, []),
+      mkStatement(2026, 3, []),
+    ].map((st) => ({ ...st, totalCredits: 2000, totalDebits: 2400 })); // solde -400/mois
+    const ctx = mkCtx({ loans: [], statements });
+
+    const block = svc.computeTrajectoire(ctx);
+
+    expect(block.status).toBe('red');
+    expect(block.thresholdHit).toContain('négatif');
+    expect(block.details.avgMonthlyBalance).toBe(-400);
+  });
+
   it('(e) getDiagnostic : verdict = pire bloc, causes agrégées en ordre fixe (resteAVivre → chargeDette → trajectoire)', async () => {
     const thresholds = structuredClone(DEFAULT_THRESHOLDS);
     thresholds.manualMonthlyIncome = 2000;
