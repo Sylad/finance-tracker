@@ -25,7 +25,8 @@ export class HealthThresholdsService {
   }
 
   async update(patch: Partial<HealthThresholds>): Promise<HealthThresholds> {
-    const merged = this.mergeDefaults({ ...(await this.get()), ...patch });
+    const current = await this.get();
+    const merged = this.deepMerge(current, patch);
     await atomicWriteJson(this.filepath, merged);
     return merged;
   }
@@ -34,6 +35,17 @@ export class HealthThresholdsService {
     const defaults = structuredClone(DEFAULT_THRESHOLDS);
     await atomicWriteJson(this.filepath, defaults);
     return defaults;
+  }
+
+  private deepMerge(current: HealthThresholds, patch: Partial<HealthThresholds>): HealthThresholds {
+    return {
+      resteAVivre: patch.resteAVivre ? { ...current.resteAVivre, ...patch.resteAVivre } : current.resteAVivre,
+      tauxEffort: patch.tauxEffort ? { ...current.tauxEffort, ...patch.tauxEffort } : current.tauxEffort,
+      plafonds: patch.plafonds ? { ...current.plafonds, ...patch.plafonds } : current.plafonds,
+      tirages: patch.tirages ? { ...current.tirages, ...patch.tirages } : current.tirages,
+      trajectoire: patch.trajectoire ? { ...current.trajectoire, ...patch.trajectoire } : current.trajectoire,
+      manualMonthlyIncome: patch.manualMonthlyIncome !== undefined ? patch.manualMonthlyIncome : current.manualMonthlyIncome,
+    };
   }
 
   private mergeDefaults(raw: Partial<HealthThresholds>): HealthThresholds {

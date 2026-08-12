@@ -40,4 +40,20 @@ describe('HealthThresholdsService', () => {
     expect(await svc.reset()).toEqual(DEFAULT_THRESHOLDS);
     expect(await svc.get()).toEqual(DEFAULT_THRESHOLDS);
   });
+
+  it('update partiel deep-merge : garde les valeurs non-omises de la section', async () => {
+    // Setup: seuils custom persistés
+    await svc.update({ tauxEffort: { orangeAbovePct: 30, redAbovePct: 45 } });
+    // Verify setup
+    let current = await svc.get();
+    expect(current.tauxEffort).toEqual({ orangeAbovePct: 30, redAbovePct: 45 });
+
+    // Update partiel : on change seulement redAbovePct
+    const out = await svc.update({ tauxEffort: { redAbovePct: 40 } });
+    // Attendu : orangeAbovePct reste 30, redAbovePct change à 40 (pas revert aux défauts)
+    expect(out.tauxEffort).toEqual({ orangeAbovePct: 30, redAbovePct: 40 });
+    // Vérifier persistence
+    current = await svc.get();
+    expect(current.tauxEffort).toEqual({ orangeAbovePct: 30, redAbovePct: 40 });
+  });
 });
