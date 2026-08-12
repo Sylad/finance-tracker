@@ -260,11 +260,15 @@ describe('LoanSuggestionsService', () => {
   });
 
   describe('acceptInstallment', () => {
+    // Dates volontairement récentes (proches de "aujourd'hui" au moment
+    // d'écriture, 2026-08) — 3 observées + 1 projetée qui tombe APRÈS
+    // aujourd'hui, pour représenter une série pas encore terminée (isActive
+    // attendu = true). Cf test (d) ci-dessous pour le cas série terminée.
     const installmentIncoming = {
       label: '4× klarni · zoland',
       monthlyAmount: 44.98,
       occurrencesSeen: 3,
-      firstSeenDate: '2026-01-10',
+      firstSeenDate: '2026-06-14',
       suggestedType: 'loan' as const,
       matchPattern: 'klarni',
       creditor: 'klarni',
@@ -273,7 +277,7 @@ describe('LoanSuggestionsService', () => {
         merchant: 'zoland',
         occurrenceTxIds: ['a', 'b', 'c'],
         amounts: [44.98, 44.5, 45.1],
-        dates: ['2026-01-10', '2026-02-08', '2026-03-07'],
+        dates: ['2026-06-14', '2026-07-13', '2026-08-10'],
       },
       source: 'llm_detection' as const,
     };
@@ -301,26 +305,87 @@ describe('LoanSuggestionsService', () => {
       const schedule = loan.installmentSchedule!;
       expect(schedule).toHaveLength(4);
       expect(schedule[0]).toMatchObject({
-        dueDate: '2026-01-10',
+        dueDate: '2026-06-14',
         amount: 44.98,
         paid: true,
       });
       expect(schedule[1]).toMatchObject({
-        dueDate: '2026-02-08',
+        dueDate: '2026-07-13',
         amount: 44.5,
         paid: true,
       });
       expect(schedule[2]).toMatchObject({
-        dueDate: '2026-03-07',
+        dueDate: '2026-08-10',
         amount: 45.1,
         paid: true,
       });
-      // 4e ligne projetée : pas médian (29j, 27j) → 28j après 2026-03-07, montant médian 44.98
+      // 4e ligne projetée : pas médian (29j, 28j) → 29j après 2026-08-10, montant médian 44.98
       expect(schedule[3]).toMatchObject({
-        dueDate: '2026-04-04',
+        dueDate: '2026-09-08',
         amount: 44.98,
         paid: false,
       });
+
+      // (finding 1) occurrencesDetected seedées depuis dates/amounts/occurrenceTxIds —
+      // amount négatif (débit), transactionId reporté, source bank_statement.
+      expect(loan.occurrencesDetected).toHaveLength(3);
+      const byDate = Object.fromEntries(
+        loan.occurrencesDetected.map((o) => [o.date, o]),
+      );
+      expect(byDate['2026-06-14']).toMatchObject({
+        amount: -44.98,
+        transactionId: 'a',
+        source: 'bank_statement',
+      });
+      expect(byDate['2026-07-13']).toMatchObject({
+        amount: -44.5,
+        transactionId: 'b',
+        source: 'bank_statement',
+      });
+      expect(byDate['2026-08-10']).toMatchObject({
+        amount: -45.1,
+        transactionId: 'c',
+        source: 'bank_statement',
+      });
+
+      // paidOccurrenceId aligné sur les 3 lignes payées (comme convertToInstallment)
+      expect(schedule[0].paidOccurrenceId).toBeDefined();
+      expect(schedule[1].paidOccurrenceId).toBeDefined();
+      expect(schedule[2].paidOccurrenceId).toBeDefined();
+      expect(schedule[3].paidOccurrenceId).toBeUndefined();
+
+      // Série pas encore terminée (échéance projetée dans le futur) → actif
+      expect(loan.isActive).toBe(true);
+    });
+
+    it('(d) série terminée (count = occurrences observées, toutes échéances passées) → loan créé inactif', async () => {
+      await svc.upsertMany('2026-03', [
+        {
+          label: '3× cofidis · amazon',
+          monthlyAmount: 65.81,
+          occurrencesSeen: 3,
+          firstSeenDate: '2025-01-10',
+          suggestedType: 'loan' as const,
+          matchPattern: 'cofidis',
+          creditor: 'cofidis',
+          installment: {
+            count: 3,
+            merchant: 'amazon',
+            occurrenceTxIds: ['x', 'y', 'z'],
+            amounts: [65.81, 65.81, 65.81],
+            dates: ['2025-01-10', '2025-02-10', '2025-03-10'],
+          },
+          source: 'llm_detection' as const,
+        },
+      ]);
+      const [s] = await svc.getPending();
+
+      await svc.acceptInstallment(s.id);
+
+      const [loan] = await loansSvc.getAll();
+      expect(loan.installmentSchedule).toHaveLength(3); // count = observées → aucune projection
+      expect(loan.isActive).toBe(false);
+      expect(loan.endDate).toBe('2025-03-10');
     });
 
     it('(b) suggestion sans installment → BadRequestException', async () => {

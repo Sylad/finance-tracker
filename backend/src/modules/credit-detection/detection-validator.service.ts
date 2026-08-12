@@ -7,6 +7,7 @@ import {
 import { LoansService } from '../loans/loans.service';
 import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
 import { IncomingSuggestion } from '../../models/loan-suggestion.model';
+import { escapeRegex } from '../../common/regex.util';
 
 const MIN_CONFIDENCE = 0.6;
 const AMOUNT_TOLERANCE = 0.05;
@@ -113,9 +114,7 @@ export class DetectionValidatorService {
       occurrencesSeen: occurrences.length,
       firstSeenDate: occurrences[0].date,
       suggestedType: 'loan',
-      matchPattern: DetectionValidatorService.escapeRegex(
-        classification.creditor,
-      ),
+      matchPattern: escapeRegex(classification.creditor),
       creditor: classification.creditor,
       installment: {
         count: classification.installmentCount,
@@ -176,9 +175,7 @@ export class DetectionValidatorService {
       occurrencesSeen: occurrences.length,
       firstSeenDate: occurrences[0].date,
       suggestedType,
-      matchPattern: DetectionValidatorService.escapeRegex(
-        classification.creditor,
-      ),
+      matchPattern: escapeRegex(classification.creditor),
       creditor: classification.creditor,
       source: 'llm_detection',
     };
@@ -247,9 +244,5 @@ export class DetectionValidatorService {
 
   private static round2(value: number): number {
     return Math.round(value * 100) / 100;
-  }
-
-  private static escapeRegex(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 }

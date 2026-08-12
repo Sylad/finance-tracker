@@ -16,6 +16,7 @@ import { Loan } from '../../models/loan.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { LoansService } from '../loans/loans.service';
+import { escapeRegex } from '../../common/regex.util';
 
 @Injectable()
 export class LoanSuggestionsService {
@@ -140,6 +141,17 @@ export class LoanSuggestionsService {
    * (`installment.dates`/`installment.amounts`), complété par projection si
    * `installment.count` dépasse le nombre d'occurrences observées.
    *
+   * Seed aussi `occurrencesDetected` (via `addOccurrence`, une par
+   * occurrence observée) — sans ça `computeLoanState().totalPaid` reste à 0
+   * et la dédup cross-loan de `syncInstallmentLoan` ne voit pas ces tx
+   * comme déjà attribuées. `InstallmentSuggestionInfo` ne porte pas de
+   * statementId par occurrence (seulement date/amount/transactionId) : on
+   * reconstruit un statementId synthétique `YYYY-MM` depuis la date.
+   *
+   * `isActive` : comme `convertToInstallment`, si toutes les échéances du
+   * schedule (observées + projetées) ont une dueDate déjà passée, la série
+   * est terminée → loan créé inactif d'emblée.
+   *
    * 404 si la suggestion n'existe pas ; 400 si elle n'a pas de champ
    * `installment` ou si elle est déjà `accepted` (idempotence stricte —
    * on ne veut pas créer un second loan pour la même suggestion).
@@ -159,19 +171,37 @@ export class LoanSuggestionsService {
     }
 
     const { installment } = suggestion;
-    const occurrences = installment.dates.map((date, i) => ({
+    // statementId synthétique 'YYYY-MM' — InstallmentSuggestionInfo ne
+    // porte pas de statementId d'origine par occurrence.
+    const zipped = installment.dates.map((date, i) => ({
       date,
       amount: installment.amounts[i] ?? 0,
+      transactionId: installment.occurrenceTxIds[i] ?? null,
+      statementId: date.slice(0, 7),
     }));
+    const sortedOccurrences = [...zipped].sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
+
     const schedule = LoansService.buildInstallmentSchedule(
-      occurrences,
+      sortedOccurrences.map((o) => ({ date: o.date, amount: o.amount })),
       installment.count,
     );
+    // Aligne paidOccurrenceId sur les lignes observées, comme
+    // convertToInstallment (schedule[0..N-1] = sortedOccurrences par
+    // construction, mêmes tris stables sur `date`).
+    sortedOccurrences.forEach((o, i) => {
+      schedule[i].paidOccurrenceId = o.statementId;
+    });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const allPast = schedule.every((s) => s.dueDate <= today);
+
     const creditorLabel = suggestion.creditor ?? suggestion.label;
     const merchantSuffix = installment.merchant
       ? ` · ${installment.merchant}`
       : '';
-    const count = installment.count ?? occurrences.length;
+    const count = installment.count ?? sortedOccurrences.length;
 
     const loan: Loan = await this.loans.create({
       name: `${count}× ${creditorLabel}${merchantSuffix}`,
@@ -179,8 +209,8 @@ export class LoanSuggestionsService {
       kind: 'installment',
       category: 'consumer',
       monthlyPayment: suggestion.monthlyAmount,
-      matchPattern: LoanSuggestionsService.escapeRegex(creditorLabel),
-      isActive: true,
+      matchPattern: escapeRegex(creditorLabel),
+      isActive: !allPast,
       creditor: suggestion.creditor,
       startDate: schedule[0]?.dueDate,
       endDate: schedule[schedule.length - 1]?.dueDate,
@@ -189,14 +219,23 @@ export class LoanSuggestionsService {
       installmentSignatureDate: schedule[0]?.dueDate,
     });
 
+    // Seed occurrencesDetected — 1 par occurrence observée. amounts stockés
+    // positifs côté InstallmentSuggestionInfo, l'occurrence porte le débit
+    // (négatif). Ordre = ordre trié (aligné avec paidOccurrenceId ci-dessus).
+    for (const o of sortedOccurrences) {
+      await this.loans.addOccurrence(loan.id, {
+        statementId: o.statementId,
+        date: o.date,
+        amount: -Math.abs(o.amount),
+        transactionId: o.transactionId,
+        source: 'bank_statement',
+      });
+    }
+
     this.logger.log(
-      `Accepted installment suggestion ${id} → loan ${loan.id} (${schedule.length} échéances)`,
+      `Accepted installment suggestion ${id} → loan ${loan.id} (${schedule.length} échéances, ${sortedOccurrences.length} occurrences seedées)`,
     );
     return this.accept(id, { loanId: loan.id });
-  }
-
-  private static escapeRegex(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   private async transition(
