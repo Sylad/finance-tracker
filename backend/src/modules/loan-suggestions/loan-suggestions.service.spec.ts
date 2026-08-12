@@ -201,6 +201,73 @@ describe('LoanSuggestionsService', () => {
     expect(pending[0].source).toBe('llm_detection');
   });
 
+  it("dédup installment : même creditor, 3 sous-séries à montants distincts -> 3 suggestions conservées (pas d'écrasement)", async () => {
+    // Round 2 fix : un même cluster creditor|merchant peut porter plusieurs
+    // plans N× (DetectionValidatorService.splitByAmount). Chaque sous-série
+    // appelle upsertMany séparément avec le même creditor mais un
+    // monthlyAmount différent — la dédup par creditor seul écrasait les 2
+    // premières. Doit désormais garder 3 entrées distinctes.
+    const planA = {
+      label: '3× klarni · zoland (42€)',
+      monthlyAmount: 42,
+      occurrencesSeen: 2,
+      firstSeenDate: '2026-01-05',
+      suggestedType: 'loan' as const,
+      matchPattern: 'klarni',
+      creditor: 'klarni',
+      installment: {
+        count: 3,
+        merchant: 'zoland',
+        occurrenceTxIds: ['a1', 'a2'],
+        amounts: [41.99, 42.0],
+        dates: ['2026-01-05', '2026-02-04'],
+      },
+      source: 'llm_detection' as const,
+    };
+    const planB = {
+      ...planA,
+      label: '3× klarni · zoland (44.98€)',
+      monthlyAmount: 44.98,
+      occurrenceTxIds: undefined,
+      installment: {
+        count: 3,
+        merchant: 'zoland',
+        occurrenceTxIds: ['b1', 'b2'],
+        amounts: [44.98, 44.98],
+        dates: ['2026-01-15', '2026-02-14'],
+      },
+    };
+    const planC = {
+      ...planA,
+      label: '3× klarni · zoland (51.97€)',
+      monthlyAmount: 51.97,
+      installment: {
+        count: 3,
+        merchant: 'zoland',
+        occurrenceTxIds: ['c1', 'c2'],
+        amounts: [51.97, 51.98],
+        dates: ['2026-01-25', '2026-02-24'],
+      },
+    };
+
+    await svc.upsertMany('2026-02', [planA]);
+    await svc.upsertMany('2026-02', [planB]);
+    await svc.upsertMany('2026-02', [planC]);
+
+    const pending = await svc.getPending();
+    expect(pending).toHaveLength(3);
+    expect(pending.map((p) => p.label).sort()).toEqual(
+      [planA.label, planB.label, planC.label].sort(),
+    );
+
+    // Re-scan identique (même creditor + mêmes montants) -> toujours 3, pas 6
+    await svc.upsertMany('2026-03', [planA]);
+    await svc.upsertMany('2026-03', [planB]);
+    await svc.upsertMany('2026-03', [planC]);
+    const afterRescan = await svc.getPending();
+    expect(afterRescan).toHaveLength(3);
+  });
+
   it("dédup : incoming sans installment ne détruit pas un installment déjà présent sur l'existante", async () => {
     const withInstallment = {
       label: '4× klarni · zoland',

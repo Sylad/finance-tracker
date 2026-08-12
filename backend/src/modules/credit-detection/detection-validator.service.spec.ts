@@ -1,3 +1,7 @@
+import { Test } from '@nestjs/testing';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { DetectionValidatorService } from './detection-validator.service';
 import {
   CandidateCluster,
@@ -5,6 +9,9 @@ import {
 } from '../../models/credit-detection.model';
 import { LoansService, MatchResult } from '../loans/loans.service';
 import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
+import { StorageService } from '../storage/storage.service';
+import { EventBusService } from '../events/event-bus.service';
+import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 function makeCluster(
   overrides: Partial<CandidateCluster> = {},
@@ -405,5 +412,119 @@ describe('DetectionValidatorService', () => {
     const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
     expect(incoming[0].label).toBe('4× klarni · zoland');
     expect(incoming[0].label).not.toMatch(/\(\d/);
+  });
+});
+
+describe('DetectionValidatorService (intégration — vrai LoanSuggestionsService, tmpdir)', () => {
+  // Round 2 fix : le round 1 (sous-séries de montants) était correct au
+  // niveau du validateur (createdCount:3) mais annulé en aval par
+  // LoanSuggestionsService.dedupKey, qui clé par creditor seul —
+  // chaque upsertMany successif écrasait le précédent. Reproduit ici avec
+  // le VRAI LoanSuggestionsService (pas de mock, tmpdir comme
+  // loan-suggestions.service.spec.ts) pour verrouiller le comportement de
+  // bout en bout.
+  let svc: DetectionValidatorService;
+  let loanSuggestionsService: LoanSuggestionsService;
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ft-detval-'));
+    const mod = await Test.createTestingModule({
+      providers: [
+        DetectionValidatorService,
+        LoanSuggestionsService,
+        LoansService,
+        {
+          provide: RequestDataDirService,
+          useValue: {
+            getDataDir: () => tmpDir,
+            isDemoMode: () => false,
+            runWith: (_ctx: unknown, fn: () => unknown) => fn(),
+          },
+        },
+        { provide: EventBusService, useValue: { emit: jest.fn() } },
+        {
+          provide: StorageService,
+          useValue: { getAllStatements: jest.fn(async () => []) },
+        },
+      ],
+    }).compile();
+    svc = mod.get(DetectionValidatorService);
+    loanSuggestionsService = mod.get(LoanSuggestionsService);
+  });
+
+  afterEach(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
+  it('cluster à 3 sous-séries -> validate createdCount:3 ET getPending() retourne 3 suggestions à labels distincts ; re-scan identique -> toujours 3', async () => {
+    const cluster: CandidateCluster = {
+      key: 'klarni|zoland',
+      creditor: 'klarni',
+      merchant: 'zoland',
+      occurrences: [
+        {
+          date: '2026-01-05',
+          amount: -41.99,
+          description: 'Klarni*Zoland A 1/2',
+          transactionId: 'a1',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-01-15',
+          amount: -44.98,
+          description: 'Klarni*Zoland B 1/2',
+          transactionId: 'b1',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-01-25',
+          amount: -51.97,
+          description: 'Klarni*Zoland C 1/2',
+          transactionId: 'c1',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-02-04',
+          amount: -42.0,
+          description: 'Klarni*Zoland A 2/2',
+          transactionId: 'a2',
+          statementId: '2026-02',
+        },
+        {
+          date: '2026-02-14',
+          amount: -44.98,
+          description: 'Klarni*Zoland B 2/2',
+          transactionId: 'b2',
+          statementId: '2026-02',
+        },
+        {
+          date: '2026-02-24',
+          amount: -51.98,
+          description: 'Klarni*Zoland C 2/2',
+          transactionId: 'c2',
+          statementId: '2026-02',
+        },
+      ],
+    };
+    const classification: ClusterClassification = {
+      classification: 'installment',
+      creditor: 'klarni',
+      merchant: 'zoland',
+      installmentCount: 3,
+      confidence: 0.9,
+      rationale: 'Trois plans BNPL entremêlés',
+    };
+
+    const result = await svc.validate(cluster, classification);
+
+    expect(result).toEqual({ created: true, createdCount: 3 });
+    const pending = await loanSuggestionsService.getPending();
+    expect(pending).toHaveLength(3);
+    expect(new Set(pending.map((p) => p.label)).size).toBe(3);
+
+    // re-scan (2e validate identique) -> toujours 3, pas 6
+    const result2 = await svc.validate(cluster, classification);
+    expect(result2).toEqual({ created: true, createdCount: 3 });
+    const pendingAfterRescan = await loanSuggestionsService.getPending();
+    expect(pendingAfterRescan).toHaveLength(3);
   });
 });

@@ -63,7 +63,7 @@ export class LoanSuggestionsService {
     const now = new Date().toISOString();
     let dirty = false;
     for (const inc of incoming) {
-      const existing = all.find((s) => this.dedupKey(s) === this.dedupKey(inc));
+      const existing = all.find((s) => this.matchesExisting(s, inc));
       if (existing) {
         if (existing.status === 'rejected') continue;
         existing.occurrencesSeen = inc.occurrencesSeen;
@@ -101,7 +101,46 @@ export class LoanSuggestionsService {
     if (dirty) await this.persist(all);
   }
 
-  private dedupKey(s: { creditor?: string; matchPattern: string }): string {
+  /**
+   * Prédicat de dédup — remplace l'ancienne égalité de clé stricte
+   * (round 2 fix, cf DetectionValidatorService.splitByAmount) :
+   * - Créancier différent (ou matchPattern différent en fallback) -> jamais
+   *   la même suggestion.
+   * - Même créancier ET **les deux côtés** portent un plan `installment`
+   *   -> distingue par `monthlyAmount` arrondi à l'euro (médiane de la
+   *   sous-série). Un même creditor|merchant peut porter plusieurs plans
+   *   N× entremêlés (ex. 3 achats Klarna distincts) : sans ce critère,
+   *   chaque upsertMany successif écrase le précédent (round 2 bug : 3
+   *   sous-séries validées, 1 seule persistée).
+   * - Sinon (au moins un côté sans `installment`) -> clé creditor seule,
+   *   comportement historique inchangé. Nécessaire pour le pass-through
+   *   documenté plus haut : un incoming standard (relevé bancaire, flux
+   *   Claude classique) qui re-matche une suggestion créée par la
+   *   détection LLM ne doit PAS être traité comme un nouveau plan sous
+   *   prétexte qu'il ne porte pas de champ `installment`.
+   */
+  private matchesExisting(
+    existing: LoanSuggestion,
+    inc: IncomingSuggestion,
+  ): boolean {
+    if (
+      LoanSuggestionsService.creditorKey(existing) !==
+      LoanSuggestionsService.creditorKey(inc)
+    ) {
+      return false;
+    }
+    if (existing.installment && inc.installment) {
+      return (
+        Math.round(existing.monthlyAmount) === Math.round(inc.monthlyAmount)
+      );
+    }
+    return true;
+  }
+
+  private static creditorKey(s: {
+    creditor?: string;
+    matchPattern: string;
+  }): string {
     if (s.creditor && s.creditor.trim())
       return 'creditor:' + s.creditor.toLowerCase().trim();
     return (
