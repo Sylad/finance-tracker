@@ -17,22 +17,36 @@ export class LoanSuggestionsController {
   constructor(private readonly svc: LoanSuggestionsService) {}
 
   @Get()
-  list() { return this.svc.getPending(); }
+  list() {
+    return this.svc.getPending();
+  }
 
   @Post(':id/accept')
   accept(
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(AcceptSchema)) body: { loanId?: string; subscriptionId?: string },
+    @Body(new ZodValidationPipe(AcceptSchema))
+    body: { loanId?: string; subscriptionId?: string },
   ) {
     return this.svc.accept(id, body);
   }
 
+  @Post(':id/accept-installment')
+  acceptInstallment(@Param('id') id: string) {
+    return this.svc.acceptInstallment(id);
+  }
+
   @Post(':id/reject')
-  reject(@Param('id') id: string) { return this.svc.reject(id); }
+  reject(@Param('id') id: string) {
+    return this.svc.reject(id);
+  }
 
   @Post(':id/snooze')
-  snooze(@Param('id') id: string) { return this.svc.snooze(id); }
+  snooze(@Param('id') id: string) {
+    return this.svc.snooze(id);
+  }
 
   @Post(':id/unsnooze')
-  unsnooze(@Param('id') id: string) { return this.svc.unsnooze(id); }
+  unsnooze(@Param('id') id: string) {
+    return this.svc.unsnooze(id);
+  }
 }

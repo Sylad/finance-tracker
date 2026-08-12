@@ -3,11 +3,14 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { LoanSuggestionsService } from './loan-suggestions.service';
+import { LoansService } from '../loans/loans.service';
+import { StorageService } from '../storage/storage.service';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 describe('LoanSuggestionsService', () => {
   let svc: LoanSuggestionsService;
+  let loansSvc: LoansService;
   let tmpDir: string;
 
   beforeEach(async () => {
@@ -15,6 +18,7 @@ describe('LoanSuggestionsService', () => {
     const mod = await Test.createTestingModule({
       providers: [
         LoanSuggestionsService,
+        LoansService,
         {
           provide: RequestDataDirService,
           useValue: {
@@ -24,9 +28,14 @@ describe('LoanSuggestionsService', () => {
           },
         },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
+        {
+          provide: StorageService,
+          useValue: { getAllStatements: jest.fn(async () => []) },
+        },
       ],
     }).compile();
     svc = mod.get(LoanSuggestionsService);
+    loansSvc = mod.get(LoansService);
   });
 
   afterEach(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
@@ -248,5 +257,97 @@ describe('LoanSuggestionsService', () => {
     const result = await svc.deleteAll();
     expect(result.deletedCount).toBe(2);
     expect(await svc.getAll()).toHaveLength(0);
+  });
+
+  describe('acceptInstallment', () => {
+    const installmentIncoming = {
+      label: '4× klarni · zoland',
+      monthlyAmount: 44.98,
+      occurrencesSeen: 3,
+      firstSeenDate: '2026-01-10',
+      suggestedType: 'loan' as const,
+      matchPattern: 'klarni',
+      creditor: 'klarni',
+      installment: {
+        count: 4,
+        merchant: 'zoland',
+        occurrenceTxIds: ['a', 'b', 'c'],
+        amounts: [44.98, 44.5, 45.1],
+        dates: ['2026-01-10', '2026-02-08', '2026-03-07'],
+      },
+      source: 'llm_detection' as const,
+    };
+
+    it('(a) crée un loan kind=installment avec 4 lignes (3 observées + 1 projetée) et marque la suggestion accepted', async () => {
+      await svc.upsertMany('2026-03', [installmentIncoming]);
+      const [s] = await svc.getPending();
+
+      const updated = await svc.acceptInstallment(s.id);
+
+      expect(updated.status).toBe('accepted');
+      expect(updated.acceptedAsLoanId).toBeDefined();
+
+      const loans = await loansSvc.getAll();
+      expect(loans).toHaveLength(1);
+      const loan = loans[0];
+      expect(loan.id).toBe(updated.acceptedAsLoanId);
+      expect(loan.kind).toBe('installment');
+      expect(loan.type).toBe('classic');
+      expect(loan.category).toBe('consumer');
+      expect(loan.creditor).toBe('klarni');
+      expect(loan.installmentMerchant).toBe('zoland');
+      expect(loan.matchPattern).toBe('klarni');
+
+      const schedule = loan.installmentSchedule!;
+      expect(schedule).toHaveLength(4);
+      expect(schedule[0]).toMatchObject({
+        dueDate: '2026-01-10',
+        amount: 44.98,
+        paid: true,
+      });
+      expect(schedule[1]).toMatchObject({
+        dueDate: '2026-02-08',
+        amount: 44.5,
+        paid: true,
+      });
+      expect(schedule[2]).toMatchObject({
+        dueDate: '2026-03-07',
+        amount: 45.1,
+        paid: true,
+      });
+      // 4e ligne projetée : pas médian (29j, 27j) → 28j après 2026-03-07, montant médian 44.98
+      expect(schedule[3]).toMatchObject({
+        dueDate: '2026-04-04',
+        amount: 44.98,
+        paid: false,
+      });
+    });
+
+    it('(b) suggestion sans installment → BadRequestException', async () => {
+      await svc.upsertMany('2026-03', [
+        {
+          label: 'PRELEVT CETELEM',
+          monthlyAmount: 320,
+          occurrencesSeen: 5,
+          firstSeenDate: '2025-11-15',
+          suggestedType: 'loan',
+          matchPattern: 'PRELEVT.*CETELEM',
+        },
+      ]);
+      const [s] = await svc.getPending();
+      await expect(svc.acceptInstallment(s.id)).rejects.toThrow(/installment/);
+
+      // Aucun loan créé
+      expect(await loansSvc.getAll()).toHaveLength(0);
+    });
+
+    it('(c) suggestion déjà accepted → BadRequestException, pas de second loan créé', async () => {
+      await svc.upsertMany('2026-03', [installmentIncoming]);
+      const [s] = await svc.getPending();
+      await svc.acceptInstallment(s.id);
+
+      await expect(svc.acceptInstallment(s.id)).rejects.toThrow();
+      expect(await loansSvc.getAll()).toHaveLength(1);
+    });
   });
 });

@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
@@ -7,8 +12,10 @@ import {
   IncomingSuggestion,
   LoanSuggestion,
 } from '../../models/loan-suggestion.model';
+import { Loan } from '../../models/loan.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
+import { LoansService } from '../loans/loans.service';
 
 @Injectable()
 export class LoanSuggestionsService {
@@ -17,6 +24,7 @@ export class LoanSuggestionsService {
   constructor(
     private readonly dataDir: RequestDataDirService,
     private readonly bus: EventBusService,
+    private readonly loans: LoansService,
   ) {}
 
   private get filepath(): string {
@@ -123,6 +131,72 @@ export class LoanSuggestionsService {
     delete all[idx].resolvedAt;
     await this.persist(all);
     return all[idx];
+  }
+
+  /**
+   * Accepte une suggestion N× (`installment` présent, détectée par le LLM
+   * — cf DetectionValidatorService) en créant un Loan `kind='installment'`
+   * avec un échéancier reconstruit depuis les occurrences observées
+   * (`installment.dates`/`installment.amounts`), complété par projection si
+   * `installment.count` dépasse le nombre d'occurrences observées.
+   *
+   * 404 si la suggestion n'existe pas ; 400 si elle n'a pas de champ
+   * `installment` ou si elle est déjà `accepted` (idempotence stricte —
+   * on ne veut pas créer un second loan pour la même suggestion).
+   */
+  async acceptInstallment(id: string): Promise<LoanSuggestion> {
+    const all = await this.getAll();
+    const idx = all.findIndex((s) => s.id === id);
+    if (idx === -1) throw new NotFoundException(`Suggestion ${id} introuvable`);
+    const suggestion = all[idx];
+    if (!suggestion.installment) {
+      throw new BadRequestException(
+        `Suggestion ${id} sans détail installment — impossible de construire un échéancier`,
+      );
+    }
+    if (suggestion.status === 'accepted') {
+      throw new BadRequestException(`Suggestion ${id} déjà acceptée`);
+    }
+
+    const { installment } = suggestion;
+    const occurrences = installment.dates.map((date, i) => ({
+      date,
+      amount: installment.amounts[i] ?? 0,
+    }));
+    const schedule = LoansService.buildInstallmentSchedule(
+      occurrences,
+      installment.count,
+    );
+    const creditorLabel = suggestion.creditor ?? suggestion.label;
+    const merchantSuffix = installment.merchant
+      ? ` · ${installment.merchant}`
+      : '';
+    const count = installment.count ?? occurrences.length;
+
+    const loan: Loan = await this.loans.create({
+      name: `${count}× ${creditorLabel}${merchantSuffix}`,
+      type: 'classic',
+      kind: 'installment',
+      category: 'consumer',
+      monthlyPayment: suggestion.monthlyAmount,
+      matchPattern: LoanSuggestionsService.escapeRegex(creditorLabel),
+      isActive: true,
+      creditor: suggestion.creditor,
+      startDate: schedule[0]?.dueDate,
+      endDate: schedule[schedule.length - 1]?.dueDate,
+      installmentSchedule: schedule,
+      installmentMerchant: installment.merchant ?? undefined,
+      installmentSignatureDate: schedule[0]?.dueDate,
+    });
+
+    this.logger.log(
+      `Accepted installment suggestion ${id} → loan ${loan.id} (${schedule.length} échéances)`,
+    );
+    return this.accept(id, { loanId: loan.id });
+  }
+
+  private static escapeRegex(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   private async transition(

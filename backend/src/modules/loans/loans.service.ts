@@ -963,12 +963,17 @@ export class LoansService {
         `Loan ${loanId} sans occurrence — impossible de reconstruire un échéancier`,
       );
     }
-    const schedule: InstallmentLine[] = occurrences.map((o) => ({
-      dueDate: o.date,
-      amount: Math.abs(o.amount),
-      paid: true,
-      paidOccurrenceId: o.statementId ?? undefined,
-    }));
+    // totalCount=null : convertToInstallment n'a pas de compte cible connu,
+    // on ne projette donc aucune échéance future — comportement historique
+    // préservé (schedule = uniquement les occurrences observées).
+    const schedule = LoansService.buildInstallmentSchedule(occurrences, null);
+    // buildInstallmentSchedule ne connaît pas `statementId` (signature
+    // générique {date, amount}) — on reporte paidOccurrenceId après coup en
+    // s'appuyant sur le fait que les deux tris (occurrences puis schedule)
+    // sont stables sur la même clé `date`, donc alignés index à index.
+    occurrences.forEach((o, i) => {
+      schedule[i].paidOccurrenceId = o.statementId ?? undefined;
+    });
     loan.kind = 'installment';
     loan.installmentSchedule = schedule;
     loan.installmentSignatureDate = loan.installmentSignatureDate ?? schedule[0].dueDate;
@@ -986,6 +991,80 @@ export class LoansService {
       `Converted loan ${loanId} → installment (${schedule.length} échéances, active=${loan.isActive})`,
     );
     return loan;
+  }
+
+  /**
+   * Reconstruit un échéancier `InstallmentLine[]` depuis des occurrences
+   * observées `{date, amount}`. Factorisé depuis `convertToInstallment`
+   * (Task 4, chantier détection crédits LLM) pour être réutilisé par
+   * `LoanSuggestionsService.acceptInstallment`.
+   *
+   * - Occurrences observées (triées par date) → lignes `paid: true`.
+   * - Si `totalCount` dépasse le nombre d'occurrences observées, complète
+   *   avec des lignes futures projetées `paid: false` : pas (en jours) =
+   *   médiane des écarts entre occurrences consécutives observées (fallback
+   *   30j si <2 observations), montant = médiane des montants observés.
+   * - `totalCount: null` → aucune projection (comportement historique de
+   *   `convertToInstallment`, qui ne connaît pas de compte cible).
+   */
+  static buildInstallmentSchedule(
+    occurrences: { date: string; amount: number }[],
+    totalCount: number | null,
+  ): InstallmentLine[] {
+    const sorted = [...occurrences].sort((a, b) => a.date.localeCompare(b.date));
+    const observed: InstallmentLine[] = sorted.map((o) => ({
+      dueDate: o.date,
+      amount: Math.abs(o.amount),
+      paid: true,
+    }));
+    if (observed.length === 0) return observed;
+
+    const missing = totalCount != null ? totalCount - observed.length : 0;
+    if (missing <= 0) return observed;
+
+    const medianAmount = LoansService.medianOf(sorted.map((o) => Math.abs(o.amount)));
+    const stepDays = LoansService.medianStepDays(sorted.map((o) => o.date));
+
+    const projected: InstallmentLine[] = [];
+    let cursor = sorted[sorted.length - 1].date;
+    for (let i = 0; i < missing; i++) {
+      cursor = LoansService.addDays(cursor, stepDays);
+      projected.push({ dueDate: cursor, amount: medianAmount, paid: false });
+    }
+    return [...observed, ...projected];
+  }
+
+  private static medianOf(values: number[]): number {
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const value = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+    return Math.round(value * 100) / 100;
+  }
+
+  /** Médiane (arrondie au jour) des écarts en jours entre dates consécutives triées. Fallback 30j si <2 dates. */
+  private static medianStepDays(datesAsc: string[]): number {
+    if (datesAsc.length < 2) return 30;
+    const diffs: number[] = [];
+    for (let i = 1; i < datesAsc.length; i++) {
+      diffs.push(LoansService.daysBetween(datesAsc[i - 1], datesAsc[i]));
+    }
+    const sorted = [...diffs].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0
+      ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+      : sorted[mid];
+  }
+
+  private static daysBetween(a: string, b: string): number {
+    const msA = new Date(`${a}T00:00:00Z`).getTime();
+    const msB = new Date(`${b}T00:00:00Z`).getTime();
+    return Math.round((msB - msA) / 86_400_000);
+  }
+
+  private static addDays(date: string, days: number): string {
+    const d = new Date(`${date}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
   }
 
   /**
