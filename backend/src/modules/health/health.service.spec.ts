@@ -476,6 +476,35 @@ describe('HealthService', () => {
     expect(block.details.tiragesMensuels).toBe(0);
   });
 
+  it('(c2) flux tirages : occurrence datée pile 90 jours avant → incluse dans la fenêtre (borne inclusive UTC)', () => {
+    const loan = mkLoan({
+      id: 'loan-1',
+      monthlyPayment: 0,
+      type: 'revolving',
+      maxAmount: 5000,
+      usedAmount: 1000,
+      occurrencesDetected: [
+        {
+          id: 'o1',
+          statementId: 's',
+          date: daysAgo(90),
+          amount: 300,
+          transactionId: 'tx1',
+          source: 'draw',
+        },
+      ],
+    });
+    const ctx = mkCtx({
+      loans: [loan],
+      income: { monthly: 3000, source: 'detected', label: 'Employer' },
+    });
+
+    const block = svc.computeFluxTirages(ctx);
+
+    expect(block.details.tiragesMensuels).toBe(100);
+    expect(block.status).toBe('orange');
+  });
+
   it('(d) trajectoire : revolving 5000/6000 avec trend +400/mois → plafond saturé sous horizon → rouge', () => {
     const loan = mkLoan({
       id: 'loan-1',

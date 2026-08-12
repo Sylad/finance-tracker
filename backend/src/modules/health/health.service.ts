@@ -146,9 +146,7 @@ export class HealthService {
     const mensualites = this.mensualitesTotal(ctx.loans);
     const tauxEffortPct = income > 0 ? (mensualites / income) * 100 : 0;
 
-    const revolvings = ctx.loans.filter(
-      (l) => l.isActive && l.maxAmount != null && l.maxAmount > 0,
-    );
+    const revolvings = this.revolvingsActifs(ctx.loans);
     let pireReserveNom: string | null = null;
     let pireReservePct = 0;
     let sumUsed = 0;
@@ -259,26 +257,60 @@ export class HealthService {
     return { tirages, remboursements };
   }
 
-  /** Fenêtre glissante de 3 mois (90 jours) se terminant aujourd'hui (runtime). */
+  /**
+   * Fenêtre glissante de 3 mois (90 jours) se terminant aujourd'hui (runtime).
+   * `start` est tronquée à minuit UTC : les dates d'occurrences (`YYYY-MM-DD`)
+   * sont parsées par `new Date()` comme minuit UTC, donc comparer contre un
+   * `start` à l'heure courante excluait silencieusement les occurrences
+   * datées pile 90 jours avant (finding review Task 4, 2026-08-12).
+   */
   private rollingWindow(): { start: Date; end: Date } {
     const end = new Date();
     const start = new Date(end);
     start.setDate(start.getDate() - 90);
+    start.setUTCHours(0, 0, 0, 0);
     return { start, end };
   }
 
-  computeFluxTirages(ctx: HealthContext): HealthBlockResult {
-    const income = ctx.income.monthly as number;
+  /**
+   * Fenêtre + réserves actives + Σ tirages/remboursements par loan, calculés
+   * une seule fois — réutilisé par `computeFluxTirages` et `computeTrajectoire`
+   * pour éviter de refaire le même parcours des occurrences deux fois par
+   * appel à `getDiagnostic()`.
+   */
+  private reserveMetrics(ctx: HealthContext): {
+    start: Date;
+    end: Date;
+    revolvings: Loan[];
+    perLoan: Map<string, { tirages: number; remboursements: number }>;
+  } {
     const { start, end } = this.rollingWindow();
+    const revolvings = this.revolvingsActifs(ctx.loans);
+    const perLoan = new Map<
+      string,
+      { tirages: number; remboursements: number }
+    >();
+    for (const loan of revolvings) {
+      perLoan.set(loan.id, this.tiragesEtRemboursements(loan, start, end));
+    }
+    return { start, end, revolvings, perLoan };
+  }
+
+  computeFluxTirages(
+    ctx: HealthContext,
+    metrics: ReturnType<HealthService['reserveMetrics']> = this.reserveMetrics(
+      ctx,
+    ),
+  ): HealthBlockResult {
+    const income = ctx.income.monthly as number;
 
     let totalTirages = 0;
     let totalRemboursements = 0;
-    for (const loan of this.revolvingsActifs(ctx.loans)) {
-      const { tirages, remboursements } = this.tiragesEtRemboursements(
-        loan,
-        start,
-        end,
-      );
+    for (const loan of metrics.revolvings) {
+      const { tirages, remboursements } = metrics.perLoan.get(loan.id) ?? {
+        tirages: 0,
+        remboursements: 0,
+      };
       totalTirages += tirages;
       totalRemboursements += remboursements;
     }
@@ -314,22 +346,25 @@ export class HealthService {
     };
   }
 
-  computeTrajectoire(ctx: HealthContext): HealthBlockResult {
-    const { start, end } = this.rollingWindow();
+  computeTrajectoire(
+    ctx: HealthContext,
+    metrics: ReturnType<HealthService['reserveMetrics']> = this.reserveMetrics(
+      ctx,
+    ),
+  ): HealthBlockResult {
     const { horizonMonths, stableBandPct } = ctx.thresholds.trajectoire;
 
-    const revolvings = this.revolvingsActifs(ctx.loans);
+    const revolvings = metrics.revolvings;
     let sumUsed = 0;
     let sumProjected = 0;
     let saturatedLoanName: string | null = null;
     for (const loan of revolvings) {
       const used = loan.usedAmount ?? 0;
       const max = loan.maxAmount as number;
-      const { tirages, remboursements } = this.tiragesEtRemboursements(
-        loan,
-        start,
-        end,
-      );
+      const { tirages, remboursements } = metrics.perLoan.get(loan.id) ?? {
+        tirages: 0,
+        remboursements: 0,
+      };
       const trend = (tirages - remboursements) / 3;
       const projected = used + horizonMonths * trend;
       sumUsed += used;
@@ -413,10 +448,14 @@ export class HealthService {
       };
     }
 
+    // Calculé une seule fois — évite de reparcourir la fenêtre 90j et les
+    // occurrences des réserves actives deux fois (fluxTirages + trajectoire).
+    const metrics = this.reserveMetrics(ctx);
+
     const resteAVivre = this.computeResteAVivre(ctx);
     const chargeDette = this.computeChargeDette(ctx);
-    const fluxTirages = this.computeFluxTirages(ctx);
-    const trajectoire = this.computeTrajectoire(ctx);
+    const fluxTirages = this.computeFluxTirages(ctx, metrics);
+    const trajectoire = this.computeTrajectoire(ctx, metrics);
 
     const severity: Record<HealthStatus, number> = {
       green: 0,
