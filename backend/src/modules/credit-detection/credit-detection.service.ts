@@ -87,7 +87,9 @@ export class CreditDetectionService {
           cluster,
           classification,
         );
-        if (validation.created) suggestionsCreated++;
+        if (validation.created) {
+          suggestionsCreated += validation.createdCount ?? 1;
+        }
       } catch (err) {
         const e = err as Error;
         errors.push({

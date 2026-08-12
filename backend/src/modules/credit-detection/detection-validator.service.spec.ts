@@ -78,7 +78,7 @@ describe('DetectionValidatorService', () => {
 
     const result = await svc.validate(cluster, classification);
 
-    expect(result).toEqual({ created: true });
+    expect(result).toEqual({ created: true, createdCount: 1 });
     expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
     const [statementId, incoming] =
       loanSuggestionsService.upsertMany.mock.calls[0];
@@ -100,7 +100,12 @@ describe('DetectionValidatorService', () => {
     });
   });
 
-  it('(b) montants hors ±5% (44.98 / 44.50 / 90.00) -> pas de suggestion créée', async () => {
+  it('(b) 3 montants tous à >5% les uns des autres (aucune sous-série de 2+) -> pas de suggestion créée', async () => {
+    // Fix 1 : depuis le découpage en sous-séries par montant, un cluster
+    // n'est plus rejeté en bloc dès qu'un montant diverge (44.98/44.50
+    // formeraient désormais une sous-série valide à 2 occurrences). Pour
+    // tester le rejet pur, les 3 montants doivent être mutuellement hors
+    // tolérance ±5% deux à deux, donc aucune sous-série n'atteint 2 occ.
     const cluster = makeCluster({
       occurrences: [
         {
@@ -112,14 +117,14 @@ describe('DetectionValidatorService', () => {
         },
         {
           date: '2026-02-08',
-          amount: -44.5,
+          amount: -70.0,
           description: 'Klarni*Zoland 2/3',
           transactionId: 'b',
           statementId: '2026-02',
         },
         {
           date: '2026-03-07',
-          amount: -90.0,
+          amount: -95.0,
           description: 'Klarni*Zoland 3/3',
           transactionId: 'c',
           statementId: '2026-03',
@@ -267,5 +272,138 @@ describe('DetectionValidatorService', () => {
     expect(result).toEqual({ created: false, reason: 'not_credit' });
     expect(loansService.findExistingLoan).not.toHaveBeenCalled();
     expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('(h) cluster avec 3 plans N× entremêlés (montants hétérogènes par sous-série) -> 3 suggestions aux labels distincts', async () => {
+    // Reproduit le cas du bench réel : un même creditor|merchant contient
+    // 3 plans BNPL distincts joués en parallèle. Montants par sous-série :
+    // A=[41.99,42.00] B=[44.98,44.98] C=[51.97,51.98].
+    const cluster = makeCluster({
+      occurrences: [
+        {
+          date: '2026-01-05',
+          amount: -41.99,
+          description: 'Klarni*Zoland A 1/2',
+          transactionId: 'a1',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-01-15',
+          amount: -44.98,
+          description: 'Klarni*Zoland B 1/2',
+          transactionId: 'b1',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-01-25',
+          amount: -51.97,
+          description: 'Klarni*Zoland C 1/2',
+          transactionId: 'c1',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-02-04',
+          amount: -42.0,
+          description: 'Klarni*Zoland A 2/2',
+          transactionId: 'a2',
+          statementId: '2026-02',
+        },
+        {
+          date: '2026-02-14',
+          amount: -44.98,
+          description: 'Klarni*Zoland B 2/2',
+          transactionId: 'b2',
+          statementId: '2026-02',
+        },
+        {
+          date: '2026-02-24',
+          amount: -51.98,
+          description: 'Klarni*Zoland C 2/2',
+          transactionId: 'c2',
+          statementId: '2026-02',
+        },
+      ],
+    });
+    const classification = makeClassification({ installmentCount: 3 });
+
+    const result = await svc.validate(cluster, classification);
+
+    expect(result).toEqual({ created: true, createdCount: 3 });
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(3);
+    const labels = loanSuggestionsService.upsertMany.mock.calls
+      .map(([, incoming]) => incoming[0].label)
+      .sort();
+    expect(labels).toEqual([
+      '3× klarni · zoland (42€)',
+      '3× klarni · zoland (44.98€)',
+      '3× klarni · zoland (51.97€)',
+    ]);
+    // labels doivent bien être distincts (désambiguïsation)
+    expect(new Set(labels).size).toBe(3);
+  });
+
+  it("(i) sous-série d'1 occurrence isolée -> ignorée, les 2 autres sous-séries valides restent créées", async () => {
+    const cluster = makeCluster({
+      occurrences: [
+        {
+          date: '2026-01-05',
+          amount: -41.99,
+          description: 'Klarni*Zoland A 1/2',
+          transactionId: 'a1',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-01-15',
+          amount: -44.98,
+          description: 'Klarni*Zoland B 1/2',
+          transactionId: 'b1',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-01-20',
+          amount: -90.0,
+          description: 'Klarni*Zoland Isolé',
+          transactionId: 'x1',
+          statementId: '2026-01',
+        },
+        {
+          date: '2026-02-04',
+          amount: -42.0,
+          description: 'Klarni*Zoland A 2/2',
+          transactionId: 'a2',
+          statementId: '2026-02',
+        },
+        {
+          date: '2026-02-14',
+          amount: -44.98,
+          description: 'Klarni*Zoland B 2/2',
+          transactionId: 'b2',
+          statementId: '2026-02',
+        },
+      ],
+    });
+    const classification = makeClassification({ installmentCount: null });
+
+    const result = await svc.validate(cluster, classification);
+
+    expect(result).toEqual({ created: true, createdCount: 2 });
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(2);
+    const allTxIds = loanSuggestionsService.upsertMany.mock.calls.flatMap(
+      ([, incoming]) => incoming[0].installment!.occurrenceTxIds,
+    );
+    expect(allTxIds).not.toContain('x1');
+    expect(allTxIds.sort()).toEqual(['a1', 'a2', 'b1', 'b2']);
+  });
+
+  it('(j) cluster homogène (1 seule sous-série) -> comportement inchangé, label sans suffixe montant', async () => {
+    const cluster = makeCluster();
+    const classification = makeClassification();
+
+    const result = await svc.validate(cluster, classification);
+
+    expect(result).toEqual({ created: true, createdCount: 1 });
+    const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
+    expect(incoming[0].label).toBe('4× klarni · zoland');
+    expect(incoming[0].label).not.toMatch(/\(\d/);
   });
 });

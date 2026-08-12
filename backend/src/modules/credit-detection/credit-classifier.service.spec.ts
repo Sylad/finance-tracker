@@ -96,6 +96,29 @@ describe('CreditClassifierService', () => {
     expect(body.prompt).toContain('installment');
   });
 
+  it('prompt v2 : consignes anti-bruit (loan réservé aux organismes de crédit, exemples génériques énergie/impôts/transport/streaming -> subscription ou not_credit) et découpage aval des plans N× entremêlés', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch' as never).mockResolvedValue({
+      ok: true,
+      json: async () => validResponseBody(),
+    } as never);
+
+    await svc.classify(CLUSTER);
+
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    const prompt: string = body.prompt;
+    // loan réservé aux organismes de crédit / banques de financement
+    expect(prompt).toMatch(/organismes? de crédit/i);
+    // exemples génériques publics couvrant les catégories qui polluaient le scan réel
+    expect(prompt).toMatch(/EDF|Engie/);
+    expect(prompt).toMatch(/DGFIP|trésor public/i);
+    expect(prompt).toMatch(/SNCF|Navigo/);
+    expect(prompt).toMatch(/Canal\+|Netflix/);
+    // le découpage par montant des plans N× entremêlés est fait en aval (validateur)
+    expect(prompt).toMatch(/découpage.*aval|aval.*découpage/i);
+  });
+
   it('HTTP 500 -> throw', async () => {
     jest.spyOn(global, 'fetch' as never).mockResolvedValue({
       ok: false,

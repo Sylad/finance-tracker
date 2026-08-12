@@ -77,6 +77,20 @@ export class CreditClassifierService {
       "- `classic` = mensualité fixe d'un crédit amortissable\n" +
       '- `subscription` = abonnement récurrent long à montant fixe\n' +
       '- `not_credit` = achats ponctuels sans lien de crédit\n\n' +
+      '`loan` (classic/revolving) est RÉSERVÉ aux organismes de crédit et banques de financement ' +
+      '(Cofidis, Sofinco/CA Consumer Finance, Cetelem, Cofinoga, Franfinance, Younited…). Ce ne sont ' +
+      'JAMAIS des factures de fournisseurs. Exemples de catégories génériques publiques à classer ' +
+      'ailleurs (ce ne sont pas des données privées, seulement des repères de catégorie) :\n' +
+      '- Énergie/eau/télécom (EDF, Engie, opérateurs télécom) → `subscription` si récurrent à montant ' +
+      'fixe, sinon `not_credit`\n' +
+      '- Impôts et administrations (DGFIP, trésor public, amendes) → `not_credit`\n' +
+      '- Transports (SNCF, Navigo) → `subscription` si récurrent à montant fixe, sinon `not_credit`\n' +
+      '- Streaming/presse (Canal+, Netflix…) et commerces → `subscription` si récurrent à montant fixe, ' +
+      'sinon `not_credit`\n\n' +
+      'Un cluster peut contenir PLUSIEURS plans de paiement N× entremêlés (montants différents, même ' +
+      'créancier/marchand) — si la série ressemble à des paiements échelonnés BNPL malgré des montants ' +
+      'hétérogènes, classe `installment` quand même : le découpage par montant en sous-séries est fait en ' +
+      'aval, pas à ta charge.\n\n' +
       'Si les libellés semblent mélanger plusieurs séries distinctes (montants incohérents, marchands ' +
       'différents), réponds not_credit avec une confidence basse et explique dans rationale : le cluster ' +
       'peut fusionner deux marchands distincts du même créancier.\n\n' +

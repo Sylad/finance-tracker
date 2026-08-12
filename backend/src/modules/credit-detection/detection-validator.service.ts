@@ -18,6 +18,9 @@ const INTERVAL_SINGLE_MAX_DAYS = 40;
 
 export interface ValidationResult {
   created: boolean;
+  /** Nombre de suggestions effectivement créées (branche installment
+   *  multi-sous-séries). Absent quand non pertinent (0 ou 1 implicite). */
+  createdCount?: number;
   reason?: string;
 }
 
@@ -58,21 +61,58 @@ export class DetectionValidatorService {
     }
   }
 
+  /**
+   * Un cluster creditor|merchant peut contenir plusieurs plans N× joués en
+   * parallèle (montants différents, ex. Klarna qui enchaîne 3 achats
+   * distincts chez le même marchand). On découpe donc d'abord en
+   * sous-séries par montant (clustering glouton ±5%, cf. `splitByAmount`
+   * de LoansService) puis chaque sous-série ≥2 occurrences est validée
+   * indépendamment et produit sa propre suggestion. Une sous-série isolée
+   * (1 occurrence) est silencieusement ignorée sans invalider les autres.
+   */
   private async validateInstallment(
     cluster: CandidateCluster,
     classification: ClusterClassification,
   ): Promise<ValidationResult> {
-    const occurrences = cluster.occurrences;
-    const amountsAbs = occurrences.map((o) => Math.abs(o.amount));
-    const medianAmount = DetectionValidatorService.median(amountsAbs);
+    const subSeries = DetectionValidatorService.splitByAmount(
+      cluster.occurrences,
+    ).filter((occurrences) => occurrences.length >= 2);
 
-    const outOfRange = amountsAbs.some(
-      (a) => Math.abs(a - medianAmount) > medianAmount * AMOUNT_TOLERANCE,
-    );
-    if (outOfRange) {
-      return { created: false, reason: 'installment_amount_variance' };
+    if (subSeries.length === 0) {
+      return { created: false, reason: 'installment_no_recurring_amount' };
     }
 
+    const disambiguate = subSeries.length > 1;
+    let createdCount = 0;
+    let lastReason: string | undefined;
+
+    for (const occurrences of subSeries) {
+      const result = await this.validateInstallmentSubSeries(
+        occurrences,
+        classification,
+        disambiguate,
+      );
+      if (result.created) {
+        createdCount++;
+      } else {
+        lastReason = result.reason;
+      }
+    }
+
+    if (createdCount === 0) {
+      return {
+        created: false,
+        reason: lastReason ?? 'installment_no_recurring_amount',
+      };
+    }
+    return { created: true, createdCount };
+  }
+
+  private async validateInstallmentSubSeries(
+    occurrences: ClusterOccurrence[],
+    classification: ClusterClassification,
+    disambiguate: boolean,
+  ): Promise<ValidationResult> {
     const months = occurrences.map((o) => o.date.slice(0, 7));
     if (new Set(months).size !== months.length) {
       return { created: false, reason: 'installment_multiple_per_month' };
@@ -90,9 +130,14 @@ export class DetectionValidatorService {
       return { created: false, reason: 'installment_count_exceeded' };
     }
 
+    const amountsAbs = occurrences.map((o) => Math.abs(o.amount));
+    const medianAmount = DetectionValidatorService.round2(
+      DetectionValidatorService.median(amountsAbs),
+    );
+
     const match = await this.loansService.findExistingLoan({
       creditor: classification.creditor,
-      monthlyAmount: DetectionValidatorService.round2(medianAmount),
+      monthlyAmount: medianAmount,
       description: occurrences[occurrences.length - 1].description,
     });
     if (
@@ -103,14 +148,15 @@ export class DetectionValidatorService {
     }
 
     const count = classification.installmentCount ?? occurrences.length;
-    const label = DetectionValidatorService.buildLabel(
+    const base = DetectionValidatorService.buildLabel(
       classification,
       `${count}×`,
     );
+    const label = disambiguate ? `${base} (${medianAmount}€)` : base;
 
     const incoming: IncomingSuggestion = {
       label,
-      monthlyAmount: DetectionValidatorService.round2(medianAmount),
+      monthlyAmount: medianAmount,
       occurrencesSeen: occurrences.length,
       firstSeenDate: occurrences[0].date,
       suggestedType: 'loan',
@@ -131,6 +177,41 @@ export class DetectionValidatorService {
       [incoming],
     );
     return { created: true };
+  }
+
+  /**
+   * Regroupe les occurrences en sous-séries par montant : clustering
+   * glouton sur les montants triés, deux occurrences dans la même
+   * sous-série si leurs montants absolus sont à ±5 % l'un de l'autre
+   * (tolérance mesurée contre la moyenne courante du bucket, comme
+   * `LoansService.splitByAmount`). Chaque bucket est ensuite re-trié par
+   * date croissante (ordre attendu par `checkIntervals`).
+   */
+  private static splitByAmount(
+    occurrences: ClusterOccurrence[],
+  ): ClusterOccurrence[][] {
+    const sorted = [...occurrences].sort(
+      (a, b) => Math.abs(a.amount) - Math.abs(b.amount),
+    );
+    const buckets: ClusterOccurrence[][] = [];
+    for (const o of sorted) {
+      const amt = Math.abs(o.amount);
+      const last = buckets[buckets.length - 1];
+      const lastAvg = last
+        ? last.reduce((s, x) => s + Math.abs(x.amount), 0) / last.length
+        : 0;
+      const tolerance = lastAvg * AMOUNT_TOLERANCE;
+      if (last && Math.abs(amt - lastAvg) <= tolerance) {
+        last.push(o);
+      } else {
+        buckets.push([o]);
+      }
+    }
+    return buckets.map((bucket) =>
+      [...bucket].sort((a, b) =>
+        a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+      ),
+    );
   }
 
   private async validateStandardLoan(

@@ -213,4 +213,22 @@ describe('CreditDetectionService', () => {
       errors: [],
     });
   });
+
+  it("g) createdCount agrégé : 1 cluster produit 3 sous-suggestions installment, l'autre 1 -> suggestionsCreated 4", async () => {
+    const clusters = [makeCluster('a'), makeCluster('b')];
+    clustering.buildClusters.mockReturnValue(clusters);
+    classifier.classify.mockResolvedValue(makeClassification());
+    validator.validate.mockImplementation(async (cluster: CandidateCluster) => {
+      if (cluster.key === 'a') return { created: true, createdCount: 3 };
+      return { created: true };
+    });
+
+    const result = await svc.scanAll();
+
+    expect(result).toEqual({
+      clustersAnalyzed: 2,
+      suggestionsCreated: 4,
+      errors: [],
+    });
+  });
 });
