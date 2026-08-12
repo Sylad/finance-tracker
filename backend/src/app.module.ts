@@ -27,6 +27,7 @@ import { CategoryRuleSuggestionsModule } from './modules/category-rule-suggestio
 import { AnomaliesModule } from './modules/anomalies/anomalies.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { CreditDetectionModule } from './modules/credit-detection/credit-detection.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
     AnomaliesModule,
     GoalsModule,
     SubscriptionsModule,
+    CreditDetectionModule,
   ],
 })
 export class AppModule implements NestModule {
