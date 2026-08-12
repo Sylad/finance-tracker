@@ -1,4 +1,6 @@
-import { Body, Controller, Get, Post, Put } from '@nestjs/common';
+import { BadGatewayException, Body, Controller, Get, Post, Put, Res } from '@nestjs/common';
+import type { Response } from 'express';
+import { HealthAdviceService } from './health-advice.service';
 import { HealthThresholdsService } from './health-thresholds.service';
 import { HealthService } from './health.service';
 import { HealthThresholds } from '../../models/health.model';
@@ -8,6 +10,7 @@ export class HealthCheckController {
   constructor(
     private readonly thresholds: HealthThresholdsService,
     private readonly health: HealthService,
+    private readonly advice: HealthAdviceService,
   ) {}
 
   @Get('thresholds')
@@ -21,4 +24,23 @@ export class HealthCheckController {
 
   @Get('diagnostic')
   getDiagnostic() { return this.health.getDiagnostic(); }
+
+  @Post('advice')
+  async generateAdvice() {
+    try {
+      return await this.advice.generate();
+    } catch (err) {
+      throw new BadGatewayException(`Ollama indisponible : ${(err as Error).message}`);
+    }
+  }
+
+  @Get('advice')
+  async getAdvice(@Res({ passthrough: true }) res: Response) {
+    const cached = await this.advice.getCached();
+    if (!cached) {
+      res.status(204);
+      return;
+    }
+    return cached;
+  }
 }

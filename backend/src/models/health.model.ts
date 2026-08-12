@@ -49,3 +49,14 @@ export interface HealthDiagnostic {
   reliability: 'ok' | 'reduced' | 'unavailable'; // reduced si < 3 relevés
   computedAt: string;
 }
+
+export interface HealthAdvice {
+  generatedAt: string;
+  model: string;
+  advices: {
+    priority: number;
+    title: string;
+    explanation: string;
+    estimatedImpact: string;
+  }[];
+}
