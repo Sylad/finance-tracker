@@ -5,7 +5,10 @@ import { DetectionValidatorService } from './detection-validator.service';
 import { StorageService } from '../storage/storage.service';
 import { LoansService } from '../loans/loans.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
-import { CandidateCluster, DetectionScanResult } from '../../models/credit-detection.model';
+import {
+  CandidateCluster,
+  DetectionScanResult,
+} from '../../models/credit-detection.model';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 
 /**
@@ -34,21 +37,30 @@ export class CreditDetectionService {
     return this.runScan(clusters);
   }
 
-  async scanStatement(statement: MonthlyStatement): Promise<DetectionScanResult> {
+  async scanStatement(
+    statement: MonthlyStatement,
+  ): Promise<DetectionScanResult> {
     const clusters = await this.buildClustersFor([statement]);
     return this.runScan(clusters);
   }
 
-  private async buildClustersFor(statements: MonthlyStatement[]): Promise<CandidateCluster[]> {
+  private async buildClustersFor(
+    statements: MonthlyStatement[],
+  ): Promise<CandidateCluster[]> {
     const [loans, subscriptions] = await Promise.all([
       this.loansService.getAll(),
       this.subscriptionsService.getAll(),
     ]);
-    const excludedTxIds = CandidateClusteringService.collectKnownTxIds(loans, subscriptions);
+    const excludedTxIds = CandidateClusteringService.collectKnownTxIds(
+      loans,
+      subscriptions,
+    );
     return this.clustering.buildClusters(statements, excludedTxIds);
   }
 
-  private async runScan(clusters: CandidateCluster[]): Promise<DetectionScanResult> {
+  private async runScan(
+    clusters: CandidateCluster[],
+  ): Promise<DetectionScanResult> {
     const errors: { clusterKey: string; message: string }[] = [];
     let suggestionsCreated = 0;
     let networkErrors = 0;
@@ -59,17 +71,40 @@ export class CreditDetectionService {
         classification = await this.classifier.classify(cluster);
       } catch (err) {
         const e = err as Error;
-        errors.push({ clusterKey: cluster.key, message: e?.message ?? 'Erreur inconnue' });
+        errors.push({
+          clusterKey: cluster.key,
+          message: e?.message ?? 'Erreur inconnue',
+        });
         if (e instanceof TypeError) networkErrors++;
-        this.logger.warn(`classify échoué pour cluster ${cluster.key}: ${e?.message ?? err}`);
+        this.logger.warn(
+          `classify échoué pour cluster ${cluster.key}: ${e?.message ?? err}`,
+        );
         continue;
       }
 
-      const validation = await this.validator.validate(cluster, classification);
-      if (validation.created) suggestionsCreated++;
+      try {
+        const validation = await this.validator.validate(
+          cluster,
+          classification,
+        );
+        if (validation.created) suggestionsCreated++;
+      } catch (err) {
+        const e = err as Error;
+        errors.push({
+          clusterKey: cluster.key,
+          message: `validate échoué : ${e?.message ?? 'Erreur inconnue'}`,
+        });
+        this.logger.warn(
+          `validate échoué pour cluster ${cluster.key}: ${e?.message ?? err}`,
+        );
+      }
     }
 
-    if (clusters.length > 0 && errors.length === clusters.length && networkErrors === clusters.length) {
+    if (
+      clusters.length > 0 &&
+      errors.length === clusters.length &&
+      networkErrors === clusters.length
+    ) {
       throw new BadGatewayException(
         `Ollama indisponible : ${errors[0]?.message ?? 'erreur réseau'}`,
       );

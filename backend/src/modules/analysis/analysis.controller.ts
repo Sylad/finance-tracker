@@ -71,7 +71,12 @@ export class AnalysisController {
           status: 'error',
           error: `détection IA échouée: ${(e as Error).message ?? 'Unknown error'}`,
         }),
-      );
+      )
+      .catch((e) => {
+        this.logger.error(
+          `Journalisation détection IA échouée pour ${statement.id}: ${(e as Error).message ?? e}`,
+        );
+      });
   }
 
   @Post('upload')
@@ -88,7 +93,10 @@ export class AnalysisController {
       }),
       fileFilter: (req, file, cb) => {
         if (file.mimetype !== 'application/pdf') {
-          return cb(new BadRequestException('Seuls les fichiers PDF sont acceptés'), false);
+          return cb(
+            new BadRequestException('Seuls les fichiers PDF sont acceptés'),
+            false,
+          );
         }
         cb(null, true);
       },
@@ -103,7 +111,7 @@ export class AnalysisController {
     const results: Array<{
       filename: string;
       response?: AnalysisResponse;
-      skipped?: string;   // statement id if skipped as duplicate
+      skipped?: string; // statement id if skipped as duplicate
       error?: string;
     }> = [];
 
@@ -115,7 +123,9 @@ export class AnalysisController {
         if (existing) {
           await this.cleanupFile(file.path);
           results.push({ filename: file.originalname, skipped: detectedId });
-          this.logger.log(`Skipped ${file.originalname} — ${detectedId} already exists`);
+          this.logger.log(
+            `Skipped ${file.originalname} — ${detectedId} already exists`,
+          );
           continue;
         }
       }
@@ -125,7 +135,10 @@ export class AnalysisController {
       try {
         pdfBuffer = await fs.promises.readFile(file.path);
       } catch {
-        results.push({ filename: file.originalname, error: 'Impossible de lire le fichier' });
+        results.push({
+          filename: file.originalname,
+          error: 'Impossible de lire le fichier',
+        });
         continue;
       } finally {
         await this.cleanupFile(file.path);
@@ -142,7 +155,8 @@ export class AnalysisController {
         status: 'in-progress',
       });
       try {
-        const response = await this.analysisService.analyzeAndPersist(pdfBuffer);
+        const response =
+          await this.analysisService.analyzeAndPersist(pdfBuffer);
         await this.importLogs.update(pendingLog.id, {
           durationMs: Date.now() - startedAt,
           status: 'success',
@@ -153,12 +167,14 @@ export class AnalysisController {
         });
         results.push({ filename: file.originalname, response });
         this.triggerDetection(response.statement);
-        this.logger.log(`Processed ${file.originalname} → ${response.statement.id} (replaced=${response.replaced})`);
+        this.logger.log(
+          `Processed ${file.originalname} → ${response.statement.id} (replaced=${response.replaced})`,
+        );
       } catch (e) {
         const message =
           e instanceof AnthropicParseError
             ? `Analyse échouée : ${e.message}`
-            : 'Erreur inattendue lors de l\'analyse';
+            : "Erreur inattendue lors de l'analyse";
         await this.importLogs.update(pendingLog.id, {
           durationMs: Date.now() - startedAt,
           status: 'error',
@@ -175,7 +191,7 @@ export class AnalysisController {
 
     if (succeeded.length === 0 && skipped.length === 0) {
       throw new UnprocessableEntityException({
-        message: 'Aucun relevé n\'a pu être analysé',
+        message: "Aucun relevé n'a pu être analysé",
         errors: failed.map((r) => ({ filename: r.filename, error: r.error })),
       });
     }
@@ -186,7 +202,10 @@ export class AnalysisController {
         replaced: r.response!.replaced,
         filename: r.filename,
       })),
-      skipped: skipped.map((r) => ({ filename: r.filename, statementId: r.skipped! })),
+      skipped: skipped.map((r) => ({
+        filename: r.filename,
+        statementId: r.skipped!,
+      })),
       failed: failed.map((r) => ({ filename: r.filename, error: r.error })),
     };
   }

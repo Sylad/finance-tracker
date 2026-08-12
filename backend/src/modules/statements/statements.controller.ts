@@ -1,4 +1,20 @@
-import { BadRequestException, Body, Controller, Delete, Get, Header, NotFoundException, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  Logger,
+  NotFoundException,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
@@ -14,6 +30,8 @@ import { MonthlyStatement } from '../../models/monthly-statement.model';
 
 @Controller('statements')
 export class StatementsController {
+  private readonly logger = new Logger(StatementsController.name);
+
   constructor(
     private readonly storage: StorageService,
     private readonly snapshots: SnapshotService,
@@ -50,7 +68,12 @@ export class StatementsController {
           status: 'error',
           error: `détection IA échouée: ${(e as Error).message ?? 'Unknown error'}`,
         }),
-      );
+      )
+      .catch((e) => {
+        this.logger.error(
+          `Journalisation détection IA échouée pour ${statement.id}: ${(e as Error).message ?? e}`,
+        );
+      });
   }
 
   @Post('rescore-all')
@@ -59,7 +82,10 @@ export class StatementsController {
     let updated = 0;
     for (const stmt of all) {
       const before = JSON.stringify(stmt.healthScore);
-      const fresh = this.scoreCalc.compute(stmt, stmt.healthScore.claudeComment);
+      const fresh = this.scoreCalc.compute(
+        stmt,
+        stmt.healthScore.claudeComment,
+      );
       stmt.healthScore = fresh;
       if (JSON.stringify(stmt.healthScore) !== before) {
         await this.storage.saveStatement(stmt);
@@ -101,25 +127,50 @@ export class StatementsController {
       .filter((s) => (!from || s.id >= from) && (!to || s.id <= to))
       .sort((a, b) => a.id.localeCompare(b.id));
 
-    const periodLabel = sorted.length === 0 ? 'vide' :
-      sorted.length === 1 ? sorted[0].id : `${sorted[0].id}_to_${sorted[sorted.length - 1].id}`;
-    res.setHeader('Content-Disposition', `attachment; filename="finance-tracker-${periodLabel}.csv"`);
+    const periodLabel =
+      sorted.length === 0
+        ? 'vide'
+        : sorted.length === 1
+          ? sorted[0].id
+          : `${sorted[0].id}_to_${sorted[sorted.length - 1].id}`;
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="finance-tracker-${periodLabel}.csv"`,
+    );
 
     const lines: string[] = [];
-    lines.push(['Mois', 'Date', 'Libellé', 'Catégorie', 'Sous-catégorie', 'Récurrent', 'Montant (€)'].map(csv).join(','));
+    lines.push(
+      [
+        'Mois',
+        'Date',
+        'Libellé',
+        'Catégorie',
+        'Sous-catégorie',
+        'Récurrent',
+        'Montant (€)',
+      ]
+        .map(csv)
+        .join(','),
+    );
     for (const s of sorted) {
       const monthLabel = `${s.year}-${String(s.month).padStart(2, '0')}`;
-      const txs = [...s.transactions].sort((a, b) => a.date.localeCompare(b.date));
+      const txs = [...s.transactions].sort((a, b) =>
+        a.date.localeCompare(b.date),
+      );
       for (const t of txs) {
-        lines.push([
-          monthLabel,
-          t.date,
-          t.description,
-          t.category,
-          t.subcategory,
-          t.isRecurring ? 'oui' : '',
-          t.amount.toFixed(2).replace('.', ','),
-        ].map(csv).join(','));
+        lines.push(
+          [
+            monthLabel,
+            t.date,
+            t.description,
+            t.category,
+            t.subcategory,
+            t.isRecurring ? 'oui' : '',
+            t.amount.toFixed(2).replace('.', ','),
+          ]
+            .map(csv)
+            .join(','),
+        );
       }
     }
     // BOM so Excel auto-detects UTF-8
@@ -144,7 +195,14 @@ export class StatementsController {
   async patchTransactionCategory(
     @Param('id') id: string,
     @Param('txId') txId: string,
-    @Body() body: { category: string; subcategory?: string; createRule?: boolean; rulePattern?: string; replayAll?: boolean },
+    @Body()
+    body: {
+      category: string;
+      subcategory?: string;
+      createRule?: boolean;
+      rulePattern?: string;
+      replayAll?: boolean;
+    },
   ) {
     if (!body?.category) throw new BadRequestException('category requis');
     const stmt = await this.storage.getStatement(id);
@@ -158,8 +216,9 @@ export class StatementsController {
 
     let createdRule = null;
     if (body.createRule) {
-      const pattern = (body.rulePattern && body.rulePattern.trim())
-        || this.escapeRegex(tx.normalizedDescription || tx.description);
+      const pattern =
+        (body.rulePattern && body.rulePattern.trim()) ||
+        this.escapeRegex(tx.normalizedDescription || tx.description);
       createdRule = await this.categoryRules.create({
         pattern,
         flags: 'i',
@@ -173,9 +232,13 @@ export class StatementsController {
     if (body.createRule && body.replayAll) {
       const all = await this.storage.getAllStatements();
       for (const s of all) {
-        const before = JSON.stringify(s.transactions.map((t) => [t.id, t.category, t.subcategory]));
+        const before = JSON.stringify(
+          s.transactions.map((t) => [t.id, t.category, t.subcategory]),
+        );
         s.transactions = await this.categoryRules.apply(s.transactions);
-        const after = JSON.stringify(s.transactions.map((t) => [t.id, t.category, t.subcategory]));
+        const after = JSON.stringify(
+          s.transactions.map((t) => [t.id, t.category, t.subcategory]),
+        );
         if (before !== after) {
           await this.storage.saveStatement(s);
           replayed++;
@@ -200,16 +263,24 @@ export class StatementsController {
   }
 
   @Post(':id/reanalyze')
-  @UseInterceptors(FileInterceptor('file', {
-    fileFilter: (req, file, cb) => {
-      if (file.mimetype !== 'application/pdf') {
-        return cb(new BadRequestException('Seuls les fichiers PDF sont acceptés'), false);
-      }
-      cb(null, true);
-    },
-    limits: { fileSize: 20 * 1024 * 1024 },
-  }))
-  async reanalyze(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+  @UseInterceptors(
+    FileInterceptor('file', {
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype !== 'application/pdf') {
+          return cb(
+            new BadRequestException('Seuls les fichiers PDF sont acceptés'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+      limits: { fileSize: 20 * 1024 * 1024 },
+    }),
+  )
+  async reanalyze(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     if (!file) throw new NotFoundException('PDF requis pour re-analyser');
     const startedAt = Date.now();
     const uploadedAt = new Date().toISOString();
