@@ -357,6 +357,70 @@ describe('HealthService', () => {
     expect(block.details.resteAVivre).toBe(2750);
   });
 
+  it('(c6) reste à vivre : abonnement inactif → sa tx retombe dans depensesCourantes ET n\'est PAS comptée dans abonnementsMensuels (re-review F4)', () => {
+    // Abonnement annulé récemment (isActive: false) mais avec une occurrence
+    // encore dans la fenêtre des 3 derniers relevés (le prélèvement a bien
+    // été payé). Il ne doit ni gonfler abonnementsMensuels (filtré sur
+    // isActive) ni disparaître de depensesCourantes (sinon reste à vivre
+    // surestimé silencieusement — résiduel signalé en re-review).
+    const months = [
+      { y: 2026, m: 1 },
+      { y: 2026, m: 2 },
+      { y: 2026, m: 3 },
+    ];
+    const subTxIds: string[] = [];
+    const statements = months.map(({ y, m }) => {
+      const subTxId = `sub-tx-${y}-${m}`;
+      subTxIds.push(subTxId);
+      return mkStatement(y, m, [
+        mkTx(
+          `exp-${y}-${m}`,
+          `${y}-${String(m).padStart(2, '0')}-05`,
+          -200,
+          'DEPENSES COURANTES',
+        ),
+        mkTx(
+          subTxId,
+          `${y}-${String(m).padStart(2, '0')}-15`,
+          -50,
+          'NETFLIX ABONNEMENT (résilié)',
+        ),
+      ]);
+    });
+    const subscription: Subscription = {
+      id: 'sub-1',
+      name: 'Netflix',
+      monthlyAmount: 50,
+      frequency: 'monthly',
+      category: 'streaming',
+      matchPattern: 'NETFLIX',
+      isActive: false,
+      occurrencesDetected: subTxIds.map((txId, i) => ({
+        id: `subocc-${i}`,
+        statementId: statements[i].id,
+        date: statements[i].transactions[1].date,
+        amount: -50,
+        transactionId: txId,
+      })),
+      createdAt: '',
+      updatedAt: '',
+    };
+    const ctx = mkCtx({
+      statements,
+      subscriptions: [subscription],
+      income: { monthly: 3000, source: 'detected', label: 'Employer' },
+    });
+
+    const block = svc.computeResteAVivre(ctx);
+
+    // La tx de l'abonnement résilié (50 €/mois) retombe dans depensesCourantes.
+    expect(block.details.depensesCourantes).toBe(250);
+    // Aucun abonnement actif → 0.
+    expect(block.details.abonnementsMensuels).toBe(0);
+    // 3000 - 0 (mensualités) - 0 (abos) - 250 (dépenses) = 2750
+    expect(block.details.resteAVivre).toBe(2750);
+  });
+
   it("(d) taux d'effort 40 % → orange, 60 % → rouge", () => {
     const orangeCtx = mkCtx({
       loans: [mkLoan({ id: 'loan-1', monthlyPayment: 800 })], // 800/2000 = 40%

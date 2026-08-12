@@ -97,12 +97,21 @@ export class HealthService {
     return ids;
   }
 
-  /** Ensemble des transactionId qui sont des occurrences d'abonnements. */
+  /**
+   * Ensemble des transactionId qui sont des occurrences d'abonnements
+   * ACTIFS uniquement (re-review F4, 2026-08-12) — symétrique avec
+   * `abonnementsMensuels` qui ne somme que `s.isActive`. Un abonnement
+   * résilié récemment garde des occurrences dans la fenêtre des 3 derniers
+   * relevés ; ses tx ont bien été payées et doivent retomber dans
+   * `depensesCourantes`, pas disparaître sans être comptées nulle part
+   * (sinon reste à vivre surestimé silencieusement).
+   */
   private subscriptionOccurrenceTxIds(
     subscriptions: Subscription[],
   ): Set<string> {
     const ids = new Set<string>();
     for (const sub of subscriptions) {
+      if (!sub.isActive) continue;
       for (const occ of sub.occurrencesDetected) {
         if (occ.transactionId) ids.add(occ.transactionId);
       }
