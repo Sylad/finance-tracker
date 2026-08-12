@@ -31,6 +31,14 @@ describe('AutoSyncService', () => {
   let svc: AutoSyncService;
   let savings: jest.Mocked<SavingsService>;
   let loans: jest.Mocked<LoansService>;
+  let loansUpdate: jest.Mock;
+  let storageGetAllStatements: jest.Mock;
+
+  const mkStaleLoan = (over: Record<string, unknown>) => ({
+    id: 'loan-x', name: 'X', type: 'classic', category: 'consumer',
+    monthlyPayment: 100, matchPattern: 'ZZZ-NO-MATCH', isActive: true,
+    occurrencesDetected: [], createdAt: '2026-01-01T00:00:00Z', updatedAt: '', ...over,
+  });
 
   beforeEach(async () => {
     savings = {
@@ -38,11 +46,14 @@ describe('AutoSyncService', () => {
       addMovement: jest.fn(),
       removeMovementsForStatement: jest.fn(),
     } as unknown as jest.Mocked<SavingsService>;
+    loansUpdate = jest.fn();
     loans = {
       getAll: jest.fn(),
       addOccurrence: jest.fn(),
+      update: loansUpdate,
       removeOccurrencesForStatement: jest.fn(),
     } as unknown as jest.Mocked<LoansService>;
+    storageGetAllStatements = jest.fn().mockResolvedValue([]);
     const mod = await Test.createTestingModule({
       providers: [
         AutoSyncService,
@@ -64,7 +75,7 @@ describe('AutoSyncService', () => {
             deleteAll: jest.fn().mockResolvedValue({ deletedCount: 0 }),
           },
         },
-        { provide: StorageService, useValue: { getAllStatements: jest.fn().mockResolvedValue([]) } },
+        { provide: StorageService, useValue: { getAllStatements: storageGetAllStatements } },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
@@ -231,7 +242,12 @@ describe('AutoSyncService', () => {
       expect(loans.addOccurrence).toHaveBeenCalledTimes(2);
     });
 
-    it('does NOT match when neither contractRef nor any rumRef is in description', async () => {
+    it('matches by regex fallback when no identifier is in the description (identifiants = renfort, pas condition)', async () => {
+      // Régression 2026-08-12 : les libellés bancaires LBP ne portent JAMAIS la
+      // référence contrat ("Prélèvement Floa"). L'exigence identifier AND regex
+      // rendait le matching bancaire impossible pour tout loan enrichi depuis un
+      // relevé de crédit → 0 occurrence → désactivation massive par
+      // autoDeactivateStaleLoans (53k€ d'encours disparus du dashboard).
       savings.getAll.mockResolvedValue([]);
       loans.getAll.mockResolvedValue([{
         id: 'loan-1', name: 'Cofidis', type: 'revolving', category: 'consumer',
@@ -244,14 +260,148 @@ describe('AutoSyncService', () => {
       const stmt: MonthlyStatement = {
         ...baseStatement,
         transactions: [
-          // Cofidis matches matchPattern but no identifier → no match (regex AND identifier required)
           { id: 'tx1', date: '2026-03-10', description: 'PRELEVT COFIDIS ENTIRELY-DIFFERENT-REF',
             normalizedDescription: 'prelevt cofidis entirely-different-ref',
             amount: -80, currency: 'EUR', category: 'subscriptions', subcategory: '', isRecurring: true, confidence: 1 },
         ],
       };
       await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-1', expect.objectContaining({
+        amount: -80, transactionId: 'tx1',
+      }));
+    });
+  });
+
+  describe('syncLoans — matcher standard : débits only, 1/mois au plus proche, cross-loan dedup', () => {
+    const mkLoan = (over: Record<string, unknown>) => ({
+      id: 'loan-1', name: 'Revolving', type: 'revolving', category: 'consumer',
+      monthlyPayment: 100, matchPattern: 'CREDITOR', isActive: true,
+      maxAmount: 3000, usedAmount: 1200,
+      occurrencesDetected: [], createdAt: '', updatedAt: '', ...over,
+    });
+    const mkTx = (id: string, date: string, description: string, amount: number) => ({
+      id, date, description, normalizedDescription: description.toLowerCase(),
+      amount, currency: 'EUR', category: 'subscriptions', subcategory: '', isRecurring: true, confidence: 1,
+    });
+
+    it('ignore les crédits entrants (amount ≥ 0) même si la regex matche', async () => {
+      // Un virement ENTRANT du créancier n'est pas une échéance ; l'ajouter
+      // décrémenterait usedAmount (addOccurrence fait Math.abs) → encours faux.
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([mkLoan({})]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [mkTx('tx-in', '2026-03-10', 'Virement CREDITOR deblocage', 650)],
+      };
+      await svc.syncStatement(stmt);
       expect(loans.addOccurrence).not.toHaveBeenCalled();
+    });
+
+    it('2 débits regex-only le même mois → seule la tx la plus proche du monthlyPayment est soumise', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([mkLoan({ monthlyPayment: 186 })]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          mkTx('tx-small', '2026-03-02', 'Prélèvement CREDITOR', -12.73),
+          mkTx('tx-main', '2026-03-06', 'Prélèvement CREDITOR échéance', -186),
+        ],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(1);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-1', expect.objectContaining({ transactionId: 'tx-main' }));
+    });
+
+    it('un match par identifiant garde priorité sur le pick regex du même mois', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([mkLoan({ monthlyPayment: 100, rumRefs: ['RUM-XYZ-0001'] })]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          // regex-only, montant pile sur monthlyPayment
+          mkTx('tx-regex', '2026-03-05', 'Prélèvement CREDITOR', -100),
+          // identifiant présent → match certain, doit gagner le mois
+          mkTx('tx-rum', '2026-03-08', 'Prélèvement CREDITOR RUM-XYZ-0001', -73),
+        ],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(1);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-1', expect.objectContaining({ transactionId: 'tx-rum' }));
+    });
+
+    it('replay idempotent : un mois déjà couvert par une occurrence existante ne consomme pas de candidat', async () => {
+      // Sans ce garde, au re-run le loan A re-picke la meilleure tx du mois,
+      // addOccurrence no-op (dédup mensuelle) mais la tx est marquée allouée →
+      // volée au loan B qui en avait besoin.
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([
+        mkLoan({
+          id: 'loan-a', name: 'A', monthlyPayment: 190,
+          occurrencesDetected: [{
+            id: 'occ-1', statementId: '2026-03', date: '2026-03-06', amount: -186,
+            transactionId: 'tx-186', description: 'Prélèvement CREDITOR échéance', source: 'bank_statement',
+          }],
+        }),
+        mkLoan({ id: 'loan-b', name: 'B', monthlyPayment: 170 }),
+      ]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          mkTx('tx-186', '2026-03-06', 'Prélèvement CREDITOR échéance', -186),
+          mkTx('tx-127', '2026-03-06', 'Prélèvement CREDITOR France échéance', -127.48),
+        ],
+      };
+      await svc.syncStatement(stmt);
+      // loan-a a déjà son mois de mars → ne re-picke rien ; loan-b obtient tx-127.
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(1);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-b', expect.objectContaining({ transactionId: 'tx-127' }));
+    });
+
+    it('2 loans même créancier : chaque tx du mois est allouée à un seul loan (proximité montant)', async () => {
+      // Répond à la préoccupation historique du matcher AND ("toutes les tx
+      // Cofidis taggent le même crédit") sans bloquer le matching bancaire.
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([
+        mkLoan({ id: 'loan-a', name: 'A', monthlyPayment: 190 }),
+        mkLoan({ id: 'loan-b', name: 'B', monthlyPayment: 170 }),
+      ]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          mkTx('tx-186', '2026-03-06', 'Prélèvement CREDITOR échéance', -186),
+          mkTx('tx-127', '2026-03-06', 'Prélèvement CREDITOR France échéance', -127.48),
+        ],
+      };
+      await svc.syncStatement(stmt);
+      // loan-a (190) prend -186 ; loan-b (170) préférerait -186 mais elle est
+      // déjà allouée → prend -127.48. Aucune tx comptée deux fois.
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-a', expect.objectContaining({ transactionId: 'tx-186' }));
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-b', expect.objectContaining({ transactionId: 'tx-127' }));
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('autoDeactivateStaleLoans — garde-fou revolving avec encours', () => {
+    it('ne désactive JAMAIS un revolving avec usedAmount > 0 ; désactive le classic stale', async () => {
+      savings.getAll.mockResolvedValue([]);
+      const staleOcc = [{
+        id: 'o1', statementId: '2026-04', date: '2026-04-20', amount: -150,
+        transactionId: 'tx-old', description: 'old', source: 'bank_statement',
+      }];
+      loans.getAll.mockResolvedValue([
+        mkStaleLoan({ id: 'rev-1', name: 'Revolving encours', type: 'revolving', maxAmount: 6000, usedAmount: 5000, occurrencesDetected: staleOcc }),
+        mkStaleLoan({ id: 'cls-1', name: 'Classic stale', type: 'classic', occurrencesDetected: staleOcc }),
+      ]);
+      storageGetAllStatements.mockResolvedValue([
+        { ...baseStatement, id: '2026-06', month: 6, year: 2026 },
+        { ...baseStatement, id: '2026-07', month: 7, year: 2026 },
+      ]);
+      const res = await svc.recomputeLoanStatuses();
+      const deactivatedIds = loansUpdate.mock.calls
+        .filter(([, input]) => input.isActive === false)
+        .map(([id]) => id);
+      expect(deactivatedIds).toEqual(['cls-1']);
+      expect(res.deactivated).toBeGreaterThanOrEqual(0);
     });
   });
 

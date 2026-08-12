@@ -325,13 +325,21 @@ export class AutoSyncService {
 
   private async syncLoans(statement: MonthlyStatement): Promise<void> {
     const loans = await this.loans.getAll();
+    // Invariant "1 transaction bancaire ↔ 1 crédit" : les tx déjà occurrences
+    // d'un loan sur ce statement (runs précédents inclus) ne sont pas réallouées.
+    const allocatedTxIds = new Set<string>();
+    for (const l of loans) {
+      for (const occ of l.occurrencesDetected) {
+        if (occ.statementId === statement.id && occ.transactionId) allocatedTxIds.add(occ.transactionId);
+      }
+    }
     for (const loan of loans) {
       if (!loan.isActive) continue;
       const kind = LoansService.getLoanKind(loan);
       if (kind === 'installment') {
         await this.syncInstallmentLoan(loan, statement);
       } else {
-        await this.syncStandardLoan(loan, statement);
+        await this.syncStandardLoan(loan, statement, allocatedTxIds);
       }
     }
   }
@@ -427,9 +435,20 @@ export class AutoSyncService {
   }
 
   /**
-   * Matcher historique pour kind='classic'|'revolving' — inchangé depuis APEX 04.
+   * Matcher pour kind='classic'|'revolving'.
+   *
+   * Les identifiants (contractRef/rumRefs) sont un signal de RENFORT, pas une
+   * condition nécessaire : les libellés bancaires LBP ne portent presque jamais
+   * la référence contrat ("Prélèvement Floa"). Exiger identifier AND regex
+   * (comportement 2026-05 → 2026-08) rendait le matching bancaire impossible
+   * pour tout loan enrichi depuis un relevé de crédit → 0 occurrence →
+   * désactivation massive par autoDeactivateStaleLoans.
+   *
+   * L'ambiguïté multi-crédits même créancier (la raison d'être du AND) est
+   * résolue par : débits uniquement, 1 occurrence max par mois calendaire
+   * (la plus proche du monthlyPayment), et cross-loan dedup via allocatedTxIds.
    */
-  private async syncStandardLoan(loan: Loan, statement: MonthlyStatement): Promise<void> {
+  private async syncStandardLoan(loan: Loan, statement: MonthlyStatement, allocatedTxIds: Set<string>): Promise<void> {
     let regex: RegExp | null = null;
     if (loan.matchPattern) {
       try { regex = new RegExp(loan.matchPattern, 'i'); }
@@ -442,18 +461,50 @@ export class AutoSyncService {
       .map((s) => s.toLowerCase().trim())
       .filter((s) => s.length >= 4);
     if (normalizedIds.length === 0 && !regex) return;
-    const matcher = (desc: string): boolean => {
-      const lower = desc.toLowerCase();
-      if (normalizedIds.length > 0 && !normalizedIds.some((id) => lower.includes(id))) {
-        return false;
-      }
-      if (regex && !regex.test(desc)) return false;
-      return true;
-    };
 
     const NOT_A_CREDIT = /\b(COMPTANT|PAIEMENT CB|ACHAT CB|CB CARREFOUR|RETRAIT)\b/i;
-    const matches = statement.transactions.filter((t) => matcher(t.description) && !NOT_A_CREDIT.test(t.description));
-    for (const t of matches) {
+    // Débits uniquement : un crédit n'est jamais crédité, et addOccurrence
+    // décrémente usedAmount en valeur absolue — un virement entrant qui
+    // matcherait la regex fausserait l'encours.
+    const candidates = statement.transactions.filter(
+      (t) => t.amount < 0 && !allocatedTxIds.has(t.id) && !NOT_A_CREDIT.test(t.description),
+    );
+    const hasIdentifier = (desc: string): boolean => {
+      const lower = desc.toLowerCase();
+      return normalizedIds.some((id) => lower.includes(id));
+    };
+    // Identifiant dans le libellé = match certain (tous retenus).
+    const strong = candidates.filter((t) => hasIdentifier(t.description));
+    // Regex seule = match probable → au plus 1 par mois calendaire, la tx la
+    // plus proche de la mensualité attendue.
+    const monthOf = (d: string) => d.slice(0, 7);
+    // Mois déjà couverts : occurrences existantes (idempotence au re-run — sans
+    // ça, un re-pick no-op consommerait la tx au détriment d'un autre loan)
+    // + matches par identifiant de ce run.
+    const takenMonths = new Set([
+      ...loan.occurrencesDetected.map((o) => monthOf(o.date)),
+      ...strong.map((t) => monthOf(t.date)),
+    ]);
+    const weakByMonth = new Map<string, typeof candidates>();
+    if (regex) {
+      for (const t of candidates) {
+        if (hasIdentifier(t.description) || !regex.test(t.description)) continue;
+        const m = monthOf(t.date);
+        if (takenMonths.has(m)) continue;
+        const bucket = weakByMonth.get(m);
+        if (bucket) bucket.push(t);
+        else weakByMonth.set(m, [t]);
+      }
+    }
+    const picked = [...strong];
+    for (const txs of weakByMonth.values()) {
+      const expected = loan.monthlyPayment ?? 0;
+      txs.sort((a, b) => Math.abs(Math.abs(a.amount) - expected) - Math.abs(Math.abs(b.amount) - expected));
+      picked.push(txs[0]);
+    }
+
+    for (const t of picked) {
+      allocatedTxIds.add(t.id);
       await this.loans.addOccurrence(loan.id, {
         statementId: statement.id,
         date: t.date,
@@ -640,6 +691,17 @@ export class AutoSyncService {
         return recentMonths.has(m);
       });
       if (!seenInRecent) {
+        // Garde-fou : un revolving avec un encours > 0 n'est pas terminé, quoi
+        // qu'en disent les occurrences (le plus souvent c'est le MATCHER qui n'a
+        // pas trouvé les prélèvements, pas le crédit qui est soldé). Le fermer
+        // silencieusement fait disparaître son encours du dashboard — vécu
+        // 2026-08-12 : 26 800 € d'encours revolving évaporés en un import.
+        if (loan.type === 'revolving' && (loan.usedAmount ?? 0) > 0) {
+          this.logger.warn(
+            `Loan ${loan.name} absent des 2 derniers relevés mais encours ${loan.usedAmount}€ > 0 — conservé actif (matcher à vérifier)`,
+          );
+          continue;
+        }
         const { id: _id, occurrencesDetected: _occ, createdAt: _ca, updatedAt: _ua, ...loanInput } = loan;
         void _id; void _occ; void _ca; void _ua;
         await this.loans.update(loan.id, {
