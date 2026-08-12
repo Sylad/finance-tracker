@@ -180,6 +180,7 @@ function mkCtx(over: Partial<HealthContext>): HealthContext {
     subscriptions: [],
     thresholds: structuredClone(DEFAULT_THRESHOLDS),
     income: { monthly: null, source: 'unavailable', label: null },
+    savingsMovementTxIds: new Set(),
     ...over,
   };
 }
@@ -294,6 +295,36 @@ describe('HealthService', () => {
     expect(block.status).toBe('orange');
     expect(block.thresholdHit).toContain('10');
     expect(block.details.resteAVivre).toBe(100);
+  });
+
+  it('(c2) débit = virement vers épargne (txId dans savingsMovementTxIds) exclu des dépenses courantes, RAV inchangé (round 4 I-4, décision Sylvain : épargner ≠ dépenser)', () => {
+    // Un virement -500 vers un Livret A ne doit PAS être compté comme une
+    // dépense courante — comparé à un contexte identique où ce virement
+    // n'existerait simplement pas dans le relevé, le reste à vivre doit
+    // être STRICTEMENT le même : épargner ne réduit pas le RAV, ce n'est
+    // pas de la consommation.
+    const statementSansVirement = mkStatement(2026, 3, [
+      mkTx('depense-1', '2026-03-05', -300, 'DEPENSES COURANTES'),
+    ]);
+    const statementAvecVirement = mkStatement(2026, 3, [
+      mkTx('depense-1', '2026-03-05', -300, 'DEPENSES COURANTES'),
+      mkTx('virement-epargne', '2026-03-12', -500, 'VIREMENT VERS LIVRET A'),
+    ]);
+    const ctxSansVirement = mkCtx({
+      statements: [statementSansVirement],
+      income: { monthly: 3000, source: 'detected', label: 'Employer' },
+    });
+    const ctxAvecVirement = mkCtx({
+      statements: [statementAvecVirement],
+      savingsMovementTxIds: new Set(['virement-epargne']),
+      income: { monthly: 3000, source: 'detected', label: 'Employer' },
+    });
+
+    const blockSans = svc.computeResteAVivre(ctxSansVirement);
+    const blockAvec = svc.computeResteAVivre(ctxAvecVirement);
+
+    expect(blockAvec.details.depensesCourantes).toBe(300);
+    expect(blockAvec.details.resteAVivre).toBe(blockSans.details.resteAVivre);
   });
 
   it('(c5) reste à vivre : abonnements exclus de depensesCourantes ET soustraits une seule fois de la formule (F4)', () => {
@@ -419,6 +450,162 @@ describe('HealthService', () => {
     expect(block.details.abonnementsMensuels).toBe(0);
     // 3000 - 0 (mensualités) - 0 (abos) - 250 (dépenses) = 2750
     expect(block.details.resteAVivre).toBe(2750);
+  });
+
+  describe('opérations neutres (Task 7)', () => {
+    it('(n-a) paire crédit +1980.55 / débit -1980.55 à 1 jour → jambe sortante exclue, operationsNeutres = 1980.55', () => {
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-10', 1980.55, 'VIREMENT REMBOURSEMENT'),
+        mkTx('debit-1', '2026-03-11', -1980.55, 'VIREMENT SORTANT'),
+        mkTx('autre-1', '2026-03-05', -300, 'DEPENSES COURANTES'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(300);
+      expect(block.details.operationsNeutres).toBe(1980.55);
+      expect(block.details.resteAVivre).toBe(2700);
+    });
+
+    it('(n-b) 2 débits identiques sans crédit entrant → comptés normalement, operationsNeutres = 0', () => {
+      const statement = mkStatement(2026, 3, [
+        mkTx('debit-1', '2026-03-05', -500, 'DEPENSE A'),
+        mkTx('debit-2', '2026-03-12', -500, 'DEPENSE B'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(1000);
+      expect(block.details.operationsNeutres).toBe(0);
+    });
+
+    it('(n-c) paire à 8 jours d\'écart → non appariée, les deux jambes comptées normalement', () => {
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-01', 800, 'VIREMENT REMBOURSEMENT'),
+        mkTx('debit-1', '2026-03-09', -800, 'VIREMENT SORTANT'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(800);
+      expect(block.details.operationsNeutres).toBe(0);
+    });
+
+    it('(n-d) crédit entrant seul (aucun débit correspondant) → dépenses courantes inchangées, operationsNeutres = 0', () => {
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-10', 500, 'VIREMENT REMBOURSEMENT'),
+        mkTx('autre-1', '2026-03-05', -200, 'DEPENSES COURANTES'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(200);
+      expect(block.details.operationsNeutres).toBe(0);
+    });
+
+    it('(n-e) 2 débits candidats pour 1 crédit de même montant → seul le plus proche en date est apparié', () => {
+      // Montants volontairement DIFFÉRENTS (mais tous deux dans la tolérance
+      // ±0.01 par rapport au crédit 600) : si le glouton triait mal (ou
+      // appariait par défaut le premier/dernier candidat au lieu du plus
+      // proche en date), operationsNeutres vaudrait 600.01 au lieu de 600 —
+      // ce test est discriminant sur la sélection par proximité de date
+      // (fix review Task 7 round 1 : les montants identiques masquaient un
+      // tri inversé).
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-10', 600, 'VIREMENT REMBOURSEMENT'),
+        mkTx('debit-proche', '2026-03-11', -600.0, 'VIREMENT SORTANT PROCHE'),
+        mkTx('debit-loin', '2026-03-15', -600.01, 'VIREMENT SORTANT LOIN'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      // Seul debit-proche (1 jour d'écart) est apparié et exclu ; debit-loin
+      // (5 jours) reste compté normalement dans les dépenses courantes.
+      expect(block.details.depensesCourantes).toBe(600.01);
+      expect(block.details.operationsNeutres).toBe(600);
+    });
+
+    it('(n-g) paire à exactement 7 jours d\'écart (borne incluse) → appariée', () => {
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-01', 400, 'VIREMENT REMBOURSEMENT'),
+        mkTx('debit-1', '2026-03-08', -400, 'VIREMENT SORTANT'), // exactement 7 jours après
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(0);
+      expect(block.details.operationsNeutres).toBe(400);
+    });
+
+    it('(n-h) mouvement épargne exclu du pairing → pas de paire fantôme avec une vraie dépense coïncidente', () => {
+      // Retrait épargne +500 (virement Livret A → compte courant) suivi 2
+      // jours plus tard d'une vraie dépense -500 sans lien. Sans l'exclusion
+      // épargne, ces deux tx auraient été appariées à tort (même montant,
+      // 2 jours d'écart) et la dépense aurait disparu des dépenses courantes.
+      const statement = mkStatement(2026, 3, [
+        mkTx('epargne-retrait', '2026-03-05', 500, 'Virement depuis Livret A'),
+        mkTx('depense-1', '2026-03-07', -500, 'DEPENSE REELLE'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        savingsMovementTxIds: new Set(['epargne-retrait']),
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(500);
+      expect(block.details.operationsNeutres).toBe(0);
+    });
+
+    it("(n-f) débit dont la description matche le matchPattern d'un loan ACTIF → exclu des candidats, pas apparié", () => {
+      const loan = mkLoan({
+        id: 'loan-1',
+        monthlyPayment: 0,
+        matchPattern: 'SOFINCO',
+        isActive: true,
+      });
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-10', 300, 'VIREMENT REMBOURSEMENT'),
+        mkTx('debit-1', '2026-03-11', -300, 'CA CONSUMER SOFINCO PRLV'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        loans: [loan],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      // debit-1 matche le matchPattern d'un loan actif → n'est pas un
+      // candidat de paire neutre → reste compté normalement.
+      expect(block.details.depensesCourantes).toBe(300);
+      expect(block.details.operationsNeutres).toBe(0);
+    });
   });
 
   it("(d) taux d'effort 40 % → orange, 60 % → rouge", () => {
@@ -932,6 +1119,9 @@ describe('HealthService', () => {
     // revenu — avec l'exclusion, aucun autre cluster ne qualifie → unavailable.
     expect(ctx.income.source).toBe('unavailable');
     expect(ctx.income.monthly).toBeNull();
+    // ctx.savingsMovementTxIds (fix review Task 7) doit exposer les mêmes
+    // transactionId que ceux exclus du calcul du revenu.
+    expect([...ctx.savingsMovementTxIds].sort()).toEqual([...txIds].sort());
   });
 
   it('(g) getDiagnostic : seulement 2 relevés disponibles → reliability reduced', async () => {

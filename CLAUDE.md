@@ -156,6 +156,16 @@ Doc complète dans `.claude/output/apex/04-loans-synchro-robust/` et `.claude/ou
 - Revenus : détection générique par cluster stable ≥ 3 mois hors tirages (`income-detection.helper.ts`) — aucun nom d'employeur en dur ; override manuel `manualMonthlyIncome` dans les seuils prime sur tout.
 - Conseils IA **locale** : Ollama Big-Blue (RTX 5090), modèle `qwen3:32b` (bench 2026-08-12 vs gemma3:27b : meilleure fidélité chiffres + priorisation TAEG ; ~8 s à chaud, ~53 s à froid). Config `OLLAMA_ADVICE_BASE_URL`/`OLLAMA_ADVICE_MODEL` (défaut localhost:11434 — à surcharger si déploiement hors Big-Blue). Fail-loud : Ollama down → HTTP 502 explicite, AUCUN fallback cloud.
 - Frontend : page `/health` (bandeau verdict + 4 cartes + conseils + drawer seuils), tuile dashboard.
+- Les virements vers l'épargne ne comptent pas dans les dépenses courantes du reste à vivre (décision 2026-08-12 : épargner ≠ consommer).
+
+### Détection crédits & N× par LLM local (module `credit-detection/`, 2026-08-12)
+
+- **Trois verrous** : clustering déterministe (par créancier|marchand, sous-séries de montants ±5 %) → classification qwen3:32b local (`OLLAMA_DETECTION_MODEL`) → validateur déterministe (espacement mensuel, 1/mois, garde créancier existant fuzzy, séries ≥6 occ stables → subscription) → SUGGESTIONS uniquement (bandeau /loans), jamais de création directe.
+- **Exception privacy documentée** : les libellés de transactions partent au LLM de détection — acceptable car strictement local (jamais de fallback cloud). Le module conseils santé reste agrégats-only.
+- Endpoints : `POST /api/credit-detection/scan` (bouton /loans, ~2 min) + hook post-import fire-and-forget (résultat dans l import-log). Erreurs par cluster agrégées dans `errors[]` — un Ollama up-mais-cassé donne 200 avec erreurs, l UI les affiche.
+- Accept d une suggestion N× : `POST /api/loan-suggestions/:id/accept-installment` → loan kind=installment avec échéancier reconstruit (occurrences seedées, paidOccurrenceId réels).
+- Dédup suggestions : par creditor, sauf suggestions installment → creditor+montant arrondi (plusieurs plans simultanés du même créancier coexistent). Limitation connue : plusieurs séries longues du même créancier routées en subscription se dédupliquent par creditor (1 seule survit).
+- Diagnostic santé : « opérations neutres » (paire entrée/sortie même montant ≤7 j, hors créanciers/épargne) exclues des dépenses courantes (`details.operationsNeutres`).
 
 ### Two-phase tool-use Claude
 - Phase 1 = `extract_transactions`, Phase 2 = `analyze_finances`. **Toujours vérifier que phase 1 a retourné > 0 transactions** avant de lancer phase 2 — sinon plantage.

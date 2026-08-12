@@ -2,11 +2,14 @@ export default () => ({
   port: parseInt(process.env.PORT ?? '3000', 10),
   corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:4200',
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-  categoryRuleSuggestionsProvider: process.env.CATEGORY_RULE_SUGGESTIONS_PROVIDER ?? 'claude',
+  categoryRuleSuggestionsProvider:
+    process.env.CATEGORY_RULE_SUGGESTIONS_PROVIDER ?? 'claude',
   ollamaBaseUrl: process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434',
   ollamaModel: process.env.OLLAMA_MODEL ?? 'qwen2.5:7b',
-  ollamaAdviceBaseUrl: process.env.OLLAMA_ADVICE_BASE_URL ?? 'http://localhost:11434',
+  ollamaAdviceBaseUrl:
+    process.env.OLLAMA_ADVICE_BASE_URL ?? 'http://localhost:11434',
   ollamaAdviceModel: process.env.OLLAMA_ADVICE_MODEL ?? 'qwen3:32b',
+  ollamaDetectionModel: process.env.OLLAMA_DETECTION_MODEL ?? 'qwen3:32b',
   dataDir: process.env.DATA_DIR ?? './data',
   uploadDir: process.env.UPLOAD_DIR ?? './data/uploads',
   maxFileSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB ?? '20', 10),
@@ -20,5 +23,8 @@ export default () => ({
   // Any request whose Host header contains one of these substrings is locked
   // into demo (toggle disabled, banner permanent). Default covers Cloudflare
   // quick tunnels.
-  demoForcedHosts: (process.env.DEMO_FORCED_HOSTS ?? 'trycloudflare.com').split(',').map((s) => s.trim()).filter(Boolean),
+  demoForcedHosts: (process.env.DEMO_FORCED_HOSTS ?? 'trycloudflare.com')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
 });
