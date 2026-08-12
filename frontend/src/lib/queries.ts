@@ -573,6 +573,8 @@ export function useAcceptSuggestion() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qkSuggestions.all() });
       qc.invalidateQueries({ queryKey: qkLoans.all() });
+      qc.invalidateQueries({ queryKey: qkHealth.diagnostic() });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -585,6 +587,7 @@ export function useAcceptSubscriptionSuggestion() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qkSuggestions.all() });
       qc.invalidateQueries({ queryKey: qkSubscriptions.all() });
+      qc.invalidateQueries({ queryKey: qkHealth.diagnostic() });
     },
   });
 }
@@ -646,6 +649,8 @@ export function useAcceptInstallmentSuggestion() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qkSuggestions.all() });
       qc.invalidateQueries({ queryKey: qkLoans.all() });
+      qc.invalidateQueries({ queryKey: qkHealth.diagnostic() });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
