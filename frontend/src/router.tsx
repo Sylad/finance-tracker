@@ -62,6 +62,9 @@ const GoalsPage = lazy(() =>
 const HeatmapPage = lazy(() =>
   import('./routes/heatmap').then((m) => ({ default: m.HeatmapPage })),
 );
+const HealthPage = lazy(() =>
+  import('./routes/health').then((m) => ({ default: m.HealthPage })),
+);
 
 // Wrap each lazy route component in a Suspense boundary scoped to the page,
 // so the AppShell (sidebar/header) stays mounted while the chunk loads.
@@ -182,8 +185,15 @@ const heatmapRoute = createRoute({
   component: withSuspense(HeatmapPage),
 });
 
+const healthRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/health',
+  component: withSuspense(HealthPage),
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  healthRoute,
   loginRoute,
   historyRoute,
   statementRoute,

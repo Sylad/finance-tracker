@@ -5,6 +5,8 @@ export default () => ({
   categoryRuleSuggestionsProvider: process.env.CATEGORY_RULE_SUGGESTIONS_PROVIDER ?? 'claude',
   ollamaBaseUrl: process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434',
   ollamaModel: process.env.OLLAMA_MODEL ?? 'qwen2.5:7b',
+  ollamaAdviceBaseUrl: process.env.OLLAMA_ADVICE_BASE_URL ?? 'http://localhost:11434',
+  ollamaAdviceModel: process.env.OLLAMA_ADVICE_MODEL ?? 'qwen3:32b',
   dataDir: process.env.DATA_DIR ?? './data',
   uploadDir: process.env.UPLOAD_DIR ?? './data/uploads',
   maxFileSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB ?? '20', 10),

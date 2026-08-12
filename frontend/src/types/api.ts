@@ -511,3 +511,57 @@ export interface ImportLog {
   replaced?: boolean;
   error?: string;
 }
+
+// ── Santé financière (health-check) ────────────────────────────────────────
+
+export type HealthStatus = 'green' | 'orange' | 'red';
+
+export interface HealthThresholds {
+  resteAVivre: { orangeBelowPctIncome: number };
+  tauxEffort: { orangeAbovePct: number; redAbovePct: number };
+  plafonds: { greenBelowPct: number; redAbovePct: number };
+  tirages: { redAbovePctIncome: number };
+  trajectoire: { horizonMonths: number; stableBandPct: number };
+  manualMonthlyIncome: number | null;
+}
+
+export interface HealthBlockResult {
+  status: HealthStatus;
+  thresholdHit: string | null;
+  details: Record<string, number | string | null>;
+}
+
+export interface HealthDiagnostic {
+  verdict: HealthStatus;
+  causes: string[];
+  blocks: {
+    resteAVivre: HealthBlockResult;
+    chargeDette: HealthBlockResult;
+    fluxTirages: HealthBlockResult;
+    trajectoire: HealthBlockResult;
+  };
+  income: {
+    monthly: number | null;
+    source: 'detected' | 'manual' | 'transition' | 'unavailable';
+    label: string | null;
+  };
+  reliability: 'ok' | 'reduced' | 'unavailable';
+  computedAt: string;
+}
+
+export interface HealthAdvice {
+  generatedAt: string;
+  model: string;
+  advices: Array<{
+    priority: number;
+    title: string;
+    explanation: string;
+    estimatedImpact: string;
+  }>;
+}
+
+export const HEALTH_STATUS_LABELS: Record<HealthStatus, string> = {
+  green: 'Vert',
+  orange: 'Orange',
+  red: 'Rouge',
+};

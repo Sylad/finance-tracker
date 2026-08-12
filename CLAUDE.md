@@ -149,6 +149,14 @@ Priorité sources : `user > amortization > credit_statement > bank_statement > s
 
 Doc complète dans `.claude/output/apex/04-loans-synchro-robust/` et `.claude/output/apex/05-loans-installment-kind/`.
 
+### Santé financière (module `health/`, 2026-08-12)
+
+- **Les chiffres en code, les mots au LLM** : le verdict (rouge/orange/vert) et les 4 blocs (reste à vivre, charge dette, flux tirages, trajectoire) sont calculés par `HealthService` (déterministe, testé). Le LLM ne fait QUE rédiger les conseils depuis des agrégats — jamais de calcul, jamais de libellé de transaction ni `income.label` dans le prompt (test sentinelle le verrouille).
+- Endpoints : `GET /api/health-check/diagnostic` · `GET/PUT /api/health-check/thresholds` + `POST .../reset` · `POST/GET /api/health-check/advice`. Le `/api/health` technique (health-status.controller) est distinct — ne pas le toucher.
+- Revenus : détection générique par cluster stable ≥ 3 mois hors tirages (`income-detection.helper.ts`) — aucun nom d'employeur en dur ; override manuel `manualMonthlyIncome` dans les seuils prime sur tout.
+- Conseils IA **locale** : Ollama Big-Blue (RTX 5090), modèle `qwen3:32b` (bench 2026-08-12 vs gemma3:27b : meilleure fidélité chiffres + priorisation TAEG ; ~8 s à chaud, ~53 s à froid). Config `OLLAMA_ADVICE_BASE_URL`/`OLLAMA_ADVICE_MODEL` (défaut localhost:11434 — à surcharger si déploiement hors Big-Blue). Fail-loud : Ollama down → HTTP 502 explicite, AUCUN fallback cloud.
+- Frontend : page `/health` (bandeau verdict + 4 cartes + conseils + drawer seuils), tuile dashboard.
+
 ### Two-phase tool-use Claude
 - Phase 1 = `extract_transactions`, Phase 2 = `analyze_finances`. **Toujours vérifier que phase 1 a retourné > 0 transactions** avant de lancer phase 2 — sinon plantage.
 - `tool_choice: { type: 'tool' }` strict, donc `ANALYZE_TOOL.description` peut rester en EN (pas de risque pratique).

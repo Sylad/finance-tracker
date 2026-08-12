@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Search, Calendar, LayoutDashboard, History as HistoryIcon, Wallet, PiggyBank,
   Banknote, Zap, Repeat, ListChecks, CalendarRange, CalendarDays, Tags, Upload,
-  Info, RefreshCw, Sparkles, Target, Grid3x3,
+  Info, RefreshCw, Sparkles, Target, Grid3x3, HeartPulse,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { StatementSummary } from '@/types/api';
@@ -21,6 +21,7 @@ type Action = {
 
 const NAV: Array<{ to: string; label: string; icon: typeof Search }> = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/health', label: 'Santé', icon: HeartPulse },
   { to: '/history', label: 'Historique', icon: HistoryIcon },
   { to: '/budget', label: 'Budget', icon: Wallet },
   { to: '/savings', label: 'Comptes épargne', icon: PiggyBank },
