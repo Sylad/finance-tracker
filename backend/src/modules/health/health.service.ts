@@ -25,6 +25,13 @@ export interface HealthContext {
   subscriptions: Subscription[];
   thresholds: HealthThresholds;
   income: IncomeDetection;
+  // transactionId de tous les mouvements d'épargne (tous comptes confondus) —
+  // même périmètre que l'exclusion déjà appliquée au calcul du revenu (F7).
+  // Réutilisé par `computeResteAVivre`/`findNeutralPairs` (fix review Task 7,
+  // 2026-08-12) : un retrait/virement d'épargne ne doit jamais former une
+  // paire neutre fantôme avec une dépense courante coïncidant en montant/date,
+  // ni être compté comme une dépense courante lui-même.
+  savingsMovementTxIds: Set<string>;
 }
 
 const RECENT_STATEMENTS_COUNT = 3;
@@ -62,18 +69,28 @@ export class HealthService {
     // mouvements d'épargne entrants » — F7, 2026-08-12). Un virement
     // récurrent vers un Livret A/PEL/etc. ne doit jamais être détecté
     // comme un cluster de revenu stable.
-    const excludedTxIds = collectDrawTxIds(loans);
+    const savingsMovementTxIds = new Set<string>();
     for (const account of savingsAccounts) {
       for (const movement of account.movements) {
-        if (movement.transactionId) excludedTxIds.add(movement.transactionId);
+        if (movement.transactionId)
+          savingsMovementTxIds.add(movement.transactionId);
       }
     }
+    const excludedTxIds = collectDrawTxIds(loans);
+    for (const txId of savingsMovementTxIds) excludedTxIds.add(txId);
     const income = detectStableIncome(
       statements,
       excludedTxIds,
       thresholds.manualMonthlyIncome,
     );
-    return { statements, loans, subscriptions, thresholds, income };
+    return {
+      statements,
+      loans,
+      subscriptions,
+      thresholds,
+      income,
+      savingsMovementTxIds,
+    };
   }
 
   /** Les 3 derniers relevés, triés par (year, month) décroissant. */
@@ -255,7 +272,11 @@ export class HealthService {
     const mensualites = this.mensualitesTotal(ctx.loans);
     const loanTxIds = this.loanOccurrenceTxIds(ctx.loans);
     const subTxIds = this.subscriptionOccurrenceTxIds(ctx.subscriptions);
-    const excludedTxIds = new Set<string>([...loanTxIds, ...subTxIds]);
+    const excludedTxIds = new Set<string>([
+      ...loanTxIds,
+      ...subTxIds,
+      ...ctx.savingsMovementTxIds,
+    ]);
     const recent = this.lastStatements(ctx, RECENT_STATEMENTS_COUNT);
     const { neutralOutgoingTxIds, operationsNeutres } = this.findNeutralPairs(
       recent,
@@ -264,7 +285,7 @@ export class HealthService {
     );
     const depensesCourantes = this.averageDepensesCourantesHorsCredits(
       ctx,
-      neutralOutgoingTxIds,
+      new Set([...neutralOutgoingTxIds, ...ctx.savingsMovementTxIds]),
     );
     const abonnementsMensuels = ctx.subscriptions
       .filter((s) => s.isActive)

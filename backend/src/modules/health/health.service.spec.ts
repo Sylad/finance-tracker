@@ -180,6 +180,7 @@ function mkCtx(over: Partial<HealthContext>): HealthContext {
     subscriptions: [],
     thresholds: structuredClone(DEFAULT_THRESHOLDS),
     income: { monthly: null, source: 'unavailable', label: null },
+    savingsMovementTxIds: new Set(),
     ...over,
   };
 }
@@ -489,10 +490,17 @@ describe('HealthService', () => {
     });
 
     it('(n-e) 2 débits candidats pour 1 crédit de même montant → seul le plus proche en date est apparié', () => {
+      // Montants volontairement DIFFÉRENTS (mais tous deux dans la tolérance
+      // ±0.01 par rapport au crédit 600) : si le glouton triait mal (ou
+      // appariait par défaut le premier/dernier candidat au lieu du plus
+      // proche en date), operationsNeutres vaudrait 600.01 au lieu de 600 —
+      // ce test est discriminant sur la sélection par proximité de date
+      // (fix review Task 7 round 1 : les montants identiques masquaient un
+      // tri inversé).
       const statement = mkStatement(2026, 3, [
         mkTx('credit-1', '2026-03-10', 600, 'VIREMENT REMBOURSEMENT'),
-        mkTx('debit-proche', '2026-03-11', -600, 'VIREMENT SORTANT PROCHE'),
-        mkTx('debit-loin', '2026-03-15', -600, 'VIREMENT SORTANT LOIN'),
+        mkTx('debit-proche', '2026-03-11', -600.0, 'VIREMENT SORTANT PROCHE'),
+        mkTx('debit-loin', '2026-03-15', -600.01, 'VIREMENT SORTANT LOIN'),
       ]);
       const ctx = mkCtx({
         statements: [statement],
@@ -503,8 +511,45 @@ describe('HealthService', () => {
 
       // Seul debit-proche (1 jour d'écart) est apparié et exclu ; debit-loin
       // (5 jours) reste compté normalement dans les dépenses courantes.
-      expect(block.details.depensesCourantes).toBe(600);
+      expect(block.details.depensesCourantes).toBe(600.01);
       expect(block.details.operationsNeutres).toBe(600);
+    });
+
+    it('(n-g) paire à exactement 7 jours d\'écart (borne incluse) → appariée', () => {
+      const statement = mkStatement(2026, 3, [
+        mkTx('credit-1', '2026-03-01', 400, 'VIREMENT REMBOURSEMENT'),
+        mkTx('debit-1', '2026-03-08', -400, 'VIREMENT SORTANT'), // exactement 7 jours après
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(0);
+      expect(block.details.operationsNeutres).toBe(400);
+    });
+
+    it('(n-h) mouvement épargne exclu du pairing → pas de paire fantôme avec une vraie dépense coïncidente', () => {
+      // Retrait épargne +500 (virement Livret A → compte courant) suivi 2
+      // jours plus tard d'une vraie dépense -500 sans lien. Sans l'exclusion
+      // épargne, ces deux tx auraient été appariées à tort (même montant,
+      // 2 jours d'écart) et la dépense aurait disparu des dépenses courantes.
+      const statement = mkStatement(2026, 3, [
+        mkTx('epargne-retrait', '2026-03-05', 500, 'Virement depuis Livret A'),
+        mkTx('depense-1', '2026-03-07', -500, 'DEPENSE REELLE'),
+      ]);
+      const ctx = mkCtx({
+        statements: [statement],
+        savingsMovementTxIds: new Set(['epargne-retrait']),
+        income: { monthly: 3000, source: 'detected', label: 'Employer' },
+      });
+
+      const block = svc.computeResteAVivre(ctx);
+
+      expect(block.details.depensesCourantes).toBe(500);
+      expect(block.details.operationsNeutres).toBe(0);
     });
 
     it("(n-f) débit dont la description matche le matchPattern d'un loan ACTIF → exclu des candidats, pas apparié", () => {
@@ -1044,6 +1089,9 @@ describe('HealthService', () => {
     // revenu — avec l'exclusion, aucun autre cluster ne qualifie → unavailable.
     expect(ctx.income.source).toBe('unavailable');
     expect(ctx.income.monthly).toBeNull();
+    // ctx.savingsMovementTxIds (fix review Task 7) doit exposer les mêmes
+    // transactionId que ceux exclus du calcul du revenu.
+    expect([...ctx.savingsMovementTxIds].sort()).toEqual([...txIds].sort());
   });
 
   it('(g) getDiagnostic : seulement 2 relevés disponibles → reliability reduced', async () => {
