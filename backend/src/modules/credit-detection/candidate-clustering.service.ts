@@ -17,7 +17,11 @@ export class CandidateClusteringService {
     return ids;
   }
 
-  buildClusters(statements: MonthlyStatement[], excludedTxIds: Set<string>): CandidateCluster[] {
+  buildClusters(
+    statements: MonthlyStatement[],
+    excludedTxIds: Set<string>,
+    minOccurrences: number = MIN_OCCURRENCES,
+  ): CandidateCluster[] {
     const byKey = new Map<string, { creditor: string; merchant: string | null; occ: ClusterOccurrence[] }>();
     const seenTxIds = new Set<string>(); // Dedup by transactionId
     for (const st of statements) {
@@ -33,7 +37,7 @@ export class CandidateClusteringService {
       }
     }
     return [...byKey.entries()]
-      .filter(([, v]) => v.occ.length >= MIN_OCCURRENCES)
+      .filter(([, v]) => v.occ.length >= minOccurrences)
       .map(([key, v]) => ({ key, creditor: v.creditor, merchant: v.merchant, occurrences: v.occ.sort((a, b) => a.date.localeCompare(b.date)) }));
   }
 

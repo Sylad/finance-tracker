@@ -28,6 +28,7 @@ import { AnomaliesModule } from './modules/anomalies/anomalies.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { CreditDetectionModule } from './modules/credit-detection/credit-detection.module';
+import { ExpensesModule } from './modules/expenses/expenses.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { CreditDetectionModule } from './modules/credit-detection/credit-detecti
     GoalsModule,
     SubscriptionsModule,
     CreditDetectionModule,
+    ExpensesModule,
   ],
 })
 export class AppModule implements NestModule {
