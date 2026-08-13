@@ -267,11 +267,48 @@ export class LoansController {
       accountNumber?: string | null;
       rumNumber?: string | null;
       monthlyPayment?: number;
+      kind?: 'credit_statement' | 'amortization';
       error?: string;
     }> = [];
     for (const file of files) {
       try {
         const extracted = await this.creditStatement.analyzeCreditStatement(file.buffer);
+
+        // Routage par type de document : le même bouton accepte relevés de
+        // crédit ET plans d'amortissement (demande user 2026-08-13 — l'import
+        // un par un était pénible avec 9 crédits).
+        if (extracted.documentType === 'bank_statement') {
+          results.push({
+            filename: file.originalname,
+            error: "Ce PDF est un relevé bancaire — importe-le depuis la page Import (relevés bancaires).",
+          });
+          continue;
+        }
+        if (extracted.documentType === 'other') {
+          results.push({
+            filename: file.originalname,
+            error: "Ce PDF ne ressemble ni à un relevé de crédit, ni à un plan d'amortissement.",
+          });
+          continue;
+        }
+        if (extracted.documentType === 'amortization_plan') {
+          const amort = await this.amortization.analyzeAmortization(file.buffer);
+          const amortResult = await this.orchestrator.importAmortization(amort);
+          results.push({
+            filename: file.originalname,
+            loanId: amortResult.loan.id,
+            created: amortResult.created,
+            matched: !amortResult.created,
+            creditor: amort.creditor,
+            monthlyPayment: amort.monthlyPayment,
+            kind: 'amortization',
+          });
+          this.logger.log(
+            `[credit-auto] ${file.originalname} → plan d'amortissement ${amortResult.created ? 'CREATED' : 'matched'} loan ${amortResult.loan.id} (${amort.creditor})`,
+          );
+          continue;
+        }
+
         // Délégué à ImportOrchestratorService : findExistingLoan en first-class
         // (même matcher unifié que les 2 autres paths).
         const result = await this.orchestrator.importCreditStatement(extracted);
@@ -299,6 +336,7 @@ export class LoansController {
           accountNumber: extracted.accountNumber,
           rumNumber: extracted.rumNumber,
           monthlyPayment: extracted.monthlyPayment,
+          kind: 'credit_statement',
         });
         const idDisplay = extracted.accountNumber
           ? `#${extracted.accountNumber}`
@@ -310,7 +348,7 @@ export class LoansController {
         );
       } catch (err) {
         let message = "Erreur inattendue lors de l'analyse";
-        if (err instanceof CreditStatementParseError) {
+        if (err instanceof CreditStatementParseError || err instanceof AmortizationParseError) {
           message = `Analyse échouée : ${err.message}`;
         } else if (err instanceof HttpException) {
           const resp = err.getResponse();

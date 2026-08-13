@@ -262,6 +262,7 @@ export interface CreditStatementImportResult {
     creditor?: string;
     accountNumber?: string | null;
     monthlyPayment?: number;
+    kind?: 'credit_statement' | 'amortization';
     error?: string;
   }>;
 }

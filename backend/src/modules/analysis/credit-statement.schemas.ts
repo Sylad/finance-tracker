@@ -56,6 +56,11 @@ const numberLike = z.preprocess(
 
 export const CreditStatementOutputSchema = z
   .object({
+    // Optionnel (fail-open) : seul un type non-crédit EXPLICITE déclenche un
+    // routage différent (plan d'amortissement) ou un rejet (relevé bancaire).
+    documentType: z
+      .enum(['credit_statement', 'amortization_plan', 'bank_statement', 'other'])
+      .optional(),
     creditor: z.string(),
     creditType: z.enum(['revolving', 'classic']),
     currentBalance: numberLike,
@@ -76,6 +81,9 @@ export const CreditStatementOutputSchema = z
     if (
       value.creditType === 'revolving'
       && !value.installmentDetails
+      // Un document non-crédit (plan d'amortissement, relevé bancaire) est
+      // routé/rejeté par le controller — ne pas exiger ses champs métier.
+      && (value.documentType === undefined || value.documentType === 'credit_statement')
       && (value.maxAmount == null || value.maxAmount <= 0)
     ) {
       ctx.addIssue({
