@@ -69,7 +69,8 @@ export function CommandPalette() {
     },
   });
 
-  // Global keybinding: Cmd+K / Ctrl+K opens, Esc closes
+  // Global keybinding: Cmd+K / Ctrl+K opens, Esc closes.
+  // L'event custom permet d'ouvrir depuis l'extérieur (bouton sidebar).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -81,8 +82,13 @@ export function CommandPalette() {
         setOpen(false);
       }
     };
+    const onOpenEvent = () => setOpen(true);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('finance:open-command-palette', onOpenEvent);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('finance:open-command-palette', onOpenEvent);
+    };
   }, [open]);
 
   // Reset query + focus input each time the palette opens
