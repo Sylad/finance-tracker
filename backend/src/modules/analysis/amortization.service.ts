@@ -48,6 +48,11 @@ const EXTRACT_AMORTIZATION_TOOL: Anthropic.Tool = {
         description:
           'TAEG (taux annuel effectif global) en pourcentage si affiché (ex: 4.85 pour 4,85 %). null si absent.',
       },
+      accountNumber: {
+        type: ['string', 'null'],
+        description:
+          "Numéro de contrat / de compte tel qu'affiché sur le document (souvent en en-tête, ex: 'N° de contrat 51215116529003'). null si absent. Sert à rattacher le plan au crédit existant.",
+      },
       schedule: {
         type: 'array',
         description:

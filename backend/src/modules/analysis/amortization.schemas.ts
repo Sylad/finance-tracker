@@ -27,6 +27,7 @@ export const AmortizationOutputSchema = z
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'startDate doit être YYYY-MM-DD'),
     endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'endDate doit être YYYY-MM-DD'),
     taeg: z.number().nullable().optional(),
+    accountNumber: z.string().nullable().optional(),
     schedule: z.array(AmortizationLineSchema).min(1, 'schedule doit contenir au moins une ligne'),
   })
   .superRefine((value, ctx) => {

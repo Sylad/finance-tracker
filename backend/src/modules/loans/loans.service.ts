@@ -69,6 +69,7 @@ export interface MatchSignals {
   creditor?: string | null;          // organisme prêteur
   monthlyAmount?: number | null;     // mensualité (pour matching heuristique)
   initialPrincipal?: number | null;  // capital initial (plans d'amortissement)
+  endDate?: string | null;           // date de fin (plans d'amortissement)
   description?: string | null;       // libellé de transaction (pour matchPattern regex)
 }
 
@@ -93,6 +94,7 @@ export interface AmortizationSnapshotInput {
   startDate: string;
   endDate: string;
   taeg?: number | null;
+  accountNumber?: string | null;
   schedule: AmortizationLine[];
 }
 
@@ -757,7 +759,26 @@ export class LoansService {
       if (hit) return { loan: hit, confidence: 'medium', reason: 'creditor + initialPrincipal ±1%' };
     }
 
-    // 4. creditor exact + monthlyAmount ±5% → medium
+    // 4. creditor exact + endDate à ±62 jours → medium.
+    // Filet pour les plans d'amortissement quand le prêt existant n'a pas
+    // d'initialPrincipal renseigné : la date de fin du portail créancier et
+    // la dernière échéance du plan divergent d'au plus ~1 mensualité.
+    if (signals.creditor && signals.endDate) {
+      const cred = signals.creditor.toLowerCase().trim();
+      const target = new Date(signals.endDate).getTime();
+      if (Number.isFinite(target)) {
+        const hit = all.find((l) => {
+          const lcred = (l.creditor ?? '').toLowerCase().trim();
+          if (lcred !== cred) return false;
+          if (l.type !== 'classic' || !l.endDate) return false;
+          const d = new Date(l.endDate).getTime();
+          return Number.isFinite(d) && Math.abs(d - target) <= 62 * 24 * 3600 * 1000;
+        });
+        if (hit) return { loan: hit, confidence: 'medium', reason: 'creditor + endDate ±62j' };
+      }
+    }
+
+    // 5. creditor exact + monthlyAmount ±5% → medium
     if (signals.creditor && signals.monthlyAmount && signals.monthlyAmount > 0) {
       const cred = signals.creditor.toLowerCase().trim();
       const target = signals.monthlyAmount;
@@ -770,7 +791,7 @@ export class LoansService {
       if (hit) return { loan: hit, confidence: 'medium', reason: 'creditor + monthlyAmount ±5%' };
     }
 
-    // 5. description regex match → low
+    // 6. description regex match → low
     if (signals.description) {
       const desc = signals.description;
       const hit = all.find((l) => {

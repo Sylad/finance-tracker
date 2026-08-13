@@ -267,6 +267,22 @@ describe('LoansService', () => {
       expect(result?.reason).toMatch(/initialPrincipal/);
     });
 
+    it('findExistingLoan — medium sur creditor + endDate ±62j quand ni mensualité ni capital ne matchent', async () => {
+      const loan = await svc.create({
+        name: 'Prêt Personnel Carrefour', type: 'classic', category: 'consumer',
+        monthlyPayment: 252, matchPattern: 'CARREFOUR', isActive: true,
+        creditor: 'CARREFOUR BANQUE', endDate: '2031-07-03',
+      });
+      // Plan d'amortissement : mensualité hors assurance (229.85), pas
+      // d'initialPrincipal sur le prêt — seule la date de fin converge
+      // (dernière échéance du plan vs fin affichée par le portail).
+      const result = await svc.findExistingLoan({
+        creditor: 'CARREFOUR BANQUE', monthlyAmount: 229.85, endDate: '2031-08-05',
+      });
+      expect(result?.loan.id).toBe(loan.id);
+      expect(result?.reason).toMatch(/endDate/);
+    });
+
     it('findExistingLoan — low confidence on description regex match', async () => {
       const loan = await svc.create({
         name: 'X', type: 'classic', category: 'auto',

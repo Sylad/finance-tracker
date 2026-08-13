@@ -275,9 +275,11 @@ export class ImportOrchestratorService {
     // prioritaire : la mensualité du plan exclut l'assurance et peut donc
     // dévier de plus de 5% de celle du prêt existant.
     const signals: MatchSignals = {
+      contractRef: extracted.accountNumber,
       creditor: extracted.creditor,
       monthlyAmount: extracted.monthlyPayment,
       initialPrincipal: extracted.initialPrincipal,
+      endDate: extracted.endDate,
     };
     const defaults: LoanDefaults = {
       name: `${extracted.creditor} · ${Math.round(extracted.initialPrincipal)}€`,
