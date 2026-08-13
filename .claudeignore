@@ -42,9 +42,9 @@ backend/data/archive/
 **/*.pdf
 
 # --- Claude state ---
-~/.claude/
 .claude/cache/
 
 # --- Lockfiles bruyants ---
 # (on les garde pour reproduction build, mais Claude n'a pas à les lire)
 package-lock.json
+.token-savior-cache.json
