@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   Get,
   HttpCode,
+  HttpException,
   Logger,
   Param,
   Post,
@@ -308,10 +309,16 @@ export class LoansController {
           `[credit-auto] ${file.originalname} → ${matched ? 'matched' : 'CREATED'} loan ${updated.id} (${extracted.creditor} ${idDisplay})`,
         );
       } catch (err) {
-        const message =
-          err instanceof CreditStatementParseError
-            ? `Analyse échouée : ${err.message}`
-            : 'Erreur inattendue lors de l\'analyse';
+        let message = "Erreur inattendue lors de l'analyse";
+        if (err instanceof CreditStatementParseError) {
+          message = `Analyse échouée : ${err.message}`;
+        } else if (err instanceof HttpException) {
+          const resp = err.getResponse();
+          message =
+            typeof resp === 'string'
+              ? resp
+              : ((resp as { message?: string }).message ?? err.message);
+        }
         results.push({ filename: file.originalname, error: message });
         this.logger.error(`[credit-auto] ${file.originalname} failed`, err);
       }

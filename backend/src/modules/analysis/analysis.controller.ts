@@ -1,5 +1,6 @@
 import {
   Controller,
+  HttpException,
   Post,
   UseInterceptors,
   UploadedFiles,
@@ -171,10 +172,18 @@ export class AnalysisController {
           `Processed ${file.originalname} → ${response.statement.id} (replaced=${response.replaced})`,
         );
       } catch (e) {
-        const message =
-          e instanceof AnthropicParseError
-            ? `Analyse échouée : ${e.message}`
-            : "Erreur inattendue lors de l'analyse";
+        // HttpException typée (WRONG_DOCUMENT_TYPE, quota, auth…) : son message
+        // est écrit pour l'utilisateur — le montrer tel quel, pas de générique.
+        let message = "Erreur inattendue lors de l'analyse";
+        if (e instanceof AnthropicParseError) {
+          message = `Analyse échouée : ${e.message}`;
+        } else if (e instanceof HttpException) {
+          const resp = e.getResponse();
+          message =
+            typeof resp === 'string'
+              ? resp
+              : ((resp as { message?: string }).message ?? e.message);
+        }
         await this.importLogs.update(pendingLog.id, {
           durationMs: Date.now() - startedAt,
           status: 'error',
