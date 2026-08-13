@@ -234,7 +234,14 @@ export class AutoSyncService {
           const alreadyDone = acc.movements.some(
             (m) => m.source === 'bank-extract' && m.statementId === statement.id,
           );
-          if (!alreadyDone) {
+          // Un relevé plus ANCIEN qu'un recalibrage déjà appliqué ne doit jamais
+          // écraser le solde (import dans le désordre → le solde serait rembobiné
+          // vers une valeur périmée). Les statementId "YYYY-MM" se comparent
+          // lexicographiquement.
+          const newerRecalExists = acc.movements.some(
+            (m) => m.source === 'bank-extract' && m.statementId != null && m.statementId > statement.id,
+          );
+          if (!alreadyDone && !newerRecalExists) {
             const delta = Math.round((match.balance - acc.currentBalance) * 100) / 100;
             await this.savings.addMovement(acc.id, {
               date: match.asOfDate ?? `${statement.year}-${String(statement.month).padStart(2, '0')}-01`,
@@ -245,7 +252,8 @@ export class AutoSyncService {
               note: 'Solde recalibré depuis le relevé',
             });
           }
-          await this.maybeAddInterest(acc, statement);
+          // Pas d'intérêts estimés ici : le solde officiel du relevé inclut
+          // déjà les intérêts crédités par la banque (sinon double comptage).
           handled = true;
         }
       }
@@ -308,6 +316,11 @@ export class AutoSyncService {
 
   private async maybeAddInterest(acc: SavingsAccount, statement: MonthlyStatement): Promise<void> {
     if (statement.month !== acc.interestAnniversaryMonth) return;
+    // Pas d'intérêts pour une période où le compte n'existait pas encore
+    // (vécu : replay du relevé de janvier → +10,38 € d'intérêts sur un PEL
+    // ouvert fin mars de la même année).
+    const stmtKey = `${statement.year}-${String(statement.month).padStart(2, '0')}`;
+    if (acc.initialBalanceDate && stmtKey < acc.initialBalanceDate.slice(0, 7)) return;
     const alreadyDone = acc.movements.some((m) => m.source === 'interest' && m.date.startsWith(`${statement.year}-`));
     if (alreadyDone) return;
     // Estimation simple : balance courante × taux annuel.

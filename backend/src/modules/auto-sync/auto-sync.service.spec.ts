@@ -190,6 +190,54 @@ describe('AutoSyncService', () => {
     }));
   });
 
+  describe('syncSavings — recalibrage bank-extract robuste au désordre (bug PEL 2026-08-13)', () => {
+    const mkPel = (over: Record<string, unknown>) => ({
+      id: 'pel-1', name: 'PEL', type: 'pel', initialBalance: 300, initialBalanceDate: '2026-03-31',
+      matchPattern: '', accountNumber: '75627146', interestRate: 0.02, interestAnniversaryMonth: 1,
+      currentBalance: 600, lastSyncedStatementId: null, movements: [], createdAt: '', updatedAt: '', ...over,
+    });
+
+    it('un relevé plus ancien qu’un recalibrage déjà appliqué ne rembobine pas le solde', async () => {
+      savings.getAll.mockResolvedValue([mkPel({
+        movements: [
+          { id: 'm1', date: '2026-08-07', amount: 600, source: 'bank-extract', statementId: '2026-07', transactionId: null },
+        ],
+      })]);
+      loans.getAll.mockResolvedValue([]);
+      const juin: MonthlyStatement = {
+        ...baseStatement,
+        id: '2026-06', month: 6, year: 2026,
+        externalAccountBalances: [{ accountNumber: '7562 7146', accountType: 'pel', balance: 525 }],
+      };
+      await svc.syncStatement(juin);
+      expect(savings.addMovement).not.toHaveBeenCalled();
+    });
+
+    it('pas d’intérêts estimés sur un compte recalé par le solde officiel du relevé', async () => {
+      savings.getAll.mockResolvedValue([mkPel({ interestAnniversaryMonth: 3, currentBalance: 300 })]);
+      loans.getAll.mockResolvedValue([]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        externalAccountBalances: [{ accountNumber: '7562 7146', accountType: 'pel', balance: 375 }],
+      };
+      await svc.syncStatement(stmt);
+      expect(savings.addMovement).toHaveBeenCalledTimes(1);
+      expect(savings.addMovement).toHaveBeenCalledWith('pel-1', expect.objectContaining({ source: 'bank-extract', amount: 75 }));
+    });
+
+    it('pas d’intérêts pour un relevé antérieur à l’ouverture du compte', async () => {
+      savings.getAll.mockResolvedValue([mkPel({
+        accountNumber: undefined, matchPattern: 'VIR.*PEL', interestAnniversaryMonth: 1,
+      })]);
+      loans.getAll.mockResolvedValue([]);
+      const janvier: MonthlyStatement = {
+        ...baseStatement, id: '2026-01', month: 1, year: 2026, externalAccountBalances: [],
+      };
+      await svc.syncStatement(janvier);
+      expect(savings.addMovement).not.toHaveBeenCalled();
+    });
+  });
+
   describe('syncLoans — RUM matching on bank statements', () => {
     it('matches loan transaction by rumRefs[] when contractRef absent from description', async () => {
       savings.getAll.mockResolvedValue([]);
