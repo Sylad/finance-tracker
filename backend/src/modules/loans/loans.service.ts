@@ -68,6 +68,7 @@ export interface MatchSignals {
   rumNumber?: string | null;         // RUM SEPA
   creditor?: string | null;          // organisme prêteur
   monthlyAmount?: number | null;     // mensualité (pour matching heuristique)
+  initialPrincipal?: number | null;  // capital initial (plans d'amortissement)
   description?: string | null;       // libellé de transaction (pour matchPattern regex)
 }
 
@@ -739,7 +740,24 @@ export class LoansService {
       if (hit) return { loan: hit, confidence: 'high', reason: 'rumNumber match' };
     }
 
-    // 3. creditor exact + monthlyAmount ±5% → medium
+    // 3. creditor exact + initialPrincipal ±1% → medium.
+    // Cas plan d'amortissement : sa mensualité (capital + intérêts) exclut
+    // l'assurance, donc le signal mensualité ±5% rate le prêt existant
+    // (vécu 2026-08-13 : plan Sofinco 262,66 vs prêt 284,41 → doublon créé).
+    // Le capital initial, lui, est stable entre les deux sources.
+    if (signals.creditor && signals.initialPrincipal && signals.initialPrincipal > 0) {
+      const cred = signals.creditor.toLowerCase().trim();
+      const target = signals.initialPrincipal;
+      const hit = all.find((l) => {
+        const lcred = (l.creditor ?? '').toLowerCase().trim();
+        if (lcred !== cred) return false;
+        if (l.initialPrincipal == null || l.initialPrincipal <= 0) return false;
+        return Math.abs(l.initialPrincipal - target) <= target * 0.01;
+      });
+      if (hit) return { loan: hit, confidence: 'medium', reason: 'creditor + initialPrincipal ±1%' };
+    }
+
+    // 4. creditor exact + monthlyAmount ±5% → medium
     if (signals.creditor && signals.monthlyAmount && signals.monthlyAmount > 0) {
       const cred = signals.creditor.toLowerCase().trim();
       const target = signals.monthlyAmount;
@@ -752,7 +770,7 @@ export class LoansService {
       if (hit) return { loan: hit, confidence: 'medium', reason: 'creditor + monthlyAmount ±5%' };
     }
 
-    // 4. description regex match → low
+    // 5. description regex match → low
     if (signals.description) {
       const desc = signals.description;
       const hit = all.find((l) => {

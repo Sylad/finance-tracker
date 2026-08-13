@@ -271,10 +271,13 @@ export class ImportOrchestratorService {
       return { loan, created: false, matchReason: 'explicit attachToLoanId' };
     }
 
-    // No attachId : find-or-create via signals
+    // No attachId : find-or-create via signals. initialPrincipal en signal
+    // prioritaire : la mensualité du plan exclut l'assurance et peut donc
+    // dévier de plus de 5% de celle du prêt existant.
     const signals: MatchSignals = {
       creditor: extracted.creditor,
       monthlyAmount: extracted.monthlyPayment,
+      initialPrincipal: extracted.initialPrincipal,
     };
     const defaults: LoanDefaults = {
       name: `${extracted.creditor} · ${Math.round(extracted.initialPrincipal)}€`,

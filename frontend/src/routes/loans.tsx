@@ -1,15 +1,13 @@
 import { useRef, useState } from 'react';
-import { Plus, Upload, Loader2, CheckCircle2, AlertCircle, X, GitMerge, AlertTriangle, RotateCcw, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Upload, Loader2, AlertCircle, X, GitMerge, AlertTriangle, RotateCcw, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   useLoans,
   useCreateLoan,
   useUpdateLoan,
   useDeleteLoan,
   useAcceptSuggestion,
-  useImportCreditStatements,
   useResetLoans,
   useDetectionScan,
-  type CreditStatementImportResult,
   type ResetLoansResult,
 } from '@/lib/queries';
 import { ApiError } from '@/lib/api';
@@ -25,6 +23,7 @@ import { LoanForm } from '@/components/loans/loan-form';
 import { SuggestionsBanner } from '@/components/loans/suggestions-banner';
 import { LoansMonthlyChart } from '@/components/loans/loans-monthly-chart';
 import { DedupeModal } from '@/components/loans/dedupe-modal';
+import { ImportProgressModal } from '@/components/loans/import-progress-modal';
 import { SuspiciousModal } from '@/components/loans/suspicious-modal';
 import { toLoanInput } from '@/components/loans/utils';
 
@@ -47,7 +46,6 @@ export function LoansPage() {
   const update = useUpdateLoan();
   const remove = useDeleteLoan();
   const acceptSugg = useAcceptSuggestion();
-  const importCredit = useImportCreditStatements();
   const resetLoans = useResetLoans();
   const detectionScan = useDetectionScan();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,7 +53,7 @@ export function LoansPage() {
   const [creating, setCreating] = useState(false);
   const [suggestionToAccept, setSuggestionToAccept] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState<LoanInput | null>(null);
-  const [importResult, setImportResult] = useState<CreditStatementImportResult | null>(null);
+  const [importFiles, setImportFiles] = useState<File[] | null>(null);
   const [dedupeOpen, setDedupeOpen] = useState(false);
   const [suspiciousOpen, setSuspiciousOpen] = useState(false);
   const [resetResult, setResetResult] = useState<ResetLoansResult | null>(null);
@@ -97,14 +95,9 @@ export function LoansPage() {
     }
   };
 
-  const handleCreditUpload = async (files: FileList | null) => {
+  const handleCreditUpload = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    try {
-      const result = await importCredit.mutateAsync(Array.from(files));
-      setImportResult(result);
-    } catch (e) {
-      alert(`Erreur upload : ${(e as Error).message}`);
-    }
+    setImportFiles(Array.from(files));
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -156,15 +149,11 @@ export function LoansPage() {
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={importCredit.isPending}
+              disabled={importFiles != null}
               className="btn-secondary"
               title="Importer un ou plusieurs PDF : relevés de crédit ET plans d'amortissement, mélangés. Chaque PDF est reconnu (type + N° de contrat) et rattaché automatiquement au bon crédit."
             >
-              {importCredit.isPending ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Analyse…</>
-              ) : (
-                <><Upload className="h-4 w-4" /> Importer PDF crédits</>
-              )}
+              <Upload className="h-4 w-4" /> Importer PDF crédits
             </button>
             <button
               onClick={handleScan}
@@ -291,39 +280,8 @@ export function LoansPage() {
         </div>
       )}
 
-      {importResult && (
-        <div className="card p-5 mb-4 relative">
-          <button
-            onClick={() => setImportResult(null)}
-            className="absolute top-3 right-3 text-fg-dim hover:text-fg"
-            aria-label="Fermer"
-          ><X className="h-4 w-4" /></button>
-          <h3 className="font-display text-sm font-semibold text-fg-bright mb-3">Import terminé</h3>
-          <ul className="space-y-2">
-            {importResult.results.map((r, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
-                {r.error ? (
-                  <AlertCircle className="h-4 w-4 text-negative mt-0.5 shrink-0" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4 text-positive mt-0.5 shrink-0" />
-                )}
-                <span className="flex-1 min-w-0">
-                  <span className="font-mono text-xs text-fg-dim">{r.filename}</span>
-                  {r.error ? (
-                    <span className="block text-negative text-xs">{r.error}</span>
-                  ) : (
-                    <span className="block text-fg-muted text-xs">
-                      {r.kind === 'amortization' && <>📊 plan d'amortissement · </>}
-                      {r.created ? '🆕 nouveau crédit' : '🔗 rattaché'} · {r.creditor}
-                      {r.accountNumber && <> · #{r.accountNumber}</>}
-                      {r.monthlyPayment != null && <> · {formatEUR(r.monthlyPayment)}/mois</>}
-                    </span>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {importFiles && (
+        <ImportProgressModal files={importFiles} onClose={() => setImportFiles(null)} />
       )}
 
       {items.length > 0 && <LoansMonthlyChart loans={items} />}

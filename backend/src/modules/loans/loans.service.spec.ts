@@ -251,6 +251,22 @@ describe('LoansService', () => {
       expect(result?.confidence).toBe('medium');
     });
 
+    it('findExistingLoan — medium sur creditor + initialPrincipal quand la mensualité dévie (assurance)', async () => {
+      const loan = await svc.create({
+        name: 'Prêt Personnel Sofinco (15 000€)', type: 'classic', category: 'consumer',
+        monthlyPayment: 284.41, matchPattern: 'SOFINCO', isActive: true,
+        creditor: 'SOFINCO', initialPrincipal: 15000,
+      });
+      // Plan d'amortissement : mensualité hors assurance (262.66) → ±5% rate,
+      // mais le capital initial identique doit matcher.
+      const result = await svc.findExistingLoan({
+        creditor: 'SOFINCO', monthlyAmount: 262.66, initialPrincipal: 15000,
+      });
+      expect(result?.loan.id).toBe(loan.id);
+      expect(result?.confidence).toBe('medium');
+      expect(result?.reason).toMatch(/initialPrincipal/);
+    });
+
     it('findExistingLoan — low confidence on description regex match', async () => {
       const loan = await svc.create({
         name: 'X', type: 'classic', category: 'auto',
