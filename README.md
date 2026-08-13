@@ -18,10 +18,14 @@
 |---|---|
 | ![Détail d'un relevé](./docs/screenshots/statement-detail.png) | ![Crédits](./docs/screenshots/loans.png) |
 | **Détail d'un relevé** — répartition catégorielle, transactions taggées + récurrentes, commentaire Claude | **Crédits** — classiques (barre temporelle), revolving (jauge), suggestions Claude à valider |
+| ![Santé financière](./docs/screenshots/health.png) | ![Dépenses](./docs/screenshots/expenses.png) |
+| **Santé financière** — reste à vivre, charge de dette, dépendance aux tirages, trajectoire 6 mois + conseils par IA locale (Ollama) | **Dépenses** — camembert drill-down avec crédits/abonnements/épargne isolés, coupes proposées par l'IA locale |
 | ![Comptes épargne](./docs/screenshots/savings.png) | ![Abonnements](./docs/screenshots/subscriptions.png) |
 | **Comptes épargne** — PEL, Livret A, sparkline + recalage auto à chaque import | **Abonnements** — détectés par Claude, à trier (connu / faux positif) |
 | ![Historique](./docs/screenshots/history.png) | ![Login](./docs/screenshots/login.png) |
 | **Historique** — relevés analysés groupés par année, score par mois | **Login** — PIN guard simple (Bearer token) pour les déploiements perso |
+
+<sub>Captures régénérables via `node docs/screenshots/capture.mjs <PIN> docs/screenshots` (Playwright, app démarrée en local, mode démo).</sub>
 
 ## Pourquoi
 
@@ -32,7 +36,11 @@ Le rôle de Claude : poser le code, expliquer, itérer.
 
 ## Fonctionnalités
 
-- **Import PDF multi-fichier** (jusqu'à 12 relevés en une fois) — analyse via Claude (Sonnet 4.5) en two-phase tool-use
+- **Import PDF multi-fichier** (jusqu'à 12 relevés en une fois) — analyse via Claude (Sonnet 4.5) en two-phase tool-use, avec garde-fou sur le type de document (un relevé de crédit ne peut pas écraser un relevé bancaire)
+- **Diagnostic de santé financière** — 4 indicateurs à seuils configurables (reste à vivre, charge de dette, dépendance aux tirages revolving, trajectoire d'encours à 6 mois) + **conseils personnalisés par IA locale** (Ollama, rien ne sort de la machine)
+- **Page Dépenses** — répartition des retraits du mois avec crédits/abonnements/épargne/opérations neutres isolés d'office, drill-down par catégorie, et **coupes proposées par l'IA locale** sur 3 mois (abonnement / achat ponctuel / autre)
+- **Suivi des crédits de bout en bout** — import batch des relevés de crédit ET plans d'amortissement (type de document auto-détecté, rattachement par n° de contrat), tirages sur réserves renouvelables, restant dû officiel prioritaire sur l'estimation
+- **Détection LLM locale des crédits et paiements en N fois** (Klarna, PayPal 4×…) — le LLM propose, un validateur déterministe vérifie (1 débit/mois, jour stable, fraîcheur), l'humain accepte
 - **Score de santé financière** sur 100 (5 dimensions : épargne, contrôle, dette, cash flow, irrégularité)
 - **Catégorisation auto** des transactions (logement, alimentation, etc.) avec sous-catégorie + niveau de confiance
 - **Détection des crédits récurrents** (salaire, loyers, pensions) avec date de fin estimée
@@ -52,6 +60,7 @@ Curieux de savoir qui (toi / Claude / le backend) décide de quoi dans le pipeli
 |---|---|
 | Frontend | React 18 + TypeScript 5 + Vite 5 + Tailwind 3 + TanStack Router/Query + Recharts |
 | Backend | NestJS 11 + TypeScript 5 + Anthropic SDK + Multer |
+| IA locale (optionnelle) | Ollama (qwen3) — conseils santé, détection crédits/N×, analyse des dépenses |
 | Storage | JSON local (pas de DB) |
 | Build | Docker multi-stage (node:20-alpine → nginx:alpine) |
 | Déploiement | docker-compose (testé Synology NAS DSM) |
