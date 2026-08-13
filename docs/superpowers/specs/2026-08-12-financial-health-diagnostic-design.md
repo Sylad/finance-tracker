@@ -6,7 +6,7 @@
 
 Répondre à la question « suis-je dans le rouge ? » avec un verdict explicable, des seuils
 d'alertes ajustables, et des conseils d'amélioration générés par un LLM **local**
-(Ollama sur Big-Blue, RTX 5090 32 GB — les données financières ne quittent pas la machine).
+(Ollama sur le PC dev, RTX 5090 32 GB — les données financières ne quittent pas la machine).
 
 Décision structurante : **les chiffres en code, les mots au LLM**. Le verdict et tous les
 indicateurs sont calculés par du code déterministe et testé. Le LLM ne fait que rédiger

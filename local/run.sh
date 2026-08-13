@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Démarre finance-tracker en local (Big-Blue). Idempotent : no-op si déjà up.
+# Démarre finance-tracker en local (PC dev WSL). Idempotent : no-op si déjà up.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

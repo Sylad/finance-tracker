@@ -586,7 +586,7 @@ Contenu :
 - Modify: `CLAUDE.md` (section santé financière : endpoints, règle chiffres-en-code/mots-au-LLM, modèle retenu)
 - Create: `~/projects/developpeur/tmp/health-bench/` (sorties du bench — jetable)
 
-- [ ] **Step 1: Vérifier Ollama Big-Blue** : `ollama list` ; puller les candidats `ollama pull qwen3:32b` et `ollama pull gemma3:27b` (~20 Go chacun, vérifier l'espace disque avant).
+- [ ] **Step 1: Vérifier Ollama local** : `ollama list` ; puller les candidats `ollama pull qwen3:32b` et `ollama pull gemma3:27b` (~20 Go chacun, vérifier l'espace disque avant).
 - [ ] **Step 2: Bench** : 3 runs par modèle sur le VRAI contexte (via `POST /api/health-check/advice` en changeant `OLLAMA_ADVICE_MODEL`), sauvegarder les 6 sorties JSON dans `tmp/health-bench/`, noter latence et VRAM (`nvidia-smi`). Critères : pertinence des priorités (TAEG chers d'abord ?), absence de chiffres inventés, français correct, latence < 90 s.
 - [ ] **Step 3: Présenter les sorties à Sylvain** — il tranche le modèle.
 - [ ] **Step 4: Figer `.env`, mettre à jour CLAUDE.md, commit** — `docs+chore(health): modèle conseil retenu après bench + doc module santé`

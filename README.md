@@ -96,7 +96,7 @@ Backend API sur `http://localhost:3000/api/health`.
 ### Premier import
 Va sur `/upload`, glisse un PDF de relevé (BNP, Société Générale, La Banque Postale, Crédit Agricole testés). L'analyse prend 30-60s par fichier.
 
-## Lancement local (Big-Blue / WSL)
+## Lancement local (WSL)
 
 L'app tourne en local en **un seul process Node** (le backend NestJS sert l'API
 ET le frontend buildé sur `http://localhost:3000`).

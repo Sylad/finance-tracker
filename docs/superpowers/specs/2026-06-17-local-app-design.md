@@ -1,4 +1,4 @@
-# Finance Tracker — App locale exécutable/éteignable (Big-Blue WSL)
+# Finance Tracker — App locale exécutable/éteignable (PC dev WSL)
 
 **Date** : 2026-06-17
 **Statut** : design validé, prêt pour plan d'implémentation
@@ -6,7 +6,7 @@
 ## Objectif
 
 Arrêter d'héberger finance-tracker sur le NAS Synology + Docker compose. En faire une
-application qu'on **démarre et éteint à la demande** sur le PC dev (Big-Blue, WSL Ubuntu),
+application qu'on **démarre et éteint à la demande** sur le PC dev (PC dev, WSL Ubuntu),
 via un **double-clic sur une icône Windows**, comme une app de bureau.
 
 Contrainte directrice : « si c'est pas compliqué » → solution minimale, pas d'over-engineering.
