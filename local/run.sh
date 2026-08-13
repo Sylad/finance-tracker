@@ -8,6 +8,19 @@ PIDFILE="$REPO/data/.pid"
 LOGDIR="$REPO/logs"
 mkdir -p "$LOGDIR" "$REPO/data"
 
+# Ollama (conseils santé + détection crédits IA locale) : démarrer si éteint.
+# Idempotent ; on ne l'arrête jamais dans stop.sh (jobmail-assistant l'utilise
+# aussi). Binaire user-local (cf. mémoire ollama_local_user_install_wsl).
+OLLAMA_BIN="$HOME/.local/ollama/bin/ollama"
+if [ -x "$OLLAMA_BIN" ] && ! curl -sf http://localhost:11434 >/dev/null 2>&1; then
+  echo "Ollama éteint → démarrage…"
+  setsid "$OLLAMA_BIN" serve >>"$LOGDIR/ollama.log" 2>&1 < /dev/null &
+  for i in $(seq 1 10); do
+    curl -sf http://localhost:11434 >/dev/null 2>&1 && { echo "Ollama prêt (port 11434)."; break; }
+    sleep 1
+  done
+fi
+
 # Déjà démarré ? (santé OK) → ne rien faire
 if curl -sf "http://localhost:$PORT/api/health" >/dev/null 2>&1; then
   echo "Déjà démarré (port $PORT répond)."
