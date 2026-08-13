@@ -75,6 +75,14 @@ const EXTRACT_TRANSACTIONS_TOOL: Anthropic.Tool = {
   input_schema: {
     type: 'object' as const,
     properties: {
+      documentType: {
+        type: 'string',
+        enum: ['bank_statement', 'credit_statement', 'amortization_plan', 'invoice', 'other'],
+        description:
+          "Type du document. 'bank_statement' = relevé de COMPTE BANCAIRE (compte courant avec débits et crédits variés). " +
+          "'credit_statement' = relevé d'un CRÉDIT ou d'une réserve d'argent (Sofinco, Cofidis, FLOA, Carrefour Banque, CA Consumer Finance, Cetelem…). " +
+          "'amortization_plan' = tableau/plan d'amortissement d'un prêt. 'invoice' = facture. 'other' = tout le reste.",
+      },
       bankName: { type: 'string' },
       accountHolder: { type: 'string' },
       currency: { type: 'string', description: 'ISO 4217 e.g. EUR' },
@@ -114,7 +122,7 @@ const EXTRACT_TRANSACTIONS_TOOL: Anthropic.Tool = {
         },
       },
     },
-    required: ['bankName', 'accountHolder', 'currency', 'openingBalance', 'closingBalance', 'transactions'],
+    required: ['documentType', 'bankName', 'accountHolder', 'currency', 'openingBalance', 'closingBalance', 'transactions'],
   },
 };
 
@@ -215,6 +223,25 @@ export class AnthropicService {
     } catch (err) {
       throw new AnthropicParseError((err as Error).message, err);
     }
+    // Garde-fou type de document : cette route n'accepte QUE des relevés de
+    // compte bancaire. Vécu 2026-08-13 : un relevé de crédit Sofinco importé
+    // ici a REMPLACÉ le relevé bancaire de juillet (même période détectée).
+    if (p1.documentType && p1.documentType !== 'bank_statement') {
+      const labels: Record<string, string> = {
+        credit_statement: "un relevé de crédit — importe-le depuis la page Crédits (bouton « Importer des relevés de crédit »)",
+        amortization_plan: "un plan d'amortissement — importe-le depuis la page Crédits (bouton « Importer un plan d'amortissement »)",
+        invoice: 'une facture, pas un relevé bancaire',
+        other: 'pas un relevé de compte bancaire',
+      };
+      throw new HttpException(
+        {
+          code: 'WRONG_DOCUMENT_TYPE',
+          message: `Ce PDF (${p1.bankName}) n'est pas un relevé bancaire : c'est ${labels[p1.documentType] ?? labels.other}.`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const transactions = p1.transactions;
     this.logger.log(`Phase 1: extracted ${transactions.length} transactions`);
 
@@ -359,7 +386,7 @@ export class AnthropicService {
       model: 'claude-sonnet-4-5',
       max_tokens: maxTokens,
       temperature: 0,
-      system: "Tu es un spécialiste de l'extraction de données bancaires françaises. Extrais toutes les transactions du PDF de relevé bancaire en appelant l'outil extract_transactions. Sois exhaustif — inclus chaque transaction. Utilise des libellés courts (60 caractères max).\n\nFORMAT DES DATES — règle critique :\nLes dates dans les relevés bancaires français sont au format JOUR/MOIS/ANNÉE (DD/MM/YYYY ou DD/MM/YY). Tu dois ABSOLUMENT respecter cet ordre. NE JAMAIS interpréter à l'américaine (MM/DD).\n  - 10/02/2026 = 10 février 2026 → 2026-02-10 (PAS 2026-10-02 ni 2026-03-10)\n  - 09/03/26 = 9 mars 2026 → 2026-03-09\n  - 01/12/2025 = 1er décembre 2025 → 2025-12-01\nSi tu vois deux colonnes 'Date opération' et 'Date valeur', utilise toujours la 'Date opération' (la première).\nSi tu vois une date écrite en lettres ('15 janvier 2026'), convertis-la pareil (2026-01-15).\nEn cas de doute, vérifie que la date que tu produis est cohérente avec la période globale du relevé (un relevé édité le 9 mars couvre principalement février).\n\nSi le PDF contient une section 'Vos autres comptes' (ou équivalent listant les soldes d'autres comptes du client : Livret A, PEL, etc.), remplis externalAccountBalances.\n\nPour chaque virement (libellé débutant par 'VIREMENT POUR' ou similaire), si le libellé mentionne un numéro de compte destinataire, capture-le dans targetAccountNumber.",
+      system: "Tu es un spécialiste de l'extraction de données bancaires françaises. AVANT TOUT, identifie documentType : si le PDF n'est PAS un relevé de compte bancaire (ex : relevé de crédit Sofinco/Cofidis/FLOA/Carrefour/CA Consumer Finance, plan d'amortissement, facture), renseigne documentType en conséquence et laisse transactions vide — n'invente pas de relevé bancaire. Sinon (documentType='bank_statement') : extrais toutes les transactions du PDF de relevé bancaire en appelant l'outil extract_transactions. Sois exhaustif — inclus chaque transaction. Utilise des libellés courts (60 caractères max).\n\nFORMAT DES DATES — règle critique :\nLes dates dans les relevés bancaires français sont au format JOUR/MOIS/ANNÉE (DD/MM/YYYY ou DD/MM/YY). Tu dois ABSOLUMENT respecter cet ordre. NE JAMAIS interpréter à l'américaine (MM/DD).\n  - 10/02/2026 = 10 février 2026 → 2026-02-10 (PAS 2026-10-02 ni 2026-03-10)\n  - 09/03/26 = 9 mars 2026 → 2026-03-09\n  - 01/12/2025 = 1er décembre 2025 → 2025-12-01\nSi tu vois deux colonnes 'Date opération' et 'Date valeur', utilise toujours la 'Date opération' (la première).\nSi tu vois une date écrite en lettres ('15 janvier 2026'), convertis-la pareil (2026-01-15).\nEn cas de doute, vérifie que la date que tu produis est cohérente avec la période globale du relevé (un relevé édité le 9 mars couvre principalement février).\n\nSi le PDF contient une section 'Vos autres comptes' (ou équivalent listant les soldes d'autres comptes du client : Livret A, PEL, etc.), remplis externalAccountBalances.\n\nPour chaque virement (libellé débutant par 'VIREMENT POUR' ou similaire), si le libellé mentionne un numéro de compte destinataire, capture-le dans targetAccountNumber.",
       tools: [EXTRACT_TRANSACTIONS_TOOL],
       tool_choice: { type: 'tool', name: 'extract_transactions' },
       messages: [{

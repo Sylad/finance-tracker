@@ -33,6 +33,12 @@ const externalAccountSchema = z.object({
 });
 
 export const Phase1OutputSchema = z.object({
+  // Optionnel côté validation (fail-open : un modèle qui l'omet ne bloque pas
+  // un vrai relevé bancaire) — le garde-fou ne rejette que sur un type
+  // non-bancaire EXPLICITE.
+  documentType: z
+    .enum(['bank_statement', 'credit_statement', 'amortization_plan', 'invoice', 'other'])
+    .optional(),
   bankName: z.string(),
   accountHolder: z.string(),
   currency: z.string(),
