@@ -64,7 +64,14 @@ export class StorageService implements OnModuleInit {
     const filepath = path.join(this.statementsDir, filename);
     await atomicWriteJson(filepath, statement);
     this.invalidateCache(this.statementsDir);
-    await this.archivePastYears();
+    // Archivage : coûteux (readdir + parse de tous les actifs) → seulement au
+    // premier save de l'année du process, ou si le relevé sauvé est d'une
+    // année passée. Évite le O(N²) des boucles de replay.
+    const y = new Date().getFullYear();
+    if (statement.year < y || this.lastArchiveCheckYear !== y) {
+      this.lastArchiveCheckYear = y;
+      await this.archivePastYears();
+    }
   }
 
   async getStatement(id: string): Promise<MonthlyStatement | null> {
@@ -281,6 +288,8 @@ export class StorageService implements OnModuleInit {
         }),
     );
   }
+
+  private lastArchiveCheckYear: number | null = null;
 
   private async archivePastYears(): Promise<void> {
     const currentYear = new Date().getFullYear();

@@ -60,6 +60,10 @@ export class SnapshotService implements OnModuleInit {
       await fs.promises.mkdir(dst, { recursive: true });
       const entries = await fs.promises.readdir(src);
       for (const name of entries) {
+        // Exclusions à TOUTE profondeur : sans ce check, chaque snapshot réel
+        // embarquait data/demo/snapshots (jusqu'à 30 snapshots démo copiés
+        // dans chacun des 30 snapshots réels — croissance quadratique).
+        if (EXCLUDED.has(name)) continue;
         await this.copyRecursive(path.join(src, name), path.join(dst, name));
       }
     } else if (stat.isFile()) {

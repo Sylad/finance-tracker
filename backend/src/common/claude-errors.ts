@@ -16,10 +16,19 @@ export function isAuthError(err: unknown): boolean {
  * Ne couvre PAS l'authentification — utiliser `isAuthError` pour le 401.
  */
 export function isQuotaError(err: unknown): boolean {
-  if (err instanceof Anthropic.RateLimitError) return true;
+  if (err instanceof Anthropic.RateLimitError) return false; // transitoire → isRateLimitError
   if (err instanceof Anthropic.APIError) {
     const msg = (err.message ?? '').toLowerCase();
     return err.status === 402 || msg.includes('credit') || msg.includes('quota');
   }
   return false;
+}
+
+/**
+ * Rate limit (HTTP 429) : transitoire et retryable — à distinguer du solde
+ * épuisé (un 429 affiché « quota dépassé » envoyait l'utilisateur recharger
+ * son compte alors qu'attendre 30 s suffisait).
+ */
+export function isRateLimitError(err: unknown): boolean {
+  return err instanceof Anthropic.RateLimitError;
 }

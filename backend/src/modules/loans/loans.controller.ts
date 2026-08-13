@@ -20,7 +20,6 @@ import {
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { z } from 'zod';
-import { randomUUID } from 'crypto';
 import { LoansService } from './loans.service';
 import { validateLoanInput } from './dto/loan.dto';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
@@ -204,6 +203,19 @@ export class LoansController {
         throw new BadRequestException(`Analyse échouée : ${err.message}`);
       }
       throw err;
+    }
+    // Même garde documentType que le path batch : sans lui, l'incident
+    // « relevé bancaire écrase un crédit » restait rejouable par cette porte
+    // (review 2026-08-13).
+    if (extracted.documentType === 'bank_statement' || extracted.documentType === 'other') {
+      throw new BadRequestException(
+        "Ce PDF n'est pas un relevé de crédit — importe les relevés bancaires depuis la page Import.",
+      );
+    }
+    if (extracted.documentType === 'amortization_plan') {
+      throw new BadRequestException(
+        "Ce PDF est un plan d'amortissement — utilise le bouton « Importer PDF crédits » (il le route automatiquement).",
+      );
     }
     this.logger.log(
       `Imported credit statement for ${id} (creditor=${extracted.creditor}, type=${extracted.creditType}, balance=${extracted.currentBalance})`,

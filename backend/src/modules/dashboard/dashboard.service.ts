@@ -39,7 +39,16 @@ export class DashboardService {
     const ignoredLoanIds: string[] = [];
     let estimatedDebt = 0;
     const now = new Date();
-    for (const l of loans.filter((x) => x.isActive && x.type === 'classic')) {
+    // kind=installment : la dette restante EXACTE est la somme des échéances
+    // non payées du schedule — l'estimation mensualités × mois restants la
+    // surestimait (review 2026-08-13). Ces loans sont type='classic' mais ne
+    // doivent pas tomber dans la branche classic ci-dessous.
+    const kindOf = (x: (typeof loans)[number]) => x.kind ?? x.type;
+    for (const l of loans.filter((x) => x.isActive && kindOf(x) === 'installment')) {
+      const unpaid = (l.installmentSchedule ?? []).filter((line) => !line.paid);
+      estimatedDebt += unpaid.reduce((s, line) => s + line.amount, 0);
+    }
+    for (const l of loans.filter((x) => x.isActive && kindOf(x) !== 'installment' && x.type === 'classic')) {
       // Restant dû officiel (relevé/situation créancier) prioritaire :
       // l'estimation mensualités × mois restants inclut les intérêts futurs
       // et surestime le montant d'un remboursement anticipé. Un snapshot de

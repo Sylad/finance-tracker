@@ -67,7 +67,13 @@ export class LoanSuggestionsService {
       if (existing) {
         if (existing.status === 'rejected') continue;
         existing.occurrencesSeen = inc.occurrencesSeen;
-        existing.lastSeenDate = inc.firstSeenDate;
+        // lastSeenDate = max(existant, incoming) — l'ancien code écrasait
+        // avec inc.firstSeenDate, faisant régresser la fraîcheur d'une
+        // suggestion re-upsertée par un vieux scan (review 2026-08-13).
+        const seenCandidate = inc.evidence?.lastSeenDate ?? inc.firstSeenDate;
+        if (!existing.lastSeenDate || seenCandidate > existing.lastSeenDate) {
+          existing.lastSeenDate = seenCandidate;
+        }
         existing.monthlyAmount = inc.monthlyAmount;
         existing.label = inc.label;
         if (inc.creditor && !existing.creditor)

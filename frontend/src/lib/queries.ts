@@ -249,6 +249,16 @@ export function useUploadStatements() {
       qc.invalidateQueries({ queryKey: qk.statements() });
       qc.invalidateQueries({ queryKey: qk.scoreHistory() });
       qc.invalidateQueries({ queryKey: qkImportLogs.all() });
+      // L'import déclenche l'auto-sync : crédits, épargne, abonnements,
+      // suggestions, net worth et santé changent aussi — sans SSE consommé
+      // côté UI, ces invalidations sont la seule fraîcheur (review 2026-08-13).
+      qc.invalidateQueries({ queryKey: ['loans'] });
+      qc.invalidateQueries({ queryKey: ['savings'] });
+      qc.invalidateQueries({ queryKey: ['subscriptions'] });
+      qc.invalidateQueries({ queryKey: ['loan-suggestions'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['health'] });
+      qc.invalidateQueries({ queryKey: ['expenses-breakdown'] });
     },
   });
 }
@@ -261,6 +271,7 @@ export interface CreditStatementImportResult {
     matched?: boolean;
     creditor?: string;
     accountNumber?: string | null;
+    rumNumber?: string | null;
     monthlyPayment?: number;
     kind?: 'credit_statement' | 'amortization';
     error?: string;
@@ -295,6 +306,13 @@ export function useDeleteStatement() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.statements() });
       qc.invalidateQueries({ queryKey: qk.scoreHistory() });
+      // removeForStatement purge crédits + épargne + abonnements
+      qc.invalidateQueries({ queryKey: ['loans'] });
+      qc.invalidateQueries({ queryKey: ['savings'] });
+      qc.invalidateQueries({ queryKey: ['subscriptions'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['health'] });
+      qc.invalidateQueries({ queryKey: ['expenses-breakdown'] });
     },
   });
 }
@@ -305,7 +323,7 @@ export function useReanalyzeStatement() {
     mutationFn: async ({ id, file }: { id: string; file: File }) => {
       const form = new FormData();
       form.append('file', file);
-      return api.postForm<MonthlyStatement>(`/statements/${id}/reanalyze`, form);
+      return api.postForm<{ statement: MonthlyStatement; replaced: boolean }>(`/statements/${id}/reanalyze`, form);
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: qk.statement(vars.id) });

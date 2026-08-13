@@ -57,7 +57,8 @@ export function computeLoanState(loan: Loan, asOfDate?: string): LoanState {
   const asOf = asOfDate ?? todayIso();
   const occurrences = loan.occurrencesDetected ?? [];
   const occBeforeDate = occurrences.filter((o) => o.date <= asOf);
-  const totalPaid = occBeforeDate.reduce((s, o) => s + Math.abs(o.amount), 0);
+  // Débits only : les tirages (amount > 0) sont de la dette ajoutée.
+  const totalPaid = occBeforeDate.filter((o) => o.amount < 0).reduce((s, o) => s + Math.abs(o.amount), 0);
 
   const monthsActive = loan.startDate ? monthsBetween(loan.startDate, asOf) : 0;
   const monthsRemaining = loan.endDate ? monthsBetween(asOf, loan.endDate) : null;

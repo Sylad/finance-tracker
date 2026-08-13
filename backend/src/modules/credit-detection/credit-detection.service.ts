@@ -114,7 +114,10 @@ export class CreditDetectionService {
           clusterKey: cluster.key,
           message: e?.message ?? 'Erreur inconnue',
         });
-        if (e instanceof TypeError) networkErrors++;
+        // TypeError = fetch réseau ; TimeoutError/AbortError = Ollama gelé
+        // (accepte le TCP mais ne répond jamais) — les deux = « down ».
+        const name = (e as { name?: string })?.name;
+        if (e instanceof TypeError || name === 'TimeoutError' || name === 'AbortError') networkErrors++;
         this.logger.warn(
           `classify échoué pour cluster ${cluster.key}: ${e?.message ?? err}`,
         );

@@ -61,6 +61,24 @@ describe('DashboardService — getNetWorth restant dû officiel', () => {
     expect(out.estimatedDebt).toBeGreaterThan(12000); // estimation, pas le snapshot
   });
 
+  it('kind=installment → dette = somme des échéances non payées (pas mois × mensualité)', async () => {
+    loansGetAll.mockResolvedValue([
+      mkClassic({
+        kind: 'installment',
+        monthlyPayment: 100,
+        endDate: isoDaysAgo(-60), // dans 2 mois — l'estimation naïve donnerait 200
+        installmentSchedule: [
+          { dueDate: '2026-05-03', amount: 100, paid: true },
+          { dueDate: '2026-06-03', amount: 100, paid: true },
+          { dueDate: '2026-07-03', amount: 100, paid: true },
+          { dueDate: '2026-09-03', amount: 100, paid: false },
+        ],
+      }),
+    ]);
+    const out = await svc.getNetWorth();
+    expect(out.estimatedDebt).toBe(100);
+  });
+
   it('sans endDate ni snapshot → loan ignoré et signalé', async () => {
     loansGetAll.mockResolvedValue([mkClassic({})]);
     const out = await svc.getNetWorth();

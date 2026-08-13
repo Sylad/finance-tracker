@@ -159,9 +159,12 @@ export class LoansService {
 
   async delete(id: string): Promise<void> {
     const all = await this.getAll();
-    const next = all.filter((l) => l.id !== id);
-    if (next.length === all.length) throw new NotFoundException(`Crédit ${id} introuvable`);
-    await this.persist(next);
+    const target = all.find((l) => l.id === id);
+    if (!target) throw new NotFoundException(`Crédit ${id} introuvable`);
+    this.logger.log(
+      `Deleting loan ${id} (${target.name}) — ${target.occurrencesDetected.length} occurrences, usedAmount=${target.usedAmount ?? 'n/a'}`,
+    );
+    await this.persist(all.filter((l) => l.id !== id));
   }
 
   /**
@@ -246,8 +249,17 @@ export class LoansService {
 
     const newOcc: LoanOccurrence = { id: randomUUID(), ...occ, source };
     loan.occurrencesDetected.push(newOcc);
-    if (loan.type === 'revolving' && loan.usedAmount != null) {
-      loan.usedAmount = Math.max(0, Math.round((loan.usedAmount - Math.abs(occ.amount)) * 100) / 100);
+    // Décrément d'encours : PAS pour une occurrence credit_statement (le
+    // snapshot officiel qui l'accompagne pose déjà usedAmount = solde du
+    // relevé, mensualité incluse — la décrémenter en plus = double comptage,
+    // review 2026-08-13), et PAS pour un débit daté ≤ statementDate du
+    // dernier relevé de crédit (déjà dans la baseline — miroir du garde
+    // `afterBaseline` des tirages).
+    if (loan.type === 'revolving' && loan.usedAmount != null && source !== 'credit_statement') {
+      const baseline = loan.lastStatementSnapshot?.extractedValues?.statementDate;
+      if (!baseline || occ.date > baseline) {
+        loan.usedAmount = Math.max(0, Math.round((loan.usedAmount - Math.abs(occ.amount)) * 100) / 100);
+      }
     }
     loan.updatedAt = new Date().toISOString();
     await this.persist(all);
@@ -258,12 +270,29 @@ export class LoansService {
     const all = await this.getAll();
     let dirty = false;
     for (const loan of all) {
-      const before = loan.occurrencesDetected.length;
+      const removed = loan.occurrencesDetected.filter((o) => o.statementId === statementId);
+      if (removed.length === 0) continue;
       loan.occurrencesDetected = loan.occurrencesDetected.filter((o) => o.statementId !== statementId);
-      if (loan.occurrencesDetected.length !== before) {
-        dirty = true;
-        loan.updatedAt = new Date().toISOString();
+      // Reverse des effets sur l'encours (miroir de addOccurrence — même
+      // asymétrie corrigée que savings.removeMovementsForStatement) : sans ce
+      // reverse, chaque cycle delete+réimport faisait dériver usedAmount
+      // d'une mensualité (review 2026-08-13).
+      if (loan.type === 'revolving' && loan.usedAmount != null) {
+        const baseline = loan.lastStatementSnapshot?.extractedValues?.statementDate;
+        let delta = 0;
+        for (const o of removed) {
+          if (o.amount > 0) {
+            delta -= o.amount; // tirage retiré → l'encours redescend
+          } else if (o.source !== 'credit_statement' && (!baseline || o.date > baseline)) {
+            delta += Math.abs(o.amount); // mensualité retirée → l'encours remonte
+          }
+        }
+        if (delta !== 0) {
+          loan.usedAmount = Math.max(0, Math.round((loan.usedAmount + delta) * 100) / 100);
+        }
       }
+      dirty = true;
+      loan.updatedAt = new Date().toISOString();
     }
     if (dirty) await this.persist(all);
   }
@@ -416,9 +445,14 @@ export class LoansService {
       return `(${amount.toFixed(2)} €/mois${refTail ? ` · ${refTail}` : ''})`;
     };
 
-    // Update original to keep only its largest-count group
+    // Update original : ne retirer QUE les occurrences migrées vers les
+    // nouveaux loans. Les tirages (amount > 0) et les débits hors clusters
+    // qualifiés restent sur l'original — les supprimer perdait l'historique
+    // draws et permettait leur re-comptage au prochain replay (review
+    // 2026-08-13).
     const keepAvg = keepGroup.occurrences.reduce((s, o) => s + Math.abs(o.amount), 0) / keepGroup.occurrences.length;
-    original.occurrencesDetected = keepGroup.occurrences;
+    const movedIds = new Set(otherGroups.flatMap(([, g]) => g.occurrences.map((o) => o.id)));
+    original.occurrencesDetected = original.occurrencesDetected.filter((o) => !movedIds.has(o.id));
     original.monthlyPayment = Math.round(keepAvg * 100) / 100;
     original.name = `${original.creditor ?? original.name.split(' (')[0]} ${groupSuffix(original.monthlyPayment, keepGroup.ref)}`;
     original.updatedAt = new Date().toISOString();
@@ -472,6 +506,16 @@ export class LoansService {
     const idx = all.findIndex((l) => l.id === id);
     if (idx === -1) throw new NotFoundException(`Crédit ${id} introuvable`);
     const loan = all[idx];
+
+    // Monotonie : un relevé plus ANCIEN que le snapshot déjà appliqué ne doit
+    // jamais rembobiner l'encours (import multi-PDF dans le désordre — même
+    // garde que le recalibrage épargne, review 2026-08-13).
+    const existingDate = loan.lastStatementSnapshot?.extractedValues?.statementDate;
+    if (existingDate && extracted.statementDate && extracted.statementDate < existingDate) {
+      throw new BadRequestException(
+        `Relevé du ${extracted.statementDate} ignoré : un relevé plus récent (${existingDate}) est déjà appliqué sur « ${loan.name} ».`,
+      );
+    }
 
     const snapshot: LoanStatementSnapshot = {
       date: new Date().toISOString(),

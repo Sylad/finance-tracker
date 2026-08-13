@@ -73,6 +73,7 @@ describe('AutoSyncService', () => {
             getAll: jest.fn().mockResolvedValue([]),
             addOccurrence: jest.fn(),
             deleteAll: jest.fn().mockResolvedValue({ deletedCount: 0 }),
+            removeOccurrencesForStatement: jest.fn(),
           },
         },
         { provide: StorageService, useValue: { getAllStatements: storageGetAllStatements } },

@@ -217,6 +217,76 @@ describe('LoansService', () => {
       expect(found).toBeNull();
     });
 
+    it('usedAmount — occurrence credit_statement ne décrémente pas (le snapshot est canonique)', async () => {
+      const loan = await svc.create({
+        name: 'Cofidis', type: 'revolving', category: 'consumer', monthlyPayment: 100,
+        matchPattern: 'COFIDIS', isActive: true, maxAmount: 3000, usedAmount: 1000,
+      });
+      await svc.addOccurrence(loan.id, {
+        statementId: 'credit-x-2026-07', date: '2026-07-31', amount: -100,
+        transactionId: null, source: 'credit_statement',
+      });
+      expect((await svc.getOne(loan.id)).usedAmount).toBe(1000);
+    });
+
+    it('usedAmount — débit bancaire daté ≤ baseline du snapshot ignoré, > baseline décrémenté', async () => {
+      const loan = await svc.create({
+        name: 'Sofinco', type: 'revolving', category: 'consumer', monthlyPayment: 100,
+        matchPattern: 'SOFINCO', isActive: true, maxAmount: 10000, usedAmount: 5000,
+      });
+      await svc.applyStatementSnapshot(loan.id, {
+        creditor: 'SOFINCO', creditType: 'revolving', currentBalance: 5000,
+        maxAmount: 10000, monthlyPayment: 100, endDate: null, taeg: null,
+        statementDate: '2026-07-18',
+      });
+      // ≤ baseline : déjà dans le solde officiel
+      await svc.addOccurrence(loan.id, {
+        statementId: '2026-07', date: '2026-07-05', amount: -100, transactionId: 'tx-old',
+      });
+      expect((await svc.getOne(loan.id)).usedAmount).toBe(5000);
+      // > baseline : mensualité postérieure au relevé → décrément (mois différent pour passer la dédup mensuelle)
+      await svc.addOccurrence(loan.id, {
+        statementId: '2026-08', date: '2026-08-05', amount: -100, transactionId: 'tx-new',
+      });
+      expect((await svc.getOne(loan.id)).usedAmount).toBe(4900);
+    });
+
+    it('removeOccurrencesForStatement — reverse les effets sur usedAmount (mensualités et tirages)', async () => {
+      const loan = await svc.create({
+        name: 'Floa', type: 'revolving', category: 'consumer', monthlyPayment: 100,
+        matchPattern: 'FLOA', isActive: true, maxAmount: 6000, usedAmount: 3000,
+      });
+      await svc.addOccurrence(loan.id, {
+        statementId: '2026-06', date: '2026-06-05', amount: -100, transactionId: 'tx-deb',
+      }); // → 2900
+      await svc.addOccurrence(loan.id, {
+        statementId: '2026-06', date: '2026-06-20', amount: 500, transactionId: 'tx-draw', source: 'draw',
+      }); // → 3400
+      expect((await svc.getOne(loan.id)).usedAmount).toBe(3400);
+      await svc.removeOccurrencesForStatement('2026-06');
+      const after = await svc.getOne(loan.id);
+      expect(after.occurrencesDetected).toHaveLength(0);
+      expect(after.usedAmount).toBe(3000); // retour à l'état initial
+    });
+
+    it('applyStatementSnapshot — un relevé plus ancien que le snapshot existant est rejeté', async () => {
+      const loan = await svc.create({
+        name: 'Cofidis', type: 'revolving', category: 'consumer', monthlyPayment: 100,
+        matchPattern: 'COFIDIS', isActive: true, maxAmount: 3000, usedAmount: 1000,
+      });
+      await svc.applyStatementSnapshot(loan.id, {
+        creditor: 'COFIDIS', creditType: 'revolving', currentBalance: 2000,
+        maxAmount: 3000, monthlyPayment: 100, endDate: null, taeg: null,
+        statementDate: '2026-07-23',
+      });
+      await expect(svc.applyStatementSnapshot(loan.id, {
+        creditor: 'COFIDIS', creditType: 'revolving', currentBalance: 1500,
+        maxAmount: 3000, monthlyPayment: 100, endDate: null, taeg: null,
+        statementDate: '2026-03-23',
+      })).rejects.toThrow(/plus récent/);
+      expect((await svc.getOne(loan.id)).usedAmount).toBe(2000);
+    });
+
     it('findExistingLoan — high confidence on contractRef', async () => {
       const loan = await svc.create({
         name: 'X', type: 'classic', category: 'auto',

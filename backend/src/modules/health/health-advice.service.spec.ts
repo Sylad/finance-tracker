@@ -179,7 +179,7 @@ describe('HealthAdviceService', () => {
         capturedPrompt = JSON.parse(init.body).prompt;
         return {
           ok: true,
-          json: async () => ({ response: JSON.stringify({ advices: [] }) }),
+          json: async () => ({ response: JSON.stringify({ advices: [{ priority: 1, title: 'T', explanation: 'E', estimatedImpact: 'I' }] }) }),
         };
       }) as any);
 
@@ -259,7 +259,7 @@ describe('HealthAdviceService', () => {
         capturedPrompt = body.prompt;
         return {
           ok: true,
-          json: async () => ({ response: JSON.stringify({ advices: [] }) }),
+          json: async () => ({ response: JSON.stringify({ advices: [{ priority: 1, title: 'T', explanation: 'E', estimatedImpact: 'I' }] }) }),
         };
       }) as any);
 
@@ -295,7 +295,7 @@ describe('HealthAdviceService', () => {
 
     expect(capturedPrompt).not.toContain('SENTINELLE-PRIVEE');
     expect(capturedPrompt).toContain('food');
-    expect(result.advices).toEqual([]);
+    expect(result.advices).toHaveLength(1);
 
     fetchMock.mockRestore();
   });

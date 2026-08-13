@@ -35,23 +35,38 @@ export class ImportLogsService {
     }
   }
 
+  // Sérialise les cycles read-modify-write : deux uploads parallèles lisaient
+  // le même état de base et le second write perdait l'entrée du premier
+  // (atomicWriteJson ne protège que l'écriture elle-même).
+  private mutex: Promise<unknown> = Promise.resolve();
+
+  private serialize<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.mutex.then(fn, fn);
+    this.mutex = run.catch(() => undefined);
+    return run;
+  }
+
   async log(entry: Omit<ImportLog, 'id'>): Promise<ImportLog> {
-    const all = await this.getAll();
-    const log: ImportLog = { id: randomUUID(), ...entry };
-    all.unshift(log);  // newest first
-    if (all.length > MAX_ENTRIES) all.length = MAX_ENTRIES;
-    await atomicWriteJson(this.filepath, all);
-    this.bus.emit('import-logs-changed');
-    return log;
+    return this.serialize(async () => {
+      const all = await this.getAll();
+      const log: ImportLog = { id: randomUUID(), ...entry };
+      all.unshift(log);  // newest first
+      if (all.length > MAX_ENTRIES) all.length = MAX_ENTRIES;
+      await atomicWriteJson(this.filepath, all);
+      this.bus.emit('import-logs-changed');
+      return log;
+    });
   }
 
   async update(id: string, patch: Partial<Omit<ImportLog, 'id'>>): Promise<ImportLog | null> {
-    const all = await this.getAll();
-    const idx = all.findIndex((l) => l.id === id);
-    if (idx === -1) return null;
-    all[idx] = { ...all[idx], ...patch };
-    await atomicWriteJson(this.filepath, all);
-    this.bus.emit('import-logs-changed');
-    return all[idx];
+    return this.serialize(async () => {
+      const all = await this.getAll();
+      const idx = all.findIndex((l) => l.id === id);
+      if (idx === -1) return null;
+      all[idx] = { ...all[idx], ...patch };
+      await atomicWriteJson(this.filepath, all);
+      this.bus.emit('import-logs-changed');
+      return all[idx];
+    });
   }
 }

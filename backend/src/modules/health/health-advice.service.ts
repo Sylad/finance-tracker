@@ -227,7 +227,9 @@ export class HealthAdviceService {
   }
 
   private validateAdvices(raw: unknown): HealthAdvice['advices'] {
-    if (!Array.isArray(raw)) {
+    if (!Array.isArray(raw) || raw.length === 0) {
+      // Un [] « valide mais vide » écrasait le cache de conseils utile —
+      // Ollama up-mais-inutile doit échouer bruyamment (fail-loud).
       throw new Error('Réponse Ollama invalide');
     }
     for (const item of raw) {

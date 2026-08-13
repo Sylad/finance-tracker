@@ -18,6 +18,7 @@ import {
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
+import { escapeRegex } from '../../common/regex.util';
 import { SnapshotService } from '../snapshots/snapshot.service';
 import { AnalysisService } from '../analysis/analysis.service';
 import { AutoSyncService } from '../auto-sync/auto-sync.service';
@@ -205,6 +206,11 @@ export class StatementsController {
     },
   ) {
     if (!body?.category) throw new BadRequestException('category requis');
+    // Slug sain uniquement : une catégorie arbitraire persistée polluait les
+    // agrégats (yearly topCategories, budgets) sans erreur nulle part.
+    if (!/^[a-z0-9-]{1,30}$/.test(body.category)) {
+      throw new BadRequestException(`Catégorie invalide : ${body.category}`);
+    }
     const stmt = await this.storage.getStatement(id);
     if (!stmt) throw new NotFoundException(`Relevé ${id} introuvable`);
     const tx = stmt.transactions.find((t) => t.id === txId);
@@ -218,7 +224,7 @@ export class StatementsController {
     if (body.createRule) {
       const pattern =
         (body.rulePattern && body.rulePattern.trim()) ||
-        this.escapeRegex(tx.normalizedDescription || tx.description);
+        escapeRegex(tx.normalizedDescription || tx.description);
       createdRule = await this.categoryRules.create({
         pattern,
         flags: 'i',
@@ -249,10 +255,6 @@ export class StatementsController {
     return { transaction: tx, createdRule, replayed };
   }
 
-  private escapeRegex(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
   @Delete(':id')
   async remove(@Param('id') id: string) {
     await this.snapshots.takeSnapshot(`before-delete-${id}`);
@@ -281,7 +283,7 @@ export class StatementsController {
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    if (!file) throw new NotFoundException('PDF requis pour re-analyser');
+    if (!file) throw new BadRequestException('PDF requis pour re-analyser');
     const startedAt = Date.now();
     const uploadedAt = new Date().toISOString();
     const pendingLog = await this.importLogs.log({

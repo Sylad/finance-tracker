@@ -66,10 +66,13 @@ export const CreditStatementOutputSchema = z
     currentBalance: numberLike,
     maxAmount: numberLike.nullable().optional(),
     monthlyPayment: numberLike,
-    endDate: z.string().nullable().optional(),
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'endDate doit être YYYY-MM-DD').nullable().optional(),
     taeg: numberLike.nullable().optional(),
-    statementDate: z.string(),
-    startDate: z.string().nullable().optional(),
+    // Regex YYYY-MM-DD : une date FR (15/03/2026) passait en aval et cassait
+    // les comparaisons lexicographiques (clé de dédup mensuelle, baseline des
+    // tirages) — même exigence que InstallmentDetailsSchema/amortization.
+    statementDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'statementDate doit être YYYY-MM-DD'),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'startDate doit être YYYY-MM-DD').nullable().optional(),
     accountNumber: z.string().nullable().optional(),
     rumNumber: z.string().nullable().optional(),
     installmentDetails: InstallmentDetailsSchema.nullable().optional(),

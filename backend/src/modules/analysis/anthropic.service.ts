@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
 import { parseExternal } from '../../common/zod-validation.pipe';
-import { isAuthError, isQuotaError } from '../../common/claude-errors';
+import { isAuthError, isQuotaError, isRateLimitError } from '../../common/claude-errors';
 import { Phase1OutputSchema, Phase2OutputSchema, Phase1Output, Phase2Output } from './anthropic.schemas';
 
 export class AnthropicParseError extends Error {
@@ -200,6 +200,8 @@ export class AnthropicService {
     // max_tokens, on retente une fois avec 64k (max supporté par Sonnet 4.5).
     let phase1 = await this.runPhase1(base64Pdf, 32768);
     if (phase1.stop_reason === 'max_tokens') {
+      // Les tokens de la tentative tronquée sont facturés aussi.
+      this.usage.recordUsage(phase1.usage.input_tokens, phase1.usage.output_tokens);
       this.logger.warn('Phase 1: max_tokens hit @ 32k, retrying @ 64k');
       phase1 = await this.runPhase1(base64Pdf, 64000);
     }
@@ -274,6 +276,13 @@ export class AnthropicService {
 
     this.usage.recordUsage(phase2.usage.input_tokens, phase2.usage.output_tokens);
     this.logger.log(`Phase 2: stop_reason=${phase2.stop_reason}`);
+    if (phase2.stop_reason === 'max_tokens') {
+      // Sans ce check, une troncature pouvait passer le parse Zod (champs
+      // optionnels perdus en silence) ou produire une erreur trompeuse.
+      throw new AnthropicParseError(
+        'Phase 2 tronquée (max_tokens) — analyse incomplète, ré-essaie ou scinde le relevé.',
+      );
+    }
 
     const p2Block = phase2.content.find((b) => b.type === 'tool_use');
     if (!p2Block || p2Block.type !== 'tool_use') {
@@ -298,8 +307,17 @@ export class AnthropicService {
           HttpStatus.SERVICE_UNAVAILABLE,
         );
       }
+      if (isRateLimitError(err)) {
+        throw new HttpException(
+          { code: 'CLAUDE_RATE_LIMITED', message: 'API Claude saturée (429) — attends ~1 minute puis relance ce fichier.' },
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
       if (isQuotaError(err)) {
-        throw new HttpException('CLAUDE_QUOTA_EXCEEDED', HttpStatus.PAYMENT_REQUIRED);
+        throw new HttpException(
+          { code: 'CLAUDE_QUOTA_EXCEEDED', message: 'Solde Claude épuisé — recharge le crédit API pour continuer les analyses.' },
+          HttpStatus.PAYMENT_REQUIRED,
+        );
       }
       throw err;
     }

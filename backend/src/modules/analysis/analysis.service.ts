@@ -39,6 +39,11 @@ export class AnalysisService {
     await this.snapshots.takeSnapshot(`before-reanalyze-${id}`);
     await this.storage.saveStatement(candidate);
     try {
+      // Chaque analyse régénère les UUID de transactions : purger les
+      // occurrences/mouvements de l'ancienne version AVANT le re-sync, sinon
+      // les dédups (statementId, transactionId) sont inopérantes et tirages +
+      // virements épargne sont comptés en double (review 2026-08-13).
+      await this.autoSync.removeForStatement(candidate.id);
       await this.autoSync.syncStatement(candidate, result.suggestedRecurringExpenses ?? []);
     } catch (e) {
       this.logger.error(`AutoSync failed for ${candidate.id}`, e as Error);
@@ -59,6 +64,11 @@ export class AnalysisService {
     await this.snapshots.takeSnapshot(replaced ? `before-replace-${statement.id}` : `before-save-${statement.id}`);
     await this.storage.saveStatement(statement);
     try {
+      if (replaced) {
+        // Même purge que reanalyze : les tx du relevé remplacé ont de
+        // nouveaux UUID, les anciennes occurrences doivent partir d'abord.
+        await this.autoSync.removeForStatement(statement.id);
+      }
       await this.autoSync.syncStatement(statement, result.suggestedRecurringExpenses ?? []);
     } catch (e) {
       this.logger.error(`AutoSync failed for ${statement.id}`, e as Error);

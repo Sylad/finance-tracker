@@ -18,9 +18,12 @@ export class ResyncService {
   async resyncSavings(id: string): Promise<{ rescanned: number }> {
     await this.savings.getOne(id);
     await this.savings.clearDetectedMovements(id);
-    const statements = await this.storage.getAllStatements();
+    // Replay chronologique ASC (getAllStatements trie DESC) et brique savings
+    // SEULE : l'ancien syncStatement complet créait/désactivait des crédits
+    // en side effect d'un resync épargne (review 2026-08-13).
+    const statements = (await this.storage.getAllStatements()).slice().reverse();
     for (const s of statements) {
-      await this.autoSync.syncStatement(s);
+      await this.autoSync.replaySavings(s);
     }
     this.logger.log(`Resynced savings ${id} over ${statements.length} statements`);
     return { rescanned: statements.length };
@@ -34,10 +37,15 @@ export class ResyncService {
       );
     }
     await this.loans.clearOccurrencesAndResetBalance(id, baselineUsedAmount);
-    const statements = await this.storage.getAllStatements();
+    // ASC : l'ordre DESC désactivait le loan dès la 1re itération (aucune
+    // occurrence récente) et les relevés anciens n'étaient jamais re-matchés.
+    // La ré-évaluation des statuts se fait UNE fois, à la fin, avec
+    // l'historique complet.
+    const statements = (await this.storage.getAllStatements()).slice().reverse();
     for (const s of statements) {
-      await this.autoSync.syncStatement(s);
+      await this.autoSync.replayLoans(s);
     }
+    await this.autoSync.recomputeLoanStatuses();
     this.logger.log(`Resynced loan ${id} over ${statements.length} statements`);
     return { rescanned: statements.length };
   }

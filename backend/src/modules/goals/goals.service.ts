@@ -97,6 +97,9 @@ export class GoalsService {
     if (current >= g.targetAmount) {
       projection = 'achieved';
     } else if (g.targetDate) {
+      // Défaut dans la bande ±5 % de l'attendu : on-track (l'ancien code
+      // laissait 'no-deadline', impossible pour un objectif daté).
+      projection = 'on-track';
       const target = new Date(g.targetDate);
       monthsRemaining = Math.max(0, monthDiff(now, target));
       monthlyPaceNeeded = monthsRemaining > 0 ? remaining / monthsRemaining : remaining;

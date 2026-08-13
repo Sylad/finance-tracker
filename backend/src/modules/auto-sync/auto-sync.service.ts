@@ -11,6 +11,7 @@ import { SavingsAccount } from '../../models/savings-account.model';
 import type { Loan } from '../../models/loan.model';
 import type { IncomingSuggestion } from '../../models/loan-suggestion.model';
 import { PAY_IN_N_PATTERN as PAY_IN_N_PATTERN_SHARED } from '../loans/loans-patterns';
+import { escapeRegex } from '../../common/regex.util';
 
 function normalizeAccountNumber(s: string | null | undefined): string {
   if (!s) return '';
@@ -213,7 +214,20 @@ export class AutoSyncService {
   async removeForStatement(statementId: string): Promise<void> {
     await this.savings.removeMovementsForStatement(statementId);
     await this.loans.removeOccurrencesForStatement(statementId);
+    // Les occurrences d'abonnements aussi — sinon monthsAlreadySeen bloque à
+    // jamais le rattachement au ré-import du mois (review 2026-08-13).
+    await this.subscriptions.removeOccurrencesForStatement(statementId);
     this.bus.emit('accounts-synced');
+  }
+
+  /** Replays ciblés (resync) : uniquement la brique demandée, sans
+   *  auto-création/désactivation ni sync des autres domaines. */
+  async replaySavings(statement: MonthlyStatement): Promise<void> {
+    await this.syncSavings(statement);
+  }
+
+  async replayLoans(statement: MonthlyStatement): Promise<void> {
+    await this.syncLoans(statement);
   }
 
   private async syncSavings(statement: MonthlyStatement): Promise<void> {
@@ -723,7 +737,7 @@ export class AutoSyncService {
       const name = sameCreditorBuckets.length > 1
         ? `${creditor} (${avgMonthly.toFixed(2)} €/mois)`
         : creditor;
-      const escaped = creditor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escaped = escapeRegex(creditor);
       const matchPattern = escaped.split(/\s+/).join('.*');
       await this.loans.create({
         name,

@@ -183,7 +183,9 @@ function isActiveOn(decl: Declaration, year: number, month: number): boolean {
     case 'monthly':
       return true;
     case 'quarterly': {
-      const anchor = start ?? target;
+      // Sans startDate, anchor=target rendait TOUS les mois actifs (12×/an).
+      // Défaut : trimestres civils (janv/avr/juil/oct).
+      const anchor = start ?? year * 12;
       return (target - anchor) % 3 === 0;
     }
     case 'yearly': {

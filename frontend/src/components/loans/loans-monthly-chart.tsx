@@ -18,8 +18,10 @@ export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
     return months.map((monthKey) => {
       const row: Record<string, number | string> = { month: monthKey };
       for (const loan of loans) {
+        // Débits uniquement : un tirage (amount > 0) est de la dette ajoutée,
+        // pas une mensualité payée.
         const totalAbs = loan.occurrencesDetected
-          .filter((o) => o.date.slice(0, 7) === monthKey)
+          .filter((o) => o.date.slice(0, 7) === monthKey && o.amount < 0)
           .reduce((sum, o) => sum + Math.abs(o.amount), 0);
         if (totalAbs > 0) row[loan.id] = Math.round(totalAbs * 100) / 100;
       }

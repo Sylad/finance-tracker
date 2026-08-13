@@ -5,7 +5,7 @@ import { SplitButton } from './split-button';
 
 export function ClosedCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
   const lastOcc = [...loan.occurrencesDetected].sort((a, b) => b.date.localeCompare(a.date))[0];
-  const totalRepaid = loan.occurrencesDetected.reduce((s, o) => s + Math.abs(o.amount), 0);
+  const totalRepaid = loan.occurrencesDetected.filter((o) => o.amount < 0).reduce((s, o) => s + Math.abs(o.amount), 0);
   return (
     <div className="card p-5 border-l-4 border-l-negative opacity-80">
       <div className="flex items-start justify-between gap-2 mb-2">
