@@ -48,6 +48,18 @@ const OUTPUT_USD_PER_TOKEN = 15 / 1_000_000;
 const USD_TO_EUR = 0.93;
 const SHARED_FILE = path.join(process.env['SHARED_DATA_DIR'] ?? path.resolve(process.cwd(), 'data', 'shared'), 'claude-shared.json');
 const SHARED_FILENAME = path.basename(SHARED_FILE);
+
+// Sommeil synchrone sans spin CPU (Atomics.wait est autorisé sur le main
+// thread Node) ; fallback busy-wait si indisponible.
+function sleepSync(ms: number): void {
+  try {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  } catch {
+    const end = Date.now() + ms;
+    while (Date.now() < end) { /* spin court */ }
+  }
+}
+
 const SHARED_DIR = path.dirname(SHARED_FILE);
 
 @Injectable()
@@ -115,6 +127,45 @@ export class ClaudeUsageService implements OnModuleInit, OnModuleDestroy {
     atomicWriteJsonSync(SHARED_FILE, data);
   }
 
+  /**
+   * Verrou cross-process sur claude-shared.json : le fichier est partagé par
+   * les 3 backends NAS (finance/warhammer/ol) — sans lock, deux
+   * read-modify-write concurrents perdent une mise à jour et le solde dérive.
+   * Lockfile O_EXCL + vol de verrou périmé (>10 s, détenteur mort) +
+   * fail-open après 2 s : mieux vaut un lost update rarissime qu'un endpoint
+   * bloqué. (Dupliqué à l'identique dans les 3 apps, comme tout ce service.)
+   */
+  private withSharedLock<T>(fn: () => T): T {
+    const lockPath = `${SHARED_FILE}.lock`;
+    const deadline = Date.now() + 2_000;
+    for (;;) {
+      try {
+        fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+        const fd = fs.openSync(lockPath, 'wx');
+        try {
+          return fn();
+        } finally {
+          fs.closeSync(fd);
+          try { fs.unlinkSync(lockPath); } catch { /* volé entre-temps */ }
+        }
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+        try {
+          if (Date.now() - fs.statSync(lockPath).mtimeMs > 10_000) {
+            fs.unlinkSync(lockPath);
+            continue;
+          }
+        } catch { continue; }
+        if (Date.now() > deadline) {
+          this.logger.warn('claude-shared.lock indisponible après 2 s — écriture sans verrou');
+          return fn();
+        }
+        sleepSync(25);
+      }
+    }
+  }
+
+
   recordUsage(inputTokens: number, outputTokens: number): void {
     const month = this.currentMonth();
     if (!this.data[month]) {
@@ -125,17 +176,21 @@ export class ClaudeUsageService implements OnModuleInit, OnModuleDestroy {
     this.data[month].calls += 1;
     atomicWriteJsonSync(this.filePath, this.data);
 
-    const shared = this.loadShared();
-    shared.totalConsumedUsd += inputTokens * INPUT_USD_PER_TOKEN + outputTokens * OUTPUT_USD_PER_TOKEN;
-    this.saveShared(shared);
+    this.withSharedLock(() => {
+      const shared = this.loadShared();
+      shared.totalConsumedUsd += inputTokens * INPUT_USD_PER_TOKEN + outputTokens * OUTPUT_USD_PER_TOKEN;
+      this.saveShared(shared);
+    });
   }
 
   setBalance(balanceUsd: number): void {
-    const shared = this.loadShared();
-    shared.balanceUsd = balanceUsd;
-    shared.balanceSetAt = new Date().toISOString();
-    shared.totalConsumedUsdAtConfig = shared.totalConsumedUsd;
-    this.saveShared(shared);
+    this.withSharedLock(() => {
+      const shared = this.loadShared();
+      shared.balanceUsd = balanceUsd;
+      shared.balanceSetAt = new Date().toISOString();
+      shared.totalConsumedUsdAtConfig = shared.totalConsumedUsd;
+      this.saveShared(shared);
+    });
   }
 
   getUsage(): UsageResponse {
