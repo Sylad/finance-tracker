@@ -25,7 +25,7 @@ export class ForecastService {
     const declarations = await this.declarations.getAll();
     const activeLoans = (await this.loans.getAll()).filter((l) => l.isActive);
     const activeSubs = (await this.subscriptions.getAll()).filter((s) => s.isActive);
-    // Revenus récurrents Claude (Campbell Scientific…) — déjà filtrés des
+    // Revenus récurrents Claude (employeur) — déjà filtrés des
     // déblocages crédit + dédupés via getAggregatedRecurringCredits.
     // Conserve uniquement les sources stables (salaire/pension/rental) en
     // fréquence régulière. 'irregular' et 'other' sont trop bruités.

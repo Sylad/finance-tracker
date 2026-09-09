@@ -188,7 +188,7 @@ export class StorageService implements OnModuleInit {
     };
     // Mots génériques à filtrer pour identifier l'entité réelle (l'employeur,
     // l'organisme prêteur…) et éviter les doublons quand Claude varie sa
-    // normalizedDescription ("Salaire mensuel" vs "Salaire Campbell").
+    // normalizedDescription ("Salaire mensuel" vs "Salaire <employeur>").
     const STOP_WORDS = new Set([
       'salaire', 'mensuel', 'mensuelle', 'virement', 'vir', 'vrt', 'versement',
       'versements', 'reguliers', 'reguliere', 'ponctuel', 'instantane', 'recu',
@@ -202,7 +202,7 @@ export class StorageService implements OnModuleInit {
     const significantWords = (s: string): string[] =>
       slugify(s).split(' ').filter((w) => w.length >= 4 && !STOP_WORDS.has(w));
 
-    // Clé de bucket : 2 premiers mots significatifs combinés (ex: "campbell
+    // Clé de bucket : 2 premiers mots significatifs combinés (ex: "<employeur>
     // scientific"). Identifie l'employeur/organisme. Pas de discriminant
     // par montant pour les revenus (un salaire varie avec primes/ajustements
     // sur 100-1000€) : on garde 1 entrée par "entité réelle".
