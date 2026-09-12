@@ -37,13 +37,18 @@ export interface InstallmentLine {
  * - draw : tirage sur une réserve renouvelable (virement ENTRANT du créancier
  *   vers le compte bancaire, amount > 0). Augmente usedAmount. Non soumis à
  *   l'invariant "1 débit/mois" (on peut tirer plusieurs fois le même mois).
+ * - early_repayment : remboursement anticipé (virement SORTANT vers le
+ *   créancier, ≫ mensualité). Décrémente usedAmount / le capital restant à
+ *   100 %, non soumis à "1 débit/mois" (il coexiste avec la mensualité du
+ *   mois) et exclu de tout calcul de « mensualité » (moyenne, charge de
+ *   dette, prévisions).
  *
  * Quand la même mensualité apparaît dans bank ET credit (typique : 1-3 jours
  * d'écart), le syncLoans dédupe par (loanId, YYYY-MM) en gardant la source
  * de priorité supérieure : credit > bank > manual (le relevé de crédit est
  * la source canonique car émis par l'organisme prêteur lui-même).
  */
-export type LoanOccurrenceSource = 'bank_statement' | 'credit_statement' | 'manual' | 'draw';
+export type LoanOccurrenceSource = 'bank_statement' | 'credit_statement' | 'manual' | 'draw' | 'early_repayment';
 
 export interface LoanOccurrence {
   id: string;

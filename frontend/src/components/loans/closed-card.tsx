@@ -2,9 +2,11 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { type Loan, LOAN_CATEGORY_LABELS } from '@/types/api';
 import { formatEUR } from '@/lib/utils';
 import { SplitButton } from './split-button';
+import { mensualitesCount } from './utils';
 
 export function ClosedCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
   const lastOcc = [...loan.occurrencesDetected].sort((a, b) => b.date.localeCompare(a.date))[0];
+  const mensualites = mensualitesCount(loan);
   const totalRepaid = loan.occurrencesDetected.filter((o) => o.amount < 0).reduce((s, o) => s + Math.abs(o.amount), 0);
   return (
     <div className="card p-5 border-l-4 border-l-negative opacity-80">
@@ -31,7 +33,7 @@ export function ClosedCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () 
         </div>
       </div>
       <div className="text-xs text-fg-muted tabular space-y-0.5">
-        <div>{loan.occurrencesDetected.length} mensualité{loan.occurrencesDetected.length > 1 ? 's' : ''} prélevée{loan.occurrencesDetected.length > 1 ? 's' : ''}</div>
+        <div>{mensualites} mensualité{mensualites > 1 ? 's' : ''} prélevée{mensualites > 1 ? 's' : ''}</div>
         <div>Total remboursé estimé : <span className="text-fg-bright">{formatEUR(totalRepaid)}</span></div>
         {lastOcc && <div>Dernière mensualité : {lastOcc.date}</div>}
       </div>

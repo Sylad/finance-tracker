@@ -18,6 +18,29 @@ function normalizeAccountNumber(s: string | null | undefined): string {
   return s.replace(/[^0-9A-Z]/gi, '').toUpperCase();
 }
 
+/** Identifiant de contrat/RUM comparable : minuscules, sans espaces, points ni tirets. */
+export function normalizeIdentifier(s: string): string {
+  return s.toLowerCase().replace(/[\s.-]/g, '');
+}
+
+/** Plancher absolu d'un remboursement anticipé (en plus de 3 × mensualité). */
+export const EARLY_REPAYMENT_MIN_AMOUNT = 1000;
+
+/**
+ * Remboursement anticipé = virement SORTANT vers le créancier dont le
+ * montant dépasse largement la mensualité. Un prélèvement, même gros, reste
+ * une échéance (régularisation, dernière mensualité majorée…).
+ */
+export function isEarlyRepayment(
+  t: { description: string; amount: number },
+  monthlyPayment: number | undefined,
+): boolean {
+  if (t.amount >= 0) return false;
+  if (!/virement/i.test(t.description)) return false;
+  const threshold = Math.max(3 * (monthlyPayment ?? 0), EARLY_REPAYMENT_MIN_AMOUNT);
+  return Math.abs(t.amount) >= threshold;
+}
+
 @Injectable()
 export class AutoSyncService {
   private readonly logger = new Logger(AutoSyncService.name);
@@ -360,13 +383,22 @@ export class AutoSyncService {
         if (occ.statementId === statement.id && occ.transactionId) allocatedTxIds.add(occ.transactionId);
       }
     }
+    // Identifiants (contrat/RUM) de TOUS les crédits actifs : une tx qui porte
+    // l'identifiant d'un autre crédit ne peut pas être un match regex-only du
+    // crédit courant (sinon le 1er Sofinco traité vole les virements du 2e).
+    const idsByLoan = new Map<string, string[]>();
+    for (const l of loans) {
+      if (!l.isActive) continue;
+      idsByLoan.set(l.id, [l.contractRef ?? '', ...(l.rumRefs ?? [])].map(normalizeIdentifier).filter((x) => x.length >= 4));
+    }
     for (const loan of loans) {
       if (!loan.isActive) continue;
       const kind = LoansService.getLoanKind(loan);
       if (kind === 'installment') {
         await this.syncInstallmentLoan(loan, statement);
       } else {
-        await this.syncStandardLoan(loan, statement, allocatedTxIds);
+        const foreignIds = [...idsByLoan.entries()].filter(([id]) => id !== loan.id).flatMap(([, ids]) => ids);
+        await this.syncStandardLoan(loan, statement, allocatedTxIds, foreignIds);
       }
     }
     await this.syncDraws(statement, allocatedTxIds);
@@ -533,7 +565,12 @@ export class AutoSyncService {
    * résolue par : débits uniquement, 1 occurrence max par mois calendaire
    * (la plus proche du monthlyPayment), et cross-loan dedup via allocatedTxIds.
    */
-  private async syncStandardLoan(loan: Loan, statement: MonthlyStatement, allocatedTxIds: Set<string>): Promise<void> {
+  private async syncStandardLoan(
+    loan: Loan,
+    statement: MonthlyStatement,
+    allocatedTxIds: Set<string>,
+    foreignIds: string[] = [],
+  ): Promise<void> {
     let regex: RegExp | null = null;
     if (loan.matchPattern) {
       try { regex = new RegExp(loan.matchPattern, 'i'); }
@@ -542,8 +579,12 @@ export class AutoSyncService {
     const identifiers: string[] = [];
     if (loan.contractRef) identifiers.push(loan.contractRef);
     if (loan.rumRefs) identifiers.push(...loan.rumRefs);
+    // Comparaison sans espaces/points/tirets des deux côtés : le n° de
+    // contrat est stocké « 471 283 395 60 » (relevé de crédit) mais le
+    // libellé bancaire dit « 47128339560 » (vécu 2026-08, 22 691 € de
+    // remboursements anticipés non rattachés).
     const normalizedIds = identifiers
-      .map((s) => s.toLowerCase().trim())
+      .map((s) => normalizeIdentifier(s))
       .filter((s) => s.length >= 4);
     if (normalizedIds.length === 0 && !regex) return;
 
@@ -555,25 +596,38 @@ export class AutoSyncService {
       (t) => t.amount < 0 && !allocatedTxIds.has(t.id) && !NOT_A_CREDIT.test(t.description),
     );
     const hasIdentifier = (desc: string): boolean => {
-      const lower = desc.toLowerCase();
-      return normalizedIds.some((id) => lower.includes(id));
+      const norm = normalizeIdentifier(desc);
+      return normalizedIds.some((id) => norm.includes(id));
     };
+    const hasForeignIdentifier = (desc: string): boolean => {
+      const norm = normalizeIdentifier(desc);
+      return foreignIds.some((id) => norm.includes(id));
+    };
+    const isEarly = (t: { description: string; amount: number }) => isEarlyRepayment(t, loan.monthlyPayment);
     // Identifiant dans le libellé = match certain (tous retenus).
     const strong = candidates.filter((t) => hasIdentifier(t.description));
     // Regex seule = match probable → au plus 1 par mois calendaire, la tx la
-    // plus proche de la mensualité attendue.
+    // plus proche de la mensualité attendue. Les remboursements anticipés
+    // (gros virement) échappent à ce plafond : ils coexistent avec la
+    // mensualité du mois.
     const monthOf = (d: string) => d.slice(0, 7);
     // Mois déjà couverts : occurrences existantes (idempotence au re-run — sans
     // ça, un re-pick no-op consommerait la tx au détriment d'un autre loan)
-    // + matches par identifiant de ce run.
+    // + matches par identifiant de ce run. Les anticipés ne « prennent » pas
+    // le mois.
     const takenMonths = new Set([
-      ...loan.occurrencesDetected.map((o) => monthOf(o.date)),
-      ...strong.map((t) => monthOf(t.date)),
+      ...loan.occurrencesDetected.filter((o) => o.source !== 'early_repayment').map((o) => monthOf(o.date)),
+      ...strong.filter((t) => !isEarly(t)).map((t) => monthOf(t.date)),
     ]);
     const weakByMonth = new Map<string, typeof candidates>();
+    const weakEarly: typeof candidates = [];
     if (regex) {
       for (const t of candidates) {
-        if (hasIdentifier(t.description) || !regex.test(t.description)) continue;
+        if (hasIdentifier(t.description) || hasForeignIdentifier(t.description) || !regex.test(t.description)) continue;
+        if (isEarly(t)) {
+          weakEarly.push(t);
+          continue;
+        }
         const m = monthOf(t.date);
         if (takenMonths.has(m)) continue;
         const bucket = weakByMonth.get(m);
@@ -581,7 +635,7 @@ export class AutoSyncService {
         else weakByMonth.set(m, [t]);
       }
     }
-    const picked = [...strong];
+    const picked = [...strong, ...weakEarly];
     for (const txs of weakByMonth.values()) {
       const expected = loan.monthlyPayment ?? 0;
       txs.sort((a, b) => Math.abs(Math.abs(a.amount) - expected) - Math.abs(Math.abs(b.amount) - expected));
@@ -596,6 +650,7 @@ export class AutoSyncService {
         amount: t.amount,
         transactionId: t.id,
         description: t.description,
+        ...(isEarly(t) ? { source: 'early_repayment' as const } : {}),
       });
     }
   }

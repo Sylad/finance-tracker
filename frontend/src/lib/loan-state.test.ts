@@ -186,4 +186,16 @@ describe('computeLoanState — estimatedFromOccurrences + gap (with schedule)', 
     const loan = makeLoan({ initialPrincipal: 5000 });
     expect(computeLoanState(loan, '2026-05-01').capitalRemaining.gap).toBeNull();
   });
+  it('un remboursement anticipé est imputé à 100 % en capital, en plus de la ligne du schedule du mois', () => {
+    const loan = makeLoan({
+      initialPrincipal: 10000,
+      amortizationSchedule: [sched('2026-01-05', 9800, 200), sched('2026-02-05', 9600, 200)],
+      occurrencesDetected: [
+        occ('2026-01-05', -240),
+        { ...occ('2026-01-20', -5000), source: 'early_repayment' },
+      ],
+    });
+    const state = computeLoanState(loan, '2026-01-31');
+    expect(state.capitalRemaining.estimatedFromOccurrences).toBe(4800);
+  });
 });

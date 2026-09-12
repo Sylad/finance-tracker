@@ -76,6 +76,11 @@ export function computeLoanState(loan: Loan, asOfDate?: string): LoanState {
       let cumulCapitalPaid = 0;
       const seenMonths = new Set<string>();
       for (const occ of occBeforeDate) {
+        // Remboursement anticipé : 100 % capital, hors alignement schedule.
+        if (occ.source === 'early_repayment') {
+          cumulCapitalPaid += Math.abs(occ.amount);
+          continue;
+        }
         const m = monthOf(occ.date);
         if (seenMonths.has(m)) continue;
         seenMonths.add(m);

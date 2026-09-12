@@ -302,7 +302,7 @@ export interface LoanOccurrence {
   transactionId: string | null;
   description?: string;
   /** 'draw' = tirage sur réserve (amount > 0) — dette AJOUTÉE, pas remboursée. */
-  source?: 'bank_statement' | 'credit_statement' | 'manual' | 'draw';
+  source?: 'bank_statement' | 'credit_statement' | 'manual' | 'draw' | 'early_repayment';
 }
 
 // Marker for the Loan type (placed here for proximity to LoanOccurrence)

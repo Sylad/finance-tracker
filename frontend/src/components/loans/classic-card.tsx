@@ -7,6 +7,8 @@ import { SplitButton } from './split-button';
 import { ImportStatementModal } from './import-statement-modal';
 import { AmortizationChart } from './amortization-chart';
 import { HealthChip } from './health-chip';
+import { EarlyRepaymentsList } from './early-repayments-list';
+import { mensualitesCount } from './utils';
 
 export function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
   const resync = useResyncLoan();
@@ -18,7 +20,7 @@ export function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: ()
   const elapsed = Math.max(0, Math.min(total, now - start));
   const pct = total > 0 ? Math.round((elapsed / total) * 100) : 0;
   const monthsRemaining = end > now ? Math.ceil((end - now) / (1000 * 60 * 60 * 24 * 30.44)) : 0;
-  const occurrences = loan.occurrencesDetected.length;
+  const occurrences = mensualitesCount(loan);
 
   const handleResync = async () => {
     if (!confirm(`Re-scanner tous les relevés pour ${loan.name} ?`)) return;
@@ -69,6 +71,7 @@ export function ClassicCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: ()
           <div className="mt-2 text-xs text-fg-muted tabular">
             {occurrences} mensualité{occurrences > 1 ? 's' : ''} prélevée{occurrences > 1 ? 's' : ''}
           </div>
+          <EarlyRepaymentsList loan={loan} />
         </>
       ) : (
         <p className="text-xs text-fg-dim italic">Renseigne les dates de début et fin pour activer le suivi.</p>

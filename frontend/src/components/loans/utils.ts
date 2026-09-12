@@ -1,4 +1,24 @@
-import type { Loan, LoanInput } from '@/types/api';
+import type { Loan, LoanInput, LoanOccurrence } from '@/types/api';
+
+/** Remboursements anticipés (virements ≫ mensualité), les plus récents en premier. */
+export function earlyRepayments(loan: Loan): LoanOccurrence[] {
+  return loan.occurrencesDetected
+    .filter((o) => o.source === 'early_repayment')
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+/** Nombre de mensualités prélevées : débits hors tirages et hors remboursements anticipés. */
+export function mensualitesCount(loan: Loan): number {
+  return loan.occurrencesDetected.filter((o) => o.amount < 0 && o.source !== 'early_repayment').length;
+}
+
+/** Charge d'un crédit sur un mois (YYYY-MM) : |mensualités| hors tirages et hors remboursements anticipés. */
+export function monthlyCharge(loan: Loan, monthKey: string): number {
+  const total = loan.occurrencesDetected
+    .filter((o) => o.date.slice(0, 7) === monthKey && o.amount < 0 && o.source !== 'early_repayment')
+    .reduce((sum, o) => sum + Math.abs(o.amount), 0);
+  return Math.round(total * 100) / 100;
+}
 
 /** Convert a persisted Loan back to the input shape the form edits. */
 export function toLoanInput(l: Loan): LoanInput {
@@ -17,7 +37,7 @@ export function toLoanInput(l: Loan): LoanInput {
  */
 export function detectAmountGroups(loan: Loan): number {
   // Filter to debits only (loans are negative), ≥ 2 occurrences needed.
-  const debits = loan.occurrencesDetected.filter((o) => o.amount < 0);
+  const debits = loan.occurrencesDetected.filter((o) => o.amount < 0 && o.source !== 'early_repayment');
   if (debits.length < 2) return 0;
 
   const extractAll = (d: string | undefined) => (d ? [...d.matchAll(/\d{8,}/g)].map((m) => m[0]) : []);

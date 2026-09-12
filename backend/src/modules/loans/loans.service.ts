@@ -226,9 +226,15 @@ export class LoansService {
       if (s === 'bank_statement' || s === undefined) return 2; // undefined = legacy = bank
       return 1; // manual
     };
-    const existingSameMonth = loan.occurrencesDetected.find(
-      (o) => o.amount < 0 && monthOf(o.date) === newMonth,
-    );
+    // Un remboursement anticipé n'est pas une mensualité : il échappe à
+    // l'invariant "1 débit/mois" dans les deux sens (il n'est pas bloqué par
+    // la mensualité du mois, et ne bloque pas celle-ci).
+    const existingSameMonth =
+      source === 'early_repayment'
+        ? undefined
+        : loan.occurrencesDetected.find(
+            (o) => o.amount < 0 && o.source !== 'early_repayment' && monthOf(o.date) === newMonth,
+          );
     if (existingSameMonth) {
       const existingPrio = sourcePriority(existingSameMonth.source);
       const newPrio = sourcePriority(source);

@@ -96,6 +96,41 @@ describe('LoansService', () => {
     expect(reloaded.usedAmount).toBe(1120);
   });
 
+  it('addOccurrence early_repayment coexiste avec la mensualité du même mois et décrémente l\'encours', async () => {
+    const loan = await svc.create({
+      name: 'Cofidis Accessio', type: 'revolving', category: 'consumer',
+      monthlyPayment: 186, matchPattern: 'COFIDIS', isActive: true, maxAmount: 6000, usedAmount: 5403.1,
+    });
+    await svc.addOccurrence(loan.id, { statementId: '2026-08', date: '2026-08-05', amount: -186, transactionId: 'tx-mens' });
+    await svc.addOccurrence(loan.id, { statementId: '2026-08', date: '2026-08-31', amount: -5000, transactionId: 'tx-early', source: 'early_repayment' });
+    const reloaded = await svc.getOne(loan.id);
+    expect(reloaded.occurrencesDetected).toHaveLength(2);
+    expect(reloaded.usedAmount).toBeCloseTo(217.1, 2);
+  });
+
+  it('une mensualité reste acceptée après un remboursement anticipé du même mois', async () => {
+    const loan = await svc.create({
+      name: 'Cofidis Accessio', type: 'revolving', category: 'consumer',
+      monthlyPayment: 186, matchPattern: 'COFIDIS', isActive: true, maxAmount: 6000, usedAmount: 5403.1,
+    });
+    await svc.addOccurrence(loan.id, { statementId: '2026-08', date: '2026-08-02', amount: -5000, transactionId: 'tx-early', source: 'early_repayment' });
+    await svc.addOccurrence(loan.id, { statementId: '2026-08', date: '2026-08-05', amount: -186, transactionId: 'tx-mens' });
+    const reloaded = await svc.getOne(loan.id);
+    expect(reloaded.occurrencesDetected).toHaveLength(2);
+  });
+
+  it('removeOccurrencesForStatement rembobine aussi un remboursement anticipé', async () => {
+    const loan = await svc.create({
+      name: 'Cofidis Accessio', type: 'revolving', category: 'consumer',
+      monthlyPayment: 186, matchPattern: 'COFIDIS', isActive: true, maxAmount: 6000, usedAmount: 5403.1,
+    });
+    await svc.addOccurrence(loan.id, { statementId: '2026-08', date: '2026-08-31', amount: -5000, transactionId: 'tx-early', source: 'early_repayment' });
+    await svc.removeOccurrencesForStatement('2026-08');
+    const reloaded = await svc.getOne(loan.id);
+    expect(reloaded.occurrencesDetected).toHaveLength(0);
+    expect(reloaded.usedAmount).toBeCloseTo(5403.1, 2);
+  });
+
   it('resetRevolving updates usedAmount and lastManualResetAt', async () => {
     const loan = await svc.create({
       name: 'Carte',

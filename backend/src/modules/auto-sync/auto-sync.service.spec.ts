@@ -432,6 +432,100 @@ describe('AutoSyncService', () => {
     });
   });
 
+  describe('syncLoans — remboursements anticipés (early_repayment)', () => {
+    // Vécu 2026-08 : 5 virements instantanés (22 691 €) vers Cofidis/Sofinco
+    // ignorés par le matcher — le mois était déjà « pris » par la mensualité
+    // et le n° de contrat stocké avec espaces ne matchait pas le libellé.
+    const mkLoan = (over: Record<string, unknown>) => ({
+      id: 'loan-1', name: 'Cofidis Accessio', type: 'revolving', category: 'consumer',
+      monthlyPayment: 186, matchPattern: 'COFIDIS', isActive: true,
+      contractRef: '289.770.015.047.35', maxAmount: 6000, usedAmount: 5403.1,
+      occurrencesDetected: [], createdAt: '', updatedAt: '', ...over,
+    });
+    const mkTx = (id: string, date: string, description: string, amount: number) => ({
+      id, date, description, normalizedDescription: description.toLowerCase(),
+      amount, currency: 'EUR', category: 'transfers', subcategory: '', isRecurring: false, confidence: 1,
+    });
+
+    it('gros virement avec n° de contrat le même mois que la mensualité → occurrence source=early_repayment EN PLUS de la mensualité', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([mkLoan({})]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          mkTx('tx-mens', '2026-03-05', 'Prélèvement Cofidis échéance', -186),
+          mkTx('tx-early', '2026-03-31', 'Virement instantané Cofidis 289.770.015.047.35', -5000),
+        ],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(2);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-1', expect.objectContaining({ transactionId: 'tx-mens' }));
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-1', expect.objectContaining({
+        transactionId: 'tx-early', amount: -5000, source: 'early_repayment',
+      }));
+    });
+
+    it('n° de contrat comparé sans espaces ni points : "471 283 395 60" matche "47128339560"', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([
+        mkLoan({ id: 'loan-sof', name: 'Sofinco Renouvelable', matchPattern: 'SOFINCO|CA\\s+CONSUMER', contractRef: '471 283 395 60', monthlyPayment: 393.77 }),
+        mkLoan({ id: 'loan-chal', name: 'Sofinco Challenger', matchPattern: 'SOFINCO|CA\\s+CONSUMER', contractRef: '460 033 138 57', monthlyPayment: 201.86 }),
+      ]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          mkTx('tx-a', '2026-03-01', 'Virement instantané Sofinco FNAC 47128339560', -5000),
+          mkTx('tx-b', '2026-03-03', 'Virement instantané Sofinco 46003313857', -5000),
+        ],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-sof', expect.objectContaining({ transactionId: 'tx-a', source: 'early_repayment' }));
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-chal', expect.objectContaining({ transactionId: 'tx-b', source: 'early_repayment' }));
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(2);
+    });
+
+    it('un virement sous le seuil (max(3 × mensualité, 1 000 €)) reste une mensualité ordinaire', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([mkLoan({})]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [mkTx('tx-x', '2026-03-12', 'Virement Cofidis 289.770.015.047.35', -400)],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(1);
+      const [, occ] = loans.addOccurrence.mock.calls[0];
+      expect(occ.source).not.toBe('early_repayment');
+    });
+
+    it('un prélèvement (pas un virement) au-dessus du seuil n\'est pas un remboursement anticipé', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([mkLoan({})]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [mkTx('tx-x', '2026-03-12', 'Prélèvement Cofidis 289.770.015.047.35', -1500)],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(1);
+      const [, occ] = loans.addOccurrence.mock.calls[0];
+      expect(occ.source).not.toBe('early_repayment');
+    });
+
+    it('regex seule (sans identifiant) : un gros virement est aussi un remboursement anticipé, hors plafond 1/mois', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([mkLoan({ contractRef: undefined })]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          mkTx('tx-mens', '2026-03-05', 'Prélèvement Cofidis échéance', -186),
+          mkTx('tx-early', '2026-03-31', 'Virement instantané Cofidis', -2691.55),
+        ],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrence).toHaveBeenCalledTimes(2);
+      expect(loans.addOccurrence).toHaveBeenCalledWith('loan-1', expect.objectContaining({ transactionId: 'tx-early', source: 'early_repayment' }));
+    });
+  });
+
   describe('syncLoans — tirages (draws) sur revolving', () => {
     const mkRev = (over: Record<string, unknown>) => ({
       id: 'rev-1', name: 'Réserve', type: 'revolving', category: 'consumer',

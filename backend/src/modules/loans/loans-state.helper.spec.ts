@@ -104,6 +104,25 @@ describe('computeLoanState', () => {
     expect(state.monthsRemaining).toBe(23); // juin 2026 → mai 2028 = 23 mois
   });
 
+  it('un remboursement anticipé est imputé à 100 % en capital, en plus de la ligne du schedule du mois', () => {
+    const loan: Loan = {
+      ...baseLoan,
+      initialPrincipal: 10000,
+      amortizationSchedule: [
+        { date: '2026-01-05', capitalRemaining: 9800, capitalPaid: 200, interestPaid: 40 },
+        { date: '2026-02-05', capitalRemaining: 9600, capitalPaid: 200, interestPaid: 40 },
+      ],
+      occurrencesDetected: [
+        { id: 'o1', statementId: 's1', date: '2026-01-05', amount: -240, transactionId: 't1' },
+        { id: 'o2', statementId: 's1', date: '2026-01-20', amount: -5000, transactionId: 't2', source: 'early_repayment' },
+      ],
+    };
+    const state = computeLoanState(loan, '2026-01-31');
+    // 10000 − 200 (capital de la mensualité de janvier) − 5000 (anticipé) = 4800
+    expect(state.capitalRemaining.estimatedFromOccurrences).toBe(4800);
+    expect(state.totalPaid).toBe(5240);
+  });
+
   it('gap positif = en retard, négatif = en avance', () => {
     const loan: Loan = {
       ...baseLoan,

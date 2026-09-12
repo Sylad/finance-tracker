@@ -3,7 +3,7 @@ import { BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import type { Loan } from '@/types/api';
 import { formatEUR, chartTooltipProps, formatMonthShort } from '@/lib/utils';
-import { LOAN_COLORS } from './utils';
+import { LOAN_COLORS, monthlyCharge } from './utils';
 
 export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
   const data = useMemo(() => {
@@ -18,12 +18,10 @@ export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
     return months.map((monthKey) => {
       const row: Record<string, number | string> = { month: monthKey };
       for (const loan of loans) {
-        // Débits uniquement : un tirage (amount > 0) est de la dette ajoutée,
-        // pas une mensualité payée.
-        const totalAbs = loan.occurrencesDetected
-          .filter((o) => o.date.slice(0, 7) === monthKey && o.amount < 0)
-          .reduce((sum, o) => sum + Math.abs(o.amount), 0);
-        if (totalAbs > 0) row[loan.id] = Math.round(totalAbs * 100) / 100;
+        // Mensualités seules : ni les tirages (dette ajoutée) ni les
+        // remboursements anticipés (ils écraseraient l'échelle du graphe).
+        const totalAbs = monthlyCharge(loan, monthKey);
+        if (totalAbs > 0) row[loan.id] = totalAbs;
       }
       return row;
     });

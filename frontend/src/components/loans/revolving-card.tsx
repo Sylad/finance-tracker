@@ -6,6 +6,7 @@ import { formatEUR, cn } from '@/lib/utils';
 import { SplitButton } from './split-button';
 import { ImportStatementModal } from './import-statement-modal';
 import { HealthChip } from './health-chip';
+import { EarlyRepaymentsList } from './early-repayments-list';
 
 export function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
   const reset = useResetRevolving();
@@ -75,6 +76,7 @@ export function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: 
         <span className="text-fg-dim">/ {formatEUR(max)} ({pct}%)</span>
       </div>
       <div className="text-xs text-fg-muted tabular mt-1">{formatEUR(max - used)} disponibles</div>
+      <EarlyRepaymentsList loan={loan} />
       <SplitButton loan={loan} />
       <button onClick={handleReset} className="btn-ghost text-xs mt-3">Recaler le solde</button>
       <button

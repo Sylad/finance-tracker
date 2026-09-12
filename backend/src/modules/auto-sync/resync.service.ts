@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AutoSyncService } from './auto-sync.service';
 import { StorageService } from '../storage/storage.service';
 import { SavingsService } from '../savings/savings.service';
@@ -27,6 +27,22 @@ export class ResyncService {
     }
     this.logger.log(`Resynced savings ${id} over ${statements.length} statements`);
     return { rescanned: statements.length };
+  }
+
+  /**
+   * Rejoue la synchro épargne + crédits sur UN relevé déjà importé, sans rien
+   * purger (les briques sont idempotentes : dédup par transaction). Usage :
+   * un compte épargne ou une règle de rattachement ajoutés après coup, un
+   * matcher corrigé (vécu 2026-09 : remboursements anticipés ignorés).
+   */
+  async replayStatement(statementId: string): Promise<{ statementId: string }> {
+    const statement = await this.storage.getStatement(statementId);
+    if (!statement) throw new NotFoundException(`Relevé ${statementId} introuvable`);
+    await this.autoSync.replaySavings(statement);
+    await this.autoSync.replayLoans(statement);
+    await this.autoSync.recomputeLoanStatuses();
+    this.logger.log(`Replayed savings + loans sync on statement ${statementId}`);
+    return { statementId };
   }
 
   async resyncLoan(id: string, baselineUsedAmount?: number): Promise<{ rescanned: number }> {

@@ -28,6 +28,12 @@ export class ResyncController {
     return this.svc.resyncLoan(id, body.baselineUsedAmount);
   }
 
+  /** Rejoue épargne + crédits sur un relevé (idempotent, sans purge). */
+  @Post('statements/:id/replay')
+  replayStatement(@Param('id') id: string) {
+    return this.svc.replayStatement(id);
+  }
+
   @Post('recompute-loan-statuses')
   recomputeLoanStatuses() {
     return this.autoSync.recomputeLoanStatuses();
