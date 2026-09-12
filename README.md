@@ -107,13 +107,18 @@ ET le frontend buildé sur `http://localhost:3000`).
 npm run build                   # build backend + frontend
 ```
 Puis, côté Windows (PowerShell) : exécuter `local/install-shortcuts.ps1`
-pour créer les raccourcis Bureau.
+pour créer le raccourci Bureau.
 
 ### Au quotidien
-- **Double-clic "Finance Tracker"** → démarre + ouvre le navigateur.
-- **Double-clic "Finance Tracker - Stop"** → arrête.
+Un seul raccourci, comme une application de bureau :
+- **Double-clic "Finance Tracker"** → démarre le serveur (et Ollama s'il est
+  éteint) puis ouvre l'app dans une fenêtre Chrome dédiée (mode application,
+  sans barre d'adresse).
+- **Fermer la fenêtre** → arrête le serveur. Ollama reste en veille (partagé
+  avec d'autres outils, il libère le modèle tout seul).
 
-En ligne de commande (WSL) : `./local/run.sh` / `./local/stop.sh`.
+En ligne de commande (WSL) : `./local/run.sh` / `./local/stop.sh`
+(`local/stop.vbs` reste disponible côté Windows en dépannage).
 
 ## Sécurité / Vie privée
 

@@ -1,4 +1,5 @@
-# Crée/maj les 2 raccourcis Bureau Finance Tracker (à lancer une fois depuis Windows).
+# Crée/maj le raccourci Bureau « Finance Tracker » (à lancer une fois depuis Windows).
+# Un seul raccourci : lancer = démarrer + ouvrir la fenêtre ; fermer la fenêtre = arrêter.
 $ErrorActionPreference = "Stop"
 
 # Chemin Windows du repo (UNC \\wsl$). Adapter la distro si besoin (wsl -l -q).
@@ -14,17 +15,16 @@ $desktop = [Environment]::GetFolderPath("Desktop")
 $icon    = Join-Path $repoWin "finance-tracker.ico"
 $ws      = New-Object -ComObject WScript.Shell
 
-function New-FtShortcut($name, $vbs, $desc) {
-    $lnk = $ws.CreateShortcut((Join-Path $desktop "$name.lnk"))
-    $lnk.TargetPath       = "wscript.exe"
-    $lnk.Arguments        = '"' + (Join-Path $repoWin ("local\" + $vbs)) + '"'
-    $lnk.WorkingDirectory = $repoWin
-    $lnk.IconLocation     = $icon
-    $lnk.Description       = $desc
-    $lnk.Save()
-}
+$lnk = $ws.CreateShortcut((Join-Path $desktop "Finance Tracker.lnk"))
+$lnk.TargetPath       = "wscript.exe"
+$lnk.Arguments        = '"' + (Join-Path $repoWin "local\start.vbs") + '"'
+$lnk.WorkingDirectory = $repoWin
+$lnk.IconLocation     = $icon
+$lnk.Description      = "Finance Tracker (local) — fermer la fenêtre arrête l'application"
+$lnk.Save()
 
-New-FtShortcut "Finance Tracker"        "start.vbs" "Démarre Finance Tracker (local) et ouvre le navigateur"
-New-FtShortcut "Finance Tracker - Stop" "stop.vbs"  "Arrête Finance Tracker (local)"
+# L'ancien raccourci « Stop » n'a plus de raison d'être.
+$old = Join-Path $desktop "Finance Tracker - Stop.lnk"
+if (Test-Path $old) { Remove-Item $old; Write-Host "Ancien raccourci Stop supprimé." }
 
-Write-Host "Raccourcis créés sur le Bureau."
+Write-Host "Raccourci « Finance Tracker » créé sur le Bureau."

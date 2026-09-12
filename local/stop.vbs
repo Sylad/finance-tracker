@@ -1,4 +1,4 @@
-' Finance Tracker — Arrêt.
+' Finance Tracker — Arrêt manuel (dépannage : le raccourci normal arrête l'appli à la fermeture de sa fenêtre).
 Option Explicit
 Dim ws, proj
 Set ws = CreateObject("WScript.Shell")
