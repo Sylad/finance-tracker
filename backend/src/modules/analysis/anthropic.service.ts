@@ -151,7 +151,7 @@ const ANALYZE_TOOL: Anthropic.Tool = {
           required: ['description', 'normalizedDescription', 'monthlyAmount', 'frequency', 'firstSeenDate', 'lastSeenDate', 'endDateConfidence', 'category'],
         },
       },
-      analysisNarrative: { type: 'string', description: 'Résumé en français de 2-3 phrases (jamais en anglais)' },
+      analysisNarrative: { type: 'string', description: 'Résumé en français de 2-3 phrases (jamais en anglais). Un crédit « salaire » d\'un montant anormal pour un salarié (plusieurs dizaines de k€, libellé solde de tout compte, indemnité) est un versement exceptionnel : le dire explicitement, ne jamais le présenter comme un revenu mensuel confortable' },
       claudeHealthComment: { type: 'string', description: 'Forces et points d\'attention en français (jamais en anglais)' },
       suggestedRecurringExpenses: {
         type: 'array',

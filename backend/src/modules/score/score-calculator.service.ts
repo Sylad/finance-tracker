@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
-import { Transaction } from '../../models/transaction.model';
+import { Transaction, effectiveIncome } from '../../models/transaction.model';
 import { FinancialHealthScore, ScoreTrend } from '../../models/financial-health-score.model';
 
 export interface ScoreFactors {
@@ -54,7 +54,9 @@ export class ScoreCalculatorService {
 
   computeFactors(statement: MonthlyStatement): ScoreFactors {
     const txs = statement.transactions ?? [];
-    const income = sum(txs.filter((t) => t.amount > 0));
+    // Revenu hors part exceptionnelle (solde de tout compte, prime) — sinon un
+    // mois à 37 k€ affiche une charge de dette de 100/100.
+    const income = txs.filter((t) => t.amount > 0).reduce((s, t) => s + effectiveIncome(t), 0);
     const debits = sum(txs.filter((t) => t.amount < 0).map((t) => ({ ...t, amount: Math.abs(t.amount) })));
 
     return {

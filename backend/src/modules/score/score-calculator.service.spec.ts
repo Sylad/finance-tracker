@@ -43,6 +43,22 @@ function stmt(over: Partial<MonthlyStatement>): MonthlyStatement {
 describe('ScoreCalculatorService', () => {
   const svc = new ScoreCalculatorService();
 
+  describe('revenu exceptionnel', () => {
+    it('la part exceptionnelle d\'un salaire (solde de tout compte) ne compte pas comme revenu', () => {
+      const housing = tx({ date: '2026-08-05', amount: -1500, category: 'housing', subcategory: 'rent' });
+      const withStc = stmt({
+        openingBalance: 300, closingBalance: 300,
+        transactions: [tx({ date: '2026-08-28', amount: 37065.66, category: 'income', exceptionalAmount: 33641.6 }), housing],
+      });
+      const normal = stmt({
+        openingBalance: 300, closingBalance: 300,
+        transactions: [tx({ date: '2026-08-28', amount: 3424.06, category: 'income' }), housing],
+      });
+      expect(svc.computeFactors(withStc).debtBurden).toBeCloseTo(svc.computeFactors(normal).debtBurden, 6);
+      expect(svc.computeFactors(withStc).debtBurden).toBeLessThan(1);
+    });
+  });
+
   describe('determinism', () => {
     it('same input → same output (10 runs)', () => {
       const s = stmt({

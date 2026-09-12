@@ -15,6 +15,8 @@ export interface Transaction {
   recurringCreditEndDate?: string | null;
   confidence: number;
   targetAccountNumber?: string | null;
+  /** Part exceptionnelle d'un salaire (solde de tout compte, prime) — hors récurrence, score et prévisions. */
+  exceptionalAmount?: number;
 }
 
 export interface ScoreBreakdown {

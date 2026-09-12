@@ -69,6 +69,18 @@ describe('detectStableIncome', () => {
     expect(out.label).toContain('acme');
   });
 
+  it('un salaire avec part exceptionnelle compte pour sa part normale : le cluster reste stable et détecté', () => {
+    const months = [
+      ...salaryMonths,
+      stmt('2026-04', 4, [
+        { ...tx('s4', '2026-04-28', 'Virement ACME Corp Salary', 37065.66), exceptionalAmount: 34265.66 },
+      ]),
+    ];
+    const out = detectStableIncome(months, new Set(['d1']), null);
+    expect(out.source).toBe('detected');
+    expect(out.monthly).toBe(2800); // médiane des 3 derniers mois : 2950 / 2750 / 2800
+  });
+
   it('manualMonthlyIncome prime sur la détection', () => {
     const out = detectStableIncome(salaryMonths, new Set(['d1']), 3100);
     expect(out).toEqual({ monthly: 3100, source: 'manual', label: null });

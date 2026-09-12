@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { AnthropicService, ClaudeAnalysisResult } from './anthropic.service';
 import { StorageService } from '../storage/storage.service';
 import { SnapshotService } from '../snapshots/snapshot.service';
@@ -9,6 +9,7 @@ import { ScoreCalculatorService } from '../score/score-calculator.service';
 import { MonthlyStatement, AnalysisResponse, ExternalAccountBalance } from '../../models/monthly-statement.model';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
+import { applyExceptionalIncomeRule, ExceptionalIncomeFlag } from './exceptional-income.helper';
 
 @Injectable()
 export class AnalysisService {
@@ -36,6 +37,7 @@ export class AnalysisService {
       );
     }
     candidate.transactions = await this.categoryRules.apply(candidate.transactions);
+    await this.applyExceptionalIncome(candidate);
     await this.snapshots.takeSnapshot(`before-reanalyze-${id}`);
     await this.storage.saveStatement(candidate);
     try {
@@ -53,11 +55,31 @@ export class AnalysisService {
     return { statement: candidate, replaced: true };
   }
 
+  /**
+   * Règle « revenu exceptionnel » (solde de tout compte, prime) contre
+   * l'historique stocké, puis score recalculé si quelque chose a bougé.
+   * Mute `statement` en place ; ne persiste pas.
+   */
+  async applyExceptionalIncome(statement: MonthlyStatement): Promise<ExceptionalIncomeFlag[]> {
+    const previous = (await this.storage.getAllStatements()).filter((s) => s.id !== statement.id);
+    const flags = applyExceptionalIncomeRule(statement, previous);
+    if (flags.length > 0) {
+      statement.healthScore = this.scoreCalc.compute(statement, statement.healthScore.claudeComment);
+      for (const f of flags) {
+        this.logger.log(
+          `Revenu exceptionnel sur ${statement.id} : +${f.exceptionalAmount} € hors récurrence (médiane salaire ${f.baseline} €)`,
+        );
+      }
+    }
+    return flags;
+  }
+
   async analyzeAndPersist(pdfBuffer: Buffer): Promise<AnalysisResponse> {
     const result = await this.anthropic.analyzeBankStatement(pdfBuffer);
     const statement = this.buildStatement(result);
 
     statement.transactions = await this.categoryRules.apply(statement.transactions);
+    await this.applyExceptionalIncome(statement);
     const existing = await this.storage.getStatement(statement.id);
     const replaced = existing !== null;
 
@@ -86,7 +108,7 @@ export class AnalysisService {
     const currency = result.currency ?? 'EUR';
 
     const transactions: Transaction[] = result.transactions.map((t) => ({
-      id: uuidv4(),
+      id: randomUUID(),
       date: t.date,
       description: t.description,
       normalizedDescription: t.normalizedDescription,
@@ -104,7 +126,7 @@ export class AnalysisService {
       const endDate = rc.contractEndDate ?? null;
       const isActive = endDate ? new Date(endDate) >= new Date() : true;
       return {
-        id: uuidv4(),
+        id: randomUUID(),
         description: rc.description,
         normalizedDescription: rc.normalizedDescription,
         monthlyAmount: rc.monthlyAmount,

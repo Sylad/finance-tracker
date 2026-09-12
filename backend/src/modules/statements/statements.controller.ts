@@ -77,6 +77,19 @@ export class StatementsController {
       });
   }
 
+  /**
+   * Rejoue la règle « revenu exceptionnel » sur un relevé déjà stocké (sans
+   * relancer l'analyse Claude) et persiste. Réponse : les crédits flaggés.
+   */
+  @Post(':id/exceptional-income')
+  async applyExceptionalIncome(@Param('id') id: string) {
+    const stmt = await this.storage.getStatement(id);
+    if (!stmt) throw new NotFoundException(`Relevé ${id} introuvable`);
+    const flags = await this.analysis.applyExceptionalIncome(stmt);
+    if (flags.length > 0) await this.storage.saveStatement(stmt);
+    return { statementId: id, flags };
+  }
+
   @Post('rescore-all')
   async rescoreAll() {
     const all = await this.storage.getAllStatements();

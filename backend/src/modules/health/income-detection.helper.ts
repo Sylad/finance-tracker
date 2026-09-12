@@ -1,5 +1,6 @@
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Loan } from '../../models/loan.model';
+import { effectiveIncome } from '../../models/transaction.model';
 
 export interface IncomeDetection {
   monthly: number | null;
@@ -87,13 +88,16 @@ export function detectStableIncome(
   const clusters = new Map<string, Candidate[]>();
   for (const st of statements) {
     for (const t of st.transactions) {
-      if (t.amount < MIN_AMOUNT || excludedTxIds.has(t.id)) continue;
+      // Part normale seulement : la part exceptionnelle (solde de tout
+      // compte) ferait exploser la tolérance de stabilité du cluster.
+      const amount = effectiveIncome(t);
+      if (amount < MIN_AMOUNT || excludedTxIds.has(t.id)) continue;
       const key = clusterKey(t.description);
       if (!key) continue;
       const month = t.date.slice(0, 7);
       const arr = clusters.get(key);
-      if (arr) arr.push({ month, amount: t.amount });
-      else clusters.set(key, [{ month, amount: t.amount }]);
+      if (arr) arr.push({ month, amount });
+      else clusters.set(key, [{ month, amount }]);
     }
   }
 

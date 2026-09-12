@@ -548,6 +548,14 @@ function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (t: Tran
         positive ? 'text-positive' : 'text-fg-bright',
       )}>
         {formatEUR(t.amount, positive)}
+        {t.exceptionalAmount != null && t.exceptionalAmount > 0 && (
+          <div
+            className="text-[10px] font-normal text-warning normal-case"
+            title="Solde de tout compte, prime ou rappel : cette part n'entre ni dans le score, ni dans le revenu récurrent, ni dans les prévisions"
+          >
+            dont {formatEUR(t.exceptionalAmount)} exceptionnel
+          </div>
+        )}
       </div>
     </div>
   );
