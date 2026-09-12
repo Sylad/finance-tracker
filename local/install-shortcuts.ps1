@@ -12,14 +12,20 @@ if (-not (Test-Path $repoWin)) {
 }
 
 $desktop = [Environment]::GetFolderPath("Desktop")
-$icon    = Join-Path $repoWin "finance-tracker.ico"
 $ws      = New-Object -ComObject WScript.Shell
+
+# Explorer ne rend pas les icônes lues sur \\wsl.localhost (raccourci blanc) :
+# copie locale de l'.ico dans %LOCALAPPDATA%\FinanceTracker.
+$localDir = Join-Path $env:LOCALAPPDATA "FinanceTracker"
+New-Item -ItemType Directory -Force -Path $localDir | Out-Null
+$icon = Join-Path $localDir "finance-tracker.ico"
+Copy-Item (Join-Path $repoWin "finance-tracker.ico") $icon -Force
 
 $lnk = $ws.CreateShortcut((Join-Path $desktop "Finance Tracker.lnk"))
 $lnk.TargetPath       = "wscript.exe"
 $lnk.Arguments        = '"' + (Join-Path $repoWin "local\start.vbs") + '"'
 $lnk.WorkingDirectory = $repoWin
-$lnk.IconLocation     = $icon
+$lnk.IconLocation     = "$icon,0"
 $lnk.Description      = "Finance Tracker (local) — fermer la fenêtre arrête l'application"
 $lnk.Save()
 
