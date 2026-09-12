@@ -100,6 +100,12 @@ Règle first-class : **un crédit (classic, revolving, installment) n'est JAMAIS
 
 Anti-pattern à NE PAS reproduire : empiler des heuristiques (regex pay-in-N, seuil min occurrences, whitelist creditors) à chaque doublon découvert. Si un doublon apparaît, demander : "y a-t-il une règle métier simple qui éliminerait ce bug à la source ?"
 
+**Exception : les remboursements anticipés (source `early_repayment`, 2026-09-12).** Un virement SORTANT vers le créancier ≥ max(3 × mensualité, 1 000 €) n'est pas une mensualité : il coexiste avec celle du mois (exempt de la dédup Niveau 2 dans les deux sens), décrémente `usedAmount` / 100 % capital, et est **exclu de tout calcul de « mensualité »** (compteurs, graphe charge mensuelle, moyennes). Identifiants contrat/RUM comparés via `normalizeIdentifier` (sans espaces/points/tirets) ; une tx qui porte l'identifiant d'un AUTRE crédit n'est jamais un match regex-only. Rejeu sur un relevé : `POST /api/auto-sync/statements/:id/replay` (idempotent). Vécu : 22 691 € de remboursements ignorés en août 2026.
+
+### Revenu exceptionnel (2026-09-12)
+
+Règle déterministe post-analyse (`analysis/exceptional-income.helper.ts`) : un crédit récurrent `salary` > **3 × médiane** des salaires des relevés précédents (≥ 2 mois) → la transaction porte `exceptionalAmount = montant − médiane`, le crédit récurrent retombe à la médiane. Score, détection de revenu santé et prévisions raisonnent sur `effectiveIncome(t)`. Rejeu sans Claude : `POST /api/statements/:id/exceptional-income`. Vécu : solde de tout compte de 37 k€ classé salaire récurrent (prévisions à 37 k€/mois).
+
 ### Synchro robuste 3-sources (APEX 04 — refonte 2026-05-10, étendue APEX 05)
 
 L'app croise 3 sources de données pour un crédit (relevé bancaire, relevé crédit, tableau d'amortissement, contrat installment N×). Pour éviter incohérences/doublons, tout passe par des helpers unifiés :
