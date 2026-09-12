@@ -106,8 +106,13 @@ ET le frontend buildé sur `http://localhost:3000`).
 ./local/sync-from-nas.sh        # rapatrie données + .env depuis le NAS (une fois)
 npm run build                   # build backend + frontend
 ```
-Puis, côté Windows (PowerShell) : exécuter `local/install-shortcuts.ps1`
-pour créer le raccourci Bureau.
+Puis, côté Windows (PowerShell), créer le raccourci Bureau — le script est
+sur `\\wsl.localhost`, donc vu comme « distant » par la stratégie
+d'exécution, d'où le `-ExecutionPolicy Bypass` pour ce seul appel :
+```powershell
+powershell -ExecutionPolicy Bypass -File \\wsl.localhost\Ubuntu\home\<user>\projects\developpeur\finance-tracker\local\install-shortcuts.ps1
+```
+(ou depuis WSL : `powershell.exe -NoProfile -ExecutionPolicy Bypass -File '\\wsl.localhost\…\install-shortcuts.ps1'`).
 
 ### Au quotidien
 Un seul raccourci, comme une application de bureau :

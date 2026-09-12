@@ -1,4 +1,4 @@
-# Crée/maj le raccourci Bureau « Finance Tracker » (à lancer une fois depuis Windows).
+﻿# Crée/maj le raccourci Bureau « Finance Tracker » (à lancer une fois depuis Windows).
 # Un seul raccourci : lancer = démarrer + ouvrir la fenêtre ; fermer la fenêtre = arrêter.
 $ErrorActionPreference = "Stop"
 
