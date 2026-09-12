@@ -123,6 +123,28 @@ describe('AutoSyncService', () => {
     }));
   });
 
+  it('un match regex antérieur à la date du solde initial est ignoré (déjà compris dans ce solde)', async () => {
+    // LDDS ouvert en août 2026 (solde 0 au 18/08) : les virements « pour M
+    // Ladoire » de mars allaient sur un autre compte et ne doivent pas
+    // ressurgir à un re-scan.
+    savings.getAll.mockResolvedValue([{
+      id: 'ldds-1', name: 'LDDS', type: 'ldds', initialBalance: 0, initialBalanceDate: '2026-08-18',
+      matchPattern: '^Virement pour M Ladoire$', interestRate: 0.015, interestAnniversaryMonth: 12,
+      currentBalance: 0, lastSyncedStatementId: null, movements: [], createdAt: '', updatedAt: '',
+    }]);
+    loans.getAll.mockResolvedValue([]);
+    const stmt: MonthlyStatement = {
+      ...baseStatement,
+      transactions: [
+        { id: 'tx-old', date: '2026-03-26', description: 'Virement pour M Ladoire', normalizedDescription: '', amount: -300, currency: 'EUR', category: 'transfers', subcategory: '', isRecurring: false, confidence: 1 },
+        { id: 'tx-new', date: '2026-08-31', description: 'Virement pour M Ladoire', normalizedDescription: '', amount: -500, currency: 'EUR', category: 'transfers', subcategory: '', isRecurring: false, confidence: 1 },
+      ],
+    };
+    await svc.syncStatement(stmt);
+    expect(savings.addMovement).toHaveBeenCalledTimes(1);
+    expect(savings.addMovement).toHaveBeenCalledWith('ldds-1', expect.objectContaining({ transactionId: 'tx-new', amount: 500 }));
+  });
+
   it('skips entities with empty matchPattern', async () => {
     savings.getAll.mockResolvedValue([{
       id: 'a', name: 'A', type: 'other', initialBalance: 0, initialBalanceDate: '2026-01-01',

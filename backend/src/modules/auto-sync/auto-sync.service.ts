@@ -328,7 +328,11 @@ export class AutoSyncService {
         await this.maybeAddInterest(acc, statement);
         continue;
       }
-      const matches = statement.transactions.filter((t) => regex.test(t.description));
+      // Un mouvement daté avant le solde initial est déjà compris dans ce
+      // solde (compte ouvert après coup, re-scan) → ignoré.
+      const matches = statement.transactions.filter(
+        (t) => regex.test(t.description) && (!acc.initialBalanceDate || t.date >= acc.initialBalanceDate),
+      );
       for (const t of matches) {
         // Convention : un débit côté courant (amount<0) = dépôt sur compte épargne (+).
         const epargneAmount = -t.amount;
