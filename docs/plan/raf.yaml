@@ -184,7 +184,7 @@ lots:
   - id: L21
     title: Revue UX — Tableau de bord
     visible: true
-    status: doing
+    status: done
     estimate: 0.25
     created: 2026-09-28
     started: 2026-09-28
@@ -206,6 +206,8 @@ lots:
       - { date: 2026-09-28, text: "revue ux-reviewer : non conforme — 3 bloquants (contraste 3,8:1, débordement 390 px, graphiques sans alternative), 5 majeurs ; captures tmp/ux-finance-L21/" }
       - { date: 2026-09-28, text: "Sylvain 28-09 : maquette téléphone validée ; garder le correctif du € hors écran (« si je gagne au loto »)" }
       - { date: 2026-09-28, text: "contre-revue prod 3064f99 : t1–t8 corrigés (mesures dans tmp/ux-finance-L21-prod/), t9 partiel ; nouveau bloquant contraste badges 4,06:1 → t10–t13" }
+    ux: { date: 2026-09-28, verdict: "conforme : contre-revue prod t1–t8 corrigés, t9–t13 corrigés et vérifiés (badges 5,38:1, plus de « Dashboard »), livré ea13116" }
+    finished: 2026-09-28
   - id: L22
     title: Revue UX — Connexion (PIN)
     status: todo
