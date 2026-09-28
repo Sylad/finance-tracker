@@ -8,11 +8,10 @@ name: Build & push to GHCR
 
 on:
   push:
+    # Pas de filtre `paths` : chaque push de main a son run (vide si ni
+    # backend/ ni frontend/ n'ont changé), sinon `cadence deliver` attend en
+    # vain la CI d'un sha qui ne touche que la doc ou le plan.
     branches: [main]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - '.github/workflows/build.yml'
   workflow_dispatch:
     inputs:
       service:
