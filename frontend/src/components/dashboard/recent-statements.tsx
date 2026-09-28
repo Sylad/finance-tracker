@@ -21,14 +21,15 @@ export function RecentStatements({ summaries }: { summaries: StatementSummary[] 
             params={{ id: s.id }}
             // Téléphone : 3 relevés, 5 à partir de md (L21/t8).
             className={cn(
-              'items-center justify-between px-3 py-2.5 rounded hover:bg-surface-2 transition-colors group',
+              'items-center justify-between gap-3 px-2 sm:px-3 py-2.5 rounded hover:bg-surface-2 transition-colors group',
               i < 3 ? 'flex' : 'hidden md:flex',
             )}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-1 h-9 rounded-full bg-accent-dim group-hover:bg-accent transition-colors" />
-              <div>
-                <div className="text-sm font-medium text-fg-bright">
+            {/* gap-3 + min-w-0 : libellé et montant ne se touchent plus à 320 px (L21/t13). */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="w-1 h-9 shrink-0 rounded-full bg-accent-dim group-hover:bg-accent transition-colors" />
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-fg-bright" data-stmt-label>
                   {formatMonth(s.month, s.year)}
                 </div>
                 <div className="text-xs text-fg-dim">
@@ -36,9 +37,9 @@ export function RecentStatements({ summaries }: { summaries: StatementSummary[] 
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               <div className="text-right tabular">
-                <div className="text-sm text-fg">{formatEUR(s.closingBalance)}</div>
+                <div className="text-sm text-fg whitespace-nowrap" data-stmt-amount>{formatEUR(s.closingBalance)}</div>
                 <div className="text-xs text-fg-dim">solde</div>
               </div>
               <ScoreBadge score={s.healthScore} />
