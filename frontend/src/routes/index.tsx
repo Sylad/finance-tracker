@@ -65,7 +65,7 @@ export function DashboardPage() {
   if (view === 'error') {
     return (
       <>
-        <PageHeader title="Dashboard" />
+        <PageHeader title="Tableau de bord" />
         <ErrorState
           title="Impossible de charger les relevés"
           message={`Le serveur a répondu par une erreur${stmts.error instanceof ApiError ? ` (HTTP ${stmts.error.status})` : ''}. Tes données ne sont pas perdues : réessaie dans un instant.`}
@@ -79,7 +79,7 @@ export function DashboardPage() {
   if (view === 'empty') {
     return (
       <>
-        <PageHeader title="Dashboard" subtitle="Aucun relevé pour l'instant. Commence par importer un PDF de relevé bancaire." />
+        <PageHeader title="Tableau de bord" subtitle="Aucun relevé pour l'instant. Commence par importer un PDF de relevé bancaire." />
         <div className="card p-12 text-center">
           <Wallet className="h-10 w-10 text-fg-dim mx-auto mb-4" />
           <h3 className="font-display text-lg font-semibold text-fg-bright mb-2">
@@ -123,7 +123,7 @@ export function DashboardPage() {
     <>
       <PageHeader
         eyebrow={formatMonth(current.month, current.year)}
-        title="Dashboard"
+        title="Tableau de bord"
         subtitle={
           <span className="inline-flex items-center gap-1.5">
             Vue d'ensemble basée sur {summaries.length} relevé{summaries.length > 1 ? 's' : ''} ·
@@ -178,7 +178,7 @@ export function DashboardPage() {
       )}
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="card p-6 lg:row-span-2 flex flex-col">
+        <div className="card p-6 lg:row-span-4 flex flex-col">
           <div className="stat-label flex items-center gap-1.5">
             <Sparkles className="h-3 w-3" /> Santé financière
           </div>
@@ -224,7 +224,7 @@ export function DashboardPage() {
           icon={<CreditCard className="h-4 w-4 text-warning" />}
           tone="negative"
         />
-        <HealthTile diagnostic={health.data} />
+        <HealthTile diagnostic={health.data} className="lg:col-span-2" />
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">

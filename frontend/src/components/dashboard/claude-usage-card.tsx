@@ -1,6 +1,6 @@
 import { Sparkles } from 'lucide-react';
 import type { ClaudeUsage } from '@/types/api';
-import { cn } from '@/lib/utils';
+import { cn, formatEUR } from '@/lib/utils';
 
 export function ClaudeUsageCard({ usage }: { usage: ClaudeUsage }) {
   const remainingPct = usage.remainingPercent ?? null;
@@ -17,9 +17,9 @@ export function ClaudeUsageCard({ usage }: { usage: ClaudeUsage }) {
           </div>
           <div className="mt-2 flex items-baseline gap-3">
             <div className="font-display text-display-md font-bold tabular text-fg-bright">
-              {usage.estimatedCostEur.toFixed(2)}€
+              {formatEUR(usage.estimatedCostEur)}
             </div>
-            <div className="text-fg-dim text-sm tabular">/ {usage.budgetEur}€</div>
+            <div className="text-fg-dim text-sm tabular">/ {formatEUR(usage.budgetEur)}</div>
           </div>
         </div>
         {usage.hasBalance && usage.estimatedRemainingEur != null && (
@@ -32,7 +32,7 @@ export function ClaudeUsageCard({ usage }: { usage: ClaudeUsage }) {
               tone === 'negative' && 'text-negative',
               tone === 'neutral' && 'text-fg-bright',
             )}>
-              {usage.estimatedRemainingEur.toFixed(2)}€
+              {formatEUR(usage.estimatedRemainingEur)}
             </div>
             <div className="text-xs text-fg-dim tabular">{remainingPct}% du crédit</div>
           </div>
