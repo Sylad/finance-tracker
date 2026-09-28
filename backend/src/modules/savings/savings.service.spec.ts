@@ -24,6 +24,23 @@ describe('SavingsService', () => {
 
   afterEach(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
 
+  it('upsertFromBankExtract : fin de mois exacte quel que soit le fuseau (sans asOfDate)', async () => {
+    // À Paris (UTC+1/+2), new Date(2026, 3, 0) = 31/03 00:00 locale = 30/03 en UTC.
+    const prevTz = process.env.TZ;
+    process.env.TZ = 'Europe/Paris';
+    try {
+      const { account } = await svc.upsertFromBankExtract(
+        { accountNumber: '12345678901', accountType: 'livret-a', label: 'Livret A', balance: 1500 } as any,
+        3,
+        2026,
+      );
+      expect(account.movements[0].date).toBe('2026-03-31');
+    } finally {
+      if (prevTz === undefined) delete process.env.TZ;
+      else process.env.TZ = prevTz;
+    }
+  });
+
   it('starts with empty list', async () => {
     expect(await svc.getAll()).toEqual([]);
   });

@@ -231,7 +231,9 @@ export class SavingsService {
     const type: SavingsAccountType = (
       ['livret-a', 'pel', 'cel', 'ldds', 'pea'].includes(eb.accountType) ? eb.accountType : 'other'
     ) as SavingsAccountType;
-    const monthEnd = new Date(statementYear, statementMonth, 0).toISOString().slice(0, 10);
+    // Date.UTC : composée en local, la fin de mois reculait d'un jour à
+    // l'est de Greenwich (31/03 00:00 Paris = 30/03 en UTC).
+    const monthEnd = new Date(Date.UTC(statementYear, statementMonth, 0)).toISOString().slice(0, 10);
     const created = await this.create({
       name: eb.label?.trim() || `${TYPE_LABELS[type]} ${eb.accountNumber.slice(-4)}`,
       type,
