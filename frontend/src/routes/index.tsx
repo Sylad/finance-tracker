@@ -277,7 +277,7 @@ export function DashboardPage() {
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <RecentStatements summaries={summaries} />
-        <div className="order-first lg:order-none">
+        <div className="order-first md:order-none">
           <BudgetSnapshot
             budget={budget.data}
             transactions={currentDetail.data?.transactions}
