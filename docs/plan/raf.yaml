@@ -198,10 +198,10 @@ lots:
       - { id: t7, title: Bandeau démo visible sous l'en-tête mobile, status: done }
       - { id: t8, title: Tableau de bord téléphone réduit (maquette à valider par Sylvain), status: done }
       - { id: t9, title: Budget Claude en formatEUR ; titre Tableau de bord ; tuiles compactes ; commentaire IA cohérent avec la démo, status: done }
-      - { id: t10, title: "Badges de score bleus des relevés récents : contraste ≥ 4,5:1 (mesuré 4,06:1)", status: todo }
-      - { id: t11, title: "Libellé « Dashboard » → « Tableau de bord » (barre latérale, onglets, feuille Plus)", status: todo }
-      - { id: t12, title: "Anneau 96 px : « / 100 » à 11 px min ; budgets au format « 312 € / 80 € »", status: todo }
-      - { id: t13, title: "Relevés récents à 320 px : espacer libellé et montant", status: todo }
+      - { id: t10, title: "Badges de score bleus des relevés récents : contraste ≥ 4,5:1 (mesuré 4,06:1)", status: done }
+      - { id: t11, title: "Libellé « Dashboard » → « Tableau de bord » (barre latérale, onglets, feuille Plus)", status: done }
+      - { id: t12, title: "Anneau 96 px : « / 100 » à 11 px min ; budgets au format « 312 € / 80 € »", status: done }
+      - { id: t13, title: "Relevés récents à 320 px : espacer libellé et montant", status: done }
     notes:
       - { date: 2026-09-28, text: "revue ux-reviewer : non conforme — 3 bloquants (contraste 3,8:1, débordement 390 px, graphiques sans alternative), 5 majeurs ; captures tmp/ux-finance-L21/" }
       - { date: 2026-09-28, text: "Sylvain 28-09 : maquette téléphone validée ; garder le correctif du € hors écran (« si je gagne au loto »)" }
