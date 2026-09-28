@@ -15,11 +15,11 @@ App perso de suivi financier perso, déployée sur NAS Synology. Frontend React 
 
 ## Sessions et livraison (cadence)
 
-- Début de session : skill `cadence-session-start` (`cadence session start`) — faits,
+- Début de session : skill `/cadence:session-start` (`cadence session start`) — faits,
   trois propositions du plan, puis attendre la priorité de Sylvain.
-- Fin de session : skill `cadence-session-close` (`cadence session close`, code 1 tant
+- Fin de session : skill `/cadence:session-close` (`cadence session close`, code 1 tant
   que ce n'est pas fermé), puis `cadence session next "…"` pour la suivante.
-- Livraison : skill `cadence-deliver`. Pousser, puis `cadence deliver --dry-run` et
+- Livraison : skill `/cadence:deliver`. Pousser, puis `cadence deliver --dry-run` et
   `cadence deliver` (`cadence.yaml`) : attente du run `build.yml` du sha poussé →
   `scripts/deploy.sh` bumpe dans `developpeur-gitops` le tag des **seuls** services
   construits par la CI (elle ne construit que le service modifié) et pousse → ArgoCD
@@ -39,7 +39,7 @@ génère `docs/plan/gantt.html` (non versionné). Un lot se démarre
 testé ; les décisions vont dans `raf note`.
 
 **Revue UX obligatoire** (règle de Sylvain du 2026-09-28, tous les projets perso) : toute nouvelle
-page ou modification d'écran est un lot `--visible`, revu par l'agent `cadence-ux-reviewer` (captures
+page ou modification d'écran est un lot `--visible`, revu par l'agent `cadence:ux-reviewer` (captures
 1440 et 390 px, écarts fondés sur une règle nommée ou une mesure) avant `raf done`. Le verdict
 s'enregistre avec `raf ux <lot> "…"`, sinon `raf done` refuse. Les lots « Revue UX — … » planifient
 la revue de chaque écran existant ; les écarts trouvés deviennent des sous-tâches du lot.
