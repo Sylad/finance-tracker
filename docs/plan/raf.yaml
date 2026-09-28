@@ -184,6 +184,18 @@ lots:
     estimate: 0.25
     created: 2026-09-28
     started: 2026-09-28
+    tasks:
+      - { id: t1, title: "Contraste fg-dim ≥ 4,5:1 (jeton unique)", status: todo }
+      - { id: t2, title: "Patrimoine net : taille fluide, pas de débordement à 390 px", status: todo }
+      - { id: t3, title: "Graphiques : aria-label résumé + légende Entrées/Sorties", status: todo }
+      - { id: t4, title: État d'erreur du tableau de bord distinct de l'état vide (Réessayer), status: todo }
+      - { id: t5, title: "Axes : formateur fr-FR compact sans doublons, axe score non rogné", status: todo }
+      - { id: t6, title: "Tuile santé : renommer, texte lisible fr-FR, couleur = libellé", status: todo }
+      - { id: t7, title: Bandeau démo visible sous l'en-tête mobile, status: todo }
+      - { id: t8, title: Tableau de bord téléphone réduit (maquette à valider par Sylvain), status: todo }
+      - { id: t9, title: Budget Claude en formatEUR ; titre Tableau de bord ; tuiles compactes ; commentaire IA cohérent avec la démo, status: todo }
+    notes:
+      - { date: 2026-09-28, text: "revue ux-reviewer : non conforme — 3 bloquants (contraste 3,8:1, débordement 390 px, graphiques sans alternative), 5 majeurs ; captures tmp/ux-finance-L21/" }
   - id: L22
     title: Revue UX — Connexion (PIN)
     status: todo
