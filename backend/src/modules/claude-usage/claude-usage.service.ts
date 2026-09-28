@@ -14,12 +14,19 @@
  * Real mutualization (npm workspace, path-mapped shared package) was assessed
  * and deferred : the cost of restructuring 3 Dockerfiles + 3 tsconfigs was
  * judged too high vs. the rate of drift on this 130-line file.
+ *
+ * ⚠ Exception finance-tracker (L1, 2026-09-28) : l'isolation démo
+ * (RequestDataDirService) n'existe que dans cette app sous cette forme. En mode
+ * démo, les compteurs et le solde vivent dans `<DATA_DIR>/demo/` (copie démo) :
+ * une requête démo ne lit ni n'écrit jamais le vrai `claude-shared.json` ni le
+ * vrai `claude-usage.json`. Hors démo, chemins et comportement inchangés.
  */
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { atomicWriteJsonSync } from '../../common/atomic-write';
 import { EventBusService } from '../events/event-bus.service';
+import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 export interface UsageResponse {
   month: string;
@@ -46,8 +53,10 @@ const BUDGET_EUR = 10;
 const INPUT_USD_PER_TOKEN = 3 / 1_000_000;
 const OUTPUT_USD_PER_TOKEN = 15 / 1_000_000;
 const USD_TO_EUR = 0.93;
-const SHARED_FILE = path.join(process.env['SHARED_DATA_DIR'] ?? path.resolve(process.cwd(), 'data', 'shared'), 'claude-shared.json');
-const SHARED_FILENAME = path.basename(SHARED_FILE);
+const SHARED_FILENAME = 'claude-shared.json';
+const USAGE_FILENAME = 'claude-usage.json';
+const EMPTY_SHARED: SharedData = { balanceUsd: null, balanceSetAt: null, totalConsumedUsdAtConfig: 0, totalConsumedUsd: 0 };
+type MonthlyUsage = Record<string, { inputTokens: number; outputTokens: number; calls: number }>;
 
 // Sommeil synchrone sans spin CPU (Atomics.wait est autorisé sur le main
 // thread Node) ; fallback busy-wait si indisponible.
@@ -60,17 +69,45 @@ function sleepSync(ms: number): void {
   }
 }
 
-const SHARED_DIR = path.dirname(SHARED_FILE);
-
 @Injectable()
 export class ClaudeUsageService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ClaudeUsageService.name);
-  private readonly filePath = path.resolve(process.cwd(), 'data', 'claude-usage.json');
-  private data: Record<string, { inputTokens: number; outputTokens: number; calls: number }> = {};
+  // Chemins RÉELS (instance aux vraies données) — inchangés par L1.
+  private readonly filePath = path.resolve(process.cwd(), 'data', USAGE_FILENAME);
+  private readonly sharedFile = path.join(
+    process.env['SHARED_DATA_DIR'] ?? path.resolve(process.cwd(), 'data', 'shared'),
+    SHARED_FILENAME,
+  );
+  private readonly sharedDir = path.dirname(this.sharedFile);
+  private data: MonthlyUsage = {};
   private watcher: fs.FSWatcher | null = null;
   private emitTimer: NodeJS.Timeout | null = null;
 
-  constructor(private readonly bus: EventBusService) {}
+  constructor(
+    private readonly bus: EventBusService,
+    private readonly requestDataDir: RequestDataDirService,
+  ) {}
+
+  private isDemo(): boolean {
+    return this.requestDataDir.isDemoMode();
+  }
+
+  /** Solde partagé : le vrai fichier hors démo, la copie démo sinon. */
+  private currentSharedFile(): string {
+    return this.isDemo() ? path.join(this.requestDataDir.getDataDir(), SHARED_FILENAME) : this.sharedFile;
+  }
+
+  private demoUsageFile(): string {
+    return path.join(this.requestDataDir.getDataDir(), USAGE_FILENAME);
+  }
+
+  private loadDemoUsage(): MonthlyUsage {
+    try {
+      return JSON.parse(fs.readFileSync(this.demoUsageFile(), 'utf-8'));
+    } catch {
+      return {};
+    }
+  }
 
   onModuleInit() {
     if (fs.existsSync(this.filePath)) {
@@ -85,11 +122,11 @@ export class ClaudeUsageService implements OnModuleInit, OnModuleDestroy {
   }
 
   private startWatcher() {
-    if (!fs.existsSync(SHARED_DIR)) {
-      fs.mkdirSync(SHARED_DIR, { recursive: true });
+    if (!fs.existsSync(this.sharedDir)) {
+      fs.mkdirSync(this.sharedDir, { recursive: true });
     }
     try {
-      this.watcher = fs.watch(SHARED_DIR, (_event, filename) => {
+      this.watcher = fs.watch(this.sharedDir, (_event, filename) => {
         if (filename !== SHARED_FILENAME) return;
         this.scheduleEmit();
       });
@@ -111,20 +148,14 @@ export class ClaudeUsageService implements OnModuleInit, OnModuleDestroy {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  private loadShared(): SharedData {
-    if (!fs.existsSync(SHARED_FILE)) {
-      return { balanceUsd: null, balanceSetAt: null, totalConsumedUsdAtConfig: 0, totalConsumedUsd: 0 };
-    }
+  private loadShared(file: string): SharedData {
+    if (!fs.existsSync(file)) return { ...EMPTY_SHARED };
     try {
-      return JSON.parse(fs.readFileSync(SHARED_FILE, 'utf-8'));
+      return JSON.parse(fs.readFileSync(file, 'utf-8'));
     } catch (err: unknown) {
-      this.logger.warn(`Failed to read ${SHARED_FILE}: ${(err as Error)?.message ?? err}`);
-      return { balanceUsd: null, balanceSetAt: null, totalConsumedUsdAtConfig: 0, totalConsumedUsd: 0 };
+      this.logger.warn(`Failed to read ${file}: ${(err as Error)?.message ?? err}`);
+      return { ...EMPTY_SHARED };
     }
-  }
-
-  private saveShared(data: SharedData): void {
-    atomicWriteJsonSync(SHARED_FILE, data);
   }
 
   /**
@@ -135,8 +166,8 @@ export class ClaudeUsageService implements OnModuleInit, OnModuleDestroy {
    * fail-open après 2 s : mieux vaut un lost update rarissime qu'un endpoint
    * bloqué. (Dupliqué à l'identique dans les 3 apps, comme tout ce service.)
    */
-  private withSharedLock<T>(fn: () => T): T {
-    const lockPath = `${SHARED_FILE}.lock`;
+  private withSharedLock<T>(file: string, fn: () => T): T {
+    const lockPath = `${file}.lock`;
     const deadline = Date.now() + 2_000;
     for (;;) {
       try {
@@ -167,40 +198,48 @@ export class ClaudeUsageService implements OnModuleInit, OnModuleDestroy {
 
 
   recordUsage(inputTokens: number, outputTokens: number): void {
+    const demo = this.isDemo();
+    const data = demo ? this.loadDemoUsage() : this.data;
     const month = this.currentMonth();
-    if (!this.data[month]) {
-      this.data[month] = { inputTokens: 0, outputTokens: 0, calls: 0 };
+    if (!data[month]) {
+      data[month] = { inputTokens: 0, outputTokens: 0, calls: 0 };
     }
-    this.data[month].inputTokens += inputTokens;
-    this.data[month].outputTokens += outputTokens;
-    this.data[month].calls += 1;
-    atomicWriteJsonSync(this.filePath, this.data);
+    data[month].inputTokens += inputTokens;
+    data[month].outputTokens += outputTokens;
+    data[month].calls += 1;
+    atomicWriteJsonSync(demo ? this.demoUsageFile() : this.filePath, data);
 
-    this.withSharedLock(() => {
-      const shared = this.loadShared();
+    const file = this.currentSharedFile();
+    this.withSharedLock(file, () => {
+      const shared = this.loadShared(file);
       shared.totalConsumedUsd += inputTokens * INPUT_USD_PER_TOKEN + outputTokens * OUTPUT_USD_PER_TOKEN;
-      this.saveShared(shared);
+      atomicWriteJsonSync(file, shared);
     });
   }
 
   setBalance(balanceUsd: number): void {
-    this.withSharedLock(() => {
-      const shared = this.loadShared();
+    const file = this.currentSharedFile();
+    this.withSharedLock(file, () => {
+      const shared = this.loadShared(file);
       shared.balanceUsd = balanceUsd;
       shared.balanceSetAt = new Date().toISOString();
       shared.totalConsumedUsdAtConfig = shared.totalConsumedUsd;
-      this.saveShared(shared);
+      atomicWriteJsonSync(file, shared);
     });
+    // Le watcher ne surveille que le vrai dossier partagé : prévenir aussi
+    // pour la copie démo.
+    if (this.isDemo()) this.scheduleEmit();
   }
 
   getUsage(): UsageResponse {
     const month = this.currentMonth();
-    const u = this.data[month] ?? { inputTokens: 0, outputTokens: 0, calls: 0 };
+    const data = this.isDemo() ? this.loadDemoUsage() : this.data;
+    const u = data[month] ?? { inputTokens: 0, outputTokens: 0, calls: 0 };
     const costUsd = u.inputTokens * INPUT_USD_PER_TOKEN + u.outputTokens * OUTPUT_USD_PER_TOKEN;
     const estimatedCostEur = Math.round(costUsd * USD_TO_EUR * 100) / 100;
     const percent = Math.min(100, Math.round((estimatedCostEur / BUDGET_EUR) * 100));
 
-    const shared = this.loadShared();
+    const shared = this.loadShared(this.currentSharedFile());
     const hasBalance = shared.balanceUsd !== null;
     let estimatedRemainingEur: number | null = null;
     let configuredBalanceEur: number | null = null;
