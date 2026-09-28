@@ -9,11 +9,12 @@ uxSince: 2026-09-28
 lots:
   - id: L1
     title: claude-usage hors isolation démo + X-Forwarded-Host spoofable
-    status: todo
+    status: doing
     estimate: 1
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #1 — sécurité, à faire en premier ; re-vérifier dans le code avant d'attaquer" }
+    started: 2026-09-28
   - id: L2
     title: "Validateur de détection : garde-fous déterministes"
     status: todo
@@ -179,9 +180,10 @@ lots:
     finished: 2026-09-28
   - id: L21
     title: Revue UX — Tableau de bord
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-09-28
+    started: 2026-09-28
   - id: L22
     title: Revue UX — Connexion (PIN)
     status: todo
