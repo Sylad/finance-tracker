@@ -38,6 +38,12 @@ génère `docs/plan/gantt.html` (non versionné). Un lot se démarre
 (`raf start L4`) avant le premier commit et se ferme (`raf done L4`) une fois
 testé ; les décisions vont dans `raf note`.
 
+**Revue UX obligatoire** (règle de Sylvain du 2026-09-28, tous les projets perso) : toute nouvelle
+page ou modification d'écran est un lot `--visible`, revu par l'agent `cadence-ux-reviewer` (captures
+1440 et 390 px, écarts fondés sur une règle nommée ou une mesure) avant `raf done`. Le verdict
+s'enregistre avec `raf ux <lot> "…"`, sinon `raf done` refuse. Les lots « Revue UX — … » planifient
+la revue de chaque écran existant ; les écarts trouvés deviennent des sous-tâches du lot.
+
 ## Nouveautés (cadence news)
 
 Un lot qui change quelque chose **pour l'utilisateur** se crée avec

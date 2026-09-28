@@ -5,6 +5,7 @@ version: 1
 project: finance-tracker
 prefix: L
 since: 2026-09-28 # raf check ignore les commits antérieurs à l'adoption
+uxSince: 2026-09-28
 lots:
   - id: L1
     title: claude-usage hors isolation démo + X-Forwarded-Host spoofable
@@ -163,3 +164,109 @@ lots:
     notes:
       - { date: 2026-09-28, text: deliver --dry-run validé dans un worktree sur origin/main ; verify-rollout.sh vert en lecture seule sur dark-blue ; première vraie livraison après le push des commits locaux }
     finished: 2026-09-28
+  - id: L20
+    title: Revue UX obligatoire et campagne de revue de tous les écrans
+    status: doing
+    estimate: 0.25
+    created: 2026-09-28
+    started: 2026-09-28
+  - id: L21
+    title: Revue UX — Tableau de bord
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L22
+    title: Revue UX — Connexion (PIN)
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L23
+    title: Revue UX — Historique des relevés (liste + détail)
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L24
+    title: Revue UX — Budget
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L25
+    title: Revue UX — Revenus
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L26
+    title: Revue UX — Récurrents
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L27
+    title: Revue UX — Déclarations
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L28
+    title: Revue UX — Prévisions
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L29
+    title: Revue UX — Bilan annuel
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L30
+    title: Revue UX — Import de relevés
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L31
+    title: Revue UX — Épargne
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L32
+    title: Revue UX — Crédits
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L33
+    title: Revue UX — Abonnements
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L34
+    title: Revue UX — Règles de catégories
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L35
+    title: Revue UX — Objectifs
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L36
+    title: Revue UX — Heatmap des dépenses
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L37
+    title: Revue UX — Santé financière
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L38
+    title: Revue UX — Dépenses
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L39
+    title: Revue UX — À propos et Nouveautés
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
+  - id: L40
+    title: "Revue UX — Gabarit commun : navigation, en-tête, pied, rendu téléphone"
+    status: todo
+    estimate: 0.25
+    created: 2026-09-28
