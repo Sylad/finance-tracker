@@ -273,8 +273,9 @@ lots:
     created: 2026-09-28
   - id: L41
     title: "Livraison : deploy.sh prend la dernière image construite par service (HEAD sans run CI) et build.yml tourne sur chaque push"
-    status: doing
+    status: done
     estimate: 1
     quickwin: true
     created: 2026-09-28
     started: 2026-09-28
+    finished: 2026-09-28
