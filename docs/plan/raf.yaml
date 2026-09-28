@@ -156,7 +156,10 @@ lots:
     finished: 2026-09-28
   - id: L19
     title: Livraison vérifiée (cadence deliver) et rituels de session
-    status: doing
+    status: done
     estimate: 0.5
     created: 2026-09-28
     started: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: deliver --dry-run validé dans un worktree sur origin/main ; verify-rollout.sh vert en lecture seule sur dark-blue ; première vraie livraison après le push des commits locaux }
+    finished: 2026-09-28
