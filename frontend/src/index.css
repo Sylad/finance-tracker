@@ -106,6 +106,17 @@
     @apply text-display-md font-display font-semibold tabular text-fg-bright;
   }
 
+  /* Montant vedette (patrimoine net) : taille fluide sur la largeur de la
+     carte (container-type: inline-size) — un montant à 9 chiffres
+     « -123 456 789,12 € » tient à 320 px ; 56 px au plus (L21/t2). Filet de
+     sécurité au-delà : retour à la ligne plutôt qu'un € coupé. */
+  .amount-fluid {
+    font-size: clamp(1.25rem, 11cqi, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    overflow-wrap: anywhere;
+  }
+
   .stat-label {
     @apply text-xs uppercase tracking-wider text-fg-dim font-medium;
   }

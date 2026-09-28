@@ -138,11 +138,11 @@ export function DashboardPage() {
       />
 
       {netWorth.data && (
-        <div className="card p-6 mb-6 bg-gradient-to-r from-surface to-surface-2/40">
+        <div className="card p-4 sm:p-6 mb-6 bg-gradient-to-r from-surface to-surface-2/40 [container-type:inline-size]">
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
+            <div className="min-w-0 max-w-full">
               <div className="stat-label">Patrimoine net</div>
-              <div className="font-display text-display-lg font-bold tabular text-fg-bright mt-1">
+              <div className="amount-fluid font-display font-bold tabular text-fg-bright mt-1">
                 {formatEUR(netWorth.data.netWorth)}
               </div>
               <div className="text-xs text-fg-dim mt-1">
