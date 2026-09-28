@@ -95,20 +95,24 @@ lots:
     finished: 2026-09-28
   - id: L11
     title: "amortization : retry à 64k comme le flux bancaire"
-    status: todo
+    status: done
     estimate: 0.5
     quickwin: true
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #12" }
+    started: 2026-09-28
+    finished: 2026-09-28
   - id: L12
     title: "isQuotaError : ne plus classer tout message « credit » en 402"
-    status: todo
+    status: done
     estimate: 0.5
     quickwin: true
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #23" }
+    started: 2026-09-28
+    finished: 2026-09-28
   - id: L13
     title: "Perf crédits : cache LoansService, loans lus une fois par scan, syncInstallmentLoan en un seul RMW"
     status: todo
