@@ -198,6 +198,7 @@ lots:
       - { id: t9, title: Budget Claude en formatEUR ; titre Tableau de bord ; tuiles compactes ; commentaire IA cohérent avec la démo, status: todo }
     notes:
       - { date: 2026-09-28, text: "revue ux-reviewer : non conforme — 3 bloquants (contraste 3,8:1, débordement 390 px, graphiques sans alternative), 5 majeurs ; captures tmp/ux-finance-L21/" }
+      - { date: 2026-09-28, text: "Sylvain 28-09 : maquette téléphone validée ; garder le correctif du € hors écran (« si je gagne au loto »)" }
   - id: L22
     title: Revue UX — Connexion (PIN)
     status: todo
