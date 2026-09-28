@@ -5,6 +5,7 @@ import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
 import { parseExternal } from '../../common/zod-validation.pipe';
 import { isAuthError, isQuotaError } from '../../common/claude-errors';
 import { AmortizationOutputSchema } from './amortization.schemas';
+import { runWithMaxTokensRetry } from './max-tokens-retry.helper';
 import type { AmortizationOutput } from './amortization.schemas';
 
 export class AmortizationParseError extends Error {
@@ -113,42 +114,24 @@ export class AmortizationService {
     );
 
     try {
-      const stream = this.client.messages.stream({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 16384,
-        temperature: 0,
-        system:
-          "Tu es un spécialiste de l'extraction de tableaux d'amortissement de crédits français (auto, conso, immo). Lis le PDF fourni et appelle l'outil `extract_amortization_schedule` avec les valeurs trouvées.\n\nRÈGLES :\n- creditor : nom court de l'organisme en MAJUSCULES.\n- initialPrincipal : capital total emprunté (positif, euros).\n- monthlyPayment : mensualité fixe en euros (positive). Pour mensualités variables, prendre la valeur dominante.\n- startDate / endDate : 1ère et dernière échéance au format YYYY-MM-DD. Convertis depuis '15/03/2026' (DD/MM/YYYY français) ou '15 mars 2026' → '2026-03-15'.\n- taeg : pourcentage avec décimales (4,85 → 4.85). null si pas affiché.\n- schedule : LISTER TOUTES LES LIGNES du tableau dans l'ordre chronologique. Chaque ligne = { date, capitalRemaining (capital restant dû en FIN de période), capitalPaid (part capital de l'échéance), interestPaid (part intérêts) }. Le capitalRemaining de la dernière ligne doit être ≈ 0.",
-        tools: [EXTRACT_AMORTIZATION_TOOL],
-        tool_choice: { type: 'tool', name: 'extract_amortization_schedule' },
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'document',
-                source: {
-                  type: 'base64',
-                  media_type: 'application/pdf',
-                  data: base64Pdf,
-                },
-              },
-              {
-                type: 'text',
-                text: "Extrais le tableau d'amortissement complet de ce PDF. N'omets aucune ligne. Si la somme des capitalPaid ≠ initialPrincipal à la fin, double-vérifie ton extraction.",
-              },
-            ],
-          },
-        ],
-      });
-      const message = await stream.finalMessage();
+      // Même mécanisme que la phase 1 du flux bancaire : 16k d'abord, relance
+      // unique à 64k si la réponse est tronquée (L11 — grands tableaux immo).
+      const message = await runWithMaxTokensRetry(
+        (maxTokens) => this.runExtraction(base64Pdf, maxTokens),
+        16384,
+        (truncated) => {
+          // Les tokens de la tentative tronquée sont facturés aussi.
+          this.usage.recordUsage(truncated.usage.input_tokens, truncated.usage.output_tokens);
+          this.logger.warn('amortization: max_tokens hit @ 16k, retrying @ 64k');
+        },
+      );
 
       this.usage.recordUsage(message.usage.input_tokens, message.usage.output_tokens);
       this.logger.log(`amortization: stop_reason=${message.stop_reason}`);
 
       if (message.stop_reason === 'max_tokens') {
         throw new AmortizationParseError(
-          'Réponse Claude tronquée (max_tokens atteint) — tableau trop volumineux',
+          'Réponse Claude tronquée même avec le budget maximum (64k tokens) — tableau trop volumineux',
         );
       }
 
@@ -193,5 +176,38 @@ export class AmortizationService {
       }
       throw err;
     }
+  }
+
+  private runExtraction(base64Pdf: string, maxTokens: number): Promise<Anthropic.Message> {
+    // Streaming : requis par le SDK quand max_tokens est élevé (64k).
+    const stream = this.client.messages.stream({
+      model: 'claude-sonnet-4-5',
+      max_tokens: maxTokens,
+      temperature: 0,
+      system:
+        "Tu es un spécialiste de l'extraction de tableaux d'amortissement de crédits français (auto, conso, immo). Lis le PDF fourni et appelle l'outil `extract_amortization_schedule` avec les valeurs trouvées.\n\nRÈGLES :\n- creditor : nom court de l'organisme en MAJUSCULES.\n- initialPrincipal : capital total emprunté (positif, euros).\n- monthlyPayment : mensualité fixe en euros (positive). Pour mensualités variables, prendre la valeur dominante.\n- startDate / endDate : 1ère et dernière échéance au format YYYY-MM-DD. Convertis depuis '15/03/2026' (DD/MM/YYYY français) ou '15 mars 2026' → '2026-03-15'.\n- taeg : pourcentage avec décimales (4,85 → 4.85). null si pas affiché.\n- schedule : LISTER TOUTES LES LIGNES du tableau dans l'ordre chronologique. Chaque ligne = { date, capitalRemaining (capital restant dû en FIN de période), capitalPaid (part capital de l'échéance), interestPaid (part intérêts) }. Le capitalRemaining de la dernière ligne doit être ≈ 0.",
+      tools: [EXTRACT_AMORTIZATION_TOOL],
+      tool_choice: { type: 'tool', name: 'extract_amortization_schedule' },
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: base64Pdf,
+              },
+            },
+            {
+              type: 'text',
+              text: "Extrais le tableau d'amortissement complet de ce PDF. N'omets aucune ligne. Si la somme des capitalPaid ≠ initialPrincipal à la fin, double-vérifie ton extraction.",
+            },
+          ],
+        },
+      ],
+    });
+    return stream.finalMessage();
   }
 }
