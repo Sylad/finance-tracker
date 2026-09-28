@@ -50,7 +50,7 @@ export function ScoreRing({
         <div className={cn('font-display font-bold tabular leading-none', tone)} style={{ fontSize: size * 0.32 }}>
           {Math.round(score)}
         </div>
-        <div className="stat-label mt-1" style={{ fontSize: size * 0.08 }}>/ 100</div>
+        <div className="stat-label mt-1" style={{ fontSize: Math.max(11, size * 0.08) }}>/ 100</div>
       </div>
     </div>
   );

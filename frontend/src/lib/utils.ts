@@ -83,6 +83,11 @@ const EUR_COMPACT = new Intl.NumberFormat('fr-FR', {
   maximumFractionDigits: 2,
 });
 
+/** Euros entiers en fr-FR (« 312 € », « 1 250 € »). */
+export function formatEURRounded(amount: number): string {
+  return EUR_INT.format(amount);
+}
+
 /**
  * Graduations d'axe monétaires (L21/t5). Euros entiers sous 10 000 € —
  * l'ancien `(v/1000).toFixed(0)k` écrasait 250 et 500 en « 0k » —, notation

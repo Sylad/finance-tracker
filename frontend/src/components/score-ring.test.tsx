@@ -35,3 +35,14 @@ describe('<ScoreBadge />', () => {
     expect(span?.className).toContain('badge-info');
   });
 });
+
+describe('<ScoreRing /> petite taille (L21/t12)', () => {
+  it('« / 100 » jamais sous 11 px (anneau 96 px : 7,7 px avant)', () => {
+    render(<ScoreRing score={75} size={96} />);
+    expect(screen.getByText('/ 100')).toHaveStyle({ fontSize: '11px' });
+  });
+  it('grand anneau : proportionnel (180 px → 14,4 px)', () => {
+    render(<ScoreRing score={75} size={180} />);
+    expect(screen.getByText('/ 100')).toHaveStyle({ fontSize: '14.4px' });
+  });
+});

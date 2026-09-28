@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowRight } from 'lucide-react';
 import { CATEGORY_LABELS, type TransactionCategory } from '@/types/api';
-import { cn } from '@/lib/utils';
+import { cn, formatEURRounded } from '@/lib/utils';
 
 type QueryFlags = { isPending: boolean; isError: boolean };
 
@@ -71,7 +71,7 @@ export function BudgetSnapshot({
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className="text-fg-muted font-medium">{b.label}</span>
                 <span className={cn('tabular', b.over ? 'text-negative font-semibold' : 'text-fg-dim')}>
-                  {Math.round(b.spent)} / {b.limit}€
+                  {budgetAmountLabel(b.spent, b.limit)}
                 </span>
               </div>
               <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
@@ -89,6 +89,11 @@ export function BudgetSnapshot({
       )}
     </div>
   );
+}
+
+/** « 312 € / 80 € » : dépensé / plafond, euros entiers fr-FR (L21/t12). */
+export function budgetAmountLabel(spent: number, limit: number): string {
+  return `${formatEURRounded(spent)} / ${formatEURRounded(limit)}`;
 }
 
 export function buildItems(

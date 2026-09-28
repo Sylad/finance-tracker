@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TransactionCategory } from '@/types/api';
-import { buildItems, budgetSnapshotState } from './budget-snapshot';
+import { buildItems, budgetSnapshotState, budgetAmountLabel } from './budget-snapshot';
 
 const tx = (category: TransactionCategory, amount: number) => ({ category, amount });
 
@@ -86,5 +86,14 @@ describe('budgetSnapshotState (relecture L21)', () => {
   });
   it('budgets et transactions présents → prêt', () => {
     expect(budgetSnapshotState({ budget: { food: 100 }, budgetQ: ok, transactions: tx, txQ: ok })).toBe('ready');
+  });
+});
+
+describe('budgetAmountLabel (L21/t12)', () => {
+  it('format fr : « 312 € / 80 € », espace insécable avant €', () => {
+    expect(budgetAmountLabel(311.6, 80)).toBe('312 € / 80 €');
+  });
+  it('milliers avec espace fine insécable', () => {
+    expect(budgetAmountLabel(1250, 1500)).toBe('1 250 € / 1 500 €');
   });
 });
