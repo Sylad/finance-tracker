@@ -2,11 +2,11 @@ import { Link } from '@tanstack/react-router';
 import { ArrowRight } from 'lucide-react';
 import { ScoreBadge } from '@/components/score-ring';
 import type { StatementSummary } from '@/types/api';
-import { formatEUR, formatMonth } from '@/lib/utils';
+import { cn, formatEUR, formatMonth } from '@/lib/utils';
 
 export function RecentStatements({ summaries }: { summaries: StatementSummary[] }) {
   return (
-    <div className="card p-5 lg:col-span-2">
+    <div className="card p-4 md:p-5 lg:col-span-2">
       <div className="flex items-center justify-between mb-4">
         <div className="stat-label">Relevés récents</div>
         <Link to="/history" className="text-xs text-accent-bright hover:text-accent flex items-center gap-1 font-medium">
@@ -14,12 +14,16 @@ export function RecentStatements({ summaries }: { summaries: StatementSummary[] 
         </Link>
       </div>
       <div className="space-y-1">
-        {summaries.slice(0, 5).map((s) => (
+        {summaries.slice(0, 5).map((s, i) => (
           <Link
             key={s.id}
             to="/history/$id"
             params={{ id: s.id }}
-            className="flex items-center justify-between px-3 py-2.5 rounded hover:bg-surface-2 transition-colors group"
+            // Téléphone : 3 relevés, 5 à partir de md (L21/t8).
+            className={cn(
+              'items-center justify-between px-3 py-2.5 rounded hover:bg-surface-2 transition-colors group',
+              i < 3 ? 'flex' : 'hidden md:flex',
+            )}
           >
             <div className="flex items-center gap-3">
               <div className="w-1 h-9 rounded-full bg-accent-dim group-hover:bg-accent transition-colors" />
@@ -28,7 +32,7 @@ export function RecentStatements({ summaries }: { summaries: StatementSummary[] 
                   {formatMonth(s.month, s.year)}
                 </div>
                 <div className="text-xs text-fg-dim">
-                  {s.transactionCount} transactions · {s.bankName}
+                  {s.transactionCount} transactions<span className="hidden sm:inline"> · {s.bankName}</span>
                 </div>
               </div>
             </div>

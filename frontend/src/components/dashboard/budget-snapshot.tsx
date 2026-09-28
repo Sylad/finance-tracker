@@ -13,7 +13,7 @@ export function BudgetSnapshot({
   const items = budget && transactions ? buildItems(budget, transactions) : [];
 
   return (
-    <div className="card p-5">
+    <div className="card p-4 md:p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="stat-label">Budgets ce mois</div>
         <Link to="/budget" className="text-xs text-accent-bright hover:text-accent flex items-center gap-1 font-medium">

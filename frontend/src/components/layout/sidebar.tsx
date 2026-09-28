@@ -43,7 +43,7 @@ export const NAV_ITEMS = [
   { to: '/upload', label: 'Importer', icon: Upload, exact: false },
 ] as const;
 
-const SECONDARY = [
+export const SECONDARY_ITEMS = [
   { to: '/nouveautes', label: 'Nouveautés', icon: Megaphone },
   { to: '/about', label: 'À propos', icon: Info },
 ] as const;
@@ -101,7 +101,7 @@ export function Sidebar() {
 
         <div className="my-3 mx-3 h-px bg-border" />
 
-        {SECONDARY.map(({ to, label, icon: Icon }) => {
+        {SECONDARY_ITEMS.map(({ to, label, icon: Icon }) => {
           const active = path.startsWith(to);
           return (
             <Link

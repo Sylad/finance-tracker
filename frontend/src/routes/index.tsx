@@ -10,6 +10,7 @@ import {
   Sparkles,
   PiggyBank,
   CreditCard,
+  ChevronDown,
 } from 'lucide-react';
 import {
   useStatements,
@@ -38,6 +39,7 @@ import { BalanceTrendChart } from '@/components/dashboard/balance-trend-chart';
 import { RecentStatements } from '@/components/dashboard/recent-statements';
 import { YearlyCharts } from '@/components/dashboard/yearly-charts';
 import { HealthTile } from '@/components/dashboard/health-tile';
+import { MonthSummaryCard, HealthScoreCompact, PhoneMoreLinks } from '@/components/dashboard/phone-cards';
 
 export function DashboardPage() {
   const stmts = useStatements();
@@ -119,9 +121,12 @@ export function DashboardPage() {
 
   const net = current.totalCredits - current.totalDebits;
 
+  const comment = currentDetail.data?.healthScore.claudeComment;
+
   return (
     <>
       <PageHeader
+        className="hidden md:flex"
         eyebrow={formatMonth(current.month, current.year)}
         title="Tableau de bord"
         subtitle={
@@ -136,18 +141,32 @@ export function DashboardPage() {
           </Link>
         }
       />
+      {/* Téléphone (L21/t8) : mois + tendance sur une ligne, titre pour les lecteurs d'écran. */}
+      <div className="md:hidden mb-4">
+        <h1 className="sr-only">Tableau de bord</h1>
+        <div className="flex items-center justify-between gap-3">
+          <div className="stat-label text-accent-bright">{formatMonth(current.month, current.year)}</div>
+          <span className={cn(trendBadge, 'tabular')}>{trendIcon} {trendLabel}</span>
+        </div>
+      </div>
 
       {netWorth.data && (
-        <div className="card p-4 sm:p-6 mb-6 bg-gradient-to-r from-surface to-surface-2/40 [container-type:inline-size]">
+        <div className="card p-4 sm:p-6 mb-4 md:mb-6 bg-gradient-to-r from-surface to-surface-2/40 [container-type:inline-size]">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="min-w-0 max-w-full">
               <div className="stat-label">Patrimoine net</div>
               <div className="amount-fluid font-display font-bold tabular text-fg-bright mt-1">
                 {formatEUR(netWorth.data.netWorth)}
               </div>
-              <div className="text-xs text-fg-dim mt-1">
-                {formatEUR(netWorth.data.closingBalance)} compte courant + {formatEUR(netWorth.data.totalSavings)} épargne − {formatEUR(netWorth.data.estimatedDebt)} dettes estimées
+              <div className="hidden md:block text-xs text-fg-dim mt-1">
+                {netWorthDetail(netWorth.data)}
               </div>
+              <details className="md:hidden group mt-1">
+                <summary className="flex items-center gap-1 min-h-11 cursor-pointer list-none text-xs font-medium text-fg-muted [&::-webkit-details-marker]:hidden">
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" /> Détail
+                </summary>
+                <div className="text-xs text-fg-dim">{netWorthDetail(netWorth.data)}</div>
+              </details>
             </div>
             {netWorth.data.ignoredLoanIds.length > 0 && (
               <div className="text-xs text-warning max-w-xs">
@@ -159,7 +178,7 @@ export function DashboardPage() {
       )}
 
       {(alerts.data?.length ?? 0) > 0 && (
-        <div className="card p-4 mb-6 border-l-4 border-l-warning">
+        <div className="card p-4 mb-4 md:mb-6 border-l-4 border-l-warning">
           <div className="font-display font-semibold text-fg-bright mb-2">Alertes ({alerts.data!.length})</div>
           <div className="space-y-1.5">
             {alerts.data!.map((a, i) => (
@@ -177,17 +196,28 @@ export function DashboardPage() {
         </div>
       )}
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="card p-6 lg:row-span-4 flex flex-col">
+      {/* Téléphone : Ce mois, santé compacte, points d'attention (L21/t8). */}
+      <div className="md:hidden space-y-4 mb-4">
+        <MonthSummaryCard
+          credits={current.totalCredits}
+          debits={current.totalDebits}
+          closingBalance={current.closingBalance}
+        />
+        <HealthScoreCompact score={current.healthScore} comment={comment} />
+        <HealthTile diagnostic={health.data} />
+      </div>
+
+      <section className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="card p-6 md:col-span-2 lg:col-span-1 lg:row-span-4 flex flex-col">
           <div className="stat-label flex items-center gap-1.5">
             <Sparkles className="h-3 w-3" /> Santé financière
           </div>
           <div className="flex-1 flex items-center justify-center my-6">
             <ScoreRing score={current.healthScore} size={180} strokeWidth={14} />
           </div>
-          {currentDetail.data?.healthScore.claudeComment && (
+          {comment && (
             <blockquote className="text-sm text-fg-muted italic border-l-2 border-accent/40 pl-3 leading-relaxed">
-              {currentDetail.data.healthScore.claudeComment}
+              {comment}
             </blockquote>
           )}
         </div>
@@ -224,33 +254,42 @@ export function DashboardPage() {
           icon={<CreditCard className="h-4 w-4 text-warning" />}
           tone="negative"
         />
-        <HealthTile diagnostic={health.data} className="lg:col-span-2" />
+        <HealthTile diagnostic={health.data} className="md:col-span-2" />
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <section className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <ScoreTrendChart series={scoreSeries} currentScore={current.healthScore} />
         <BalanceTrendChart series={balanceSeries} currentBalance={current.closingBalance} />
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <RecentStatements summaries={summaries} />
-        <BudgetSnapshot
-          budget={budget.data}
-          transactions={currentDetail.data?.transactions}
-        />
+        <div className="order-first lg:order-none">
+          <BudgetSnapshot
+            budget={budget.data}
+            transactions={currentDetail.data?.transactions}
+          />
+        </div>
+        <div className="md:hidden">
+          <PhoneMoreLinks />
+        </div>
       </section>
 
       {claude.data && (
-        <section className="mt-6">
+        <section className="hidden md:block mt-6">
           <ClaudeUsageCard usage={claude.data} />
         </section>
       )}
 
       {yearly.data && yearly.data.monthly.length >= 2 && (
-        <section className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <section className="hidden md:grid mt-6 grid-cols-1 lg:grid-cols-2 gap-4">
           <YearlyCharts data={yearly.data} />
         </section>
       )}
     </>
   );
+}
+
+function netWorthDetail(d: { closingBalance: number; totalSavings: number; estimatedDebt: number }) {
+  return `${formatEUR(d.closingBalance)} compte courant + ${formatEUR(d.totalSavings)} épargne − ${formatEUR(d.estimatedDebt)} dettes estimées`;
 }
