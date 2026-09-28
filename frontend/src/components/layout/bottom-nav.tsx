@@ -23,20 +23,42 @@ export function BottomNav() {
   const firstLink = useRef<HTMLAnchorElement>(null);
   const plusButton = useRef<HTMLButtonElement>(null);
 
-  // Fermeture à la navigation, à Échap ; focus sur la 1re page à l'ouverture.
+  const wasOpen = useRef(false);
+
+  // Fermeture à la navigation ; focus sur la 1re page à l'ouverture ; à
+  // TOUTE fermeture (Échap, Fermer, voile, choix d'une page) le focus
+  // revient au bouton « Plus » (relecture L21).
   useEffect(() => { setOpen(false); }, [path]);
   useEffect(() => {
-    if (!open) return;
-    firstLink.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setOpen(false);
-        plusButton.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    if (open) {
+      wasOpen.current = true;
+      firstLink.current?.focus();
+    } else if (wasOpen.current) {
+      wasOpen.current = false;
+      plusButton.current?.focus();
+    }
   }, [open]);
+
+  // Piège à focus (aria-modal) : Tab / Maj+Tab bouclent dans le panneau.
+  const onSheetKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      setOpen(false);
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const items = [...e.currentTarget.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')];
+    if (items.length === 0) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   const tabClass = (active: boolean) => cn(
     'flex flex-col items-center justify-center gap-1 py-2.5 transition-colors',
@@ -47,14 +69,20 @@ export function BottomNav() {
   return (
     <>
       {open && (
-        <div className="lg:hidden fixed inset-0 z-40" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-bg/70 backdrop-blur-sm" aria-hidden="true" />
+        // z-[45] : au-dessus de l'en-tête téléphone (z-40), sous la barre du bas (z-50).
+        <div data-testid="all-pages-overlay" className="lg:hidden fixed inset-0 z-[45]">
+          <div
+            data-testid="all-pages-backdrop"
+            className="absolute inset-0 bg-bg/70 backdrop-blur-sm"
+            aria-hidden="true"
+            onClick={() => setOpen(false)}
+          />
           <div
             id="all-pages-sheet"
             role="dialog"
             aria-modal="true"
             aria-labelledby="all-pages-title"
-            onClick={(e) => e.stopPropagation()}
+            onKeyDown={onSheetKeyDown}
             className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-border bg-surface px-4 pt-4"
             style={{ paddingBottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
           >

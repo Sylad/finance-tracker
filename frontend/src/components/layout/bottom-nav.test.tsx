@@ -48,4 +48,39 @@ describe('<BottomNav /> (L21/t8)', () => {
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('link', { name: /Crédits/ }));
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+
+  it('piège le focus dans le panneau (Tab et Maj+Tab bouclent)', async () => {
+    await renderNav();
+    await userEvent.click(screen.getByRole('button', { name: 'Plus' }));
+    const dialog = screen.getByRole('dialog');
+    const focusables = within(dialog).getAllByRole('button').concat(within(dialog).getAllByRole('link'));
+    // 1er focus : première page ; Maj+Tab depuis le premier élément du panneau → dernier.
+    const closeBtn = within(dialog).getByRole('button', { name: 'Fermer' });
+    const logout = within(dialog).getByRole('button', { name: /Déconnexion/ });
+    closeBtn.focus();
+    await userEvent.tab({ shift: true });
+    expect(document.activeElement).toBe(logout);
+    await userEvent.tab();
+    expect(document.activeElement).toBe(closeBtn);
+    expect(focusables.length).toBeGreaterThan(18);
+  });
+
+  it.each([
+    ['Échap', async () => { await userEvent.keyboard('{Escape}'); }],
+    ['bouton Fermer', async () => { await userEvent.click(screen.getByRole('button', { name: 'Fermer' })); }],
+    ['voile', async () => { await userEvent.click(screen.getByTestId('all-pages-backdrop')); }],
+    ['choix d’une page', async () => { await userEvent.click(within(screen.getByRole('dialog')).getByRole('link', { name: /Crédits/ })); }],
+  ])('rend le focus au bouton « Plus » à la fermeture (%s)', async (_n, closeIt) => {
+    await renderNav();
+    await userEvent.click(screen.getByRole('button', { name: 'Plus' }));
+    await closeIt();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Plus' }));
+  });
+
+  it("le voile passe au-dessus de l'en-tête téléphone (z-40) et sous la barre (z-50)", async () => {
+    await renderNav();
+    await userEvent.click(screen.getByRole('button', { name: 'Plus' }));
+    expect(screen.getByTestId('all-pages-overlay').className).toContain('z-[45]');
+  });
 });
