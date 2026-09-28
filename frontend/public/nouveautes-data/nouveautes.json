@@ -1,19 +1,7 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-09-28 22:21",
+  "generated": "2026-09-28 23:14",
   "entries": [
-    {
-      "slug": "2026-09-28-une-page-nouveautes-ce-qui-change-avec-une-capture",
-      "title": "Une page Nouveautés : ce qui change, avec une capture",
-      "date": "2026-09-28",
-      "lots": [
-        "L18"
-      ],
-      "captures": [
-        "captures/L18-page-nouveautes.png"
-      ],
-      "html": "<p>L'application a désormais sa page <strong>Nouveautés</strong>, accessible en bas du menu, juste au-dessus d'« À propos », et depuis la recherche rapide (⌘K).</p>\n<p>Chaque évolution visible y est décrite en quelques lignes, avec une capture d'écran, la plus récente en premier.</p>"
-    },
     {
       "slug": "2026-09-28-un-tableau-de-bord-plus-lisible-surtout-au-telephone",
       "title": "Un tableau de bord plus lisible, surtout au téléphone",
@@ -26,6 +14,18 @@
         "captures/L21-tableau-de-bord-bureau.png"
       ],
       "html": "<p>Le tableau de bord a été revu pour être plus lisible et plus accessible.</p>\n<ul><li><strong>Au téléphone</strong>, l'essentiel d'abord : patrimoine net, une carte « Ce mois » (entrées, débits, net, solde), la santé financière et les points d'attention. La page est deux fois plus courte, et l'onglet <strong>Plus</strong> donne accès à toutes les pages.</li><li>Les textes secondaires sont <strong>plus contrastés</strong>, et les montants ne débordent plus de l'écran, même très grands.</li><li>Les graphiques ont une <strong>légende</strong> et une description lisible par les lecteurs d'écran ; leurs axes n'affichent plus de graduations en double.</li><li>La tuile <strong>Points d'attention</strong> explique chaque alerte en clair, par exemple « Reste à vivre : 5,7 % du revenu (seuil 10 %) ».</li><li>En cas de panne ou hors connexion, un message le dit clairement avec un bouton <strong>Réessayer</strong>, au lieu d'inviter à importer un premier relevé.</li></ul>"
+    },
+    {
+      "slug": "2026-09-28-une-page-nouveautes-ce-qui-change-avec-une-capture",
+      "title": "Une page Nouveautés : ce qui change, avec une capture",
+      "date": "2026-09-28",
+      "lots": [
+        "L18"
+      ],
+      "captures": [
+        "captures/L18-page-nouveautes.png"
+      ],
+      "html": "<p>L'application a désormais sa page <strong>Nouveautés</strong>, accessible en bas du menu, juste au-dessus d'« À propos », et depuis la recherche rapide (⌘K).</p>\n<p>Chaque évolution visible y est décrite en quelques lignes, avec une capture d'écran, la plus récente en premier.</p>"
     }
   ]
 }

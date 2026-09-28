@@ -1,6 +1,7 @@
 ---
 title: Un tableau de bord plus lisible, surtout au téléphone
 date: 2026-09-28
+created: 2026-09-28T22:21+02:00
 lots: [L21]
 captures: [captures/L21-tableau-de-bord-telephone.png, captures/L21-tableau-de-bord-bureau.png]
 ---

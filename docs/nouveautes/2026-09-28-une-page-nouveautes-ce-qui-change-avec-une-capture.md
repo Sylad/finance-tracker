@@ -1,6 +1,7 @@
 ---
 title: "Une page Nouveautés : ce qui change, avec une capture"
 date: 2026-09-28
+created: 2026-09-28T20:07+02:00
 lots: [L18]
 captures: [captures/L18-page-nouveautes.png]
 ---
