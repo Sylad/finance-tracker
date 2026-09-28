@@ -64,6 +64,19 @@ export function DashboardPage() {
   const view = dashboardView(stmts);
   if (view === 'loading') return <LoadingState />;
 
+  if (view === 'offline') {
+    return (
+      <>
+        <PageHeader title="Tableau de bord" />
+        <ErrorState
+          title="Hors ligne"
+          message="Pas de connexion au serveur : les relevés se chargeront dès que le réseau revient. Tes données ne sont pas perdues."
+          onRetry={() => { void stmts.refetch(); }}
+        />
+      </>
+    );
+  }
+
   if (view === 'error') {
     return (
       <>
