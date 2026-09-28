@@ -25,7 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         // pt-14 pour ne pas doubler le décalage (L21/t7).
         <div
           data-demo-banner
-          className="mt-14 lg:mt-0 bg-warning/20 border-b border-warning text-warning px-4 sm:px-6 py-2 text-sm font-medium text-center"
+          className="mt-14 lg:mt-0 lg:ml-[240px] bg-warning/20 border-b border-warning text-warning px-4 sm:px-6 py-2 text-sm font-medium text-center"
         >
           <span className="sm:hidden">🎭 Mode démo {forced && 'verrouillé '}— données fictives.</span>
           <span className="hidden sm:inline">
