@@ -62,4 +62,4 @@ if [ -z "$bumped" ]; then
 fi
 git -C "$GITOPS" commit -q -am "finance-tracker:$bumped — $(git log -1 --format=%s "$SHA")"
 git -C "$GITOPS" push -q
-echo "deploy: $services → sha-$SHORT poussé dans developpeur-gitops"
+echo "deploy:$bumped poussé dans developpeur-gitops"
