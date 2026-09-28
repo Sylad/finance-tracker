@@ -183,6 +183,7 @@ lots:
     finished: 2026-09-28
   - id: L21
     title: Revue UX — Tableau de bord
+    visible: true
     status: doing
     estimate: 0.25
     created: 2026-09-28
