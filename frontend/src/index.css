@@ -18,7 +18,8 @@
 
     --fg: 220 14% 96%;
     --fg-muted: 220 10% 67%;
-    --fg-dim: 220 10% 47%;
+    /* 55 % : 5,0:1 sur --surface, 4,6:1 sur --surface-2 (WCAG 1.4.3, L21/t1) */
+    --fg-dim: 220 10% 55%;
     --fg-bright: 0 0% 100%;
 
     --positive: 160 84% 45%;
