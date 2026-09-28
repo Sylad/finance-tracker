@@ -146,3 +146,10 @@ lots:
     created: 2026-09-28
     started: 2026-09-28
     finished: 2026-09-28
+  - id: L18
+    title: "Page Nouveautés (cadence news) : route /nouveautes, sidebar, palette"
+    status: doing
+    estimate: 0.5
+    visible: true
+    created: 2026-09-28
+    started: 2026-09-28

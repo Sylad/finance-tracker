@@ -33,6 +33,17 @@ génère `docs/plan/gantt.html` (non versionné). Un lot se démarre
 (`raf start L4`) avant le premier commit et se ferme (`raf done L4`) une fois
 testé ; les décisions vont dans `raf note`.
 
+## Nouveautés (cadence news)
+
+Un lot qui change quelque chose **pour l'utilisateur** se crée avec
+`raf add … --visible`. Avant ou juste après `raf done`, écrire son entrée :
+`cadence news new L4` → `docs/nouveautes/<date>-<titre>.md` (texte pour
+l'utilisateur, pas pour le développeur), déposer au moins une capture dans
+`docs/nouveautes/captures/` et la déclarer sous `captures:` (ou
+`nocapture: raison`). `raf check` échoue tant qu'un lot visible terminé n'a
+pas son entrée. Puis `npm run news` régénère `frontend/public/nouveautes-data/`
+(versionné : la CI n'a pas cadence), servi par la page `/nouveautes`.
+
 ## Variables d'env requises (`backend/.env`)
 
 ```

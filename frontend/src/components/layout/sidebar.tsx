@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Upload,
   Info,
+  Megaphone,
   LogOut,
   PiggyBank,
   Banknote,
@@ -40,6 +41,11 @@ export const NAV_ITEMS = [
   { to: '/goals', label: 'Objectifs', icon: Target, exact: false },
   { to: '/category-rules', label: 'Catégorisation', icon: Tags, exact: false },
   { to: '/upload', label: 'Importer', icon: Upload, exact: false },
+] as const;
+
+const SECONDARY = [
+  { to: '/nouveautes', label: 'Nouveautés', icon: Megaphone },
+  { to: '/about', label: 'À propos', icon: Info },
 ] as const;
 
 export function Sidebar() {
@@ -95,21 +101,27 @@ export function Sidebar() {
 
         <div className="my-3 mx-3 h-px bg-border" />
 
-        <Link
-          to="/about"
-          className={cn(
-            'group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors',
-            path.startsWith('/about')
-              ? 'bg-surface-2 text-fg-bright'
-              : 'text-fg-muted hover:bg-surface-2/60 hover:text-fg',
-          )}
-        >
-          {path.startsWith('/about') && (
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-sm bg-accent" />
-          )}
-          <Info className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
-          <span className="font-medium">À propos</span>
-        </Link>
+        {SECONDARY.map(({ to, label, icon: Icon }) => {
+          const active = path.startsWith(to);
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={cn(
+                'group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors',
+                active
+                  ? 'bg-surface-2 text-fg-bright'
+                  : 'text-fg-muted hover:bg-surface-2/60 hover:text-fg',
+              )}
+            >
+              {active && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-sm bg-accent" />
+              )}
+              <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
+              <span className="font-medium">{label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       <div className="px-3 pb-3 border-t border-border pt-3 space-y-1">
