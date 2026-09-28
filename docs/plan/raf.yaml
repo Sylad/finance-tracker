@@ -154,3 +154,9 @@ lots:
     created: 2026-09-28
     started: 2026-09-28
     finished: 2026-09-28
+  - id: L19
+    title: Livraison vérifiée (cadence deliver) et rituels de session
+    status: doing
+    estimate: 0.5
+    created: 2026-09-28
+    started: 2026-09-28

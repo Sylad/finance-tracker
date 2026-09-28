@@ -13,15 +13,20 @@ App perso de suivi financier perso, déployée sur NAS Synology. Frontend React 
 | AI | Anthropic SDK — modèle `claude-sonnet-4-5`, two-phase tool-use (extract_transactions → analyze_finances) |
 | Live | Server-Sent Events sur `/api/events` (claude-balance-changed, etc.) |
 
-## Workflow dev
+## Sessions et livraison (cadence)
 
-Les builds se font via Docker compose côté NAS (sources sync via `scp -O` depuis WSL) :
-
-```bash
-ssh nas "cd /volume2/docker/developpeur/finance-tracker && docker compose up -d --build finance-frontend"
-```
-
-Pour le backend : remplace `finance-frontend` par `finance-backend`.
+- Début de session : skill `cadence-session-start` (`cadence session start`) — faits,
+  trois propositions du plan, puis attendre la priorité de Sylvain.
+- Fin de session : skill `cadence-session-close` (`cadence session close`, code 1 tant
+  que ce n'est pas fermé), puis `cadence session next "…"` pour la suivante.
+- Livraison : skill `cadence-deliver`. Pousser, puis `cadence deliver --dry-run` et
+  `cadence deliver` (`cadence.yaml`) : attente du run `build.yml` du sha poussé →
+  `scripts/deploy.sh` bumpe dans `developpeur-gitops` le tag des **seuls** services
+  construits par la CI (elle ne construit que le service modifié) et pousse → ArgoCD
+  → `scripts/verify-rollout.sh` (pods sur les tags du values.yaml, `kubectl` lecture
+  seule, contexte `dark-blue`) + `/api/health`. Jamais deux livraisons à la fois.
+- L'instance déployée (finance.sladoire.dev, ns `preprod` de dark-blue) ne contient
+  que des données de démo ; les vraies données restent en local sur Big-Blue.
 
 ## Plan (raf)
 

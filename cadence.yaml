@@ -1,0 +1,12 @@
+# Livraison par `cadence deliver` (https://github.com/Sylad/cadence) :
+# CI du sha poussé → bump du tag dans developpeur-gitops → vérification de l'effet.
+deliver:
+  ci: github
+  deploy:
+    - ./scripts/deploy.sh
+  verify:
+    - command: ./scripts/verify-rollout.sh
+    - url: https://finance.sladoire.dev/api/health
+      contains: '"status":"ok"'
+    - url: https://finance.sladoire.dev/
+  verifyTimeout: 600
