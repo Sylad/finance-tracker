@@ -1,5 +1,5 @@
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { formatEUR, chartTooltipProps } from '@/lib/utils';
+import { formatEUR, formatEURCompact, chartTooltipProps } from '@/lib/utils';
 
 interface BalancePoint {
   label: string;
@@ -26,9 +26,9 @@ export function BalanceTrendChart({
       {series.length > 1 ? (
         <div className="h-44">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={series} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
+            <LineChart data={series} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
               <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={50} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={64} allowDecimals={false} tickFormatter={formatEURCompact} />
               <Tooltip
                 {...chartTooltipProps}
                 formatter={(v: number) => [formatEUR(v), 'Solde']}

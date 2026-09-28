@@ -22,7 +22,7 @@ export function ScoreTrendChart({ series, currentScore }: { series: ScorePoint[]
       {series.length > 1 ? (
         <div className="h-44">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={series} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
+            <AreaChart data={series} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id="score-grad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="hsl(160 84% 50%)" stopOpacity={0.3} />
@@ -30,7 +30,7 @@ export function ScoreTrendChart({ series, currentScore }: { series: ScorePoint[]
                 </linearGradient>
               </defs>
               <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
+              <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={36} />
               <Tooltip {...chartTooltipProps} />
               <Area type="monotone" dataKey="score" stroke="hsl(160 84% 50%)" strokeWidth={2} fill="url(#score-grad)" />
             </AreaChart>

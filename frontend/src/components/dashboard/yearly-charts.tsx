@@ -1,6 +1,6 @@
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { CATEGORY_LABELS, type TransactionCategory } from '@/types/api';
-import { formatEUR, formatMonthShort, chartTooltipProps } from '@/lib/utils';
+import { formatEUR, formatEURCompact, formatMonthShort, chartTooltipProps } from '@/lib/utils';
 
 interface YearlyData {
   monthly: { month: string; credits: number; debits: number }[];
@@ -23,7 +23,7 @@ export function YearlyCharts({ data }: { data: YearlyData }) {
                   return formatMonthShort(Number(mm), Number(y));
                 }}
               />
-              <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+              <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }} width={64} allowDecimals={false} tickFormatter={formatEURCompact} />
               <Tooltip
                 {...chartTooltipProps}
                 labelFormatter={(m: string) => {

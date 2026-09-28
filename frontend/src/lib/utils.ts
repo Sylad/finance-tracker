@@ -68,3 +68,27 @@ export const chartTooltipProps = {
   labelStyle: { color: 'hsl(var(--fg))' },
   itemStyle: { color: 'hsl(var(--fg))' },
 };
+
+const EUR_INT = new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'EUR',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+const EUR_COMPACT = new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'EUR',
+  notation: 'compact',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
+/**
+ * Graduations d'axe monétaires (L21/t5). Euros entiers sous 10 000 € —
+ * l'ancien `(v/1000).toFixed(0)k` écrasait 250 et 500 en « 0k » —, notation
+ * compacte fr-FR au-delà (« 12,5 k € », « 2 M € »). À utiliser avec
+ * `allowDecimals={false}` sur l'axe.
+ */
+export function formatEURCompact(amount: number): string {
+  return Math.abs(amount) < 10_000 ? EUR_INT.format(amount) : EUR_COMPACT.format(amount);
+}
