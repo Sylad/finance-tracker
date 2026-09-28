@@ -801,6 +801,33 @@ describe('LoansService', () => {
       expect(same.installmentSchedule![0].paidOccurrenceId).toBe('X');
     });
 
+    it('getLoanHealth : fraîcheur sur la période du relevé, pas sur la date d\'import', () => {
+      // Relevé de janvier importé en mai : ce n'est pas un relevé récent.
+      const occurrencesDetected = ['2026-02-05', '2026-03-05', '2026-04-05'].map((date) => ({ date }));
+      const loan = {
+        kind: 'revolving',
+        type: 'revolving',
+        occurrencesDetected,
+        lastStatementSnapshot: {
+          date: '2026-05-08T10:00:00.000Z',
+          source: 'pdf-import',
+          extractedValues: { statementDate: '2026-01-31' },
+        },
+      } as any;
+      expect(LoansService.getLoanHealth(loan, '2026-05-10')).toBe('partial');
+    });
+
+    it('getLoanHealth : sans statementDate, retombe sur la date d\'import', () => {
+      const occurrencesDetected = ['2026-02-05', '2026-03-05', '2026-04-05'].map((date) => ({ date }));
+      const loan = {
+        kind: 'revolving',
+        type: 'revolving',
+        occurrencesDetected,
+        lastStatementSnapshot: { date: '2026-05-08T10:00:00.000Z', source: 'manual', extractedValues: {} },
+      } as any;
+      expect(LoansService.getLoanHealth(loan, '2026-05-10')).toBe('complete');
+    });
+
     it('getLoanHealth installment : complete si toutes past dueDates paid', () => {
       const loan = {
         kind: 'installment',

@@ -1199,7 +1199,11 @@ export class LoansService {
 
     // Classic / revolving : heuristique standard
     const hasAmortization = (loan.amortizationSchedule?.length ?? 0) > 0;
-    const lastSnapshotDate = loan.lastStatementSnapshot?.date ?? null;
+    // Fraîcheur = période couverte par le relevé, pas le jour de l'import (un
+    // vieux relevé importé aujourd'hui n'est pas récent). Date d'import en
+    // repli pour les saisies manuelles sans statementDate.
+    const snapshot = loan.lastStatementSnapshot;
+    const lastSnapshotDate = snapshot?.extractedValues?.statementDate || snapshot?.date || null;
     const recentSnapshot = lastSnapshotDate
       ? (todayMs - new Date(lastSnapshotDate).getTime()) <= 60 * 24 * 3600 * 1000
       : false;

@@ -70,12 +70,13 @@ lots:
     started: 2026-09-28
   - id: L9
     title: "getLoanHealth : fraîcheur sur statementDate, pas la date d'import"
-    status: todo
+    status: doing
     estimate: 0.5
     quickwin: true
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #10" }
+    started: 2026-09-28
   - id: L10
     title: "upsertFromBankExtract : fin de mois composée en local (décalage UTC)"
     status: todo
