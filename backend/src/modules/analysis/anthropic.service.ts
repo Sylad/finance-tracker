@@ -4,6 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
 import { parseExternal } from '../../common/zod-validation.pipe';
 import { isAuthError, isQuotaError, isRateLimitError } from '../../common/claude-errors';
+import { runWithMaxTokensRetry } from './max-tokens-retry.helper';
 import { Phase1OutputSchema, Phase2OutputSchema, Phase1Output, Phase2Output } from './anthropic.schemas';
 
 export class AnthropicParseError extends Error {
@@ -198,13 +199,15 @@ export class AnthropicService {
     // Phase 1 — extraction avec budget output adapté.
     // On part à 32k (4 × ancien défaut) ; si le relevé est volumineux et qu'on hit
     // max_tokens, on retente une fois avec 64k (max supporté par Sonnet 4.5).
-    let phase1 = await this.runPhase1(base64Pdf, 32768);
-    if (phase1.stop_reason === 'max_tokens') {
-      // Les tokens de la tentative tronquée sont facturés aussi.
-      this.usage.recordUsage(phase1.usage.input_tokens, phase1.usage.output_tokens);
-      this.logger.warn('Phase 1: max_tokens hit @ 32k, retrying @ 64k');
-      phase1 = await this.runPhase1(base64Pdf, 64000);
-    }
+    const phase1 = await runWithMaxTokensRetry(
+      (maxTokens) => this.runPhase1(base64Pdf, maxTokens),
+      32768,
+      (truncated) => {
+        // Les tokens de la tentative tronquée sont facturés aussi.
+        this.usage.recordUsage(truncated.usage.input_tokens, truncated.usage.output_tokens);
+        this.logger.warn('Phase 1: max_tokens hit @ 32k, retrying @ 64k');
+      },
+    );
 
     this.usage.recordUsage(phase1.usage.input_tokens, phase1.usage.output_tokens);
     this.logger.log(`Phase 1: stop_reason=${phase1.stop_reason}`);
