@@ -15,6 +15,7 @@ lots:
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #1 — sécurité, à faire en premier ; re-vérifier dans le code avant d'attaquer" }
       - { date: 2026-09-28, text: "relecture Opus : rien de bloquant ; restent (1) DEMO_FORCED=true dans developpeur-gitops à décider par Sylvain (passerait aussi l'ingress LAN en démo), (2) DEMO_FORCED n'accepte que 'true' minuscule, (3) upload X-Demo-Mode non forcé écrit dans ./data/uploads, (4) warhammer40k a le même motif X-Forwarded-Host à auditer" }
+      - { date: 2026-09-28, text: "livré ee904fb le 28-09 ; effet vérifié en prod : demo/status forced:true même avec X-Forwarded-Host forgé, claude/usage sans vrai solde ; DEMO_FORCED=true posé dans developpeur-gitops 203f742 (validé par Sylvain), déployé et vérifié" }
     started: 2026-09-28
     finished: 2026-09-28
   - id: L2
