@@ -61,31 +61,34 @@ lots:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #8" }
   - id: L8
     title: 'numberLike : milliers à la française ("3.000")'
-    status: doing
+    status: done
     estimate: 0.5
     quickwin: true
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #9" }
     started: 2026-09-28
+    finished: 2026-09-28
   - id: L9
     title: "getLoanHealth : fraîcheur sur statementDate, pas la date d'import"
-    status: doing
+    status: done
     estimate: 0.5
     quickwin: true
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #10" }
     started: 2026-09-28
+    finished: 2026-09-28
   - id: L10
     title: "upsertFromBankExtract : fin de mois composée en local (décalage UTC)"
-    status: doing
+    status: done
     estimate: 0.5
     quickwin: true
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #11" }
     started: 2026-09-28
+    finished: 2026-09-28
   - id: L11
     title: "amortization : retry à 64k comme le flux bancaire"
     status: todo
