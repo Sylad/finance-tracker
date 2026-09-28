@@ -281,6 +281,9 @@ export function DashboardPage() {
           <BudgetSnapshot
             budget={budget.data}
             transactions={currentDetail.data?.transactions}
+            budgetQ={budget}
+            txQ={currentDetail}
+            onRetry={() => { void budget.refetch(); void currentDetail.refetch(); }}
           />
         </div>
         <div className="md:hidden">

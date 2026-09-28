@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TransactionCategory } from '@/types/api';
-import { buildItems } from './budget-snapshot';
+import { buildItems, budgetSnapshotState } from './budget-snapshot';
 
 const tx = (category: TransactionCategory, amount: number) => ({ category, amount });
 
@@ -62,5 +62,29 @@ describe('buildItems (budget snapshot)', () => {
     expect(food?.label).toBe('Alimentation');
     // Unknown category id flows through as-is
     expect(mystery?.label).toBe('mystery');
+  });
+});
+
+describe('budgetSnapshotState (relecture L21)', () => {
+  const ok = { isPending: false, isError: false };
+  const tx = [{ category: 'food' as const, amount: -10 }];
+
+  it('budgets en chargement → chargement', () => {
+    expect(budgetSnapshotState({ budget: undefined, budgetQ: { isPending: true, isError: false }, transactions: undefined, txQ: ok })).toBe('loading');
+  });
+  it('budgets en erreur → erreur', () => {
+    expect(budgetSnapshotState({ budget: undefined, budgetQ: { isPending: false, isError: true }, transactions: undefined, txQ: ok })).toBe('error');
+  });
+  it('aucune limite positive → aucun budget', () => {
+    expect(budgetSnapshotState({ budget: { food: 0 }, budgetQ: ok, transactions: tx, txQ: ok })).toBe('none');
+  });
+  it('budgets configurés mais relevé en chargement → chargement, pas « Aucun budget »', () => {
+    expect(budgetSnapshotState({ budget: { food: 100 }, budgetQ: ok, transactions: undefined, txQ: { isPending: true, isError: false } })).toBe('loading');
+  });
+  it('budgets configurés mais relevé en erreur → erreur', () => {
+    expect(budgetSnapshotState({ budget: { food: 100 }, budgetQ: ok, transactions: undefined, txQ: { isPending: false, isError: true } })).toBe('error');
+  });
+  it('budgets et transactions présents → prêt', () => {
+    expect(budgetSnapshotState({ budget: { food: 100 }, budgetQ: ok, transactions: tx, txQ: ok })).toBe('ready');
   });
 });

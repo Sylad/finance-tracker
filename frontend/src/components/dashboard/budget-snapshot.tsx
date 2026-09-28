@@ -3,14 +3,45 @@ import { ArrowRight } from 'lucide-react';
 import { CATEGORY_LABELS, type TransactionCategory } from '@/types/api';
 import { cn } from '@/lib/utils';
 
+type QueryFlags = { isPending: boolean; isError: boolean };
+
+export type BudgetSnapshotState = 'loading' | 'error' | 'none' | 'ready';
+
+/**
+ * Relecture L21 : « Aucun budget configuré » seulement quand c'est vrai —
+ * pas quand les budgets ou le relevé du mois sont encore en chargement
+ * ou en erreur.
+ */
+export function budgetSnapshotState(a: {
+  budget: Record<string, number | undefined> | undefined;
+  budgetQ: QueryFlags;
+  transactions: unknown[] | undefined;
+  txQ: QueryFlags;
+}): BudgetSnapshotState {
+  if (a.budgetQ.isError) return 'error';
+  if (a.budgetQ.isPending || !a.budget) return 'loading';
+  const hasLimit = Object.values(a.budget).some((l) => typeof l === 'number' && l > 0);
+  if (!hasLimit) return 'none';
+  if (a.txQ.isError) return 'error';
+  if (a.txQ.isPending || !a.transactions) return 'loading';
+  return 'ready';
+}
+
 export function BudgetSnapshot({
   budget,
   transactions,
+  budgetQ,
+  txQ,
+  onRetry,
 }: {
   budget: Record<string, number | undefined> | undefined;
   transactions: { category: TransactionCategory; amount: number }[] | undefined;
+  budgetQ: QueryFlags;
+  txQ: QueryFlags;
+  onRetry?: () => void;
 }) {
-  const items = budget && transactions ? buildItems(budget, transactions) : [];
+  const state = budgetSnapshotState({ budget, budgetQ, transactions, txQ });
+  const items = state === 'ready' ? buildItems(budget!, transactions!) : [];
 
   return (
     <div className="card p-4 md:p-5">
@@ -20,7 +51,16 @@ export function BudgetSnapshot({
           Configurer <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
-      {items.length === 0 ? (
+      {state === 'loading' ? (
+        <p className="text-xs text-fg-dim" aria-busy="true">Chargement des budgets…</p>
+      ) : state === 'error' ? (
+        <p className="text-xs text-negative" role="alert">
+          Impossible de charger les budgets du mois.
+          {onRetry && (
+            <button type="button" onClick={onRetry} className="ml-2 underline text-fg-muted hover:text-fg">Réessayer</button>
+          )}
+        </p>
+      ) : state === 'none' ? (
         <p className="text-xs text-fg-dim italic">
           Aucun budget configuré.
         </p>
