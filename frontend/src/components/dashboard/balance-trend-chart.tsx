@@ -1,5 +1,6 @@
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { formatEUR, formatEURCompact, chartTooltipProps } from '@/lib/utils';
+import { summarizeTrend } from './chart-summaries';
 
 interface BalancePoint {
   label: string;
@@ -24,7 +25,11 @@ export function BalanceTrendChart({
         </div>
       </div>
       {series.length > 1 ? (
-        <div className="h-44">
+        <div
+          className="h-44"
+          role="img"
+          aria-label={summarizeTrend('Solde de clôture', series.map((p) => ({ label: p.label, value: p.balance })), formatEUR)}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={series} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
               <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />

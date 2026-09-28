@@ -1,6 +1,7 @@
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { ScoreBadge } from '@/components/score-ring';
 import { chartTooltipProps } from '@/lib/utils';
+import { summarizeTrend } from './chart-summaries';
 
 interface ScorePoint {
   label: string;
@@ -20,7 +21,11 @@ export function ScoreTrendChart({ series, currentScore }: { series: ScorePoint[]
         <ScoreBadge score={currentScore} />
       </div>
       {series.length > 1 ? (
-        <div className="h-44">
+        <div
+          className="h-44"
+          role="img"
+          aria-label={summarizeTrend('Score de santé (sur 100)', series.map((p) => ({ label: p.label, value: p.score })))}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={series} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
               <defs>
