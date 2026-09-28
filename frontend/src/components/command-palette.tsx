@@ -20,7 +20,7 @@ type Action = {
 };
 
 const NAV: Array<{ to: string; label: string; icon: typeof Search }> = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/', label: 'Tableau de bord', icon: LayoutDashboard },
   { to: '/health', label: 'Santé', icon: HeartPulse },
   { to: '/expenses', label: 'Dépenses', icon: Receipt },
   { to: '/history', label: 'Historique', icon: HistoryIcon },

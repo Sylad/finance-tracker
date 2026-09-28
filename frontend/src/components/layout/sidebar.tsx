@@ -25,7 +25,7 @@ import { BrandMark } from '../brand-mark';
 import { authStore } from '@/lib/auth';
 
 export const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { to: '/', label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
   { to: '/health', label: 'Santé', icon: HeartPulse, exact: false },
   { to: '/expenses', label: 'Dépenses', icon: Receipt, exact: false },
   { to: '/history', label: 'Historique', icon: History, exact: false },

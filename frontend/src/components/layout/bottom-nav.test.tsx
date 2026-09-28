@@ -83,4 +83,13 @@ describe('<BottomNav /> (L21/t8)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Plus' }));
     expect(screen.getByTestId('all-pages-overlay').className).toContain('z-[45]');
   });
+
+  it('libellés français : « Tableau de bord », plus de « Dashboard » (L21/t11)', async () => {
+    const nav = await renderNav();
+    expect(within(nav).getAllByRole('link')[0]).toHaveAccessibleName('Tableau de bord');
+    expect(NAV_ITEMS[0].label).toBe('Tableau de bord');
+    await userEvent.click(screen.getByRole('button', { name: 'Plus' }));
+    expect(within(screen.getByRole('dialog')).getAllByRole('link')[0]).toHaveTextContent('Tableau de bord');
+    expect(document.body.textContent).not.toMatch(/Dashboard/);
+  });
 });

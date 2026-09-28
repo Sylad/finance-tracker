@@ -8,7 +8,10 @@ import { NAV_ITEMS, SECONDARY_ITEMS } from './sidebar';
 // 4 destinations directes + « Plus » (L21/t8) : les 18 pages restent
 // atteignables au téléphone. Prévisions passe dans « Plus ».
 const MOBILE_ITEMS = [
-  { to: '/' as const, label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  // « Tableau de bord » passe sur 2 lignes dans une cellule de 78 px (390)
+  // ou 64 px (320), mesuré : libellé visible « Tableau », nom accessible
+  // complet (WCAG 2.5.3 : le nom contient le texte visible). L21/t11.
+  { to: '/' as const, label: 'Tableau de bord', short: 'Tableau', icon: LayoutDashboard, exact: true },
   { to: '/history' as const, label: 'Historique', icon: History, exact: false },
   { to: '/budget' as const, label: 'Budget', icon: Wallet, exact: false },
   { to: '/upload' as const, label: 'Importer', icon: Upload, exact: false },
@@ -135,9 +138,14 @@ export function BottomNav() {
             const active = !open && (item.exact ? path === item.to : path.startsWith(item.to));
             const Icon = item.icon;
             return (
-              <Link key={item.to} to={item.to} className={tabClass(active)}>
+              <Link
+                key={item.to}
+                to={item.to}
+                className={tabClass(active)}
+                aria-label={'short' in item ? item.label : undefined}
+              >
                 <Icon className="h-[20px] w-[20px]" strokeWidth={active ? 2.25 : 1.75} />
-                <span className="text-[10px] font-medium tracking-wide">{item.label}</span>
+                <span className="text-[10px] font-medium tracking-wide">{'short' in item ? item.short : item.label}</span>
               </Link>
             );
           })}
