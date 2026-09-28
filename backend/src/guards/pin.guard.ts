@@ -2,16 +2,19 @@ import { CanActivate, ExecutionContext, Injectable, Logger, UnauthorizedExceptio
 import { ConfigService } from '@nestjs/config';
 import { timingSafeEqual } from 'crypto';
 import { Request } from 'express';
+import { isForcedDemoRequest } from '../modules/demo/forced-demo';
 
 @Injectable()
 export class PinGuard implements CanActivate {
   private readonly logger = new Logger(PinGuard.name);
   private readonly pin: string;
   private readonly forcedHosts: string[];
+  private readonly forcedAll: boolean;
 
   constructor(private config: ConfigService) {
     this.pin = config.get<string>('appPin') ?? '';
     this.forcedHosts = config.get<string[]>('demoForcedHosts') ?? [];
+    this.forcedAll = config.get<boolean>('demoForcedAll') ?? false;
 
     if (!this.pin) {
       const allowNoPin = config.get<string>('allowNoPin') === 'true';
@@ -39,9 +42,9 @@ export class PinGuard implements CanActivate {
 
     // Bypass PIN entirely on forced-demo hosts (Cloudflare quick tunnels, etc.).
     // The visitor is locked into demo data anyway, so requiring a PIN would only
-    // block them from seeing the showcase.
-    const hostHeader = ((req.headers['x-forwarded-host'] as string | undefined) ?? req.headers.host ?? '').toLowerCase();
-    if (this.forcedHosts.some((p) => p && hostHeader.includes(p.toLowerCase()))) return true;
+    // block them from seeing the showcase. Same decision as DemoModeMiddleware
+    // (Host only, never X-Forwarded-Host — see forced-demo.ts).
+    if (isForcedDemoRequest(req, this.forcedHosts, this.forcedAll)) return true;
 
     const auth = req.headers['authorization'] ?? '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';

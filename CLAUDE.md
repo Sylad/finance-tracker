@@ -92,7 +92,7 @@ CORS_ORIGIN=http://localhost:4200
 ### PIN guard
 - ✅ Tout nouvel endpoint **write** (POST/PUT/PATCH/DELETE) doit passer par `PinGuard`. Le guard est global au module racine via `APP_GUARD` ; vérifier que l'endpoint n'est pas dans la whitelist (`/health`, `/events`).
 - ✅ Ajouter un test PIN guard sur le endpoint avant de merger. Pattern existant dans `pin.guard.spec.ts`.
-- ✅ Mode démo : si `DEMO_FORCED_HOSTS` matche le host, le guard est bypassé ET le mode démo s'active (lecture seule, dataset isolé). Voir `forced_demo_host_pattern.md` (mémoire user).
+- ✅ Mode démo : si `DEMO_FORCED_HOSTS` matche le host, le guard est bypassé ET le mode démo s'active (lecture seule, dataset isolé). Seul l’en-tête `Host` compte (jamais `X-Forwarded-Host`, forgeable) ; `DEMO_FORCED=true` force toute l’instance côté serveur — cf. `backend/src/modules/demo/forced-demo.ts` (L1). Voir `forced_demo_host_pattern.md` (mémoire user).
 
 ### Convention nom PDF LBP
 - Les PDFs LBP sont nommés `releve_..._YYYYMMDD.pdf` où `YYYYMMDD` est la **date d'émission** (~9 du mois suivant), **pas la période**.

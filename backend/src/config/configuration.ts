@@ -19,8 +19,13 @@ export default () => ({
   allowNoPin: process.env.ALLOW_NO_PIN ?? 'false',
   nodeEnv: process.env.NODE_ENV ?? 'development',
   demoModeAvailable: process.env.DEMO_MODE_AVAILABLE !== 'false',
+  // DEMO_FORCED=true : l'instance ENTIÈRE est verrouillée en démo, sans
+  // dépendre d'aucun en-tête HTTP (cf. modules/demo/forced-demo.ts). Off par
+  // défaut : l'instance locale aux vraies données n'est pas concernée.
+  demoForcedAll: process.env.DEMO_FORCED === 'true',
   // Comma-separated list of host patterns that ALWAYS run in demo mode.
-  // Any request whose Host header contains one of these substrings is locked
+  // Any request whose Host header (never X-Forwarded-Host, which the client
+  // controls) contains one of these substrings is locked
   // into demo (toggle disabled, banner permanent). Default covers Cloudflare
   // quick tunnels.
   demoForcedHosts: (process.env.DEMO_FORCED_HOSTS ?? 'trycloudflare.com')
