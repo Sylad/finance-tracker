@@ -26,6 +26,10 @@
     --negative: 0 84% 60%;
     --warning: 38 92% 55%;
     --info: 217 91% 60%;
+    /* Texte des badges sur fond ton/15 composé (L21/t10) : info 5,4:1 et
+       negative 5,1:1 sur --surface, ≥ 4,7:1 sur --surface-2. */
+    --info-fg: 217 91% 68%;
+    --negative-fg: 0 84% 68%;
   }
 
   * {
@@ -150,9 +154,9 @@
   }
 
   .badge-positive { @apply badge bg-positive/15 text-positive; }
-  .badge-negative { @apply badge bg-negative/15 text-negative; }
+  .badge-negative { @apply badge bg-negative/15 text-negative-fg; }
   .badge-warning { @apply badge bg-warning/15 text-warning; }
-  .badge-info { @apply badge bg-info/15 text-info; }
+  .badge-info { @apply badge bg-info/15 text-info-fg; }
   .badge-neutral { @apply badge bg-surface-3 text-fg-muted; }
 }
 

@@ -34,9 +34,15 @@ export default {
           bright: 'hsl(var(--fg-bright))',
         },
         positive: 'hsl(var(--positive))',
-        negative: 'hsl(var(--negative))',
+        negative: {
+          DEFAULT: 'hsl(var(--negative))',
+          fg: 'hsl(var(--negative-fg))',
+        },
         warning: 'hsl(var(--warning))',
-        info: 'hsl(var(--info))',
+        info: {
+          DEFAULT: 'hsl(var(--info))',
+          fg: 'hsl(var(--info-fg))',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

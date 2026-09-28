@@ -62,4 +62,35 @@ describe('contraste des jetons de texte (WCAG 1.4.3)', () => {
   it('fg-dim reste plus discret que fg-muted (hiérarchie conservée)', () => {
     expect(contrast('fg-dim', 'surface')).toBeLessThan(contrast('fg-muted', 'surface'));
   });
+
+  // Badges (.badge-*) : texte 12 px sur fond translucide bg-<ton>/15 posé sur
+  // la carte (ou la ligne survolée). Le fond réel est le mélange alpha
+  // composé — c'est lui qu'il faut mesurer (contre-revue prod L21/t10 : badge
+  // bleu à 4,06:1).
+  const composite = (fg: string, bg: string, alpha: number): [number, number, number] => {
+    const f = hslToRgb(token(fg));
+    const b = hslToRgb(token(bg));
+    return f.map((v, i) => Math.round(alpha * v + (1 - alpha) * b[i])) as [number, number, number];
+  };
+
+  it('reproduit la mesure de la contre-revue : texte info sur info/15 composé sur surface = 4,06:1', () => {
+    expect(contrastRgb(hslToRgb(token('info')), composite('info', 'surface', 0.15))).toBeCloseTo(4.06, 2);
+  });
+
+  const BADGES: Array<[string, string, string]> = [
+    ['badge-info', 'info-fg', 'info'],
+    ['badge-negative', 'negative-fg', 'negative'],
+    ['badge-positive', 'positive', 'positive'],
+    ['badge-warning', 'warning', 'warning'],
+  ];
+  for (const [badge, text, tone] of BADGES) {
+    it(`${badge} utilise le jeton de texte ${text}`, () => {
+      expect(css).toMatch(new RegExp(`\\.${badge}\\s*\\{[^}]*bg-${tone}/15[^}]*text-${text}[\\s;]`));
+    });
+    for (const bg of ['surface', 'surface-2']) {
+      it(`${badge} : texte ${text} sur ${tone}/15 composé sur ${bg} ≥ 4,5:1`, () => {
+        expect(contrastRgb(hslToRgb(token(text)), composite(tone, bg, 0.15))).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  }
 });
