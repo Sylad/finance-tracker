@@ -23,6 +23,16 @@ ssh nas "cd /volume2/docker/developpeur/finance-tracker && docker compose up -d 
 
 Pour le backend : remplace `finance-frontend` par `finance-backend`.
 
+## Plan (raf)
+
+Le reste à faire vit dans `docs/plan/raf.yaml`, tenu par le CLI `raf`
+([cadence](https://github.com/Sylad/cadence)). Chaque commit cite son lot dans
+le message (`fix(L4): …`, `L2/t1`) ; `raf now` dit quoi faire ensuite,
+`raf check` repère les commits sans lot et les lots oubliés, `raf gantt`
+génère `docs/plan/gantt.html` (non versionné). Un lot se démarre
+(`raf start L4`) avant le premier commit et se ferme (`raf done L4`) une fois
+testé ; les décisions vont dans `raf note`.
+
 ## Variables d'env requises (`backend/.env`)
 
 ```

@@ -1,0 +1,148 @@
+# Plan « reste à faire » tenu par raf (https://github.com/Sylad/cadence).
+# Édité par le CLI, mais les modifications à la main et les commentaires sont préservés.
+# Un commit appartient à un lot quand son message cite l'identifiant (L3, L3/t1).
+version: 1
+project: finance-tracker
+prefix: L
+since: 2026-09-28 # raf check ignore les commits antérieurs à l'adoption
+lots:
+  - id: L1
+    title: claude-usage hors isolation démo + X-Forwarded-Host spoofable
+    status: todo
+    estimate: 1
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #1 — sécurité, à faire en premier ; re-vérifier dans le code avant d'attaquer" }
+  - id: L2
+    title: "Validateur de détection : garde-fous déterministes"
+    status: todo
+    estimate: 1.5
+    created: 2026-09-28
+    tasks:
+      - { id: t1, title: croiser cluster.creditor déterministe dans les deux gardes (#2), status: todo }
+      - { id: t2, title: "subscription : ≥2 mois distincts + espacement mensuel + anti-re-suggestion (#3)", status: todo }
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #2 #3" }
+  - id: L3
+    title: "mergeDuplicates : dédup par mois calendaire, préférer le porteur d'encours"
+    status: todo
+    estimate: 1
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #4" }
+  - id: L4
+    title: "Scans de détection concurrents : mutex / skip si scan en cours"
+    status: todo
+    estimate: 0.5
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #5" }
+  - id: L5
+    title: "maybeAddInterest : ne jamais estimer en replay"
+    status: todo
+    estimate: 0.5
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #6" }
+  - id: L6
+    title: Paires neutres à cheval sur 2 mois côté /expenses
+    status: todo
+    estimate: 1
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #7" }
+  - id: L7
+    title: paidOccurrenceId normalisé sur l'UUID d'occurrence partout
+    status: todo
+    estimate: 1
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #8" }
+  - id: L8
+    title: 'numberLike : milliers à la française ("3.000")'
+    status: todo
+    estimate: 0.5
+    quickwin: true
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #9" }
+  - id: L9
+    title: "getLoanHealth : fraîcheur sur statementDate, pas la date d'import"
+    status: todo
+    estimate: 0.5
+    quickwin: true
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #10" }
+  - id: L10
+    title: "upsertFromBankExtract : fin de mois composée en local (décalage UTC)"
+    status: todo
+    estimate: 0.5
+    quickwin: true
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #11" }
+  - id: L11
+    title: "amortization : retry à 64k comme le flux bancaire"
+    status: todo
+    estimate: 0.5
+    quickwin: true
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #12" }
+  - id: L12
+    title: "isQuotaError : ne plus classer tout message « credit » en 402"
+    status: todo
+    estimate: 0.5
+    quickwin: true
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #23" }
+  - id: L13
+    title: "Perf crédits : cache LoansService, loans lus une fois par scan, syncInstallmentLoan en un seul RMW"
+    status: todo
+    estimate: 2
+    created: 2026-09-28
+    tasks:
+      - { id: t1, title: cache LoansService + batching des occurrences (#14), status: todo }
+      - { id: t2, title: passer les loans une fois aux gardes du validateur (#15), status: todo }
+      - { id: t3, title: "syncInstallmentLoan : un seul read-modify-write (#16)", status: todo }
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #14 #15 #16" }
+  - id: L14
+    title: "Dédoublonner les controllers : replayAll, triggerDetection, boucle d'import crédit"
+    status: todo
+    estimate: 2
+    after: [ L4 ]
+    created: 2026-09-28
+    tasks:
+      - { id: t1, title: "CategoryRulesService.replayAll() unique, un replay par lot (#17)", status: todo }
+      - { id: t2, title: CreditDetectionService.scanInBackground (#18), status: todo }
+      - { id: t3, title: boucle d'import crédit → ImportOrchestratorService (#19), status: todo }
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #17 #18 #19 — après le mutex L4, qui touche triggerDetection" }
+  - id: L15
+    title: "Helpers communs : money, slugify, month-key, clustering, paires neutres"
+    status: todo
+    estimate: 1
+    after: [ L6 ]
+    created: 2026-09-28
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #20 — slugify a 2 comportements : choisir avant de fusionner" }
+  - id: L16
+    title: "Code mort : findByIdentifiers, chaîne SSE sans consommateur"
+    status: todo
+    estimate: 1
+    created: 2026-09-28
+    tasks:
+      - { id: t1, title: "findByIdentifiers : re-cibler les specs sur findExistingLoan puis supprimer (#21)", status: todo }
+      - { id: t2, title: "SSE : brancher EventSource → invalidations TanStack, ou supprimer (#22)", status: todo }
+    notes:
+      - { date: 2026-09-28, text: "backlog revue 2026-08-13 #21 #22" }
+  - id: L17
+    title: Adopter le plan raf (cadence) et y verser le backlog de la revue du 2026-08-13
+    status: done
+    estimate: 0.5
+    created: 2026-09-28
+    started: 2026-09-28
+    finished: 2026-09-28
