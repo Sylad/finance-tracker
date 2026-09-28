@@ -32,17 +32,22 @@ function luminance(rgb: [number, number, number]): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-function contrast(fg: string, bg: string): number {
-  const a = luminance(hslToRgb(token(fg)));
-  const b = luminance(hslToRgb(token(bg)));
+function contrastRgb(fg: [number, number, number], bg: [number, number, number]): number {
+  const a = luminance(fg);
+  const b = luminance(bg);
   const [hi, lo] = a > b ? [a, b] : [b, a];
   return (hi + 0.05) / (lo + 0.05);
+}
+
+function contrast(fg: string, bg: string): number {
+  return contrastRgb(hslToRgb(token(fg)), hslToRgb(token(bg)));
 }
 
 describe('contraste des jetons de texte (WCAG 1.4.3)', () => {
   it('reproduit le calcul de la revue : ancien fg-dim 220 10% 47% sur surface = 3,78:1', () => {
     expect(hslToRgb([220, 10, 47])).toEqual([108, 116, 132]);
     expect(hslToRgb(token('surface'))).toEqual([21, 24, 30]);
+    expect(contrastRgb([108, 116, 132], [21, 24, 30])).toBeCloseTo(3.78, 2);
   });
 
   for (const bg of ['bg', 'surface', 'surface-2']) {

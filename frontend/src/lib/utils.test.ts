@@ -108,7 +108,7 @@ describe('formatEURCompact (graduations des axes, L21/t5)', () => {
     [[1440, 1445, 1450, 1455, 1460]],
     [[10_000, 12_500, 15_000, 17_500, 20_000]],
     [[-250_000, -200_000, -150_000, 0]],
-  ])('ne produit pas de graduations en double pour %j', (ticks) => {
+  ])('graduations entières « rondes » de Recharts (allowDecimals=false) : pas de doublon pour %j', (ticks) => {
     const labels = ticks.map(formatEURCompact);
     expect(new Set(labels).size).toBe(ticks.length);
   });
