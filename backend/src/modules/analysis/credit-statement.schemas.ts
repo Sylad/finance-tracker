@@ -43,16 +43,33 @@ export type InstallmentDetails = z.infer<typeof InstallmentDetailsSchema>;
  * pour les schemas Zod consommant du JSON LLM.
  */
 const numberLike = z.preprocess(
-  (v) => {
-    if (typeof v === 'string') {
-      const cleaned = v.replace(/[^\d.,-]/g, '').replace(',', '.');
-      const n = Number(cleaned);
-      return Number.isFinite(n) ? n : v;
-    }
-    return v;
-  },
+  (v) => (typeof v === 'string' ? parseLocaleNumber(v) ?? v : v),
   z.number(),
 );
+
+/**
+ * Lit un montant écrit à la française ("1.234,56", "3.000", "1 234,56 €")
+ * ou à l'anglaise ("3,000.50"). Quand les deux séparateurs sont présents, le
+ * dernier est la virgule décimale. Seul, un séparateur répété est un séparateur
+ * de milliers ; un point unique suivi d'exactement 3 chiffres aussi ("3.000" =
+ * trois mille — un montant ou un taux n'a jamais 3 décimales) ; une virgule
+ * unique est décimale. Renvoie null si la chaîne n'est pas un nombre.
+ */
+export function parseLocaleNumber(raw: string): number | null {
+  let s = raw.replace(/[^\d.,-]/g, '');
+  const lastDot = s.lastIndexOf('.');
+  const lastComma = s.lastIndexOf(',');
+  if (lastDot >= 0 && lastComma >= 0) {
+    const thousands = lastDot > lastComma ? ',' : '.';
+    s = s.split(thousands).join('').replace(',', '.');
+  } else if (lastComma >= 0) {
+    s = s.indexOf(',') !== lastComma ? s.split(',').join('') : s.replace(',', '.');
+  } else if (lastDot >= 0 && (s.indexOf('.') !== lastDot || /^-?\d{1,3}\.\d{3}$/.test(s))) {
+    s = s.split('.').join('');
+  }
+  const n = Number(s);
+  return s !== '' && Number.isFinite(n) ? n : null;
+}
 
 export const CreditStatementOutputSchema = z
   .object({

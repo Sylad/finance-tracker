@@ -97,6 +97,24 @@ describe('CreditStatementOutputSchema', () => {
     expect(r.maxAmount).toBe(1000);
   });
 
+  it.each([
+    ['3.000', 3000], // milliers à la française : "3.000" = trois mille, pas 3
+    ['12.500', 12500],
+    ['1.234.567', 1234567],
+    ['1.234,56', 1234.56],
+    ['1 234,56 €', 1234.56],
+    ['1 234,56', 1234.56], // espace fine insécable (toLocaleString fr-FR)
+    ['3,000.50', 3000.5], // format anglais
+    ['1,234,567', 1234567],
+    ['4521,5', 4521.5],
+    ['4521.50', 4521.5],
+    ['19.84', 19.84],
+    ['-1.250,00', -1250],
+  ])('coerce "%s" en %d (séparateurs de milliers et décimales FR/EN)', (input, expected) => {
+    const r = CreditStatementOutputSchema.parse({ ...validRevolving, currentBalance: input as any });
+    expect(r.currentBalance).toBe(expected);
+  });
+
   it('rejects truly non-numeric currentBalance (pas une string numérique)', () => {
     expect(() =>
       CreditStatementOutputSchema.parse({ ...validClassic, currentBalance: 'not-a-number' as any }),
