@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react';
+import { Loader2, RotateCw } from 'lucide-react';
 
 export function LoadingState({ label = 'Chargement…' }: { label?: string }) {
   return (
@@ -18,11 +18,26 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   );
 }
 
-export function ErrorState({ message }: { message?: string }) {
+export function ErrorState({
+  title = 'Erreur',
+  message,
+  onRetry,
+  retrying = false,
+}: {
+  title?: string;
+  message?: string;
+  onRetry?: () => void;
+  retrying?: boolean;
+}) {
   return (
-    <div className="card border-negative/30 p-6 text-center">
-      <div className="text-negative text-sm font-medium">Erreur</div>
+    <div role="alert" className="card border-negative/30 p-6 text-center">
+      <div className="text-negative text-sm font-medium">{title}</div>
       {message && <div className="text-fg-muted text-xs mt-1.5">{message}</div>}
+      {onRetry && (
+        <button type="button" onClick={onRetry} disabled={retrying} className="btn-secondary mt-4 inline-flex">
+          <RotateCw className={retrying ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} /> Réessayer
+        </button>
+      )}
     </div>
   );
 }

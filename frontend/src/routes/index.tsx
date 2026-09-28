@@ -25,7 +25,9 @@ import {
   useHealthDiagnostic,
 } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
-import { LoadingState } from '@/components/loading-state';
+import { LoadingState, ErrorState } from '@/components/loading-state';
+import { dashboardView } from '@/components/dashboard/dashboard-view';
+import { ApiError } from '@/lib/api';
 import { ScoreRing } from '@/components/score-ring';
 import { formatEUR, formatMonth, formatMonthShort, cn } from '@/lib/utils';
 import { StatCard } from '@/components/dashboard/stat-card';
@@ -57,9 +59,24 @@ export function DashboardPage() {
   const current = summaries[0];
   const currentDetail = useStatement(current?.id);
 
-  if (stmts.isLoading) return <LoadingState />;
+  const view = dashboardView(stmts);
+  if (view === 'loading') return <LoadingState />;
 
-  if (!summaries.length) {
+  if (view === 'error') {
+    return (
+      <>
+        <PageHeader title="Dashboard" />
+        <ErrorState
+          title="Impossible de charger les relevés"
+          message={`Le serveur a répondu par une erreur${stmts.error instanceof ApiError ? ` (HTTP ${stmts.error.status})` : ''}. Tes données ne sont pas perdues : réessaie dans un instant.`}
+          onRetry={() => { void stmts.refetch(); }}
+          retrying={stmts.isFetching}
+        />
+      </>
+    );
+  }
+
+  if (view === 'empty') {
     return (
       <>
         <PageHeader title="Dashboard" subtitle="Aucun relevé pour l'instant. Commence par importer un PDF de relevé bancaire." />
