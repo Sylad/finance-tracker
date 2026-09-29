@@ -1,7 +1,19 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-09-28 23:14",
+  "generated": "2026-09-29 20:12",
   "entries": [
+    {
+      "slug": "2026-09-29-le-tableau-de-bord-ne-parle-plus-que-de-vos-finances",
+      "title": "Le tableau de bord ne parle plus que de vos finances",
+      "date": "2026-09-29",
+      "lots": [
+        "L42"
+      ],
+      "captures": [
+        "captures/L42-tableau-de-bord-sans-budget-claude.png"
+      ],
+      "html": "<p>La carte <strong>Budget Claude</strong>, qui affichait la consommation de l'assistant IA, a disparu du tableau de bord sur ordinateur.</p>\n<p>Les graphiques sur 12 mois remontent d'autant. Les analyses de relevés par l'IA fonctionnent exactement comme avant.</p>"
+    },
     {
       "slug": "2026-09-28-un-tableau-de-bord-plus-lisible-surtout-au-telephone",
       "title": "Un tableau de bord plus lisible, surtout au téléphone",
