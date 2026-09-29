@@ -36,7 +36,6 @@ fi
 # Chemins de données ABSOLUS (priment sur backend/.env car dotenv n'écrase pas process.env)
 export DATA_DIR="$REPO/data"
 export UPLOAD_DIR="$REPO/data/uploads"
-export SHARED_DATA_DIR="$REPO/data/shared"
 
 cd "$REPO/backend"
 echo "Démarrage node dist/main (port $PORT)…"

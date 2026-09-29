@@ -12,14 +12,12 @@ services:
       CORS_ORIGIN: "http://nas:4200"
       DATA_DIR: /app/data
       UPLOAD_DIR: /app/data/uploads
-      SHARED_DATA_DIR: /app/shared-data
       # Hosts (virgules ; nom exact ou sous-domaine, jamais sous-chaîne) automatiquement verrouillés
       # en mode démo + bypass PIN. Idéal pour tunnels Cloudflare publics.
       # Ajoute ton domaine perso si besoin (ex: demo.tonsite.fr).
       DEMO_FORCED_HOSTS: "trycloudflare.com,cfargotunnel.com,finance.sladoire.dev"
     volumes:
       - /volume2/docker/developpeur/data/finance:/app/data
-      - /volume2/docker/developpeur/data/shared:/app/shared-data
     restart: unless-stopped
 
   finance-frontend:

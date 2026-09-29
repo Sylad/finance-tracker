@@ -11,7 +11,7 @@ App perso de suivi financier perso, déployée sur NAS Synology. Frontend React 
 | Stockage | JSON local dans `data/` (statements/, yearly/, uploads/, snapshots/) |
 | Auth | PIN guard global (Bearer token) — toutes routes sauf `/health` et `/events` |
 | AI | Anthropic SDK — modèle `claude-sonnet-4-5`, two-phase tool-use (extract_transactions → analyze_finances) |
-| Live | Server-Sent Events sur `/api/events` (claude-balance-changed, etc.) |
+| Live | Server-Sent Events sur `/api/events` (loans-changed, savings-changed, etc.) |
 
 ## Sessions et livraison (cadence)
 

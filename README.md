@@ -47,7 +47,6 @@ Le rôle de Claude : poser le code, expliquer, itérer.
 - **Budgets par catégorie** — progression visuelle au fil du mois
 - **Déclarations** d'engagements (revenus, crédits, abonnements) → moteur de **prévisions** mensuel
 - **Bilan annuel** auto-archivé le 1er janvier (top catégories, meilleur/pire mois, score moyen)
-- **Suivi conso Claude** partagé avec les autres apps (claude-shared.json)
 - PIN guard simple en Bearer token
 
 ## Comment ça marche sous le capot

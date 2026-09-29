@@ -7,18 +7,13 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # user/port/identité viennent de ~/.ssh/config (Host nas) — surcharger via NAS_HOST si besoin.
 NAS_HOST="${NAS_HOST:-nas}"
 NAS_DATA="/volume2/docker/developpeur/data/finance/"
-NAS_SHARED="/volume2/docker/developpeur/data/shared/claude-shared.json"
 NAS_ENV="/volume2/docker/developpeur/finance-tracker-v2/backend/.env"
 
 echo "==> Rapatriement données finance depuis le NAS ($NAS_HOST)"
-mkdir -p "$REPO/data/shared" "$REPO/data/uploads"
+mkdir -p "$REPO/data/uploads"
 
 # Données applicatives (relevés, budgets, snapshots, uploads...)
 rsync -az --info=stats1 --rsync-path=/usr/bin/rsync -e ssh "$NAS_HOST:$NAS_DATA" "$REPO/data/"
-
-# Solde Claude partagé → copie standalone locale
-rsync -az --rsync-path=/usr/bin/rsync -e ssh "$NAS_HOST:$NAS_SHARED" "$REPO/data/shared/" || \
-  echo "   (claude-shared.json absent sur le NAS, ignoré)"
 
 # .env : récupérer la vraie ANTHROPIC_API_KEY + APP_PIN (sans écraser un .env local existant)
 if [ -f "$REPO/backend/.env" ]; then
@@ -26,7 +21,8 @@ if [ -f "$REPO/backend/.env" ]; then
 else
   echo "==> Récupération de backend/.env depuis le NAS"
   ssh "$NAS_HOST" "cat '$NAS_ENV'" > "$REPO/backend/.env"
-  # Supprimer les clés que la config locale doit contrôler (dotenv = first-wins)
+  # Supprimer les clés que la config locale doit contrôler (dotenv = first-wins) ;
+  # SHARED_DATA_DIR n'est plus lu depuis L42 mais peut traîner dans un vieux .env.
   sed -i '/^NODE_ENV=/d; /^PORT=/d; /^CORS_ORIGIN=/d; /^DATA_DIR=/d; /^UPLOAD_DIR=/d; /^SHARED_DATA_DIR=/d' "$REPO/backend/.env"
   # Ajouter un bloc d'overrides locaux avec chemins absolus
   cat >> "$REPO/backend/.env" <<ENVBLOCK
@@ -37,7 +33,6 @@ PORT=3000
 CORS_ORIGIN=http://localhost:3000
 DATA_DIR=$REPO/data
 UPLOAD_DIR=$REPO/data/uploads
-SHARED_DATA_DIR=$REPO/data/shared
 ENVBLOCK
 fi
 
