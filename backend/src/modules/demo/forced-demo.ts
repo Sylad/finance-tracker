@@ -30,7 +30,28 @@ export function isForcedDemoRequest(
   forcedAll: boolean,
 ): boolean {
   if (forcedAll) return true;
-  const host = (req.headers.host ?? '').toLowerCase();
+  const host = normalizeHost(String(req.headers?.host ?? ''));
   if (!host) return false;
-  return forcedHosts.some((p) => p && host.includes(p.toLowerCase()));
+  return forcedHosts.some((p) => {
+    const pattern = normalizeHost(String(p ?? '')).replace(/^\.+/, ''); // `.trycloudflare.com` = même motif
+    return pattern !== '' && (host === pattern || host.endsWith(`.${pattern}`));
+  });
+}
+
+/**
+ * Nom d'hôte comparable : casse ignorée, port retiré (`:443`, et `[::1]:3000`
+ * pour une IPv6 littérale), point final (FQDN absolu) retiré. L'appariement se
+ * fait ensuite en égalité exacte ou en suffixe précédé d'un point — jamais en
+ * sous-chaîne, sinon `evil-trycloudflare.com` ou `trycloudflare.com.evil.net`
+ * passeraient pour des hôtes de tunnel (L42, comme warhammer40k L22).
+ */
+function normalizeHost(raw: string): string {
+  let h = raw.trim().toLowerCase();
+  if (h.startsWith('[')) {
+    const end = h.indexOf(']');
+    h = end === -1 ? h : h.slice(0, end + 1);
+  } else {
+    h = h.replace(/:\d*$/, '');
+  }
+  return h.replace(/\.+$/, '');
 }

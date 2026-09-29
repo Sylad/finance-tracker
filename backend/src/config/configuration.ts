@@ -25,7 +25,8 @@ export default () => ({
   demoForcedAll: process.env.DEMO_FORCED === 'true',
   // Comma-separated list of host patterns that ALWAYS run in demo mode.
   // Any request whose Host header (never X-Forwarded-Host, which the client
-  // controls) contains one of these substrings is locked
+  // controls) equals one of these host names or is a subdomain of it (exact or
+  // dot-preceded suffix match, never a substring — forced-demo.ts) is locked
   // into demo (toggle disabled, banner permanent). Default covers Cloudflare
   // quick tunnels.
   demoForcedHosts: (process.env.DEMO_FORCED_HOSTS ?? 'trycloudflare.com')

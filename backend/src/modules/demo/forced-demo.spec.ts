@@ -37,8 +37,31 @@ describe('isForcedDemoRequest', () => {
     expect(isForcedDemoRequest(req({}), [], true)).toBe(true);
   });
 
+  it('matches the exact host or a dot-preceded suffix only, not a substring (L42)', () => {
+    const TUNNEL = ['trycloudflare.com'];
+    expect(isForcedDemoRequest(req({ host: 'evil-trycloudflare.com' }), TUNNEL, false)).toBe(false);
+    expect(isForcedDemoRequest(req({ host: 'trycloudflare.com.evil.net' }), TUNNEL, false)).toBe(false);
+    expect(isForcedDemoRequest(req({ host: 'finance.sladoire.dev.evil.net' }), HOSTS, false)).toBe(false);
+    expect(isForcedDemoRequest(req({ host: 'x.trycloudflare.com:443' }), TUNNEL, false)).toBe(true);
+    expect(isForcedDemoRequest(req({ host: 'trycloudflare.com' }), TUNNEL, false)).toBe(true);
+  });
+
+  it('normalises port, trailing dot and case on both sides (L42)', () => {
+    expect(isForcedDemoRequest(req({ host: 'X.TryCloudflare.COM.' }), ['trycloudflare.com'], false)).toBe(true);
+    expect(isForcedDemoRequest(req({ host: 'x.trycloudflare.com.:8443' }), ['trycloudflare.com'], false)).toBe(true);
+    expect(isForcedDemoRequest(req({ host: 'a.trycloudflare.com' }), [' TryCloudflare.com. '], false)).toBe(true);
+    expect(isForcedDemoRequest(req({ host: 'mytrycloudflare.com:443' }), ['trycloudflare.com'], false)).toBe(false);
+    expect(isForcedDemoRequest(req({ host: '[::1]:3000' }), ['::1'], false)).toBe(false);
+  });
+
+  it('accepts a pattern written with a leading dot (L42)', () => {
+    expect(isForcedDemoRequest(req({ host: 'x.trycloudflare.com' }), ['.trycloudflare.com'], false)).toBe(true);
+    expect(isForcedDemoRequest(req({ host: 'evil-trycloudflare.com' }), ['.trycloudflare.com'], false)).toBe(false);
+  });
+
   it('is not forced without a Host and without the server-side flag', () => {
     expect(isForcedDemoRequest(req({}), HOSTS, false)).toBe(false);
+    expect(isForcedDemoRequest(req({ host: 'x' }), ['', ' ', '.'], false)).toBe(false);
   });
 });
 
