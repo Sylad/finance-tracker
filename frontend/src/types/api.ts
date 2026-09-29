@@ -223,20 +223,6 @@ export interface UploadResult {
   failed: Array<{ filename: string; error: string }>;
 }
 
-export interface ClaudeUsage {
-  month: string;
-  inputTokens: number;
-  outputTokens: number;
-  calls: number;
-  estimatedCostEur: number;
-  budgetEur: number;
-  percent: number;
-  hasBalance: boolean;
-  estimatedRemainingEur: number | null;
-  configuredBalanceEur: number | null;
-  remainingPercent: number | null;
-}
-
 export type SavingsAccountType = 'livret-a' | 'pel' | 'cel' | 'ldds' | 'pea' | 'other';
 
 export const SAVINGS_TYPE_LABELS: Record<SavingsAccountType, string> = {

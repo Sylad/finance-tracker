@@ -56,7 +56,6 @@ function restoreSnapshot<T>(qc: QueryClient, key: QueryKey, previous: T | undefi
 }
 import type {
   Budget,
-  ClaudeUsage,
   Declaration,
   DeclarationInput,
   ForecastMonth,
@@ -95,7 +94,6 @@ export const qk = {
   budget: () => ['budgets'] as const,
   declarations: () => ['declarations'] as const,
   forecast: (months: number) => ['forecast', months] as const,
-  claudeUsage: () => ['claude', 'usage'] as const,
 };
 
 export const qkImportLogs = { all: () => ['import-logs'] as const };
@@ -216,24 +214,6 @@ export function useForecast(months = 12) {
   return useQuery({
     queryKey: qk.forecast(months),
     queryFn: () => api.get<ForecastMonth[]>(`/forecast?months=${months}`),
-  });
-}
-
-export function useClaudeUsage() {
-  return useQuery({
-    queryKey: qk.claudeUsage(),
-    queryFn: () => api.get<ClaudeUsage>('/claude/usage'),
-  });
-}
-
-export function useUpdateClaudeBalance() {
-  const qc = useQueryClient();
-  // Pas d'optimistic update : le backend convertit USD→EUR et recalcule
-  // estimatedRemainingEur + remainingPercent côté serveur. Mettre à jour
-  // côté client donnerait des valeurs incohérentes pendant le round-trip.
-  return useMutation({
-    mutationFn: (balanceUsd: number) => api.put<ClaudeUsage>('/claude/balance', { balanceUsd }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.claudeUsage() }),
   });
 }
 

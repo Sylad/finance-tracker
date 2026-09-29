@@ -17,7 +17,6 @@ import {
   useScoreHistory,
   useBudget,
   useStatement,
-  useClaudeUsage,
   useSavingsAccounts,
   useLoans,
   useNetWorth,
@@ -33,7 +32,6 @@ import { ScoreRing } from '@/components/score-ring';
 import { formatEUR, formatMonth, formatMonthShort, cn } from '@/lib/utils';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { BudgetSnapshot } from '@/components/dashboard/budget-snapshot';
-import { ClaudeUsageCard } from '@/components/dashboard/claude-usage-card';
 import { ScoreTrendChart } from '@/components/dashboard/score-trend-chart';
 import { BalanceTrendChart } from '@/components/dashboard/balance-trend-chart';
 import { RecentStatements } from '@/components/dashboard/recent-statements';
@@ -45,7 +43,6 @@ export function DashboardPage() {
   const stmts = useStatements();
   const history = useScoreHistory();
   const budget = useBudget();
-  const claude = useClaudeUsage();
   const savings = useSavingsAccounts();
   const loans = useLoans();
   const netWorth = useNetWorth();
@@ -290,12 +287,6 @@ export function DashboardPage() {
           <PhoneMoreLinks />
         </div>
       </section>
-
-      {claude.data && (
-        <section className="hidden md:block mt-6">
-          <ClaudeUsageCard usage={claude.data} />
-        </section>
-      )}
 
       {yearly.data && yearly.data.monthly.length >= 2 && (
         <section className="hidden md:grid mt-6 grid-cols-1 lg:grid-cols-2 gap-4">
