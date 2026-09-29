@@ -319,8 +319,10 @@ lots:
     title: Supprimer le suivi d'usage / solde Claude (module claude-usage, /api/claude/*, badge), comme warhammer40k L22
     status: doing
     estimate: 0.25
+    visible: true
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "Sylvain 28-09 : « on n'utilise plus cet usage de Claude » (dit pour warhammer ; à confirmer ici). Vérifier aussi l'appariement de DEMO_FORCED_HOSTS (exact/suffixe pointé, pas sous-chaîne)" }
       - { date: 2026-09-29, text: "Sylvain 29-09 : confirmé, on supprime le suivi d'usage Claude ici aussi" }
+      - { date: 2026-09-29, text: "Sylvain 29-09 : lot visible (carte « Budget Claude » retirée du tableau de bord) → revue UX + entrée Nouveautés avant done" }
     started: 2026-09-29
