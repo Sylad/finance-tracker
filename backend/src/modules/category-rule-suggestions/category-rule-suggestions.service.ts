@@ -14,7 +14,6 @@ import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { EventBusService } from '../events/event-bus.service';
 import { StorageService } from '../storage/storage.service';
 import { CategoryRulesService } from '../category-rules/category-rules.service';
-import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
 import { isAuthError, isQuotaError } from '../../common/claude-errors';
 
 const SUGGESTIONS_FILE = 'category-rule-suggestions.json';
@@ -90,7 +89,6 @@ export class CategoryRuleSuggestionsService {
     private readonly bus: EventBusService,
     private readonly storage: StorageService,
     private readonly rules: CategoryRulesService,
-    private readonly usage: ClaudeUsageService,
   ) {
     const apiKey = this.config.get<string>('anthropicApiKey');
     if (apiKey) {
@@ -351,8 +349,6 @@ export class CategoryRuleSuggestionsService {
         content: this.buildRuleSuggestionUserPrompt(txSummary),
       }],
     });
-
-    this.usage.recordUsage(message.usage.input_tokens, message.usage.output_tokens);
 
     const block = message.content.find((b) => b.type === 'tool_use');
     if (!block || block.type !== 'tool_use') {

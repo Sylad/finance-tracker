@@ -5,7 +5,6 @@ import { CategoryRuleSuggestionsService } from './category-rule-suggestions.serv
 import { EventsModule } from '../events/events.module';
 import { StorageModule } from '../storage/storage.module';
 import { CategoryRulesModule } from '../category-rules/category-rules.module';
-import { ClaudeUsageModule } from '../claude-usage/claude-usage.module';
 import { DemoModule } from '../demo/demo.module';
 
 @Module({
@@ -14,7 +13,6 @@ import { DemoModule } from '../demo/demo.module';
     EventsModule,
     StorageModule,
     CategoryRulesModule,
-    ClaudeUsageModule,
     DemoModule,
   ],
   controllers: [CategoryRuleSuggestionsController],

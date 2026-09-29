@@ -11,7 +11,6 @@ import { AnalysisModule } from './modules/analysis/analysis.module';
 import { StatementsModule } from './modules/statements/statements.module';
 import { HealthCheckModule } from './modules/health/health.module';
 import { BudgetModule } from './modules/budget/budget.module';
-import { ClaudeUsageModule } from './modules/claude-usage/claude-usage.module';
 import { SnapshotsModule } from './modules/snapshots/snapshots.module';
 import { EventsModule } from './modules/events/events.module';
 import { DeclarationsModule } from './modules/declarations/declarations.module';
@@ -42,7 +41,6 @@ import { ExpensesModule } from './modules/expenses/expenses.module';
     DemoCoreModule,
     DemoModule,
     EventsModule,
-    ClaudeUsageModule,
     SnapshotsModule,
     StorageModule,
     AnalysisModule,

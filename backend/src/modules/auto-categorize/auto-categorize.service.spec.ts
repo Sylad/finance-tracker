@@ -98,7 +98,6 @@ function makeService(opts: {
     apply: jest.fn(async (txs: Transaction[]) => txs),
   };
 
-  const fakeUsage = { recordUsage: jest.fn() };
   const fakeDataDir = { isDemoMode: () => !!opts.isDemo, getDataDir: () => '/tmp', isForced: () => false, runWith: (_: any, fn: any) => fn() };
 
   // We bypass the real ConfigService — the service's constructor only calls
@@ -109,14 +108,13 @@ function makeService(opts: {
     fakeConfig as any,
     fakeStorage as any,
     fakeRules as any,
-    fakeUsage as any,
     fakeDataDir as any,
   );
   // Inject the fake Anthropic client (the constructor created a real one, but
   // we replace it before any method runs).
   (svc as any).client = fakeAnthropic;
 
-  return { svc, fakeAnthropic, fakeStorage, fakeRules, createdRules, fakeUsage };
+  return { svc, fakeAnthropic, fakeStorage, fakeRules, createdRules };
 }
 
 // ─── tests ─────────────────────────────────────────────────────────────────

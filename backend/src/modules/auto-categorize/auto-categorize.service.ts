@@ -1,7 +1,6 @@
 import { Injectable, Logger, HttpException, HttpStatus, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
-import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
 import { CategoryRulesService } from '../category-rules/category-rules.service';
 import { StorageService } from '../storage/storage.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
@@ -58,7 +57,6 @@ export class AutoCategorizeService {
     private readonly config: ConfigService,
     private readonly storage: StorageService,
     private readonly categoryRules: CategoryRulesService,
-    private readonly usage: ClaudeUsageService,
     private readonly dataDir: RequestDataDirService,
   ) {
     this.client = new Anthropic({
@@ -288,8 +286,6 @@ export class AutoCategorizeService {
           },
         ],
       });
-
-      this.usage.recordUsage(message.usage.input_tokens, message.usage.output_tokens);
 
       const block = message.content.find((b) => b.type === 'tool_use');
       if (!block || block.type !== 'tool_use') {

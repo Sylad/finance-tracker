@@ -1,7 +1,6 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
-import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
 import { parseExternal } from '../../common/zod-validation.pipe';
 import { isAuthError, isQuotaError } from '../../common/claude-errors';
 import { CreditStatementOutputSchema } from './credit-statement.schemas';
@@ -152,7 +151,6 @@ export class CreditStatementService {
 
   constructor(
     private config: ConfigService,
-    private usage: ClaudeUsageService,
   ) {
     this.client = new Anthropic({
       apiKey: this.config.get<string>('anthropicApiKey'),
@@ -196,7 +194,6 @@ export class CreditStatementService {
       });
       const message = await stream.finalMessage();
 
-      this.usage.recordUsage(message.usage.input_tokens, message.usage.output_tokens);
       this.logger.log(`credit-statement: stop_reason=${message.stop_reason}`);
 
       if (message.stop_reason === 'max_tokens') {

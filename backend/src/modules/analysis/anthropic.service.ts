@@ -1,7 +1,6 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
-import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
 import { parseExternal } from '../../common/zod-validation.pipe';
 import { isAuthError, isQuotaError, isRateLimitError } from '../../common/claude-errors';
 import { runWithMaxTokensRetry } from './max-tokens-retry.helper';
@@ -183,7 +182,6 @@ export class AnthropicService {
 
   constructor(
     private config: ConfigService,
-    private usage: ClaudeUsageService,
   ) {
     this.client = new Anthropic({
       apiKey: this.config.get<string>('anthropicApiKey'),
@@ -202,14 +200,11 @@ export class AnthropicService {
     const phase1 = await runWithMaxTokensRetry(
       (maxTokens) => this.runPhase1(base64Pdf, maxTokens),
       32768,
-      (truncated) => {
-        // Les tokens de la tentative tronquée sont facturés aussi.
-        this.usage.recordUsage(truncated.usage.input_tokens, truncated.usage.output_tokens);
+      () => {
         this.logger.warn('Phase 1: max_tokens hit @ 32k, retrying @ 64k');
       },
     );
 
-    this.usage.recordUsage(phase1.usage.input_tokens, phase1.usage.output_tokens);
     this.logger.log(`Phase 1: stop_reason=${phase1.stop_reason}`);
     if (phase1.stop_reason === 'max_tokens') {
       throw new AnthropicParseError(
@@ -277,7 +272,6 @@ export class AnthropicService {
       }],
     });
 
-    this.usage.recordUsage(phase2.usage.input_tokens, phase2.usage.output_tokens);
     this.logger.log(`Phase 2: stop_reason=${phase2.stop_reason}`);
     if (phase2.stop_reason === 'max_tokens') {
       // Sans ce check, une troncature pouvait passer le parse Zod (champs

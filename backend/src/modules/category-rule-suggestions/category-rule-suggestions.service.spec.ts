@@ -5,7 +5,6 @@ import * as os from 'os';
 import * as path from 'path';
 import { CategoryRuleSuggestionsService } from './category-rule-suggestions.service';
 import { CategoryRulesService } from '../category-rules/category-rules.service';
-import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
 import { StorageService } from '../storage/storage.service';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
@@ -30,7 +29,6 @@ describe('CategoryRuleSuggestionsService', () => {
         { provide: RequestDataDirService, useValue: { getDataDir: () => tmpDir, isDemoMode: () => false, runWith: (_ctx: any, fn: any) => fn() } },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
         { provide: StorageService, useValue: { getAllStatements: jest.fn().mockResolvedValue([]) } },
-        { provide: ClaudeUsageService, useValue: { recordUsage: jest.fn() } },
       ],
     }).compile();
     svc = mod.get(CategoryRuleSuggestionsService);
@@ -169,17 +167,16 @@ describe('CategoryRuleSuggestionsService', () => {
             }]),
           },
         },
-        { provide: ClaudeUsageService, useValue: { recordUsage: jest.fn() } },
       ],
     })
       .overrideProvider(CategoryRuleSuggestionsService)
       .useFactory({
-        factory: (config, dataDir, bus, storage, rulesService, usage) => {
-          const service = new CategoryRuleSuggestionsService(config, dataDir, bus, storage, rulesService, usage);
+        factory: (config, dataDir, bus, storage, rulesService) => {
+          const service = new CategoryRuleSuggestionsService(config, dataDir, bus, storage, rulesService);
           (service as any).client.messages.create = messagesCreate;
           return service;
         },
-        inject: [ConfigService, RequestDataDirService, EventBusService, StorageService, CategoryRulesService, ClaudeUsageService],
+        inject: [ConfigService, RequestDataDirService, EventBusService, StorageService, CategoryRulesService],
       })
       .compile();
 

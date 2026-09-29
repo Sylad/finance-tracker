@@ -19,7 +19,7 @@ import { IncomingMessage } from 'http';
  *   change le Host n'atteint plus la route finance.sladoire.dev du tunnel.
  *   Un client en accès direct peut forger son Host, mais forger un hôte démo
  *   ne fait qu'ENTRER en démo : données synthétiques, écritures refusées par
- *   DemoWriteGuard, claude-usage isolé — il n'y gagne rien.
+ *   DemoWriteGuard — il n'y gagne rien.
  * - `demoForcedAll` (env `DEMO_FORCED=true`) force toute l'instance côté
  *   serveur, sans dépendre d'aucun en-tête. Désactivé par défaut : l'instance
  *   locale (vraies données) garde exactement son comportement.

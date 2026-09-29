@@ -4,7 +4,7 @@ import { AutoCategorizeService } from './auto-categorize.service';
 import { CategoryRulesModule } from '../category-rules/category-rules.module';
 
 @Module({
-  // StorageModule, ClaudeUsageModule, DemoCoreModule are @Global so they need no import here.
+  // StorageModule, DemoCoreModule are @Global so they need no import here.
   imports: [CategoryRulesModule],
   controllers: [AutoCategorizeController],
   providers: [AutoCategorizeService],

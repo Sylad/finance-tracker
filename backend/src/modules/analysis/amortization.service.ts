@@ -1,7 +1,6 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
-import { ClaudeUsageService } from '../claude-usage/claude-usage.service';
 import { parseExternal } from '../../common/zod-validation.pipe';
 import { isAuthError, isQuotaError } from '../../common/claude-errors';
 import { AmortizationOutputSchema } from './amortization.schemas';
@@ -100,7 +99,6 @@ export class AmortizationService {
 
   constructor(
     private config: ConfigService,
-    private usage: ClaudeUsageService,
   ) {
     this.client = new Anthropic({
       apiKey: this.config.get<string>('anthropicApiKey'),
@@ -119,14 +117,11 @@ export class AmortizationService {
       const message = await runWithMaxTokensRetry(
         (maxTokens) => this.runExtraction(base64Pdf, maxTokens),
         16384,
-        (truncated) => {
-          // Les tokens de la tentative tronquée sont facturés aussi.
-          this.usage.recordUsage(truncated.usage.input_tokens, truncated.usage.output_tokens);
+        () => {
           this.logger.warn('amortization: max_tokens hit @ 16k, retrying @ 64k');
         },
       );
 
-      this.usage.recordUsage(message.usage.input_tokens, message.usage.output_tokens);
       this.logger.log(`amortization: stop_reason=${message.stop_reason}`);
 
       if (message.stop_reason === 'max_tokens') {
