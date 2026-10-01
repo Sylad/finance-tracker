@@ -272,7 +272,7 @@ export class DetectionValidatorService {
     // installmentCount du LLM n'est pas pertinent pour juger une série
     // qu'il a de toute façon mal classée.
     if (occurrences.length >= LONG_SERIES_SUBSCRIPTION_MIN_OCCURRENCES) {
-      return this.createSubscriptionFromLongSeries(
+      return this.createSubscriptionFromSeries(
         occurrences,
         classification,
         creditorNames,
@@ -349,7 +349,7 @@ export class DetectionValidatorService {
    * (ce n'est pas un plan N×), label désambiguïsé par montant seulement
    * si le cluster porte plusieurs sous-séries.
    */
-  private async createSubscriptionFromLongSeries(
+  private async createSubscriptionFromSeries(
     occurrences: ClusterOccurrence[],
     classification: ClusterClassification,
     creditorNames: CreditorNames,
@@ -390,7 +390,16 @@ export class DetectionValidatorService {
   /**
    * Backlog revue 2026-08-13 #3 : la branche subscription transmettait la
    * classification LLM telle quelle — 2 occurrences à 4 jours d'écart
-   * pouvaient devenir une suggestion « abonnement ». Checks déterministes :
+   * pouvaient devenir une suggestion « abonnement ».
+   *
+   * Comme la branche installment, le cluster est d'abord découpé en
+   * sous-séries par montant (`splitByAmount`, ±5 %) : un cluster
+   * d'opérateur mêle souvent plusieurs abonnements prélevés à quelques
+   * jours d'écart, dont les intervalles mélangés (1-2 j / ~27 j) ne sont
+   * pas mensuels alors que chaque abonnement l'est. Chaque sous-série
+   * ≥ 2 occurrences est validée indépendamment et produit SA suggestion
+   * (label suffixé du montant s'il y a plusieurs sous-séries) ; une
+   * sous-série rejetée n'invalide pas les autres. Checks par sous-série :
    *  1. ≥MIN_SUBSCRIPTION_DISTINCT_MONTHS mois calendaires distincts ->
    *     sinon `subscription_insufficient_recurrence` ;
    *  2. espacement mensuel (`checkIntervals`, mêmes bornes que la branche
@@ -401,9 +410,50 @@ export class DetectionValidatorService {
     cluster: CandidateCluster,
     classification: ClusterClassification,
   ): Promise<ValidationResult> {
-    const occurrences = [...cluster.occurrences].sort((a, b) =>
-      a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+    const subSeries = DetectionValidatorService.splitByAmount(
+      cluster.occurrences,
+    ).filter((occurrences) => occurrences.length >= 2);
+    if (subSeries.length === 0) {
+      return { created: false, reason: 'subscription_insufficient_recurrence' };
+    }
+
+    const creditorNames = DetectionValidatorService.creditorNames(
+      cluster,
+      classification,
     );
+    const disambiguate = subSeries.length > 1;
+    let createdCount = 0;
+    let lastReason: string | undefined;
+
+    for (const occurrences of subSeries) {
+      const result = await this.validateSubscriptionSubSeries(
+        occurrences,
+        classification,
+        creditorNames,
+        disambiguate,
+      );
+      if (result.created) {
+        createdCount++;
+      } else {
+        lastReason = result.reason;
+      }
+    }
+
+    if (createdCount === 0) {
+      return {
+        created: false,
+        reason: lastReason ?? 'subscription_insufficient_recurrence',
+      };
+    }
+    return { created: true, createdCount };
+  }
+
+  private async validateSubscriptionSubSeries(
+    occurrences: ClusterOccurrence[],
+    classification: ClusterClassification,
+    creditorNames: CreditorNames,
+    disambiguate: boolean,
+  ): Promise<ValidationResult> {
     const distinctMonths = new Set(occurrences.map((o) => o.date.slice(0, 7)));
     if (distinctMonths.size < MIN_SUBSCRIPTION_DISTINCT_MONTHS) {
       return { created: false, reason: 'subscription_insufficient_recurrence' };
@@ -417,13 +467,15 @@ export class DetectionValidatorService {
         occurrences.map((o) => Math.abs(o.amount)),
       ),
     );
-    const dismissed = await this.subscriptionGuardReason(
-      DetectionValidatorService.creditorNames(cluster, classification),
+    // Anti-re-suggestion + construction de la suggestion : mêmes règles que
+    // la série longue reroutée en subscription.
+    return this.createSubscriptionFromSeries(
+      occurrences,
+      classification,
+      creditorNames,
       medianAmount,
+      disambiguate,
     );
-    if (dismissed) return { created: false, reason: dismissed };
-
-    return this.createSuggestion(cluster, classification, 'subscription');
   }
 
   /**

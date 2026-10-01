@@ -291,7 +291,7 @@ describe('DetectionValidatorService', () => {
       cluster.occurrences[cluster.occurrences.length - 1].date,
     );
 
-    expect(result).toEqual({ created: true });
+    expect(result).toEqual({ created: true, createdCount: 1 });
     expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
     const [statementId, incoming] =
       loanSuggestionsService.upsertMany.mock.calls[0];
@@ -774,7 +774,7 @@ describe('DetectionValidatorService', () => {
       cluster.occurrences[cluster.occurrences.length - 1].date,
     );
 
-    expect(result).toEqual({ created: true });
+    expect(result).toEqual({ created: true, createdCount: 1 });
     const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
     expect(incoming[0].evidence).toEqual({
       occurrences: [
@@ -1725,7 +1725,7 @@ describe('DetectionValidatorService — branche subscription déterministe + ant
       '2026-03-06',
     );
 
-    expect(result).toEqual({ created: true });
+    expect(result).toEqual({ created: true, createdCount: 1 });
     const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
     expect(incoming[0].suggestedType).toBe('subscription');
   });
@@ -1794,7 +1794,7 @@ describe('DetectionValidatorService — branche subscription déterministe + ant
       '2026-02-05',
     );
 
-    expect(result).toEqual({ created: true });
+    expect(result).toEqual({ created: true, createdCount: 1 });
   });
 
   it('suggestion pending du même créancier -> PAS bloquée (mise à jour par upsertMany)', async () => {
@@ -1808,7 +1808,7 @@ describe('DetectionValidatorService — branche subscription déterministe + ant
       '2026-02-05',
     );
 
-    expect(result).toEqual({ created: true });
+    expect(result).toEqual({ created: true, createdCount: 1 });
     expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
   });
 
@@ -1885,9 +1885,6 @@ describe('DetectionValidatorService — cluster.creditor = premier mot du libell
   // un créancier connu que par MOT ENTIER (≥ 4 caractères), sinon égalité
   // stricte ; les mots génériques sont ignorés. Noms fictifs uniquement.
   type LoanRow = Awaited<ReturnType<LoansService['getAll']>>[number];
-  type SuggestionRow = Awaited<
-    ReturnType<LoanSuggestionsService['getAll']>
-  >[number];
   type SubscriptionRow = Awaited<
     ReturnType<SubscriptionsService['getAll']>
   >[number];
@@ -2073,7 +2070,7 @@ describe('DetectionValidatorService — cluster.creditor = premier mot du libell
         creditor: 'Cloudlab',
         status: 'rejected',
         createdAt: '2025-12-11T00:00:00.000Z',
-      } as SuggestionRow,
+      },
     ]);
     const { cluster, classification } = subscription('la', 'la boite fictive');
 
@@ -2101,5 +2098,127 @@ describe('DetectionValidatorService — cluster.creditor = premier mot du libell
       created: false,
       reason: 'existing_subscription',
     });
+  });
+});
+
+describe('DetectionValidatorService — subscription découpée en sous-séries par montant (relecture du lot)', () => {
+  // Cluster d'opérateur fictif mêlant 3 abonnements prélevés entre le 6 et
+  // le 12 de chaque mois : sur le cluster entier les écarts alternent
+  // 1-2 j / ~27 j ; par sous-série de montant ils sont mensuels.
+  let loanSuggestionsService: jest.Mocked<
+    Pick<LoanSuggestionsService, 'upsertMany' | 'getAll'>
+  >;
+  let svc: DetectionValidatorService;
+
+  beforeEach(() => {
+    loanSuggestionsService = {
+      upsertMany: jest.fn().mockResolvedValue(undefined),
+      getAll: jest.fn().mockResolvedValue([]),
+    };
+    svc = new DetectionValidatorService(
+      {
+        findExistingLoan: jest.fn().mockResolvedValue(null),
+        getAll: jest.fn().mockResolvedValue([]),
+      } as unknown as LoansService,
+      loanSuggestionsService as unknown as LoanSuggestionsService,
+      {
+        getAll: jest.fn().mockResolvedValue([]),
+      } as unknown as SubscriptionsService,
+    );
+  });
+
+  const classification = () =>
+    makeClassification({
+      classification: 'subscription',
+      creditor: 'telefictif',
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.85,
+    });
+
+  it('opérateur à 3 abonnements (24 € / 52,98 € / 92,97 €) -> 3 sous-séries valides, une suggestion chacune, labels désambiguïsés', async () => {
+    const rows: [string, number][] = [];
+    for (const m of ['2026-01', '2026-02', '2026-03']) {
+      rows.push([`${m}-06`, 24], [`${m}-07`, 52.98], [`${m}-12`, 92.97]);
+    }
+    const cluster = makeCluster({
+      key: 'telefictif',
+      creditor: 'telefictif',
+      merchant: null,
+      occurrences: rows.map(([date, amount], i) => ({
+        date,
+        amount: -amount,
+        description: 'PRLV TELEFICTIF',
+        transactionId: `op-${i}`,
+        statementId: date.slice(0, 7),
+      })),
+    });
+
+    const result = await svc.validate(cluster, classification(), '2026-03-12');
+
+    expect(result).toEqual({ created: true, createdCount: 3 });
+    const incoming = loanSuggestionsService.upsertMany.mock.calls.map(
+      ([, inc]) => inc[0],
+    );
+    expect(incoming.map((i) => i.suggestedType)).toEqual([
+      'subscription',
+      'subscription',
+      'subscription',
+    ]);
+    expect(incoming.map((i) => i.label).sort()).toEqual([
+      'telefictif (24€)',
+      'telefictif (52.98€)',
+      'telefictif (92.97€)',
+    ]);
+    expect(incoming.map((i) => i.occurrencesSeen)).toEqual([3, 3, 3]);
+  });
+
+  it('une sous-série valide + une sous-série dans un seul mois -> seule la valide crée sa suggestion', async () => {
+    const cluster = makeCluster({
+      key: 'telefictif',
+      creditor: 'telefictif',
+      merchant: null,
+      occurrences: [
+        ['2026-01-06', 24],
+        ['2026-02-06', 24],
+        ['2026-02-09', 70],
+        ['2026-02-11', 70],
+      ].map(([date, amount], i) => ({
+        date: date as string,
+        amount: -(amount as number),
+        description: 'PRLV TELEFICTIF',
+        transactionId: `op-${i}`,
+        statementId: (date as string).slice(0, 7),
+      })),
+    });
+
+    const result = await svc.validate(cluster, classification(), '2026-02-11');
+
+    expect(result).toEqual({ created: true, createdCount: 1 });
+    const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
+    expect(incoming[0].monthlyAmount).toBe(24);
+  });
+
+  it('13 débits le même jour (même montant) -> rejetée subscription_insufficient_recurrence', async () => {
+    const cluster = makeCluster({
+      key: 'telefictif',
+      creditor: 'telefictif',
+      merchant: null,
+      occurrences: Array.from({ length: 13 }, (_, i) => ({
+        date: '2026-02-14',
+        amount: -15,
+        description: 'PRLV TELEFICTIF',
+        transactionId: `d-${i}`,
+        statementId: '2026-02',
+      })),
+    });
+
+    const result = await svc.validate(cluster, classification(), '2026-02-14');
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'subscription_insufficient_recurrence',
+    });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
   });
 });
