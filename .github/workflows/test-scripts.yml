@@ -1,0 +1,34 @@
+name: Test scripts de livraison
+
+# L46 : teste scripts/deploy.sh hors ligne (faux gh, dépôts jetables).
+# Workflow séparé de build.yml : il ne conditionne pas les builds d'images et
+# n'est pas lu par deploy.sh (qui ne regarde que les runs de build.yml). Il ne
+# déploie rien. cadence deliver attend en revanche tous les runs du sha livré :
+# un deploy.sh cassé bloque donc sa propre livraison, ce qui est voulu.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/deploy.sh'
+      - 'scripts/test-deploy.sh'
+      - '.github/workflows/test-scripts.yml'
+  pull_request:
+    paths:
+      - 'scripts/deploy.sh'
+      - 'scripts/test-deploy.sh'
+      - '.github/workflows/test-scripts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-deploy:
+    name: Test deploy.sh
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: scripts/test-deploy.sh
+        run: ./scripts/test-deploy.sh
