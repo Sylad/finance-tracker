@@ -293,6 +293,26 @@ describe('LoanSuggestionsService', () => {
   });
 
   describe('dédup abonnements par créancier + montant (L44)', () => {
+    it('nom LLM « Netflux » et nom de règle « NETFLUX.COM » au même montant -> une seule suggestion', async () => {
+      await svc.upsertMany('2026-03', [{ ...sub(13.49), creditor: 'Netflux', label: 'Netflux' }]);
+      await svc.upsertMany('2026-03', [{ ...sub(13.49), creditor: 'NETFLUX.COM', label: 'NETFLUX.COM', matchPattern: 'NETFLUX\\.COM' }]);
+      expect(await svc.getPending()).toHaveLength(1);
+    });
+
+    it('nom approximatif contre une suggestion refusée -> pas de nouvelle suggestion', async () => {
+      await svc.upsertMany('2026-03', [{ ...sub(13.49), creditor: 'Netflux' }]);
+      const [first] = await svc.getAll();
+      await svc.reject(first.id);
+      await svc.upsertMany('2026-04', [{ ...sub(13.6), creditor: 'NETFLUX COM' }]);
+      expect(await svc.getAll()).toHaveLength(1);
+    });
+
+    it('sociétés différentes au même montant -> deux suggestions', async () => {
+      await svc.upsertMany('2026-03', [{ ...sub(9.99), creditor: 'STREAMIO' }]);
+      await svc.upsertMany('2026-03', [{ ...sub(9.99), creditor: 'TELCO' }]);
+      expect(await svc.getPending()).toHaveLength(2);
+    });
+
     const sub = (monthlyAmount: number, label = 'Netflux') => ({
       label,
       monthlyAmount,

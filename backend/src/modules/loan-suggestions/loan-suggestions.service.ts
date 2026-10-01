@@ -18,9 +18,24 @@ import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { LoansService } from '../loans/loans.service';
 import { escapeRegex } from '../../common/regex.util';
+import { normalizeLabel } from '../loans/credit-institutions';
 
 /** L44 : tolérance de montant de la dédup des suggestions d'abonnement. */
 const SUBSCRIPTION_AMOUNT_TOLERANCE = 0.05;
+/** Suffixes ignorés dans la comparaison approximative des créanciers. */
+const CREDITOR_NOISE_WORDS = new Set([
+  'com',
+  'fr',
+  'www',
+  'net',
+  'eu',
+  'europe',
+  'sa',
+  'sas',
+  'sarl',
+  'inc',
+  'ltd',
+]);
 
 @Injectable()
 export class LoanSuggestionsService {
@@ -140,6 +155,23 @@ export class LoanSuggestionsService {
     inc: IncomingSuggestion,
   ): boolean {
     if (
+      existing.suggestedType === 'subscription' &&
+      inc.suggestedType === 'subscription' &&
+      existing.creditor &&
+      inc.creditor
+    ) {
+      // L44 : le LLM (« Netflix ») et la règle (« NETFLUX COM ») nomment la
+      // même société différemment — créancier approximatif + montant ±5 %.
+      return (
+        LoanSuggestionsService.approxCreditorMatch(
+          existing.creditor,
+          inc.creditor,
+        ) &&
+        Math.abs(existing.monthlyAmount - inc.monthlyAmount) <=
+          existing.monthlyAmount * SUBSCRIPTION_AMOUNT_TOLERANCE
+      );
+    }
+    if (
       LoanSuggestionsService.creditorKey(existing) !==
       LoanSuggestionsService.creditorKey(inc)
     ) {
@@ -160,6 +192,26 @@ export class LoanSuggestionsService {
       );
     }
     return true;
+  }
+
+  /** Mots d'un nom de créancier sans suffixes web/juridiques. */
+  private static creditorWords(name: string): string[] {
+    return normalizeLabel(name)
+      .split(' ')
+      .filter((w) => w && !CREDITOR_NOISE_WORDS.has(w));
+  }
+
+  /** Vrai si les mots d'un nom forment une suite contiguë de l'autre
+   *  (« netflix » ⊂ « netflix com »), casse, accents et ponctuation ignorés. */
+  private static approxCreditorMatch(a: string, b: string): boolean {
+    const wa = LoanSuggestionsService.creditorWords(a);
+    const wb = LoanSuggestionsService.creditorWords(b);
+    if (wa.length === 0 || wb.length === 0) return false;
+    const [short, long] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
+    for (let i = 0; i + short.length <= long.length; i++) {
+      if (short.every((w, j) => long[i + j] === w)) return true;
+    }
+    return false;
   }
 
   private static creditorKey(s: {
