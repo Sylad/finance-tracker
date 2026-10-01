@@ -349,3 +349,11 @@ lots:
     created: 2026-10-01
     notes:
       - { date: 2026-10-01, text: "Sylvain 01-10 : idée de Sylvain (les établissements de crédit et les abonnés sont connus) ; remplace la logique abonnement provisoire de L2 et absorbe L43" }
+  - id: L45
+    title: Retirer les traces du déploiement NAS (docker-compose, scripts, doc, page À propos) — prod = dark-blue (k3s) ou Cloudflare Pages ; NAS = médias et sauvegardes
+    status: doing
+    estimate: 0.25
+    created: 2026-10-01
+    notes:
+      - { date: 2026-10-01, text: "Sylvain 01-10 : plus rien en prod sur le NAS ; garder ce qui sert au dev local ; supprimer local/sync-from-nas.sh (rapatriement one-shot de juin, plus utile)" }
+    started: 2026-10-01
