@@ -47,6 +47,9 @@ const AboutPage = lazy(() =>
 const NewsPage = lazy(() =>
   import('./routes/news').then((m) => ({ default: m.NewsPage })),
 );
+const PlanPage = lazy(() =>
+  import('./routes/plan').then((m) => ({ default: m.PlanPage })),
+);
 const SavingsPage = lazy(() =>
   import('./routes/savings').then((m) => ({ default: m.SavingsPage })),
 );
@@ -161,6 +164,12 @@ const newsRoute = createRoute({
   component: withSuspense(NewsPage),
 });
 
+const planRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/plan',
+  component: withSuspense(PlanPage),
+});
+
 const savingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/savings',
@@ -225,6 +234,7 @@ const routeTree = rootRoute.addChildren([
   uploadRoute,
   aboutRoute,
   newsRoute,
+  planRoute,
   savingsRoute,
   loansRoute,
   subscriptionsRoute,

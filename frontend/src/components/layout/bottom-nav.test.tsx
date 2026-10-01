@@ -36,7 +36,8 @@ describe('<BottomNav /> (L21/t8)', () => {
     const labels = within(dialog).getAllByRole('link').map((a) => a.textContent?.trim());
     const expected = [...NAV_ITEMS, ...SECONDARY_ITEMS].map((i) => i.label);
     expect(labels).toEqual(expected);
-    expect(labels).toHaveLength(18);
+    expect(labels).toHaveLength(19);
+    expect(labels).toContain('Plan de travail');
     expect(screen.getByRole('button', { name: 'Plus' })).toHaveAttribute('aria-expanded', 'true');
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -62,7 +63,7 @@ describe('<BottomNav /> (L21/t8)', () => {
     expect(document.activeElement).toBe(logout);
     await userEvent.tab();
     expect(document.activeElement).toBe(closeBtn);
-    expect(focusables.length).toBeGreaterThan(18);
+    expect(focusables.length).toBeGreaterThan(19);
   });
 
   it.each([

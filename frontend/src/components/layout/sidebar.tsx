@@ -10,6 +10,7 @@ import {
   Upload,
   Info,
   Megaphone,
+  ListTodo,
   LogOut,
   PiggyBank,
   Banknote,
@@ -45,6 +46,7 @@ export const NAV_ITEMS = [
 
 export const SECONDARY_ITEMS = [
   { to: '/nouveautes', label: 'Nouveautés', icon: Megaphone },
+  { to: '/plan', label: 'Plan de travail', icon: ListTodo },
   { to: '/about', label: 'À propos', icon: Info },
 ] as const;
 

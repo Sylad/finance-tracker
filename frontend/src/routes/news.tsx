@@ -1,37 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState, LoadingState } from '@/components/loading-state';
-
-// Journal généré par `cadence news build` (npm run news à la racine) :
-// les entrées vivent dans docs/nouveautes/, le build est servi en statique.
-const BASE = '/nouveautes-data';
-
-interface NewsEntry {
-  slug: string;
-  title: string;
-  date: string;
-  lots: string[];
-  captures: string[];
-  html: string;
-}
-
-interface NewsData {
-  project: string;
-  generated: string;
-  entries: NewsEntry[];
-}
-
-async function fetchNews(): Promise<NewsData | null> {
-  const res = await fetch(`${BASE}/nouveautes.json`, { cache: 'no-cache' });
-  if (!res.ok) return null;
-  return res.json();
-}
+import { NEWS_BASE as BASE, NEWS_QUERY_KEY, fetchNews } from '@/lib/news-data';
 
 const formatDate = (day: string) =>
   new Date(`${day}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
 export function NewsPage() {
-  const news = useQuery({ queryKey: ['nouveautes'], queryFn: fetchNews, staleTime: 5 * 60_000 });
+  const news = useQuery({ queryKey: NEWS_QUERY_KEY, queryFn: fetchNews, staleTime: 5 * 60_000 });
 
   return (
     <>

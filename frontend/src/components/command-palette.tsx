@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Search, Calendar, LayoutDashboard, History as HistoryIcon, Wallet, PiggyBank,
   Banknote, Zap, Repeat, ListChecks, CalendarRange, CalendarDays, Tags, Upload,
-  Info, Megaphone, RefreshCw, Sparkles, Target, Grid3x3, HeartPulse, Receipt,
+  Info, Megaphone, ListTodo, RefreshCw, Sparkles, Target, Grid3x3, HeartPulse, Receipt,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { StatementSummary } from '@/types/api';
@@ -37,6 +37,7 @@ const NAV: Array<{ to: string; label: string; icon: typeof Search }> = [
   { to: '/category-rules', label: 'Catégorisation', icon: Tags },
   { to: '/upload', label: 'Importer', icon: Upload },
   { to: '/nouveautes', label: 'Nouveautés', icon: Megaphone },
+  { to: '/plan', label: 'Plan de travail', icon: ListTodo },
   { to: '/about', label: 'À propos', icon: Info },
 ];
 

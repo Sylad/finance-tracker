@@ -5,7 +5,7 @@ import { LayoutDashboard, History, Wallet, Upload, Menu, X, LogOut } from 'lucid
 import { authStore } from '@/lib/auth';
 import { NAV_ITEMS, SECONDARY_ITEMS } from './sidebar';
 
-// 4 destinations directes + « Plus » (L21/t8) : les 18 pages restent
+// 4 destinations directes + « Plus » (L21/t8) : les 19 pages restent
 // atteignables au téléphone. Prévisions passe dans « Plus ».
 const MOBILE_ITEMS = [
   // « Tableau de bord » passe sur 2 lignes dans une cellule de 78 px (390)
