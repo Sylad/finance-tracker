@@ -81,8 +81,9 @@
     {
       "id": "L48",
       "title": "Une page Plan de travail : ce qui se prépare",
-      "status": "doing",
-      "started": "2026-10-01"
+      "status": "done",
+      "started": "2026-10-01",
+      "finished": "2026-10-01"
     }
   ]
 }

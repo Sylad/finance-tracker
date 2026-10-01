@@ -386,11 +386,13 @@ lots:
   - id: L48
     title: "Page « Plan de travail » : ce qui est prévu, en cours et récemment livré, généré au build depuis docs/plan/raf.yaml (titres et états seulement, jamais les notes) — inspirée de la page « À venir » d'AetherWX"
     public: "Une page Plan de travail : ce qui se prépare"
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     created: 2026-10-01
     started: 2026-10-01
+    ux: { date: 2026-10-01, verdict: "OK avec réserves levées — titres publics (public:, repli Nouveautés, sinon masqué), état d'erreur distinct + Réessayer, état vide unique, carte commune avec Nouveautés et ancres /plan#id, aria-valuetext, cibles 44 px ; JSON relu par le lead (5 lots, aucune note)" }
+    finished: 2026-10-01
   - id: L49
     title: "Backend : demo-fixtures.json absent de dist/ (nest build ne copie pas les assets JSON) → /api/demo/seed en 500 ENOENT sur une instance neuve ; ajouter l'asset à nest-cli.json et un test"
     status: todo
