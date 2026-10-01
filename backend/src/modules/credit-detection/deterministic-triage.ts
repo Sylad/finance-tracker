@@ -97,6 +97,19 @@ const NOISE_WORDS = new Set([
   'DECEMBRE',
 ]);
 const MAX_NAME_WORDS = 3;
+/** Processeurs de paiement : jamais le nom d'un abonnement. */
+const PAYMENT_PROCESSORS = new Set([
+  'PAYPAL',
+  'GOOGLE',
+  'SUMUP',
+  'SQ',
+  'APPLE',
+  'STRIPE',
+  'ZETTLE',
+  'IZETTLE',
+  'PAYPLUG',
+  'LYDIA',
+]);
 
 const upper = (description: string) =>
   normalizeLabel(description).toUpperCase();
@@ -105,10 +118,18 @@ const upper = (description: string) =>
  *  sans préfixes génériques (PRLV SEPA, PRELEVEMENT…), références ni
  *  dates ; trois mots au plus. null si rien de significatif ne reste. */
 export function subscriptionNameFromLabel(description: string): string | null {
-  const head = description.split('*')[0];
-  const words = upper(head)
-    .split(' ')
-    .filter((w) => w.length > 1 && !/\d/.test(w) && !NOISE_WORDS.has(w));
+  const [head, ...rest] = description.split('*');
+  const clean = (part: string) =>
+    upper(part)
+      .split(' ')
+      .filter((w) => w.length > 1 && !/\d/.test(w) && !NOISE_WORDS.has(w));
+  let words = clean(head);
+  // Processeur de paiement en tête (« PAYPAL *NETFLIX ») : le nom est le
+  // marchand après « * », jamais le processeur (motif trop large, fusion
+  // de tous les abonnements payés par lui).
+  if (words.length > 0 && PAYMENT_PROCESSORS.has(words[0])) {
+    words = clean(rest.join(' '));
+  }
   return words.length > 0 ? words.slice(0, MAX_NAME_WORDS).join(' ') : null;
 }
 
@@ -249,13 +270,16 @@ export function triageCluster(cluster: CandidateCluster): TriageDecision {
     return { route: 'llm', reason: 'série non mensuelle' };
   }
 
-  // 4. Abonnement.
-  const name =
-    mostFrequent(
-      descriptions
-        .map(subscriptionNameFromLabel)
-        .filter((n): n is string => !!n),
-    ) ?? cluster.creditor.toUpperCase();
+  // 4. Abonnement — un seul nom pour tout le cluster, sinon c'est un
+  // cluster large (« prlv| ») qui mêle plusieurs sociétés : LLM.
+  const names = new Set(descriptions.map(subscriptionNameFromLabel));
+  if (names.has(null)) {
+    return { route: 'llm', reason: 'aucun nom de société dans le libellé' };
+  }
+  if (names.size > 1) {
+    return { route: 'llm', reason: 'plusieurs sociétés dans le cluster' };
+  }
+  const [name] = [...names] as string[];
   return ruleClassification(
     cluster,
     'subscription',

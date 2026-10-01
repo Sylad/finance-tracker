@@ -204,6 +204,26 @@ describe('triageCluster (L44)', () => {
   });
 
   describe('autre société récurrente mensuelle → abonnement, sans LLM', () => {
+    it('libellés donnant plusieurs noms distincts (cluster large) → LLM', () => {
+      expect(
+        triageCluster(cluster(['PRLV STREAMIO', 'PRLV TELCO MOBILE'])).route,
+      ).toBe('llm');
+    });
+
+    it('aucun nom tiré du libellé (processeur seul) → LLM', () => {
+      expect(
+        triageCluster(cluster(['PRLV PAYPAL EUROPE', 'PRLV PAYPAL EUROPE']))
+          .route,
+      ).toBe('llm');
+    });
+
+    it('processeur + marchand → abonnement au nom du marchand', () => {
+      const d = triageCluster(cluster(['PAYPAL *NETFLUX', 'PAYPAL *NETFLUX']));
+      expect(d.route).toBe('rule');
+      if (d.route !== 'rule') return;
+      expect(d.classification.creditor).toBe('NETFLUX');
+    });
+
     it('série mensuelle à montant fixe → subscription, nom tiré du libellé nettoyé', () => {
       const d = triageCluster(
         cluster(
@@ -248,6 +268,20 @@ describe('triageCluster (L44)', () => {
 });
 
 describe('subscriptionNameFromLabel (L44)', () => {
+  it.each([
+    ['PAYPAL *NETFLUX', 'NETFLUX'],
+    ['PRLV SEPA PAYPAL EUROPE*STREAMIO 1234', 'STREAMIO'],
+    ['SQ *CAFE EXEMPLE', 'CAFE EXEMPLE'],
+    ['GOOGLE *YOUTUBE PREMIUM', 'YOUTUBE PREMIUM'],
+    ['SUMUP *SALLE DE SPORT', 'SALLE SPORT'],
+  ])('processeur de paiement en tête : %s → marchand %s', (label, expected) => {
+    expect(subscriptionNameFromLabel(label)).toBe(expected);
+  });
+
+  it('processeur sans marchand → null (pas de nom « PAYPAL »)', () => {
+    expect(subscriptionNameFromLabel('PRLV PAYPAL EUROPE')).toBeNull();
+  });
+
   it.each([
     ['PRLV SEPA STREAMIO PREMIUM REF 123456', 'STREAMIO PREMIUM'],
     ['Prélèvement Énergia', 'ENERGIA'],
