@@ -1400,3 +1400,190 @@ describe('DetectionValidatorService (intégration — vrai LoanSuggestionsServic
     expect(pendingAfterRescan).toHaveLength(3);
   });
 });
+
+describe('DetectionValidatorService — gardes créancier existant croisent cluster.creditor (backlog revue 2026-08-13 #2)', () => {
+  // Le creditor renvoyé par le LLM peut diverger de l'alias déterministe du
+  // cluster (ex. LLM « finazur » alors que le clustering a extrait
+  // « credimax financement » du libellé) : les deux gardes doivent tester
+  // les DEUX noms, sinon la divergence bypasse la garde -> suggestion doublon.
+  // Données synthétiques uniquement.
+  type LoanRow = Awaited<ReturnType<LoansService['getAll']>>[number];
+  let loansService: jest.Mocked<
+    Pick<LoansService, 'findExistingLoan' | 'getAll'>
+  >;
+  let loanSuggestionsService: jest.Mocked<
+    Pick<LoanSuggestionsService, 'upsertMany' | 'getAll'>
+  >;
+  let svc: DetectionValidatorService;
+
+  beforeEach(() => {
+    loansService = {
+      findExistingLoan: jest.fn().mockResolvedValue(null),
+      getAll: jest.fn().mockResolvedValue([]),
+    };
+    loanSuggestionsService = {
+      upsertMany: jest.fn().mockResolvedValue(undefined),
+      getAll: jest.fn().mockResolvedValue([]),
+    };
+    svc = new DetectionValidatorService(
+      loansService as unknown as LoansService,
+      loanSuggestionsService as unknown as LoanSuggestionsService,
+    );
+  });
+
+  function monthlyOccurrences(
+    months: string[],
+    amount: number,
+    description: string,
+  ) {
+    return months.map((m, i) => ({
+      date: `${m}-10`,
+      amount: -amount,
+      description,
+      transactionId: `tx-${i}`,
+      statementId: m,
+    }));
+  }
+
+  const revolvingCluster = () =>
+    makeCluster({
+      key: 'credimax financement',
+      creditor: 'credimax financement',
+      merchant: null,
+      occurrences: monthlyOccurrences(
+        ['2026-01', '2026-02', '2026-03'],
+        73.2,
+        'PRLV CREDIMAX FINANCEMENT',
+      ),
+    });
+  const revolvingClassification = () =>
+    makeClassification({
+      classification: 'revolving',
+      creditor: 'finazur',
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.85,
+    });
+
+  const installmentCluster = () =>
+    makeCluster({
+      key: 'credimax financement|zoland',
+      creditor: 'credimax financement',
+      merchant: 'zoland',
+      occurrences: monthlyOccurrences(
+        ['2026-01', '2026-02'],
+        51.3,
+        'CREDIMAX*ZOLAND 3X',
+      ),
+    });
+  const installmentClassification = () =>
+    makeClassification({
+      creditor: 'finazur',
+      merchant: 'zoland',
+      installmentCount: 3,
+    });
+
+  const existingLoan = (monthlyPayment: number) =>
+    ({
+      id: 'loan-synth',
+      creditor: 'CREDIMAX FINANCEMENT',
+      isActive: true,
+      monthlyPayment,
+    }) as unknown as LoanRow;
+
+  it('garde fuzzy (revolving) : creditor LLM divergent mais cluster.creditor contenu dans le loan -> existing_loan_payment', async () => {
+    loansService.getAll.mockResolvedValue([existingLoan(73.2)]);
+    const cluster = revolvingCluster();
+
+    const result = await svc.validate(
+      cluster,
+      revolvingClassification(),
+      '2026-03-10',
+    );
+
+    expect(result).toEqual({ created: false, reason: 'existing_loan_payment' });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('garde fuzzy (installment) : creditor LLM divergent mais cluster.creditor contenu dans le loan -> existing_loan_payment', async () => {
+    loansService.getAll.mockResolvedValue([existingLoan(51.3)]);
+
+    const result = await svc.validate(
+      installmentCluster(),
+      installmentClassification(),
+      '2026-02-10',
+    );
+
+    expect(result).toEqual({ created: false, reason: 'existing_loan_payment' });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('garde fuzzy : cluster.creditor connu mais montant hors ±5 % -> pas rejeté par cette garde', async () => {
+    loansService.getAll.mockResolvedValue([existingLoan(300)]);
+
+    const result = await svc.validate(
+      revolvingCluster(),
+      revolvingClassification(),
+      '2026-03-10',
+    );
+
+    expect(result).toEqual({ created: true });
+  });
+
+  const matchOnlyOnClusterCreditor = (creditor?: string | null) =>
+    Promise.resolve(
+      creditor === 'credimax financement'
+        ? {
+            loan: { id: 'loan-synth' } as unknown as MatchResult['loan'],
+            confidence: 'medium' as const,
+            reason: 'creditor+amount match',
+          }
+        : null,
+    );
+
+  it('findExistingLoan (revolving) : interrogé aussi avec cluster.creditor -> existing_loan_match', async () => {
+    loansService.findExistingLoan.mockImplementation((signals) =>
+      matchOnlyOnClusterCreditor(signals.creditor),
+    );
+
+    const result = await svc.validate(
+      revolvingCluster(),
+      revolvingClassification(),
+      '2026-03-10',
+    );
+
+    expect(result).toEqual({ created: false, reason: 'existing_loan_match' });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('findExistingLoan (installment) : interrogé aussi avec cluster.creditor -> existing_loan_match', async () => {
+    loansService.findExistingLoan.mockImplementation((signals) =>
+      matchOnlyOnClusterCreditor(signals.creditor),
+    );
+
+    const result = await svc.validate(
+      installmentCluster(),
+      installmentClassification(),
+      '2026-02-10',
+    );
+
+    expect(result).toEqual({ created: false, reason: 'existing_loan_match' });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('findExistingLoan : un seul appel quand creditor LLM et cluster.creditor sont identiques (casse/espaces ignorés)', async () => {
+    const cluster = revolvingCluster();
+    const classification = makeClassification({
+      classification: 'revolving',
+      creditor: ' Credimax Financement ',
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.85,
+    });
+
+    const result = await svc.validate(cluster, classification, '2026-03-10');
+
+    expect(result).toEqual({ created: true });
+    expect(loansService.findExistingLoan).toHaveBeenCalledTimes(1);
+  });
+});

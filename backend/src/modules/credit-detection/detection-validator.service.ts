@@ -148,6 +148,10 @@ export class DetectionValidatorService {
     }
 
     const disambiguate = subSeries.length > 1;
+    const creditorNames = DetectionValidatorService.creditorNames(
+      cluster,
+      classification,
+    );
     let createdCount = 0;
     let lastReason: string | undefined;
 
@@ -155,6 +159,7 @@ export class DetectionValidatorService {
       const result = await this.validateInstallmentSubSeries(
         occurrences,
         classification,
+        creditorNames,
         disambiguate,
         latestStatementDate,
       );
@@ -177,6 +182,7 @@ export class DetectionValidatorService {
   private async validateInstallmentSubSeries(
     occurrences: ClusterOccurrence[],
     classification: ClusterClassification,
+    creditorNames: string[],
     disambiguate: boolean,
     latestStatementDate: string,
   ): Promise<ValidationResult> {
@@ -214,12 +220,7 @@ export class DetectionValidatorService {
     // Round 3 fix 2 : vérifié AVANT toute autre décision (reroute
     // subscription incluse) — si c'est un crédit déjà suivi, on ne veut
     // jamais le re-suggérer, peu importe sous quelle forme.
-    if (
-      await this.hasFuzzyKnownLoanPayment(
-        classification.creditor,
-        medianAmount,
-      )
-    ) {
+    if (await this.hasFuzzyKnownLoanPayment(creditorNames, medianAmount)) {
       return { created: false, reason: 'existing_loan_payment' };
     }
 
@@ -250,14 +251,12 @@ export class DetectionValidatorService {
       return { created: false, reason: 'installment_count_exceeded' };
     }
 
-    const match = await this.loansService.findExistingLoan({
-      creditor: classification.creditor,
-      monthlyAmount: medianAmount,
-      description: occurrences[occurrences.length - 1].description,
-    });
     if (
-      match &&
-      (match.confidence === 'high' || match.confidence === 'medium')
+      await this.hasExistingLoanMatch(
+        creditorNames,
+        medianAmount,
+        occurrences[occurrences.length - 1].description,
+      )
     ) {
       return { created: false, reason: 'existing_loan_match' };
     }
@@ -354,22 +353,88 @@ export class DetectionValidatorService {
    * garde, seulement pour le reste de l'app.
    */
   private async hasFuzzyKnownLoanPayment(
-    creditor: string,
+    creditorNames: string[],
     medianAmount: number,
   ): Promise<boolean> {
-    const normalizedCluster = creditor.toLowerCase().trim();
-    if (!normalizedCluster) return false;
+    if (creditorNames.length === 0) return false;
     const loans = await this.loansService.getAll();
     return loans.some((loan) => {
-      if (!loan.creditor) return false;
-      const normalizedLoan = loan.creditor.toLowerCase().trim();
-      if (!normalizedLoan) return false;
-      const contains =
-        normalizedLoan.includes(normalizedCluster) ||
-        normalizedCluster.includes(normalizedLoan);
-      if (!contains) return false;
+      if (
+        !DetectionValidatorService.fuzzyCreditorMatch(
+          loan.creditor,
+          creditorNames,
+        )
+      ) {
+        return false;
+      }
       const tolerance = loan.monthlyPayment * AMOUNT_TOLERANCE;
       return Math.abs(medianAmount - loan.monthlyPayment) <= tolerance;
+    });
+  }
+
+  /**
+   * Backlog revue 2026-08-13 #2 : `findExistingLoan` interrogé pour CHAQUE
+   * nom de créancier connu du cluster (LLM puis déterministe) — un match
+   * high/medium sur l'un des deux suffit à bloquer la suggestion.
+   */
+  private async hasExistingLoanMatch(
+    creditorNames: string[],
+    monthlyAmount: number,
+    description: string,
+  ): Promise<boolean> {
+    for (const creditor of creditorNames) {
+      const match = await this.loansService.findExistingLoan({
+        creditor,
+        monthlyAmount,
+        description,
+      });
+      if (
+        match &&
+        (match.confidence === 'high' || match.confidence === 'medium')
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Backlog revue 2026-08-13 #2 : les gardes « créancier existant » ne
+   * reposent plus sur le seul `classification.creditor` (sortie LLM, alias
+   * variable : SOFINCO vs CA CONSUMER FINANCE) — elles croisent aussi le
+   * `cluster.creditor` déterministe. Noms dédoublonnés après normalisation
+   * (lowercase + trim), vides écartés, nom LLM en premier.
+   */
+  private static creditorNames(
+    cluster: CandidateCluster,
+    classification: ClusterClassification,
+  ): string[] {
+    const names: string[] = [];
+    const seen = new Set<string>();
+    for (const raw of [classification.creditor, cluster.creditor]) {
+      const normalized = (raw ?? '').toLowerCase().trim();
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      names.push(raw);
+    }
+    return names;
+  }
+
+  /** Containment dans les deux sens après normalisation (lowercase, trim),
+   *  contre l'un quelconque des noms candidats. */
+  private static fuzzyCreditorMatch(
+    knownCreditor: string | undefined,
+    creditorNames: string[],
+  ): boolean {
+    const normalizedKnown = (knownCreditor ?? '').toLowerCase().trim();
+    if (!normalizedKnown) return false;
+    return creditorNames.some((name) => {
+      const normalizedName = name.toLowerCase().trim();
+      return (
+        !!normalizedName &&
+        (normalizedKnown.includes(normalizedName) ||
+          normalizedName.includes(normalizedKnown))
+      );
     });
   }
 
@@ -433,6 +498,10 @@ export class DetectionValidatorService {
     classification: ClusterClassification,
   ): Promise<ValidationResult> {
     const occurrences = cluster.occurrences;
+    const creditorNames = DetectionValidatorService.creditorNames(
+      cluster,
+      classification,
+    );
 
     const months = occurrences.map((o) => o.date.slice(0, 7));
     const distinctMonths = new Set(months);
@@ -458,23 +527,16 @@ export class DetectionValidatorService {
       DetectionValidatorService.median(amountsAbs),
     );
 
-    if (
-      await this.hasFuzzyKnownLoanPayment(
-        classification.creditor,
-        medianAmount,
-      )
-    ) {
+    if (await this.hasFuzzyKnownLoanPayment(creditorNames, medianAmount)) {
       return { created: false, reason: 'existing_loan_payment' };
     }
 
-    const match = await this.loansService.findExistingLoan({
-      creditor: classification.creditor,
-      monthlyAmount: medianAmount,
-      description: occurrences[occurrences.length - 1].description,
-    });
     if (
-      match &&
-      (match.confidence === 'high' || match.confidence === 'medium')
+      await this.hasExistingLoanMatch(
+        creditorNames,
+        medianAmount,
+        occurrences[occurrences.length - 1].description,
+      )
     ) {
       return { created: false, reason: 'existing_loan_match' };
     }
