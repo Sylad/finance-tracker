@@ -1878,3 +1878,228 @@ describe('DetectionValidatorService — branche subscription déterministe + ant
     expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
   });
 });
+
+describe('DetectionValidatorService — cluster.creditor = premier mot du libellé : correspondance par mot entier (relecture du lot)', () => {
+  // cluster.creditor vient de parseCounterpart (premier mot du libellé
+  // nettoyé) : souvent 2-3 lettres ou un mot générique. Il ne doit matcher
+  // un créancier connu que par MOT ENTIER (≥ 4 caractères), sinon égalité
+  // stricte ; les mots génériques sont ignorés. Noms fictifs uniquement.
+  type LoanRow = Awaited<ReturnType<LoansService['getAll']>>[number];
+  type SuggestionRow = Awaited<
+    ReturnType<LoanSuggestionsService['getAll']>
+  >[number];
+  type SubscriptionRow = Awaited<
+    ReturnType<SubscriptionsService['getAll']>
+  >[number];
+  let loansService: jest.Mocked<
+    Pick<LoansService, 'findExistingLoan' | 'getAll'>
+  >;
+  let loanSuggestionsService: jest.Mocked<
+    Pick<LoanSuggestionsService, 'upsertMany' | 'getAll'>
+  >;
+  let subscriptionsService: jest.Mocked<Pick<SubscriptionsService, 'getAll'>>;
+  let svc: DetectionValidatorService;
+
+  beforeEach(() => {
+    loansService = {
+      findExistingLoan: jest.fn().mockResolvedValue(null),
+      getAll: jest.fn().mockResolvedValue([]),
+    };
+    loanSuggestionsService = {
+      upsertMany: jest.fn().mockResolvedValue(undefined),
+      getAll: jest.fn().mockResolvedValue([]),
+    };
+    subscriptionsService = { getAll: jest.fn().mockResolvedValue([]) };
+    svc = new DetectionValidatorService(
+      loansService as unknown as LoansService,
+      loanSuggestionsService as unknown as LoanSuggestionsService,
+      subscriptionsService as unknown as SubscriptionsService,
+    );
+  });
+
+  const occurrencesFor = (
+    months: string[],
+    amount: number,
+    description: string,
+  ) =>
+    months.map((m, i) => ({
+      date: `${m}-10`,
+      amount: -amount,
+      description,
+      transactionId: `w-${i}`,
+      statementId: m,
+    }));
+
+  const loan = (creditor: string, monthlyPayment: number) =>
+    ({
+      id: `loan-${creditor}`,
+      creditor,
+      isActive: true,
+      monthlyPayment,
+    }) as unknown as LoanRow;
+
+  const revolving = (clusterCreditor: string, llmCreditor: string) => ({
+    cluster: makeCluster({
+      key: clusterCreditor,
+      creditor: clusterCreditor,
+      merchant: null,
+      occurrences: occurrencesFor(
+        ['2026-01', '2026-02', '2026-03'],
+        88.4,
+        `PRLV ${llmCreditor.toUpperCase()}`,
+      ),
+    }),
+    classification: makeClassification({
+      classification: 'revolving',
+      creditor: llmCreditor,
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.85,
+    }),
+  });
+
+  it('crédit revolving : jeton court « xo » contenu dans « Maxo Banque » (prêt connu à ±5 %) -> suggestion créée', async () => {
+    loansService.getAll.mockResolvedValue([loan('Maxo Banque', 88.4)]);
+    const { cluster, classification } = revolving('xo', 'xo conso finance');
+
+    const result = await svc.validate(cluster, classification, '2026-03-10');
+
+    expect(result).toEqual({ created: true });
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('plan N× : jeton court « la » contenu dans « Plarno » (prêt connu à ±5 %) -> suggestion créée', async () => {
+    loansService.getAll.mockResolvedValue([loan('Plarno', 31.5)]);
+    const cluster = makeCluster({
+      key: 'la|zoland',
+      creditor: 'la',
+      merchant: 'zoland',
+      occurrences: occurrencesFor(['2026-01', '2026-02'], 31.5, 'LA FICTIVE'),
+    });
+    const classification = makeClassification({
+      creditor: 'la caisse fictive',
+      merchant: 'zoland',
+      installmentCount: 3,
+    });
+
+    const result = await svc.validate(cluster, classification, '2026-02-10');
+
+    expect(result).toEqual({ created: true, createdCount: 1 });
+  });
+
+  it('jeton ≥ 4 lettres présent seulement comme sous-chaîne (« cofi » dans « Cofinor ») -> pas de blocage', async () => {
+    loansService.getAll.mockResolvedValue([loan('Cofinor Fictif', 88.4)]);
+    const { cluster, classification } = revolving('cofi', 'cofi services');
+
+    const result = await svc.validate(cluster, classification, '2026-03-10');
+
+    expect(result).toEqual({ created: true });
+  });
+
+  it("mot générique (« permanent ») ignoré même s'il figure en mot entier dans un créancier connu", async () => {
+    loansService.getAll.mockResolvedValue([
+      loan('Permanent Fictif Finance', 88.4),
+    ]);
+    const { cluster, classification } = revolving('permanent', 'zorbank');
+
+    const result = await svc.validate(cluster, classification, '2026-03-10');
+
+    expect(result).toEqual({ created: true });
+  });
+
+  it('vrai doublon : jeton ≥ 4 lettres en mot entier (« zorbank » dans « ZORBANK CREDIT »), LLM divergent -> existing_loan_payment', async () => {
+    loansService.getAll.mockResolvedValue([loan('ZORBANK CREDIT', 88.4)]);
+    const { cluster, classification } = revolving('zorbank', 'zb finance');
+
+    const result = await svc.validate(cluster, classification, '2026-03-10');
+
+    expect(result).toEqual({ created: false, reason: 'existing_loan_payment' });
+  });
+
+  it('vrai doublon : jeton court égal au créancier exact (« xo » = « XO ») -> existing_loan_payment', async () => {
+    loansService.getAll.mockResolvedValue([loan('XO', 88.4)]);
+    const { cluster, classification } = revolving('xo', 'maxifin');
+
+    const result = await svc.validate(cluster, classification, '2026-03-10');
+
+    expect(result).toEqual({ created: false, reason: 'existing_loan_payment' });
+  });
+
+  const subscription = (clusterCreditor: string, llmCreditor: string) => ({
+    cluster: makeCluster({
+      key: clusterCreditor,
+      creditor: clusterCreditor,
+      merchant: null,
+      occurrences: occurrencesFor(['2026-01', '2026-02'], 19.9, 'PRLV FICTIF'),
+    }),
+    classification: makeClassification({
+      classification: 'subscription',
+      creditor: llmCreditor,
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.85,
+    }),
+  });
+
+  it('abonnement : jeton « ca » contenu dans un abonnement suivi « Abonnement Canalix » -> suggestion créée', async () => {
+    subscriptionsService.getAll.mockResolvedValue([
+      {
+        id: 'sub-x',
+        name: 'Abonnement Canalix',
+        monthlyAmount: 19.9,
+        isActive: true,
+      } as unknown as SubscriptionRow,
+    ]);
+    const { cluster, classification } = subscription('ca', 'ca fictif telecom');
+
+    const result = await svc.validate(cluster, classification, '2026-02-10');
+
+    expect(result.created).toBe(true);
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('abonnement : jeton « la » contenu dans une suggestion refusée « Cloudlab » -> suggestion créée', async () => {
+    loanSuggestionsService.getAll.mockResolvedValue([
+      {
+        id: 'sug-x',
+        label: 'cloudlab',
+        monthlyAmount: 19.9,
+        occurrencesSeen: 2,
+        firstSeenStatementId: '2025-11',
+        firstSeenDate: '2025-11-10',
+        lastSeenDate: '2025-12-10',
+        suggestedType: 'subscription',
+        matchPattern: 'cloudlab',
+        creditor: 'Cloudlab',
+        status: 'rejected',
+        createdAt: '2025-12-11T00:00:00.000Z',
+      } as SuggestionRow,
+    ]);
+    const { cluster, classification } = subscription('la', 'la boite fictive');
+
+    const result = await svc.validate(cluster, classification, '2026-02-10');
+
+    expect(result.created).toBe(true);
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('abonnement : vrai doublon par jeton en mot entier (« streamix » dans « Streamix SAS ») -> existing_subscription', async () => {
+    subscriptionsService.getAll.mockResolvedValue([
+      {
+        id: 'sub-s',
+        name: 'Vidéo',
+        creditor: 'Streamix SAS',
+        monthlyAmount: 19.9,
+        isActive: true,
+      } as unknown as SubscriptionRow,
+    ]);
+    const { cluster, classification } = subscription('streamix', 'sx media');
+
+    const result = await svc.validate(cluster, classification, '2026-02-10');
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'existing_subscription',
+    });
+  });
+});

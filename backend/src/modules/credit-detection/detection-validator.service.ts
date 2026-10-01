@@ -54,6 +54,44 @@ const INSTALLMENT_COUNT_PROJECTION_MARGIN = 2;
  *  moins 2 mois calendaires distincts (2 débits à 4 jours d'écart dans le
  *  même mois ne sont pas un abonnement). */
 const MIN_SUBSCRIPTION_DISTINCT_MONTHS = 2;
+/** `cluster.creditor` est le premier mot du libellé nettoyé
+ *  (`parseCounterpart`), pas un nom de créancier : en dessous de cette
+ *  longueur (« ca », « la », « lbp »…), il ne matche un créancier connu
+ *  que par égalité stricte du nom entier. */
+const MIN_CLUSTER_TOKEN_WORD_LENGTH = 4;
+/** Premiers mots de libellé génériques, jamais significatifs comme
+ *  créancier : ignorés par les gardes « créancier existant ». */
+const GENERIC_CLUSTER_TOKENS = new Set([
+  'permanent',
+  'commission',
+  'pour',
+  'prlv',
+  'sepa',
+  'carte',
+  'frais',
+  'retrait',
+  'remise',
+  'echeance',
+  'échéance',
+  'facture',
+  'cotisation',
+  'abonnement',
+  'mensualite',
+  'mensualité',
+  'remboursement',
+  'pret',
+  'prêt',
+  'credit',
+  'crédit',
+]);
+
+/** Noms candidats d'un cluster pour les gardes « créancier existant » :
+ *  le nom LLM (comparé en containment fuzzy) et le jeton déterministe
+ *  `cluster.creditor` (comparé par mot entier, cf `tokenCreditorMatch`). */
+interface CreditorNames {
+  llm: string | null;
+  clusterToken: string | null;
+}
 
 export interface ValidationResult {
   created: boolean;
@@ -188,7 +226,7 @@ export class DetectionValidatorService {
   private async validateInstallmentSubSeries(
     occurrences: ClusterOccurrence[],
     classification: ClusterClassification,
-    creditorNames: string[],
+    creditorNames: CreditorNames,
     disambiguate: boolean,
     latestStatementDate: string,
   ): Promise<ValidationResult> {
@@ -314,7 +352,7 @@ export class DetectionValidatorService {
   private async createSubscriptionFromLongSeries(
     occurrences: ClusterOccurrence[],
     classification: ClusterClassification,
-    creditorNames: string[],
+    creditorNames: CreditorNames,
     medianAmount: number,
     disambiguate: boolean,
   ): Promise<ValidationResult> {
@@ -401,10 +439,10 @@ export class DetectionValidatorService {
    * Retourne null si rien ne bloque.
    */
   private async subscriptionGuardReason(
-    creditorNames: string[],
+    creditorNames: CreditorNames,
     medianAmount: number,
   ): Promise<string | null> {
-    if (creditorNames.length === 0) return null;
+    if (!creditorNames.llm && !creditorNames.clusterToken) return null;
     const withinTolerance = (reference: number) =>
       Math.abs(medianAmount - reference) <= reference * AMOUNT_TOLERANCE;
 
@@ -456,10 +494,10 @@ export class DetectionValidatorService {
    * garde, seulement pour le reste de l'app.
    */
   private async hasFuzzyKnownLoanPayment(
-    creditorNames: string[],
+    creditorNames: CreditorNames,
     medianAmount: number,
   ): Promise<boolean> {
-    if (creditorNames.length === 0) return false;
+    if (!creditorNames.llm && !creditorNames.clusterToken) return false;
     const loans = await this.loansService.getAll();
     return loans.some((loan) => {
       if (
@@ -481,11 +519,20 @@ export class DetectionValidatorService {
    * high/medium sur l'un des deux suffit à bloquer la suggestion.
    */
   private async hasExistingLoanMatch(
-    creditorNames: string[],
+    creditorNames: CreditorNames,
     monthlyAmount: number,
     description: string,
   ): Promise<boolean> {
-    for (const creditor of creditorNames) {
+    const names = [creditorNames.llm, creditorNames.clusterToken].filter(
+      (n): n is string => !!n,
+    );
+    if (
+      names.length === 2 &&
+      names[0].toLowerCase().trim() === names[1].toLowerCase().trim()
+    ) {
+      names.pop();
+    }
+    for (const creditor of names) {
       const match = await this.loansService.findExistingLoan({
         creditor,
         monthlyAmount,
@@ -505,40 +552,67 @@ export class DetectionValidatorService {
    * Backlog revue 2026-08-13 #2 : les gardes « créancier existant » ne
    * reposent plus sur le seul `classification.creditor` (sortie LLM, alias
    * variable : SOFINCO vs CA CONSUMER FINANCE) — elles croisent aussi le
-   * `cluster.creditor` déterministe. Noms dédoublonnés après normalisation
-   * (lowercase + trim), vides écartés, nom LLM en premier.
+   * `cluster.creditor` déterministe. Ce dernier n'est que le premier mot du
+   * libellé : un mot générique (`GENERIC_CLUSTER_TOKENS`) est écarté.
    */
   private static creditorNames(
     cluster: CandidateCluster,
     classification: ClusterClassification,
-  ): string[] {
-    const names: string[] = [];
-    const seen = new Set<string>();
-    for (const raw of [classification.creditor, cluster.creditor]) {
-      const normalized = (raw ?? '').toLowerCase().trim();
-      if (!normalized || seen.has(normalized)) continue;
-      seen.add(normalized);
-      names.push(raw);
-    }
-    return names;
+  ): CreditorNames {
+    const llm = (classification.creditor ?? '').trim();
+    const token = (cluster.creditor ?? '').toLowerCase().trim();
+    return {
+      llm: llm || null,
+      clusterToken: token && !GENERIC_CLUSTER_TOKENS.has(token) ? token : null,
+    };
   }
 
-  /** Containment dans les deux sens après normalisation (lowercase, trim),
-   *  contre l'un quelconque des noms candidats. */
+  /** Vrai si `knownCreditor` correspond au nom LLM (containment fuzzy dans
+   *  les deux sens, comportement historique) ou au jeton déterministe du
+   *  cluster (mot entier, cf `tokenCreditorMatch`). */
   private static fuzzyCreditorMatch(
     knownCreditor: string | undefined,
-    creditorNames: string[],
+    creditorNames: CreditorNames,
   ): boolean {
     const normalizedKnown = (knownCreditor ?? '').toLowerCase().trim();
     if (!normalizedKnown) return false;
-    return creditorNames.some((name) => {
-      const normalizedName = name.toLowerCase().trim();
-      return (
-        !!normalizedName &&
-        (normalizedKnown.includes(normalizedName) ||
-          normalizedName.includes(normalizedKnown))
-      );
-    });
+    const llm = (creditorNames.llm ?? '').toLowerCase().trim();
+    if (
+      llm &&
+      (normalizedKnown.includes(llm) || llm.includes(normalizedKnown))
+    ) {
+      return true;
+    }
+    return creditorNames.clusterToken
+      ? DetectionValidatorService.tokenCreditorMatch(
+          normalizedKnown,
+          creditorNames.clusterToken,
+        )
+      : false;
+  }
+
+  /**
+   * Correspondance du jeton déterministe (`cluster.creditor`) : égalité
+   * stricte du nom entier toujours acceptée ; sinon, seulement si le jeton
+   * fait au moins MIN_CLUSTER_TOKEN_WORD_LENGTH caractères, comme suite de
+   * MOTS ENTIERS du nom connu (« zorbank » dans « zorbank credit », jamais
+   * « ca » dans « carrefour banque » ni « cofi » dans « cofinor »).
+   */
+  private static tokenCreditorMatch(
+    normalizedKnown: string,
+    token: string,
+  ): boolean {
+    if (normalizedKnown === token) return true;
+    if (token.length < MIN_CLUSTER_TOKEN_WORD_LENGTH) return false;
+    const words = (value: string) =>
+      value.split(/[^a-z0-9à-ÿ]+/).filter(Boolean);
+    const knownWords = words(normalizedKnown);
+    const tokenWords = words(token);
+    if (tokenWords.length === 0) return false;
+    for (let i = 0; i + tokenWords.length <= knownWords.length; i++) {
+      if (tokenWords.every((w, j) => knownWords[i + j] === w)) return true;
+    }
+    return false;
   }
 
   /**
