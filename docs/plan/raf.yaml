@@ -20,7 +20,7 @@ lots:
     finished: 2026-09-28
   - id: L2
     title: "Validateur de détection : garde-fous déterministes"
-    status: todo
+    status: doing
     estimate: 1.5
     created: 2026-09-28
     tasks:
@@ -28,6 +28,7 @@ lots:
       - { id: t2, title: "subscription : ≥2 mois distincts + espacement mensuel + anti-re-suggestion (#3)", status: todo }
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #2 #3" }
+    started: 2026-10-01
   - id: L3
     title: "mergeDuplicates : dédup par mois calendaire, préférer le porteur d'encours"
     status: todo
