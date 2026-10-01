@@ -14,6 +14,33 @@ VALUES="$GITOPS/charts/finance-tracker/values.yaml"
 
 git -C "$GITOPS" diff --quiet && git -C "$GITOPS" diff --cached --quiet ||
   { echo "deploy: $GITOPS a des modifications non commitées" >&2; exit 1; }
+
+# L46 — attendre les runs CI encore en cours d'un ancêtre de ce sha. cadence
+# n'attend que le run de CE sha : si un commit qui ne touche que le plan est
+# poussé juste après un commit backend/frontend, son run (vide) finit avant
+# celui qui construit l'image, et sans cette attente on concluait « rien à
+# livrer » (vécu warhammer 01-10, porté de son L28). Borné par
+# DEPLOY_CI_TIMEOUT (sous le deployTimeout de cadence, 1800 s) ; un run qui
+# finit en échec est simplement ignoré ci-dessous, comme avant.
+deadline=$(( $(date +%s) + ${DEPLOY_CI_TIMEOUT:-1200} ))
+while :; do
+  pending_runs=$(gh run list --workflow build.yml --limit 100 --json databaseId,headSha,status \
+    --jq '.[] | select(.status != "completed") | "\(.databaseId) \(.headSha)"')
+  pending=""
+  while read -r run_id head; do
+    [ -n "$run_id" ] || continue
+    git merge-base --is-ancestor "$head" "$SHA" 2>/dev/null || continue
+    pending="$pending $run_id($(echo "$head" | cut -c1-7))"
+  done <<EOF
+$pending_runs
+EOF
+  [ -n "$pending" ] || break
+  [ "$(date +%s)" -lt "$deadline" ] ||
+    { echo "deploy: runs CI d'ancêtres de $SHORT toujours en cours :$pending" >&2; exit 1; }
+  echo "deploy: attente des runs CI en cours d'ancêtres de $SHORT :$pending"
+  sleep "${DEPLOY_CI_POLL:-20}"
+done
+
 git -C "$GITOPS" pull -q --ff-only
 
 # Pour chaque service, la dernière image construite avec succès par un ancêtre
