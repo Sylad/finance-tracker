@@ -32,6 +32,25 @@ function cluster(
 
 describe('triageCluster (L44)', () => {
   describe('établissement listé → crédit ou N×, sans LLM', () => {
+    it('grande banque → motif exigeant un mot de crédit ; autre établissement → pas de motif imposé', () => {
+      const lbp = triageCluster(
+        cluster([
+          'PRLV LA BANQUE POSTALE ECHEANCE PRET',
+          'PRLV LA BANQUE POSTALE ECHEANCE PRET',
+          'PRLV LA BANQUE POSTALE ECHEANCE PRET',
+        ]),
+      );
+      const cofidis = triageCluster(
+        cluster(['PRLV COFIDIS 1', 'PRLV COFIDIS 2', 'PRLV COFIDIS 3']),
+      );
+      if (lbp.route !== 'rule' || cofidis.route !== 'rule')
+        throw new Error('route');
+      const re = new RegExp(lbp.classification.matchPattern!, 'i');
+      expect(re.test('PRLV LA BANQUE POSTALE ECHEANCE PRET')).toBe(true);
+      expect(re.test('ASSURANCE HABITATION LA BANQUE POSTALE')).toBe(false);
+      expect(cofidis.classification.matchPattern).toBeUndefined();
+    });
+
     it('Cofidis « 4XCB » → N× (4), pas un crédit classique', () => {
       const d = triageCluster(
         cluster(['PRLV COFIDIS 4XCB ZOLAND', 'PRLV COFIDIS 4XCB ZOLAND']),

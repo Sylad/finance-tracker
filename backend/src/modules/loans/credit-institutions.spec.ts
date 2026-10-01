@@ -1,5 +1,6 @@
 import {
   CREDIT_INSTITUTIONS,
+  mortgageBankMatchPattern,
   findCreditInstitution,
   isCreditInstitution,
 } from './credit-institutions';
@@ -102,6 +103,47 @@ describe('credit-institutions (liste partagée L44)', () => {
       expect(findCreditInstitution('ACHAT CB ALMA RESTAURANT')).toBeNull();
       expect(findCreditInstitution('PRLV ALMA 3X ZOLAND')).toBe('alma');
       expect(findCreditInstitution('PRLV 4 FOIS ALMA')).toBe('alma');
+    });
+  });
+
+  describe('mortgageBankMatchPattern (motif de crédit, L44)', () => {
+    const re = (name: string) =>
+      new RegExp(mortgageBankMatchPattern(name)!, 'i');
+
+    it("null pour un établissement qui n'est pas une grande banque (motif inchangé)", () => {
+      expect(mortgageBankMatchPattern('cofidis')).toBeNull();
+    });
+
+    it.each([
+      'PRLV LA BANQUE POSTALE ECHEANCE PRET 0042',
+      'ECHEANCE PRÊT LA BANQUE POSTALE',
+      'Prélèvement La Banque Postale mensualité',
+    ])('La Banque Postale : capte le crédit « %s »', (label) => {
+      expect(re('la banque postale').test(label)).toBe(true);
+    });
+
+    it.each([
+      'ASSURANCE HABITATION LA BANQUE POSTALE',
+      'COTISATION CARTE LA BANQUE POSTALE',
+      'PRLV LA BANQUE POSTALE CONSUMER FINANCE CREDIT',
+      'VIR LA BANQUE POSTALE 1500',
+    ])('La Banque Postale : ignore « %s »', (label) => {
+      expect(re('la banque postale').test(label)).toBe(false);
+    });
+
+    it('« CREDIT » du nom de la banque ne suffit pas', () => {
+      expect(re('crédit agricole').test('PRLV CREDIT AGRICOLE ASSURANCE')).toBe(
+        false,
+      );
+      expect(
+        re('crédit agricole').test('PRLV CRÉDIT AGRICOLE ECHEANCE PRET'),
+      ).toBe(true);
+    });
+
+    it("caisse d'épargne : apostrophe et accents tolérés", () => {
+      expect(
+        re("caisse d'épargne").test("PRLV CAISSE D'EPARGNE PRET IMMO"),
+      ).toBe(true);
     });
   });
 });

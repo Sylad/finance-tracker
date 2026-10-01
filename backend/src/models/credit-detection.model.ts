@@ -22,6 +22,9 @@ export interface ClusterClassification {
   installmentCount: number | null;
   confidence: number;     // 0-1
   rationale: string;
+  /** Motif de rapprochement imposé (L44 : grande banque, mot de crédit
+   *  exigé) — absent = nom du créancier échappé. */
+  matchPattern?: string;
 }
 
 export interface DetectionScanResult {

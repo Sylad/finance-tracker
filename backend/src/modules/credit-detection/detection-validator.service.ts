@@ -327,7 +327,8 @@ export class DetectionValidatorService {
       occurrencesSeen: occurrences.length,
       firstSeenDate: occurrences[0].date,
       suggestedType: 'loan',
-      matchPattern: escapeRegex(classification.creditor),
+      matchPattern:
+        classification.matchPattern ?? escapeRegex(classification.creditor),
       creditor: classification.creditor,
       installment: {
         count: normalizedInstallmentCount,
@@ -395,7 +396,8 @@ export class DetectionValidatorService {
       occurrencesSeen: occurrences.length,
       firstSeenDate: occurrences[0].date,
       suggestedType: 'subscription',
-      matchPattern: escapeRegex(classification.creditor),
+      matchPattern:
+        classification.matchPattern ?? escapeRegex(classification.creditor),
       creditor: classification.creditor,
       source: 'llm_detection',
       evidence: DetectionValidatorService.buildEvidence(
@@ -913,7 +915,8 @@ export class DetectionValidatorService {
       occurrencesSeen: occurrences.length,
       firstSeenDate: occurrences[0].date,
       suggestedType,
-      matchPattern: escapeRegex(classification.creditor),
+      matchPattern:
+        classification.matchPattern ?? escapeRegex(classification.creditor),
       creditor: classification.creditor,
       source: 'llm_detection',
       evidence: DetectionValidatorService.buildEvidence(

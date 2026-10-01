@@ -2583,4 +2583,34 @@ describe("DetectionValidatorService — subscription : fraîcheur par sous-séri
       expect(result).toEqual({ created: true });
     });
   });
+
+  it('L44 : matchPattern imposé par la classification (grande banque) repris dans la suggestion', async () => {
+    const cluster: CandidateCluster = {
+      key: 'lbp|',
+      creditor: 'la',
+      merchant: null,
+      occurrences: ['2026-01-10', '2026-02-10', '2026-03-10'].map((date, i) => ({
+        date,
+        amount: -620,
+        description: 'PRLV LA BANQUE POSTALE ECHEANCE PRET',
+        transactionId: `m${i}`,
+        statementId: date.slice(0, 7),
+      })),
+    };
+    const result = await svc.validate(
+      cluster,
+      makeClassification({
+        classification: 'classic',
+        creditor: 'LA BANQUE POSTALE',
+        merchant: null,
+        installmentCount: null,
+        confidence: 1,
+        matchPattern: '^(?=.*BANQUE)(?=.*PRET)',
+      }),
+      '2026-03-10',
+    );
+    expect(result).toEqual({ created: true });
+    const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
+    expect(incoming[0].matchPattern).toBe('^(?=.*BANQUE)(?=.*PRET)');
+  });
 });

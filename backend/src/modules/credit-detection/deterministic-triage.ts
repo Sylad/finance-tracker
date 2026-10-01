@@ -26,6 +26,7 @@ import {
 import {
   BNPL_INSTITUTIONS,
   findCreditInstitution,
+  mortgageBankMatchPattern,
   hasCreditWord,
   mentionedInstitutions,
   normalizeLabel,
@@ -176,6 +177,7 @@ function ruleClassification(
   creditor: string,
   installmentCount: number | null,
   rationale: string,
+  matchPattern?: string | null,
 ): TriageDecision {
   return {
     route: 'rule',
@@ -186,6 +188,7 @@ function ruleClassification(
       installmentCount,
       confidence: 1,
       rationale: `Règle déterministe : ${rationale}`,
+      ...(matchPattern ? { matchPattern } : {}),
     },
   };
 }
@@ -235,6 +238,7 @@ export function triageCluster(cluster: CandidateCluster): TriageDecision {
       creditor,
       null,
       `établissement de crédit listé (${institution})`,
+      mortgageBankMatchPattern(institution),
     );
   }
 

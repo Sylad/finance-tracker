@@ -85,8 +85,20 @@ export const BNPL_INSTITUTIONS: ReadonlySet<string> = new Set([
 ]);
 
 /** Mots de crédit d'un libellé (comparés sans accents, en majuscules). */
-export const CREDIT_WORDS =
-  /\b(PRET|PRETS|MENSUALITE|MENSUALITES|CREDIT|EMPRUNT|ECHEANCE PRET|LOA|LLD|REMBOURSEMENT|REMBOURSEMENTS)\b/;
+const CREDIT_WORD_LIST = [
+  'PRET',
+  'PRETS',
+  'MENSUALITE',
+  'MENSUALITES',
+  'CREDIT',
+  'EMPRUNT',
+  'ECHEANCE PRET',
+  'LOA',
+  'LLD',
+  'REMBOURSEMENT',
+  'REMBOURSEMENTS',
+];
+export const CREDIT_WORDS = new RegExp(`\\b(${CREDIT_WORD_LIST.join('|')})\\b`);
 
 /** « alma » n'est l'établissement que s'il est accolé à un indicateur de
  *  fractionné (« ALMA 3X », « 4 FOIS ALMA ») — sinon un magasin « Alma ». */
@@ -161,4 +173,43 @@ export function findCreditInstitution(
     return name;
   }
   return null;
+}
+
+/** Lettre → classe tolérante aux accents des libellés bancaires bruts. */
+const ACCENTED: Record<string, string> = {
+  A: '[AÀÂ]',
+  C: '[CÇ]',
+  E: '[EÉÈÊË]',
+  I: '[IÎÏ]',
+  O: '[OÔ]',
+  U: '[UÙÛ]',
+};
+const accentTolerant = (word: string) =>
+  [...word].map((ch) => ACCENTED[ch] ?? ch).join('');
+/** Mot entier, sans `\b` (un « É » final n'est pas un caractère de mot). */
+const wholeWords = (words: string[]) =>
+  `(?<![A-Z0-9À-Ÿ])(?:${words
+    .map((w) => w.split(' ').map(accentTolerant).join("[\\s'’.-]+"))
+    .join('|')})(?![A-Z0-9À-Ÿ])`;
+
+/**
+ * Motif de rapprochement d'un crédit chez une GRANDE BANQUE (L44) : le nom
+ * de la banque ET un mot de crédit hors de ce nom, dans n'importe quel
+ * ordre, jamais sa filiale crédit conso (CONSUMER, PERSONAL FINANCE). Sans
+ * lui, « LA BANQUE POSTALE » capterait l'assurance habitation, la
+ * cotisation carte, un virement (remboursement anticipé fantôme)…
+ * null pour les autres établissements (motif historique inchangé).
+ * À compiler avec le drapeau `i`, comme tous les matchPattern.
+ */
+export function mortgageBankMatchPattern(name: string): string | null {
+  if (!MORTGAGE_BANKS.has(name)) return null;
+  const bankWords = normalizeLabel(name).toUpperCase().split(' ');
+  const creditWords = CREDIT_WORD_LIST.filter(
+    (w) => !w.split(' ').some((part) => bankWords.includes(part)),
+  );
+  return (
+    `^(?=.*${wholeWords([bankWords.join(' ')])})` +
+    `(?=.*${wholeWords(creditWords)})` +
+    `(?!.*${wholeWords(['CONSUMER', 'PERSONAL FINANCE'])})`
+  );
 }
