@@ -794,7 +794,7 @@ export class DetectionValidatorService {
    * `LoansService.splitByAmount`). Chaque bucket est ensuite re-trié par
    * date croissante (ordre attendu par `checkIntervals`).
    */
-  private static splitByAmount(
+  static splitByAmount(
     occurrences: ClusterOccurrence[],
   ): ClusterOccurrence[][] {
     const sorted = [...occurrences].sort(
@@ -947,7 +947,7 @@ export class DetectionValidatorService {
    * intervalles, ou l'unique intervalle dans [20,40]j s'il n'y en a qu'un.
    * Une seule occurrence (0 intervalle) ne peut pas être invalidée ici.
    */
-  private static checkIntervals(occurrences: ClusterOccurrence[]): boolean {
+  static checkIntervals(occurrences: ClusterOccurrence[]): boolean {
     if (occurrences.length < 2) return true;
     const intervals: number[] = [];
     for (let i = 1; i < occurrences.length; i++) {
