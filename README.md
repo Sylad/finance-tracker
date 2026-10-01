@@ -62,7 +62,7 @@ Curieux de savoir qui (toi / Claude / le backend) décide de quoi dans le pipeli
 | IA locale (optionnelle) | Ollama (qwen3) — conseils santé, détection crédits/N×, analyse des dépenses |
 | Storage | JSON local (pas de DB) |
 | Build | Docker multi-stage (node:20-alpine → nginx:alpine) |
-| Déploiement | docker-compose (testé Synology NAS DSM) |
+| Déploiement | Instance de démo : images sur GHCR (CI GitHub), chart Helm sur k3s via ArgoCD (GitOps), tunnel Cloudflare · données réelles : en local uniquement |
 
 ## Setup local
 
@@ -102,8 +102,8 @@ ET le frontend buildé sur `http://localhost:3000`).
 
 ### Première installation
 ```bash
-./local/sync-from-nas.sh        # rapatrie données + .env depuis le NAS (une fois)
-npm run build                   # build backend + frontend
+cp backend/.env.example backend/.env   # APP_PIN, ANTHROPIC_API_KEY…
+npm run build                          # build backend + frontend
 ```
 Puis, côté Windows (PowerShell), créer le raccourci Bureau — le script est
 sur `\\wsl.localhost`, donc vu comme « distant » par la stratégie

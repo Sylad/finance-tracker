@@ -1,6 +1,6 @@
 # Finance Tracker — guide Claude Code
 
-App perso de suivi financier perso, déployée sur NAS Synology. Frontend React + TanStack, backend NestJS, stockage JSON local.
+App perso de suivi financier perso : instance aux vraies données en local sur Big-Blue (`local/run.sh`), instance de démo sur le k3s de dark-blue (namespace `preprod`, https://finance.sladoire.dev). Frontend React + TanStack, backend NestJS, stockage JSON local.
 
 ## Architecture
 
@@ -213,5 +213,6 @@ Doc complète dans `.claude/output/apex/04-loans-synchro-robust/` et `.claude/ou
 ### Cache JSON après schema change
 - Si un module backend ajoute un champ, le cache JSON existant ne contient pas ce champ → re-fetch peut renvoyer des objets incomplets. **Buster le cache** (suppression du fichier ou bump version) avant rebuild backend.
 
-### Path NAS
-- Container path **`/volume2/docker/developpeur/finance-tracker-v2/`** (note : `-v2` sur le NAS, repo GitHub et WSL = `finance-tracker` sans suffixe).
+### Emplacements
+- Sources : `~/projects/developpeur/finance-tracker` (Big-Blue). Données réelles : `data/` (`local/run.sh`) ou `data-local/` (`docker-compose.local.yml`), jamais versionnées.
+- Prod démo : chart `developpeur-gitops/charts/finance-tracker`, PVC `finance-backend-data` (ns `preprod`).
