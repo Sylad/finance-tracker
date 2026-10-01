@@ -52,10 +52,11 @@ function LotCard({ lot, newsSlug }: { lot: PlanLot; newsSlug?: string }) {
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
           <span className={badge.className}>{badge.label}</span>
           {date && (
-            <>
-              <span aria-hidden="true">·</span>
+            // Le point reste collé à la date : jamais orphelin en fin de ligne (320 px).
+            <span>
+              <span aria-hidden="true">· </span>
               <time dateTime={date.day}>{date.text}</time>
-            </>
+            </span>
           )}
         </div>
         <span className="text-xs text-fg-dim shrink-0 pt-0.5">{lot.id}</span>
