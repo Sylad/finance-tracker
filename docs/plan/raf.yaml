@@ -381,7 +381,8 @@ lots:
     created: 2026-10-01
   - id: L48
     title: "Page « Plan de travail » : ce qui est prévu, en cours et récemment livré, généré au build depuis docs/plan/raf.yaml (titres et états seulement, jamais les notes) — inspirée de la page « À venir » d'AetherWX"
-    status: todo
+    status: doing
     estimate: 0.5
     visible: true
     created: 2026-10-01
+    started: 2026-10-01
