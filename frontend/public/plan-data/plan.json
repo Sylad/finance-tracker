@@ -4,83 +4,83 @@
   "lots": [
     {
       "id": "L18",
-      "title": "Page Nouveautés (cadence news) : route /nouveautes, sidebar, palette",
+      "title": "Une page Nouveautés : ce qui change, avec une capture",
       "status": "done",
       "started": "2026-09-28",
       "finished": "2026-09-28"
     },
     {
       "id": "L21",
-      "title": "Revue UX — Tableau de bord",
+      "title": "Un tableau de bord plus lisible, surtout au téléphone",
       "status": "done",
       "started": "2026-09-28",
       "finished": "2026-09-28",
       "tasks": [
         {
-          "title": "Patrimoine net : taille fluide, pas de débordement à 390 px",
+          "title": "Le patrimoine net ne déborde plus de l'écran",
           "status": "done"
         },
         {
-          "title": "Graphiques : aria-label résumé + légende Entrées/Sorties",
+          "title": "Graphiques avec légende et description pour les lecteurs d'écran",
           "status": "done"
         },
         {
-          "title": "État d'erreur du tableau de bord distinct de l'état vide (Réessayer)",
+          "title": "Un message clair en cas de panne, avec un bouton Réessayer",
           "status": "done"
         },
         {
-          "title": "Axes : formateur fr-FR compact sans doublons, axe score non rogné",
+          "title": "Axes des graphiques sans graduations en double",
           "status": "done"
         },
         {
-          "title": "Tuile santé : renommer, texte lisible fr-FR, couleur = libellé",
+          "title": "Tuile santé renommée et plus lisible",
           "status": "done"
         },
         {
-          "title": "Bandeau démo visible sous l'en-tête mobile",
+          "title": "Bandeau démo visible au téléphone",
           "status": "done"
         },
         {
-          "title": "Tableau de bord téléphone réduit (maquette à valider par Sylvain)",
+          "title": "Au téléphone, l'essentiel d'abord",
           "status": "done"
         },
         {
-          "title": "Budget Claude en formatEUR ; titre Tableau de bord ; tuiles compactes ; commentaire IA cohérent avec la démo",
+          "title": "Montants au format français et tuiles plus compactes",
           "status": "done"
         },
         {
-          "title": "Badges de score bleus des relevés récents : contraste ≥ 4,5:1 (mesuré 4,06:1)",
+          "title": "Badges de score plus contrastés",
           "status": "done"
         },
         {
-          "title": "Libellé « Dashboard » → « Tableau de bord » (barre latérale, onglets, feuille Plus)",
+          "title": "« Tableau de bord » partout, au lieu de « Dashboard »",
           "status": "done"
         },
         {
-          "title": "Anneau 96 px : « / 100 » à 11 px min ; budgets au format « 312 € / 80 € »",
+          "title": "Score et budgets plus lisibles",
           "status": "done"
         },
         {
-          "title": "Relevés récents à 320 px : espacer libellé et montant",
+          "title": "Relevés récents lisibles sur petit écran",
           "status": "done"
         }
       ]
     },
     {
       "id": "L42",
-      "title": "Supprimer le suivi d'usage / solde Claude (module claude-usage, /api/claude/*, badge), comme warhammer40k L22",
+      "title": "Le tableau de bord ne parle plus que de vos finances",
       "status": "done",
       "started": "2026-09-29",
       "finished": "2026-09-29"
     },
     {
       "id": "L47",
-      "title": "Nouveautés : pastille « nouveau » (entrées non vues depuis la dernière visite, localStorage) + lien permanent par entrée /nouveautes#<slug> — modèle AetherWX news-badge/news-anchor et claude-code-codex L13",
+      "title": "Nouveautés : une pastille pour ce qui est nouveau, un lien par entrée",
       "status": "todo"
     },
     {
       "id": "L48",
-      "title": "Page « Plan de travail » : ce qui est prévu, en cours et récemment livré, généré au build depuis docs/plan/raf.yaml (titres et états seulement, jamais les notes) — inspirée de la page « À venir » d'AetherWX",
+      "title": "Une page Plan de travail : ce qui se prépare",
       "status": "doing",
       "started": "2026-10-01"
     }

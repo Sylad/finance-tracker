@@ -167,6 +167,7 @@ lots:
     finished: 2026-09-28
   - id: L18
     title: "Page Nouveautés (cadence news) : route /nouveautes, sidebar, palette"
+    public: "Une page Nouveautés : ce qui change, avec une capture"
     status: done
     estimate: 0.5
     visible: true
@@ -191,25 +192,26 @@ lots:
     finished: 2026-09-28
   - id: L21
     title: Revue UX — Tableau de bord
+    public: "Un tableau de bord plus lisible, surtout au téléphone"
     visible: true
     status: done
     estimate: 0.25
     created: 2026-09-28
     started: 2026-09-28
     tasks:
-      - { id: t1, title: "Contraste fg-dim ≥ 4,5:1 (jeton unique)", status: done }
-      - { id: t2, title: "Patrimoine net : taille fluide, pas de débordement à 390 px", status: done }
-      - { id: t3, title: "Graphiques : aria-label résumé + légende Entrées/Sorties", status: done }
-      - { id: t4, title: État d'erreur du tableau de bord distinct de l'état vide (Réessayer), status: done }
-      - { id: t5, title: "Axes : formateur fr-FR compact sans doublons, axe score non rogné", status: done }
-      - { id: t6, title: "Tuile santé : renommer, texte lisible fr-FR, couleur = libellé", status: done }
-      - { id: t7, title: Bandeau démo visible sous l'en-tête mobile, status: done }
-      - { id: t8, title: Tableau de bord téléphone réduit (maquette à valider par Sylvain), status: done }
-      - { id: t9, title: Budget Claude en formatEUR ; titre Tableau de bord ; tuiles compactes ; commentaire IA cohérent avec la démo, status: done }
-      - { id: t10, title: "Badges de score bleus des relevés récents : contraste ≥ 4,5:1 (mesuré 4,06:1)", status: done }
-      - { id: t11, title: "Libellé « Dashboard » → « Tableau de bord » (barre latérale, onglets, feuille Plus)", status: done }
-      - { id: t12, title: "Anneau 96 px : « / 100 » à 11 px min ; budgets au format « 312 € / 80 € »", status: done }
-      - { id: t13, title: "Relevés récents à 320 px : espacer libellé et montant", status: done }
+      - { id: t1, title: "Contraste fg-dim ≥ 4,5:1 (jeton unique)", public: "Textes secondaires plus contrastés", status: done }
+      - { id: t2, title: "Patrimoine net : taille fluide, pas de débordement à 390 px", public: "Le patrimoine net ne déborde plus de l'écran", status: done }
+      - { id: t3, title: "Graphiques : aria-label résumé + légende Entrées/Sorties", public: "Graphiques avec légende et description pour les lecteurs d'écran", status: done }
+      - { id: t4, title: État d'erreur du tableau de bord distinct de l'état vide (Réessayer), public: "Un message clair en cas de panne, avec un bouton Réessayer", status: done }
+      - { id: t5, title: "Axes : formateur fr-FR compact sans doublons, axe score non rogné", public: "Axes des graphiques sans graduations en double", status: done }
+      - { id: t6, title: "Tuile santé : renommer, texte lisible fr-FR, couleur = libellé", public: "Tuile santé renommée et plus lisible", status: done }
+      - { id: t7, title: Bandeau démo visible sous l'en-tête mobile, public: "Bandeau démo visible au téléphone", status: done }
+      - { id: t8, title: Tableau de bord téléphone réduit (maquette à valider par Sylvain), public: "Au téléphone, l'essentiel d'abord", status: done }
+      - { id: t9, title: Budget Claude en formatEUR ; titre Tableau de bord ; tuiles compactes ; commentaire IA cohérent avec la démo, public: "Montants au format français et tuiles plus compactes", status: done }
+      - { id: t10, title: "Badges de score bleus des relevés récents : contraste ≥ 4,5:1 (mesuré 4,06:1)", public: "Badges de score plus contrastés", status: done }
+      - { id: t11, title: "Libellé « Dashboard » → « Tableau de bord » (barre latérale, onglets, feuille Plus)", public: "« Tableau de bord » partout, au lieu de « Dashboard »", status: done }
+      - { id: t12, title: "Anneau 96 px : « / 100 » à 11 px min ; budgets au format « 312 € / 80 € »", public: "Score et budgets plus lisibles", status: done }
+      - { id: t13, title: "Relevés récents à 320 px : espacer libellé et montant", public: "Relevés récents lisibles sur petit écran", status: done }
     notes:
       - { date: 2026-09-28, text: "revue ux-reviewer : non conforme — 3 bloquants (contraste 3,8:1, débordement 390 px, graphiques sans alternative), 5 majeurs ; captures tmp/ux-finance-L21/" }
       - { date: 2026-09-28, text: "Sylvain 28-09 : maquette téléphone validée ; garder le correctif du € hors écran (« si je gagne au loto »)" }
@@ -321,6 +323,7 @@ lots:
     finished: 2026-09-28
   - id: L42
     title: Supprimer le suivi d'usage / solde Claude (module claude-usage, /api/claude/*, badge), comme warhammer40k L22
+    public: "Le tableau de bord ne parle plus que de vos finances"
     status: done
     estimate: 0.25
     visible: true
@@ -374,6 +377,7 @@ lots:
     finished: 2026-10-01
   - id: L47
     title: "Nouveautés : pastille « nouveau » (entrées non vues depuis la dernière visite, localStorage) + lien permanent par entrée /nouveautes#<slug> — modèle AetherWX news-badge/news-anchor et claude-code-codex L13"
+    public: "Nouveautés : une pastille pour ce qui est nouveau, un lien par entrée"
     status: todo
     estimate: 0.25
     quickwin: true
@@ -381,8 +385,15 @@ lots:
     created: 2026-10-01
   - id: L48
     title: "Page « Plan de travail » : ce qui est prévu, en cours et récemment livré, généré au build depuis docs/plan/raf.yaml (titres et états seulement, jamais les notes) — inspirée de la page « À venir » d'AetherWX"
+    public: "Une page Plan de travail : ce qui se prépare"
     status: doing
     estimate: 0.5
     visible: true
     created: 2026-10-01
     started: 2026-10-01
+  - id: L49
+    title: "Backend : demo-fixtures.json absent de dist/ (nest build ne copie pas les assets JSON) → /api/demo/seed en 500 ENOENT sur une instance neuve ; ajouter l'asset à nest-cli.json et un test"
+    status: todo
+    estimate: 0.1
+    quickwin: true
+    created: 2026-10-01
