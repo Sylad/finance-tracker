@@ -130,6 +130,21 @@ describe('triageCluster (L44)', () => {
   });
 
   describe('ambigus → LLM', () => {
+    it.each([
+      ['LOA', 'PRLV AUTOLOC LOA VEHICULE'],
+      ['LLD', 'PRLV AUTOLOC LLD'],
+      ['REMBOURSEMENT', 'PRLV EXEMPLE REMBOURSEMENT'],
+    ])('mot de crédit %s (décision Sylvain) → LLM', (_w, label) => {
+      expect(triageCluster(cluster([label, label])).route).toBe('llm');
+    });
+
+    it('une mutuelle mensuelle reste un abonnement', () => {
+      const d = triageCluster(cluster(['PRLV MUTUELLE EXEMPLE SANTE', 'PRLV MUTUELLE EXEMPLE SANTE']));
+      expect(d.route).toBe('rule');
+      if (d.route !== 'rule') return;
+      expect(d.classification.classification).toBe('subscription');
+    });
+
     it("non listé avec un mot de crédit (prêt d'une banque hors liste)", () => {
       const d = triageCluster(
         cluster([

@@ -86,7 +86,7 @@ export const BNPL_INSTITUTIONS: ReadonlySet<string> = new Set([
 
 /** Mots de crédit d'un libellé (comparés sans accents, en majuscules). */
 export const CREDIT_WORDS =
-  /\b(PRET|PRETS|MENSUALITE|MENSUALITES|CREDIT|EMPRUNT|ECHEANCE PRET)\b/;
+  /\b(PRET|PRETS|MENSUALITE|MENSUALITES|CREDIT|EMPRUNT|ECHEANCE PRET|LOA|LLD|REMBOURSEMENT|REMBOURSEMENTS)\b/;
 
 /** « alma » n'est l'établissement que s'il est accolé à un indicateur de
  *  fractionné (« ALMA 3X », « 4 FOIS ALMA ») — sinon un magasin « Alma ». */
