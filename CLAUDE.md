@@ -25,6 +25,14 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   construits par la CI (elle ne construit que le service modifié) et pousse → ArgoCD
   → `scripts/verify-rollout.sh` (pods sur les tags du values.yaml, `kubectl` lecture
   seule, contexte `dark-blue`) + `/api/health`. Jamais deux livraisons à la fois.
+- **Plan de travail public** (`/plan`, L48) : après TOUT `raf` qui modifie le plan
+  (`add`, `start`, `done`, `drop`…) ou une nouvelle entrée Nouveautés, lancer
+  `npm run plan` (régénère `frontend/public/plan-data/plan.json`, versionné : la CI
+  n'a pas raf) puis commiter le JSON — sinon le test de synchro échoue. Seuls les
+  lots `visible` sortent, sous leur titre public : champ `public:` du lot (≤ 80
+  caractères, sans chemin, technique, identifiant ni prénom ; aussi possible sur
+  les sous-tâches), sinon titre de sa Nouveauté, sinon le lot est masqué. Les
+  revues UX n'y figurent qu'avec un `public:`.
 - L'instance déployée (finance.sladoire.dev, ns `preprod` de dark-blue) ne contient
   que des données de démo ; les vraies données restent en local sur Big-Blue.
 
