@@ -43,6 +43,9 @@ const EXCLUDED_PAYEES =
   /\b(DGFIP|IMPOTS?|TRESOR PUBLIC|FINANCES PUBLIQUES|AMENDES?|LOYERS?|URSSAF|RETRAIT|DAB)\b/;
 /** Virements sortants (vers une personne, l'épargne…) : jamais un abonnement. */
 const OUTGOING_TRANSFER = /^(VIR|VIRT|VIREMENT)\b/;
+/** Mots d'allure bancaire (libellés tronqués « CA CONSUMER FINANC ») : un
+ *  libellé qui en porte sans être tranché par la liste part au LLM. */
+const BANKING_HINT = /\b(FINANC\w*|CONSUMER|BANK|BANQUE)\b/;
 /** Nombre d'échéances lu dans un libellé (« 4X », « 3 FOIS »). */
 const INSTALLMENT_COUNT = /\b(\d{1,2}) ?(X(?:CB)?|FOIS)\b/;
 
@@ -231,6 +234,12 @@ export function triageCluster(cluster: CandidateCluster): TriageDecision {
     return {
       route: 'llm',
       reason: 'mot de crédit chez un créancier non listé',
+    };
+  }
+  if (descriptions.some((d) => BANKING_HINT.test(upper(d)))) {
+    return {
+      route: 'llm',
+      reason: "libellé d'allure bancaire non tranché par la liste",
     };
   }
   if (descriptions.some((d) => PAY_IN_N_PATTERN.test(d))) {

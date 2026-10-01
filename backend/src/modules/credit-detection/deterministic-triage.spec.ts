@@ -33,7 +33,9 @@ function cluster(
 describe('triageCluster (L44)', () => {
   describe('établissement listé → crédit ou N×, sans LLM', () => {
     it('Cofidis « 4XCB » → N× (4), pas un crédit classique', () => {
-      const d = triageCluster(cluster(['PRLV COFIDIS 4XCB ZOLAND', 'PRLV COFIDIS 4XCB ZOLAND']));
+      const d = triageCluster(
+        cluster(['PRLV COFIDIS 4XCB ZOLAND', 'PRLV COFIDIS 4XCB ZOLAND']),
+      );
       expect(d.route).toBe('rule');
       if (d.route !== 'rule') return;
       expect(d.classification.classification).toBe('installment');
@@ -131,6 +133,18 @@ describe('triageCluster (L44)', () => {
 
   describe('ambigus → LLM', () => {
     it.each([
+      'PRLV CA CONSUMER FINANC',
+      'PRLV LA BANQUE POSTALE CONSUMER FI',
+      'PRLV EXEMPLE BANK LTD',
+      'PRLV FINANCO SERVICES',
+    ])(
+      "libellé tronqué ou d'allure bancaire non tranché par la liste (%s) → LLM",
+      (label) => {
+        expect(triageCluster(cluster([label, label])).route).toBe('llm');
+      },
+    );
+
+    it.each([
       ['LOA', 'PRLV AUTOLOC LOA VEHICULE'],
       ['LLD', 'PRLV AUTOLOC LLD'],
       ['REMBOURSEMENT', 'PRLV EXEMPLE REMBOURSEMENT'],
@@ -139,7 +153,9 @@ describe('triageCluster (L44)', () => {
     });
 
     it('une mutuelle mensuelle reste un abonnement', () => {
-      const d = triageCluster(cluster(['PRLV MUTUELLE EXEMPLE SANTE', 'PRLV MUTUELLE EXEMPLE SANTE']));
+      const d = triageCluster(
+        cluster(['PRLV MUTUELLE EXEMPLE SANTE', 'PRLV MUTUELLE EXEMPLE SANTE']),
+      );
       expect(d.route).toBe('rule');
       if (d.route !== 'rule') return;
       expect(d.classification.classification).toBe('subscription');
