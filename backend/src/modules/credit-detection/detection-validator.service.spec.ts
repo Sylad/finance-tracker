@@ -2292,6 +2292,7 @@ describe("DetectionValidatorService — subscription : fraîcheur par sous-séri
     expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
     const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
     expect(incoming[0].monthlyAmount).toBe(12.99);
+    expect(incoming[0].label).toBe('vidozen');
   });
 
   it('toutes les sous-séries mortes -> rejetée series_ended', async () => {
@@ -2410,5 +2411,92 @@ describe("DetectionValidatorService — subscription : fraîcheur par sous-séri
       created: false,
       reason: 'subscription_already_dismissed',
     });
+  });
+  it('cluster mixte : sous-série morte (≥ 2 occ) + occurrences récentes mensuelles à montant variable -> repli sur les récentes seules, montant médian, sans suffixe', async () => {
+    const cluster = clusterOf('energix', [
+      ['2026-01-12', 9.99],
+      ['2026-02-12', 9.99],
+      ['2026-03-12', 9.99],
+      ['2026-06-12', 31],
+      ['2026-07-13', 44],
+      ['2026-08-12', 37.5],
+    ]);
+
+    const result = await svc.validate(
+      cluster,
+      classification('energix'),
+      '2026-08-12',
+    );
+
+    expect(result).toEqual({ created: true, createdCount: 1 });
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
+    const [statementId, incoming] =
+      loanSuggestionsService.upsertMany.mock.calls[0];
+    expect(statementId).toBe('2026-08');
+    expect(incoming[0].monthlyAmount).toBe(37.5);
+    expect(incoming[0].label).toBe('energix');
+    expect(incoming[0].occurrencesSeen).toBe(3);
+  });
+
+  it('montants variables mensuels contenant une paire à ±5 % non mensuelle -> 1 suggestion par le repli', async () => {
+    // 41,20 et 42,00 forment une sous-série (±5 %) à 59 j d'écart : rejetée
+    // pour espacement ; le cluster entier, lui, est mensuel.
+    const cluster = clusterOf('energix', [
+      ['2026-01-12', 41.2],
+      ['2026-02-11', 58.9],
+      ['2026-03-12', 42],
+    ]);
+
+    const result = await svc.validate(
+      cluster,
+      classification('energix'),
+      '2026-03-12',
+    );
+
+    expect(result).toEqual({ created: true, createdCount: 1 });
+    const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
+    expect(incoming[0].monthlyAmount).toBe(42);
+    expect(incoming[0].label).toBe('energix');
+  });
+
+  it('sous-séries valides toutes déjà refusées -> pas de repli (aucune re-suggestion à un montant médian mélangé)', async () => {
+    const dismissed = (monthlyAmount: number) => ({
+      id: `sug-${monthlyAmount}`,
+      label: 'opfictif',
+      monthlyAmount,
+      occurrencesSeen: 3,
+      firstSeenStatementId: '2025-10',
+      firstSeenDate: '2025-10-05',
+      lastSeenDate: '2025-12-05',
+      suggestedType: 'subscription' as const,
+      matchPattern: 'opfictif',
+      creditor: 'opfictif',
+      status: 'rejected' as const,
+      createdAt: '2025-12-06T00:00:00.000Z',
+    });
+    loanSuggestionsService.getAll.mockResolvedValue([
+      dismissed(10),
+      dismissed(30),
+    ]);
+    const cluster = clusterOf('opfictif', [
+      ['2026-01-05', 30],
+      ['2026-02-05', 30],
+      ['2026-03-05', 30],
+      ['2026-01-20', 10],
+      ['2026-02-20', 10],
+      ['2026-03-20', 10],
+    ]);
+
+    const result = await svc.validate(
+      cluster,
+      classification('opfictif'),
+      '2026-03-20',
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'subscription_already_dismissed',
+    });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
   });
 });

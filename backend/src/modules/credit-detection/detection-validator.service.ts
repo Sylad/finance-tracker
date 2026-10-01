@@ -366,6 +366,22 @@ export class DetectionValidatorService {
     );
     if (dismissed) return { created: false, reason: dismissed };
 
+    return this.emitSubscription(
+      occurrences,
+      classification,
+      medianAmount,
+      disambiguate,
+    );
+  }
+
+  /** Construit et persiste la suggestion `subscription` d'une série déjà
+   *  validée (anti-re-suggestion comprise). */
+  private async emitSubscription(
+    occurrences: ClusterOccurrence[],
+    classification: ClusterClassification,
+    medianAmount: number,
+    disambiguate: boolean,
+  ): Promise<ValidationResult> {
     const base = DetectionValidatorService.buildLabel(classification);
     const label = disambiguate ? `${base} (${medianAmount}€)` : base;
 
@@ -401,107 +417,148 @@ export class DetectionValidatorService {
    * d'opérateur mêle souvent plusieurs abonnements prélevés à quelques
    * jours d'écart, dont les intervalles mélangés (1-2 j / ~27 j) ne sont
    * pas mensuels alors que chaque abonnement l'est. Chaque sous-série
-   * ≥ 2 occurrences est validée indépendamment et produit SA suggestion
-   * (label suffixé du montant s'il y a plusieurs sous-séries) ; une
-   * sous-série rejetée n'invalide pas les autres.
+   * ≥ 2 occurrences est contrôlée (`checkSubscriptionSeries`) ; chaque
+   * sous-série retenue produit SA suggestion, montant suffixé au libellé
+   * seulement s'il y a plus d'une sous-série ÉMISE.
    *
-   * Ordre d'émission : sous-séries triées par dernière occurrence
-   * croissante (la plus récente en dernier) — `upsertMany` dédoublonne les
-   * suggestions non-installment par créancier, « dernier écrit gagne » :
-   * c'est le montant le plus récent qui doit rester.
+   * Ordre d'émission : dernière occurrence croissante (la plus récente en
+   * dernier) — `upsertMany` dédoublonne les suggestions non-installment par
+   * créancier, « dernier écrit gagne » : le montant le plus récent reste.
    *
-   * Repli montant variable : si AUCUNE sous-série n'a ≥ 2 occurrences
-   * (énergie, téléphone à la consommation, écart > 5 % d'un mois à
-   * l'autre), le cluster ENTIER est validé comme une seule série (montant
-   * médian, libellé sans suffixe).
-   *
-   * Checks par série :
-   *  0. fraîcheur (`series_ended`, même garde que
-   *     `validateInstallmentSubSeries`) — un ancien tarif ou une option
-   *     résiliée n'est pas suggéré à côté de la série vivante ;
-   *  1. ≥MIN_SUBSCRIPTION_DISTINCT_MONTHS mois calendaires distincts ->
-   *     sinon `subscription_insufficient_recurrence` ;
-   *  2. espacement mensuel (`checkIntervals`, mêmes bornes que la branche
-   *     installment) -> sinon `subscription_interval_out_of_range` ;
-   *  3. anti-re-suggestion (`subscriptionGuardReason`).
+   * Repli (montant variable : énergie, téléphone à la consommation) : si
+   * AUCUNE sous-série n'est émise, une seule série est contrôlée — les
+   * occurrences postérieures à la dernière occurrence de la sous-série
+   * morte la plus récente (ancien tarif exclu de la médiane), ou tout le
+   * cluster s'il n'y en a pas — montant médian, libellé sans suffixe. Pas
+   * de repli si une sous-série a été écartée par l'anti-re-suggestion :
+   * la médiane mélangée re-proposerait ce que l'utilisateur a écarté.
+   * Logique provisoire : un lot ultérieur la remplacera par un tri
+   * déterministe (liste des établissements de crédit).
    */
   private async validateSubscription(
     cluster: CandidateCluster,
     classification: ClusterClassification,
     latestStatementDate: string,
   ): Promise<ValidationResult> {
-    let subSeries = DetectionValidatorService.splitByAmount(
-      cluster.occurrences,
-    ).filter((occurrences) => occurrences.length >= 2);
-    if (subSeries.length === 0) {
-      subSeries = [
-        [...cluster.occurrences].sort((a, b) =>
-          a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
-        ),
-      ];
-    }
+    const byDate = (a: ClusterOccurrence, b: ClusterOccurrence) =>
+      a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
     const lastDateOf = (occurrences: ClusterOccurrence[]) =>
       DetectionValidatorService.maxDate(occurrences.map((o) => o.date));
-    subSeries.sort((a, b) => {
-      const la = lastDateOf(a);
-      const lb = lastDateOf(b);
-      return la < lb ? -1 : la > lb ? 1 : 0;
-    });
+    const subSeries = DetectionValidatorService.splitByAmount(
+      cluster.occurrences,
+    )
+      .filter((occurrences) => occurrences.length >= 2)
+      .sort((a, b) => {
+        const la = lastDateOf(a);
+        const lb = lastDateOf(b);
+        return la < lb ? -1 : la > lb ? 1 : 0;
+      });
 
     const creditorNames = DetectionValidatorService.creditorNames(
       cluster,
       classification,
     );
-    const disambiguate = subSeries.length > 1;
-    let createdCount = 0;
+    const accepted: { occurrences: ClusterOccurrence[]; median: number }[] = [];
     let lastReason: string | undefined;
+    let guardBlocked = false;
+    let lastDeadDate: string | null = null;
 
     for (const occurrences of subSeries) {
-      const result = await this.validateSubscriptionSubSeries(
+      const check = await this.checkSubscriptionSeries(
         occurrences,
-        classification,
         creditorNames,
-        disambiguate,
         latestStatementDate,
       );
-      if (result.created) {
-        createdCount++;
-      } else {
-        lastReason = result.reason;
+      if (check.ok) {
+        accepted.push({ occurrences, median: check.medianAmount });
+        continue;
+      }
+      lastReason = check.reason;
+      if (check.guard) guardBlocked = true;
+      if (check.reason === 'series_ended') {
+        const last = lastDateOf(occurrences);
+        if (!lastDeadDate || last > lastDeadDate) lastDeadDate = last;
       }
     }
 
-    if (createdCount === 0) {
+    if (accepted.length > 0) {
+      const disambiguate = accepted.length > 1;
+      for (const { occurrences, median } of accepted) {
+        await this.emitSubscription(
+          occurrences,
+          classification,
+          median,
+          disambiguate,
+        );
+      }
+      return { created: true, createdCount: accepted.length };
+    }
+
+    if (guardBlocked) {
       return {
         created: false,
-        reason: lastReason ?? 'subscription_insufficient_recurrence',
+        reason: lastReason ?? 'subscription_already_dismissed',
       };
     }
-    return { created: true, createdCount };
+
+    const fallback = cluster.occurrences
+      .filter((o) => !lastDeadDate || o.date > lastDeadDate)
+      .sort(byDate);
+    if (fallback.length < 2 && lastReason) {
+      return { created: false, reason: lastReason };
+    }
+    const check = await this.checkSubscriptionSeries(
+      fallback,
+      creditorNames,
+      latestStatementDate,
+    );
+    if (!check.ok) return { created: false, reason: check.reason };
+    await this.emitSubscription(
+      fallback,
+      classification,
+      check.medianAmount,
+      false,
+    );
+    return { created: true, createdCount: 1 };
   }
 
-  private async validateSubscriptionSubSeries(
+  /**
+   * Contrôles d'une série d'abonnement candidate, sans rien persister :
+   *  0. fraîcheur (`series_ended`, même garde que
+   *     `validateInstallmentSubSeries`) — un ancien tarif ou une option
+   *     résiliée n'est pas suggéré ;
+   *  1. ≥MIN_SUBSCRIPTION_DISTINCT_MONTHS mois calendaires distincts ->
+   *     sinon `subscription_insufficient_recurrence` ;
+   *  2. espacement mensuel (`checkIntervals`, mêmes bornes que la branche
+   *     installment) -> sinon `subscription_interval_out_of_range` ;
+   *  3. anti-re-suggestion (`subscriptionGuardReason`, `guard: true`).
+   */
+  private async checkSubscriptionSeries(
     occurrences: ClusterOccurrence[],
-    classification: ClusterClassification,
     creditorNames: CreditorNames,
-    disambiguate: boolean,
     latestStatementDate: string,
-  ): Promise<ValidationResult> {
+  ): Promise<
+    | { ok: true; medianAmount: number }
+    | { ok: false; reason: string; guard?: boolean }
+  > {
+    if (occurrences.length === 0) {
+      return { ok: false, reason: 'subscription_insufficient_recurrence' };
+    }
     if (
       DetectionValidatorService.daysBetween(
         DetectionValidatorService.maxDate(occurrences.map((o) => o.date)),
         latestStatementDate,
       ) > SERIES_ENDED_MAX_DAYS
     ) {
-      return { created: false, reason: 'series_ended' };
+      return { ok: false, reason: 'series_ended' };
     }
 
     const distinctMonths = new Set(occurrences.map((o) => o.date.slice(0, 7)));
     if (distinctMonths.size < MIN_SUBSCRIPTION_DISTINCT_MONTHS) {
-      return { created: false, reason: 'subscription_insufficient_recurrence' };
+      return { ok: false, reason: 'subscription_insufficient_recurrence' };
     }
     if (!DetectionValidatorService.checkIntervals(occurrences)) {
-      return { created: false, reason: 'subscription_interval_out_of_range' };
+      return { ok: false, reason: 'subscription_interval_out_of_range' };
     }
 
     const medianAmount = DetectionValidatorService.round2(
@@ -509,15 +566,12 @@ export class DetectionValidatorService {
         occurrences.map((o) => Math.abs(o.amount)),
       ),
     );
-    // Anti-re-suggestion + construction de la suggestion : mêmes règles que
-    // la série longue reroutée en subscription.
-    return this.createSubscriptionFromSeries(
-      occurrences,
-      classification,
+    const dismissed = await this.subscriptionGuardReason(
       creditorNames,
       medianAmount,
-      disambiguate,
     );
+    if (dismissed) return { ok: false, reason: dismissed, guard: true };
+    return { ok: true, medianAmount };
   }
 
   /**
