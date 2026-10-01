@@ -44,7 +44,7 @@ const EXCLUDED_PAYEES =
 /** Virements sortants (vers une personne, l'épargne…) : jamais un abonnement. */
 const OUTGOING_TRANSFER = /^(VIR|VIRT|VIREMENT)\b/;
 /** Nombre d'échéances lu dans un libellé (« 4X », « 3 FOIS »). */
-const INSTALLMENT_COUNT = /\b(\d{1,2}) ?(X|FOIS)\b/;
+const INSTALLMENT_COUNT = /\b(\d{1,2}) ?(X(?:CB)?|FOIS)\b/;
 
 /** Mots génériques retirés d'un libellé pour nommer un abonnement. */
 const NOISE_WORDS = new Set([

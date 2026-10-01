@@ -32,6 +32,14 @@ function cluster(
 
 describe('triageCluster (L44)', () => {
   describe('établissement listé → crédit ou N×, sans LLM', () => {
+    it('Cofidis « 4XCB » → N× (4), pas un crédit classique', () => {
+      const d = triageCluster(cluster(['PRLV COFIDIS 4XCB ZOLAND', 'PRLV COFIDIS 4XCB ZOLAND']));
+      expect(d.route).toBe('rule');
+      if (d.route !== 'rule') return;
+      expect(d.classification.classification).toBe('installment');
+      expect(d.classification.installmentCount).toBe(4);
+    });
+
     it('Cofidis sans indicateur de fractionné → crédit (classic)', () => {
       const d = triageCluster(
         cluster([

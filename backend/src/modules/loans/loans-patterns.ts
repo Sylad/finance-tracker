@@ -8,4 +8,4 @@
  *     item 6)
  */
 export const PAY_IN_N_PATTERN =
-  /\b([2-9]\s?(X|FOIS)|N\s?FOIS|N FOIS|EN \d+ FOIS|PAY ?LATER|PAY ?PLUS ?TARD|FACILYPAY|3X|4X|3 FOIS|4 FOIS)\b/i;
+  /\b([2-9]\s?(X(CB)?|FOIS)|N\s?FOIS|N FOIS|EN \d+ FOIS|PAY ?LATER|PAY ?PLUS ?TARD|FACILYPAY|3X|4X|3 FOIS|4 FOIS)\b/i;
