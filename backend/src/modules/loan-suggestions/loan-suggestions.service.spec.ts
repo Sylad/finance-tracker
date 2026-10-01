@@ -268,6 +268,51 @@ describe('LoanSuggestionsService', () => {
     expect(afterRescan).toHaveLength(3);
   });
 
+  describe('dédup abonnements par créancier + montant (L44)', () => {
+    const sub = (monthlyAmount: number, label = 'Netflux') => ({
+      label,
+      monthlyAmount,
+      occurrencesSeen: 3,
+      firstSeenDate: '2026-01-05',
+      suggestedType: 'subscription' as const,
+      matchPattern: 'netflux',
+      creditor: 'Netflux',
+      source: 'llm_detection' as const,
+    });
+
+    it('deux abonnements du même créancier à montants distincts coexistent', async () => {
+      await svc.upsertMany('2026-03', [sub(9.99, 'Netflux (9.99€)')]);
+      await svc.upsertMany('2026-03', [sub(17.99, 'Netflux (17.99€)')]);
+      const pending = await svc.getPending();
+      expect(pending.map((p) => p.monthlyAmount).sort()).toEqual([17.99, 9.99]);
+    });
+
+    it('même créancier, montant à ±5 % -> fusionnés (re-scan, petite variation)', async () => {
+      await svc.upsertMany('2026-03', [sub(10)]);
+      await svc.upsertMany('2026-04', [sub(10.4)]);
+      const pending = await svc.getPending();
+      expect(pending).toHaveLength(1);
+      expect(pending[0].monthlyAmount).toBe(10.4);
+    });
+
+    it('hausse > 5 % -> nouvelle suggestion, même si la précédente est refusée', async () => {
+      await svc.upsertMany('2026-03', [sub(10)]);
+      const [first] = await svc.getAll();
+      await svc.reject(first.id);
+      await svc.upsertMany('2026-04', [sub(11)]);
+      const all = await svc.getAll();
+      expect(all).toHaveLength(2);
+      expect(all.find((s) => s.id === first.id)?.status).toBe('rejected');
+      expect(all.find((s) => s.id !== first.id)?.status).toBe('pending');
+    });
+
+    it("une suggestion 'loan' du même créancier reste dédupliquée par créancier seul (comportement historique)", async () => {
+      await svc.upsertMany('2026-03', [{ ...sub(10), suggestedType: 'loan' as const }]);
+      await svc.upsertMany('2026-04', [{ ...sub(50), suggestedType: 'loan' as const }]);
+      expect(await svc.getPending()).toHaveLength(1);
+    });
+  });
+
   it("dédup : incoming sans installment ne détruit pas un installment déjà présent sur l'existante", async () => {
     const withInstallment = {
       label: '4× klarni · zoland',

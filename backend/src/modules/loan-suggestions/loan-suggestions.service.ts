@@ -18,6 +18,9 @@ import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { LoansService } from '../loans/loans.service';
 import { escapeRegex } from '../../common/regex.util';
 
+/** L44 : tolérance de montant de la dédup des suggestions d'abonnement. */
+const SUBSCRIPTION_AMOUNT_TOLERANCE = 0.05;
+
 @Injectable()
 export class LoanSuggestionsService {
   private readonly logger = new Logger(LoanSuggestionsService.name);
@@ -120,6 +123,10 @@ export class LoanSuggestionsService {
    *   N× entremêlés (ex. 3 achats Klarna distincts) : sans ce critère,
    *   chaque upsertMany successif écrase le précédent (round 2 bug : 3
    *   sous-séries validées, 1 seule persistée).
+   * - Même créancier ET les deux côtés `subscription` (L44) -> distingue
+   *   par montant à ±5 % : deux abonnements d'un même opérateur coexistent,
+   *   une hausse > 5 % est une nouvelle suggestion (une suggestion refusée
+   *   à l'ancien tarif ne bloque pas le nouveau, choix de Sylvain L2).
    * - Sinon (au moins un côté sans `installment`) -> clé creditor seule,
    *   comportement historique inchangé. Nécessaire pour le pass-through
    *   documenté plus haut : un incoming standard (relevé bancaire, flux
@@ -140,6 +147,15 @@ export class LoanSuggestionsService {
     if (existing.installment && inc.installment) {
       return (
         Math.round(existing.monthlyAmount) === Math.round(inc.monthlyAmount)
+      );
+    }
+    if (
+      existing.suggestedType === 'subscription' &&
+      inc.suggestedType === 'subscription'
+    ) {
+      return (
+        Math.abs(existing.monthlyAmount - inc.monthlyAmount) <=
+        existing.monthlyAmount * SUBSCRIPTION_AMOUNT_TOLERANCE
       );
     }
     return true;

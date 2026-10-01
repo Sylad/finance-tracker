@@ -422,8 +422,9 @@ export class DetectionValidatorService {
    * seulement s'il y a plus d'une sous-série ÉMISE.
    *
    * Ordre d'émission : dernière occurrence croissante (la plus récente en
-   * dernier) — `upsertMany` dédoublonne les suggestions non-installment par
-   * créancier, « dernier écrit gagne » : le montant le plus récent reste.
+   * dernier). Depuis L44, `upsertMany` dédoublonne les suggestions
+   * subscription par créancier + montant ±5 % : chaque sous-série émise
+   * persiste la sienne.
    *
    * Repli (montant variable : énergie, téléphone à la consommation) : si
    * AUCUNE sous-série n'est émise, une seule série est contrôlée — les
