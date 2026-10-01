@@ -344,11 +344,15 @@ lots:
     finished: 2026-10-01
   - id: L44
     title: "Tri déterministe crédit / abonnement : liste des établissements de crédit partagée (auto-sync + credit-detection) ; créancier listé → crédit/N×, autre société récurrente mensuelle → abonnement, LLM seulement pour les ambigus ; dédup des suggestions d'abonnement par créancier + montant"
-    status: todo
+    status: done
     estimate: 1.5
     created: 2026-10-01
     notes:
       - { date: 2026-10-01, text: "Sylvain 01-10 : idée de Sylvain (les établissements de crédit et les abonnés sont connus) ; remplace la logique abonnement provisoire de L2 et absorbe L43" }
+      - { date: 2026-10-01, text: "Sylvain 01-10 : ajouter LOA/LLD et REMBOURSEMENT aux mots de crédit (→ LLM) ; mutuelles = vrais abonnements, non exclues ; virements sortants tous exclus = accepté" }
+      - { date: 2026-10-01, text: "Relecture : 4 défauts + 4 mineurs corrigés (571 tests). Point 9 (LOAN_KEYWORDS de storage.service) laissé séparé : le dériver retirerait de /income les virements entrants des grandes banques. Cluster à plusieurs noms → LLM (accepté). resolvedBy : vaut à partir de maintenant, anciens reports non bloquants." }
+    started: 2026-10-01
+    finished: 2026-10-01
   - id: L45
     title: Retirer les traces du déploiement NAS (docker-compose, scripts, doc, page À propos) — prod = dark-blue (k3s) ou Cloudflare Pages ; NAS = médias et sauvegardes
     status: done
