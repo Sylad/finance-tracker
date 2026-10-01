@@ -1,7 +1,19 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-09-29 20:12",
+  "generated": "2026-10-01 23:05",
   "entries": [
+    {
+      "slug": "2026-10-01-une-page-plan-de-travail-ce-qui-se-prepare",
+      "title": "Une page Plan de travail : ce qui se prépare",
+      "date": "2026-10-01",
+      "lots": [
+        "L48"
+      ],
+      "captures": [
+        "captures/L48-plan-de-travail-telephone.png"
+      ],
+      "html": "<p>Une nouvelle page <strong>Plan de travail</strong> montre ce qui se prépare dans l'application. Elle est accessible en bas du menu, juste sous « Nouveautés », depuis l'onglet <strong>Plus</strong> au téléphone et depuis la recherche rapide (⌘K).</p>\n<p>Elle range les évolutions en trois groupes : <strong>En cours</strong>, <strong>Prévu</strong> et <strong>Récemment livré</strong> (les 30 derniers jours). Chaque évolution indique sa date de début ou de livraison, et son avancement quand elle se découpe en étapes.</p>\n<p>Une évolution livrée qui a sa page dans les Nouveautés y renvoie directement.</p>"
+    },
     {
       "slug": "2026-09-29-le-tableau-de-bord-ne-parle-plus-que-de-vos-finances",
       "title": "Le tableau de bord ne parle plus que de vos finances",
