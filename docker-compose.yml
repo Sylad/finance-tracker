@@ -1,5 +1,10 @@
 name: finance-tracker
 
+# Lancement en conteneurs générique (README « Setup local »). Sur Big-Blue,
+# l'instance aux vraies données passe par local/run.sh (ou
+# docker-compose.local.yml) ; la prod démo tourne sur le k3s de dark-blue,
+# déployée par `cadence deliver`.
+
 services:
   finance-backend:
     build:
@@ -9,7 +14,7 @@ services:
     env_file: ./backend/.env
     environment:
       NODE_ENV: production
-      CORS_ORIGIN: "http://nas:4200"
+      CORS_ORIGIN: "http://localhost:4200"
       DATA_DIR: /app/data
       UPLOAD_DIR: /app/data/uploads
       # Hosts (virgules ; nom exact ou sous-domaine, jamais sous-chaîne) automatiquement verrouillés
@@ -17,7 +22,7 @@ services:
       # Ajoute ton domaine perso si besoin (ex: demo.tonsite.fr).
       DEMO_FORCED_HOSTS: "trycloudflare.com,cfargotunnel.com,finance.sladoire.dev"
     volumes:
-      - /volume2/docker/developpeur/data/finance:/app/data
+      - ./data:/app/data
     restart: unless-stopped
 
   finance-frontend:

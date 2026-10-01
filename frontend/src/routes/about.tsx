@@ -22,9 +22,10 @@ const STACK = [
   ]},
   { group: 'Infra', icon: Code2, items: [
     'Docker multi-stage (node:20-alpine → nginx:alpine)',
-    'docker-compose Synology NAS',
+    'Images publiées sur GHCR par la CI GitHub Actions',
+    'Kubernetes k3s, déployé par ArgoCD (GitOps, chart Helm)',
+    'Exposé via un tunnel Cloudflare (aucun port ouvert)',
     'PIN guard (Bearer token simple)',
-    'Volumes persistants /volume2/docker',
   ]},
 ];
 
@@ -201,7 +202,7 @@ export function AboutPage() {
           quelques sessions.
         </div>
         <div className="text-[10px] uppercase tracking-[0.2em] text-fg-dim mt-4">
-          Made with curiosity · Built on a Synology NAS · v2.0
+          Made with curiosity · Runs on Kubernetes (k3s) · v2.0
         </div>
       </section>
     </>
