@@ -128,6 +128,15 @@ export function isCreditInstitution(
   return NORMALIZED.has(normalizeLabel(creditor));
 }
 
+/** Nom de la liste correspondant à `creditor` (casse, accents et
+ *  ponctuation ignorés), null hors liste. */
+export function canonicalInstitution(
+  creditor: string | undefined | null,
+): string | null {
+  if (!creditor) return null;
+  return NORMALIZED.get(normalizeLabel(creditor)) ?? null;
+}
+
 /** Libellé sans les noms d'établissements de la liste (« CREDIT » de
  *  « Crédit Mutuel » n'est pas un mot de crédit), en majuscules. */
 export function labelWithoutInstitutions(description: string): string {

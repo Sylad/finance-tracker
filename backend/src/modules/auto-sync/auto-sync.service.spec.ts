@@ -1,3 +1,4 @@
+import { mortgageBankMatchPattern } from '../loans/credit-institutions';
 import { Test } from '@nestjs/testing';
 import { AutoSyncService } from './auto-sync.service';
 import { SavingsService } from '../savings/savings.service';
@@ -849,6 +850,44 @@ describe('AutoSyncService', () => {
         ],
       }).compile();
       svc = mod.get(AutoSyncService);
+    });
+
+    describe('L44 : grande banque (crédit immobilier)', () => {
+      const sugg = (over: Record<string, unknown>) => ({
+        id: 'sgb', monthlyAmount: 620, occurrencesSeen: 8,
+        firstSeenStatementId: '2026-01', firstSeenDate: '2026-01-10', lastSeenDate: '2026-08-10',
+        suggestedType: 'loan', status: 'pending', createdAt: '', ...over,
+      });
+
+      it("sans mot de crédit hors du nom (« BNP PARIBAS CARDIF ASSURANCE EMPRUNTEUR ») -> pas d'auto-création", async () => {
+        suggestions.getPending.mockResolvedValue([
+          sugg({ label: 'BNP PARIBAS CARDIF ASSURANCE EMPRUNTEUR', matchPattern: 'BNP PARIBAS CARDIF', creditor: 'BNP PARIBAS' }),
+        ]);
+        await svc.syncStatement({ ...baseStatement, transactions: [] });
+        expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
+      });
+
+      it('« CREDIT » du nom (Crédit Agricole) ne compte pas comme mot de crédit', async () => {
+        suggestions.getPending.mockResolvedValue([
+          sugg({ label: 'PRLV CREDIT AGRICOLE ASSURANCE', matchPattern: 'CREDIT AGRICOLE', creditor: 'Credit Agricole' }),
+        ]);
+        await svc.syncStatement({ ...baseStatement, transactions: [] });
+        expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
+      });
+
+      it('avec mot de crédit -> créé avec le motif nom + mot de crédit', async () => {
+        suggestions.getPending.mockResolvedValue([
+          sugg({ label: 'PRLV LA BANQUE POSTALE ECHEANCE PRET', matchPattern: 'LA BANQUE POSTALE', creditor: 'La Banque Postale' }),
+        ]);
+        await svc.syncStatement({ ...baseStatement, transactions: [] });
+        const create = (loans as unknown as { create: jest.Mock }).create;
+        expect(create).toHaveBeenCalledTimes(1);
+        const pattern = create.mock.calls[0][0].matchPattern as string;
+        expect(pattern).toBe(mortgageBankMatchPattern('la banque postale'));
+        const re = new RegExp(pattern, 'i');
+        expect(re.test('PRLV LA BANQUE POSTALE ECHEANCE PRET')).toBe(true);
+        expect(re.test('COTISATION CARTE LA BANQUE POSTALE')).toBe(false);
+      });
     });
 
     it('skip pay-in-4 (label "4X CB AMAZON") + snooze sans création', async () => {

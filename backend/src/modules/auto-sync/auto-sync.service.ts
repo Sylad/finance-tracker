@@ -11,7 +11,13 @@ import { SavingsAccount } from '../../models/savings-account.model';
 import type { Loan } from '../../models/loan.model';
 import type { IncomingSuggestion } from '../../models/loan-suggestion.model';
 import { PAY_IN_N_PATTERN as PAY_IN_N_PATTERN_SHARED } from '../loans/loans-patterns';
-import { isCreditInstitution } from '../loans/credit-institutions';
+import {
+  MORTGAGE_BANKS,
+  canonicalInstitution,
+  hasCreditWord,
+  isCreditInstitution,
+  mortgageBankMatchPattern,
+} from '../loans/credit-institutions';
 import { escapeRegex } from '../../common/regex.util';
 
 function normalizeAccountNumber(s: string | null | undefined): string {
@@ -699,6 +705,14 @@ export class AutoSyncService {
       if (s.suggestedType !== 'loan' || !s.creditor) continue;
       const creditorKey = s.creditor.toLowerCase().trim();
       if (!isCreditInstitution(creditorKey)) continue;
+      // L44 : une grande banque n'est un crédit qu'avec un mot de crédit hors
+      // de son nom (« BNP PARIBAS CARDIF ASSURANCE EMPRUNTEUR » n'en est pas).
+      if (
+        MORTGAGE_BANKS.has(canonicalInstitution(creditorKey) ?? '') &&
+        !hasCreditWord(`${s.label} ${s.matchPattern}`)
+      ) {
+        continue;
+      }
       // Filter pay-in-N (paiements échelonnés 4X/3X/FacilyPay/PayLater)
       if (
         AutoSyncService.PAY_IN_N_PATTERN.test(s.label) ||
@@ -762,7 +776,11 @@ export class AutoSyncService {
         ? `${creditor} (${avgMonthly.toFixed(2)} €/mois)`
         : creditor;
       const escaped = escapeRegex(creditor);
-      const matchPattern = escaped.split(/\s+/).join('.*');
+      // L44 : grande banque → nom ET mot de crédit (sinon le motif capte
+      // assurance, cotisation carte, virements…) ; autres inchangés.
+      const matchPattern =
+        mortgageBankMatchPattern(canonicalInstitution(creditor) ?? '') ??
+        escaped.split(/\s+/).join('.*');
       await this.loans.create({
         name,
         type: 'classic',
