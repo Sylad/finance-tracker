@@ -45,4 +45,39 @@ describe('credit-institutions (liste partagée L44)', () => {
       expect(findCreditInstitution('')).toBeNull();
     });
   });
+
+  describe('banques à crédit immobilier (décision Sylvain L44)', () => {
+    it('sont dans la liste partagée (auto-sync)', () => {
+      expect(isCreditInstitution('La Banque Postale')).toBe(true);
+      expect(isCreditInstitution('Crédit Agricole')).toBe(true);
+      expect(isCreditInstitution('Credit Mutuel')).toBe(true);
+    });
+
+    it("ne comptent dans un libellé qu'accompagnées d'un mot de crédit", () => {
+      expect(findCreditInstitution('PRLV LA BANQUE POSTALE ECHEANCE PRET 0042')).toBe('la banque postale');
+      expect(findCreditInstitution('Prélèvement Crédit Agricole mensualité prêt immo')).toBe('crédit agricole');
+      expect(findCreditInstitution('COTISATION CARTE LA BANQUE POSTALE')).toBeNull();
+      // « CREDIT » du nom de la banque ne compte pas comme mot de crédit
+      expect(findCreditInstitution('PRLV CREDIT MUTUEL ASSURANCE HABITATION')).toBeNull();
+    });
+
+    it("la filiale crédit conso (nom plus long) n'exige pas de mot de crédit", () => {
+      expect(findCreditInstitution('PRLV LA BANQUE POSTALE CONSUMER FINANCE')).toBe('banque postale consumer finance');
+    });
+  });
+
+  describe('paypal et alma (décision Sylvain L44)', () => {
+    it('« paypal » seul n\'est pas un établissement, « paypal credit » oui', () => {
+      expect(isCreditInstitution('paypal')).toBe(false);
+      expect(findCreditInstitution('PAYPAL *ZOLAND')).toBeNull();
+      expect(findCreditInstitution('PRLV PAYPAL CREDIT')).toBe('paypal credit');
+    });
+
+    it("« alma » ne compte qu'accolé à un indicateur de fractionné", () => {
+      expect(findCreditInstitution('ALMA*ZOLAND 4X')).toBeNull();
+      expect(findCreditInstitution('ACHAT CB ALMA RESTAURANT')).toBeNull();
+      expect(findCreditInstitution('PRLV ALMA 3X ZOLAND')).toBe('alma');
+      expect(findCreditInstitution('PRLV 4 FOIS ALMA')).toBe('alma');
+    });
+  });
 });
