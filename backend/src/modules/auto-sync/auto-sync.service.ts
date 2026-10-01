@@ -11,6 +11,7 @@ import { SavingsAccount } from '../../models/savings-account.model';
 import type { Loan } from '../../models/loan.model';
 import type { IncomingSuggestion } from '../../models/loan-suggestion.model';
 import { PAY_IN_N_PATTERN as PAY_IN_N_PATTERN_SHARED } from '../loans/loans-patterns';
+import { isCreditInstitution } from '../loans/credit-institutions';
 import { escapeRegex } from '../../common/regex.util';
 
 function normalizeAccountNumber(s: string | null | undefined): string {
@@ -659,46 +660,10 @@ export class AutoSyncService {
     }
   }
 
-  // Whitelist stricte des organismes de crédit français reconnus
-  // (membres ASF + acteurs BNPL + filiales banques spécialisées en crédit conso).
-  // Si Claude met `creditor` à autre chose (BPCE Assurances, Predica, EDF…),
-  // on n'auto-crée PAS de Loan : la suggestion reste pending pour tri manuel.
-  // Source : REGAFI ACPR + Association française des Sociétés Financières.
-  private readonly KNOWN_LOAN_CREDITORS = new Set([
-    // Filiales bancaires spécialisées crédit conso
-    'cetelem',                            // BNP Paribas Personal Finance
-    'cofinoga',                           // BNP
-    'sofinco',                            // CA Consumer Finance
-    'ca consumer finance',
-    'creditas',
-    'crédit agricole consumer finance',
-    'franfinance',                        // Société Générale
-    'societe generale insurance financial services',
-    'floa',                               // BPCE
-    'bpce financement',
-    'banque postale consumer finance',
-    'lbp consumer finance',
-    'monabanq',                           // Crédit Mutuel
-    // Indépendants / spécialistes
-    'cofidis',
-    'carrefour banque',
-    'banque casino',
-    'oney',                               // Auchan / BPCE
-    'younited',
-    'younited credit',
-    // BNPL (Buy Now Pay Later)
-    'klarna',
-    'alma',
-    'pledg',
-    'paypal credit',
-    // Constructeurs auto / financements spécifiques
-    'cofica bail',
-    'diac',                               // Renault Finance
-    'rci banque',                         // Renault
-    'psa bank',                           // Stellantis
-    'volkswagen financial services',
-    'bnp paribas personal finance',
-  ]);
+  // Whitelist stricte des organismes de crédit : liste UNIQUE partagée avec
+  // credit-detection (loans/credit-institutions.ts, L44). Si Claude met
+  // `creditor` à autre chose (BPCE Assurances, Predica, EDF…), on n'auto-crée
+  // PAS de Loan : la suggestion reste pending pour tri manuel.
 
   // Pattern factorisé dans loans/loans-patterns.ts (réutilisé par item 6
   // cleanup rétrospectif).
@@ -733,7 +698,7 @@ export class AutoSyncService {
       if (s.source === 'llm_detection') continue;
       if (s.suggestedType !== 'loan' || !s.creditor) continue;
       const creditorKey = s.creditor.toLowerCase().trim();
-      if (!this.KNOWN_LOAN_CREDITORS.has(creditorKey)) continue;
+      if (!isCreditInstitution(creditorKey)) continue;
       // Filter pay-in-N (paiements échelonnés 4X/3X/FacilyPay/PayLater)
       if (
         AutoSyncService.PAY_IN_N_PATTERN.test(s.label) ||
