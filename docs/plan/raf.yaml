@@ -20,16 +20,18 @@ lots:
     finished: 2026-09-28
   - id: L2
     title: "Validateur de détection : garde-fous déterministes"
-    status: doing
+    status: done
     estimate: 1.5
     created: 2026-09-28
     tasks:
-      - { id: t1, title: croiser cluster.creditor déterministe dans les deux gardes (#2), status: todo }
-      - { id: t2, title: "subscription : ≥2 mois distincts + espacement mensuel + anti-re-suggestion (#3)", status: todo }
+      - { id: t1, title: croiser cluster.creditor déterministe dans les deux gardes (#2), status: done }
+      - { id: t2, title: "subscription : ≥2 mois distincts + espacement mensuel + anti-re-suggestion (#3)", status: done }
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #2 #3" }
       - { date: 2026-10-01, text: "Sylvain 01-10 : choix de l'agent validés — hausse > 5 % re-proposée, refus/snooze bloque quel que soit le type, acceptée ne bloque pas (l'abonnement suivi bloque), abonnement sans creditor reconnu par son nom" }
+      - { date: 2026-10-01, text: "4 relectures : t1 (créancier court) et t2 (sous-séries, fraîcheur, repli montant variable) corrigés ; logique abonnement PROVISOIRE, remplacée par le tri déterministe du lot suivant" }
     started: 2026-10-01
+    finished: 2026-10-01
   - id: L3
     title: "mergeDuplicates : dédup par mois calendaire, préférer le porteur d'encours"
     status: todo
@@ -332,9 +334,18 @@ lots:
     finished: 2026-09-29
   - id: L43
     title: "Anti-re-suggestion étendue aux crédits et N× : une suggestion refusée/snoozée ne revient pas sous un autre alias LLM (fuzzy creditor + cluster.creditor, montant ±5 %)"
-    status: todo
+    status: dropped
     estimate: 0.5
     after: [ L2 ]
     created: 2026-10-01
     notes:
       - { date: 2026-10-01, text: "Sylvain 01-10 : validé, suite de L2 (question 4 de l'agent)" }
+      - { date: 2026-10-01, text: "abandonné : absorbé par L44 (tri déterministe, décision Sylvain 01-10)" }
+    finished: 2026-10-01
+  - id: L44
+    title: "Tri déterministe crédit / abonnement : liste des établissements de crédit partagée (auto-sync + credit-detection) ; créancier listé → crédit/N×, autre société récurrente mensuelle → abonnement, LLM seulement pour les ambigus ; dédup des suggestions d'abonnement par créancier + montant"
+    status: todo
+    estimate: 1.5
+    created: 2026-10-01
+    notes:
+      - { date: 2026-10-01, text: "Sylvain 01-10 : idée de Sylvain (les établissements de crédit et les abonnés sont connus) ; remplace la logique abonnement provisoire de L2 et absorbe L43" }
