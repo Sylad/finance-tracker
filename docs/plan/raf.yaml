@@ -28,6 +28,7 @@ lots:
       - { id: t2, title: "subscription : ≥2 mois distincts + espacement mensuel + anti-re-suggestion (#3)", status: todo }
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #2 #3" }
+      - { date: 2026-10-01, text: "Sylvain 01-10 : choix de l'agent validés — hausse > 5 % re-proposée, refus/snooze bloque quel que soit le type, acceptée ne bloque pas (l'abonnement suivi bloque), abonnement sans creditor reconnu par son nom" }
     started: 2026-10-01
   - id: L3
     title: "mergeDuplicates : dédup par mois calendaire, préférer le porteur d'encours"
@@ -329,3 +330,11 @@ lots:
     started: 2026-09-29
     ux: { date: 2026-09-29, verdict: "compliant — ux-reviewer 29-09 : aucun trou de grille (page 147 px plus courte, espacements 24 px conservés), hiérarchie améliorée (Nielsen #8), 0 erreur console, 0 appel /api/claude, mobile inchangé (carte déjà masquée) ; polish préexistant hors lot : vide sous « Budgets ce mois »" }
     finished: 2026-09-29
+  - id: L43
+    title: "Anti-re-suggestion étendue aux crédits et N× : une suggestion refusée/snoozée ne revient pas sous un autre alias LLM (fuzzy creditor + cluster.creditor, montant ±5 %)"
+    status: todo
+    estimate: 0.5
+    after: [ L2 ]
+    created: 2026-10-01
+    notes:
+      - { date: 2026-10-01, text: "Sylvain 01-10 : validé, suite de L2 (question 4 de l'agent)" }
