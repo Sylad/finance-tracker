@@ -109,7 +109,9 @@ const NORMALIZED = new Map<string, string>(
 
 /** Vrai si `creditor` est EXACTEMENT un établissement de la liste
  *  (casse, accents et ponctuation ignorés). */
-export function isCreditInstitution(creditor: string | undefined | null): boolean {
+export function isCreditInstitution(
+  creditor: string | undefined | null,
+): boolean {
   if (!creditor) return false;
   return NORMALIZED.has(normalizeLabel(creditor));
 }
@@ -132,7 +134,9 @@ export function hasCreditWord(description: string): boolean {
 
 /** Établissements de la liste NOMMÉS dans le libellé (mots entiers), sans
  *  les conditions de `findCreditInstitution`, le plus long en premier. */
-export function mentionedInstitutions(description: string | undefined | null): string[] {
+export function mentionedInstitutions(
+  description: string | undefined | null,
+): string[] {
   if (!description) return [];
   const haystack = ` ${normalizeLabel(description)} `;
   return [...NORMALIZED.entries()]
@@ -146,7 +150,9 @@ export function mentionedInstitutions(description: string | undefined | null): s
  *  gagne (« younited credit » plutôt que « younited »). Une grande banque
  *  exige un mot de crédit, « alma » un indicateur de fractionné accolé.
  *  null sinon. */
-export function findCreditInstitution(description: string | undefined | null): string | null {
+export function findCreditInstitution(
+  description: string | undefined | null,
+): string | null {
   if (!description) return null;
   const haystack = ` ${normalizeLabel(description)} `;
   for (const name of mentionedInstitutions(description)) {

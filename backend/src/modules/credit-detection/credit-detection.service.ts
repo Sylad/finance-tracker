@@ -2,6 +2,7 @@ import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
 import { CandidateClusteringService } from './candidate-clustering.service';
 import { CreditClassifierService } from './credit-classifier.service';
 import { DetectionValidatorService } from './detection-validator.service';
+import { triageCluster } from './deterministic-triage';
 import { StorageService } from '../storage/storage.service';
 import { LoansService } from '../loans/loans.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
@@ -12,8 +13,10 @@ import {
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 
 /**
- * Orchestrateur du pipeline de détection crédits/abonnements LLM :
- * clustering (déterministe) -> classify (Ollama local) -> validate (règles chiffrées).
+ * Orchestrateur du pipeline de détection crédits/abonnements :
+ * clustering (déterministe) -> tri déterministe (L44 : établissement listé,
+ * exclusions, abonnement mensuel) puis classify (Ollama local) pour les
+ * seuls ambigus -> validate (règles chiffrées).
  * Aucune exception réseau isolée ne doit faire échouer tout le scan — sauf
  * si TOUS les clusters échouent pour cause réseau (Ollama down), auquel cas
  * on fail-loud avec un 502 explicite plutôt que de renvoyer un résultat vide.
@@ -105,23 +108,34 @@ export class CreditDetectionService {
     let networkErrors = 0;
 
     for (const cluster of clusters) {
-      let classification;
-      try {
-        classification = await this.classifier.classify(cluster);
-      } catch (err) {
-        const e = err as Error;
-        errors.push({
-          clusterKey: cluster.key,
-          message: e?.message ?? 'Erreur inconnue',
-        });
-        // TypeError = fetch réseau ; TimeoutError/AbortError = Ollama gelé
-        // (accepte le TCP mais ne répond jamais) — les deux = « down ».
-        const name = (e as { name?: string })?.name;
-        if (e instanceof TypeError || name === 'TimeoutError' || name === 'AbortError') networkErrors++;
-        this.logger.warn(
-          `classify échoué pour cluster ${cluster.key}: ${e?.message ?? err}`,
-        );
+      // L44 : tri déterministe d'abord — le LLM n'est consulté que pour
+      // les clusters ambigus (cf deterministic-triage.ts).
+      const decision = triageCluster(cluster);
+      if (decision.route === 'excluded') {
+        this.logger.debug(`cluster ${cluster.key} exclu (${decision.reason})`);
         continue;
+      }
+      let classification;
+      if (decision.route === 'rule') {
+        classification = decision.classification;
+      } else {
+        try {
+          classification = await this.classifier.classify(cluster);
+        } catch (err) {
+          const e = err as Error;
+          errors.push({
+            clusterKey: cluster.key,
+            message: e?.message ?? 'Erreur inconnue',
+          });
+          // TypeError = fetch réseau ; TimeoutError/AbortError = Ollama gelé
+          // (accepte le TCP mais ne répond jamais) — les deux = « down ».
+          const name = (e as { name?: string })?.name;
+          if (e instanceof TypeError || name === 'TimeoutError' || name === 'AbortError') networkErrors++;
+          this.logger.warn(
+            `classify échoué pour cluster ${cluster.key}: ${e?.message ?? err}`,
+          );
+          continue;
+        }
       }
 
       try {

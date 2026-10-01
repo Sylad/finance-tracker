@@ -48,16 +48,55 @@ const INSTALLMENT_COUNT = /\b(\d{1,2}) ?(X|FOIS)\b/;
 
 /** Mots génériques retirés d'un libellé pour nommer un abonnement. */
 const NOISE_WORDS = new Set([
-  'PRLV', 'SEPA', 'PRELEVEMENT', 'PRELEVT', 'PRELEV', 'PRLVT', 'PAIEMENT',
-  'PAIEMT', 'ACHAT', 'CB', 'CARTE', 'FACTURE', 'FACT', 'ECHEANCE', 'ECH',
-  'REF', 'REFERENCE', 'MANDAT', 'RUM', 'ICS', 'NUM', 'NO', 'DE', 'DU', 'DES',
-  'EUR', 'FR', 'ABONNEMENT', 'ABO', 'COTISATION', 'MENSUEL', 'MENSUELLE',
-  'JANVIER', 'FEVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN', 'JUILLET', 'AOUT',
-  'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DECEMBRE',
+  'PRLV',
+  'SEPA',
+  'PRELEVEMENT',
+  'PRELEVT',
+  'PRELEV',
+  'PRLVT',
+  'PAIEMENT',
+  'PAIEMT',
+  'ACHAT',
+  'CB',
+  'CARTE',
+  'FACTURE',
+  'FACT',
+  'ECHEANCE',
+  'ECH',
+  'REF',
+  'REFERENCE',
+  'MANDAT',
+  'RUM',
+  'ICS',
+  'NUM',
+  'NO',
+  'DE',
+  'DU',
+  'DES',
+  'EUR',
+  'FR',
+  'ABONNEMENT',
+  'ABO',
+  'COTISATION',
+  'MENSUEL',
+  'MENSUELLE',
+  'JANVIER',
+  'FEVRIER',
+  'MARS',
+  'AVRIL',
+  'MAI',
+  'JUIN',
+  'JUILLET',
+  'AOUT',
+  'SEPTEMBRE',
+  'OCTOBRE',
+  'NOVEMBRE',
+  'DECEMBRE',
 ]);
 const MAX_NAME_WORDS = 3;
 
-const upper = (description: string) => normalizeLabel(description).toUpperCase();
+const upper = (description: string) =>
+  normalizeLabel(description).toUpperCase();
 
 /** Nom d'abonnement tiré d'un libellé bancaire : partie avant « * »,
  *  sans préfixes génériques (PRLV SEPA, PRELEVEMENT…), références ni
@@ -88,9 +127,13 @@ function mostFrequent(values: string[]): string | null {
  *  espacement mensuel — sur une sous-série de montant (±5 %) ou, à défaut
  *  (montant variable), sur tout le cluster. */
 function isMonthlySeries(occurrences: ClusterOccurrence[]): boolean {
-  const byDate = [...occurrences].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const byDate = [...occurrences].sort((a, b) =>
+    a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+  );
   const candidates = [
-    ...DetectionValidatorService.splitByAmount(occurrences).filter((s) => s.length >= 2),
+    ...DetectionValidatorService.splitByAmount(occurrences).filter(
+      (s) => s.length >= 2,
+    ),
     byDate,
   ];
   return candidates.some((series) => {
@@ -139,7 +182,10 @@ export function triageCluster(cluster: CandidateCluster): TriageDecision {
       mentionedInstitutions(d).includes(institution),
     );
     if (!namedEverywhere) {
-      return { route: 'llm', reason: `${institution} mêlé à d'autres libellés` };
+      return {
+        route: 'llm',
+        reason: `${institution} mêlé à d'autres libellés`,
+      };
     }
     const payInN = descriptions.some((d) => PAY_IN_N_PATTERN.test(d));
     const creditor = institution.toUpperCase();
@@ -182,7 +228,10 @@ export function triageCluster(cluster: CandidateCluster): TriageDecision {
 
   // 3. Ambigus.
   if (descriptions.some(hasCreditWord)) {
-    return { route: 'llm', reason: 'mot de crédit chez un créancier non listé' };
+    return {
+      route: 'llm',
+      reason: 'mot de crédit chez un créancier non listé',
+    };
   }
   if (descriptions.some((d) => PAY_IN_N_PATTERN.test(d))) {
     return { route: 'llm', reason: 'fractionné chez un créancier non listé' };

@@ -26,13 +26,31 @@ function makeCluster(key: string): CandidateCluster {
         statementId: '2026-01',
       },
       {
-        date: '2026-02-10',
+        // L44 : même mois que la 1re → série non mensuelle, donc routée au
+        // LLM par le tri déterministe (ces tests portent sur la voie LLM).
+        date: '2026-01-14',
         amount: -50,
         description: `${key} 2`,
         transactionId: `${key}-b`,
         statementId: '2026-02',
       },
     ],
+  };
+}
+
+function makeRuleCluster(key: string, descriptions: string[], dates?: string[]): CandidateCluster {
+  const ds = dates ?? descriptions.map((_, i) => `2026-0${i + 1}-10`);
+  return {
+    key,
+    creditor: key,
+    merchant: null,
+    occurrences: descriptions.map((description, i) => ({
+      date: ds[i],
+      amount: -50,
+      description,
+      transactionId: `${key}-${i}`,
+      statementId: ds[i].slice(0, 7),
+    })),
   };
 }
 
@@ -206,14 +224,14 @@ describe('CreditDetectionService', () => {
       merchant: null,
       occurrences: [
         {
-          date: '2026-02-10',
+          date: '2026-02-27',
           amount: -50,
           description: 'straddling 1',
           transactionId: 'straddling-a',
           statementId: '2026-02',
         },
         {
-          date: '2026-03-10',
+          date: '2026-03-02',
           amount: -50,
           description: 'straddling 2',
           transactionId: 'straddling-b',
@@ -279,6 +297,76 @@ describe('CreditDetectionService', () => {
       clustersAnalyzed: 2,
       suggestionsCreated: 4,
       errors: [],
+    });
+  });
+
+  describe('L44 : tri déterministe avant le LLM', () => {
+    it('établissement listé -> pas de LLM, validate avec la classification de la règle', async () => {
+      const cofidis = makeRuleCluster('cofidis', ['PRLV COFIDIS 1', 'PRLV COFIDIS 2', 'PRLV COFIDIS 3']);
+      clustering.buildClusters.mockReturnValue([cofidis]);
+      validator.validate.mockResolvedValue({ created: true });
+
+      const result = await svc.scanAll();
+
+      expect(classifier.classify).not.toHaveBeenCalled();
+      expect(validator.validate).toHaveBeenCalledWith(
+        cofidis,
+        expect.objectContaining({ classification: 'classic', creditor: 'COFIDIS', confidence: 1 }),
+        expect.any(String),
+      );
+      expect(result).toEqual({ clustersAnalyzed: 1, suggestionsCreated: 1, errors: [] });
+    });
+
+    it('autre société mensuelle -> subscription sans LLM', async () => {
+      const streamio = makeRuleCluster('streamio', ['PRLV SEPA STREAMIO', 'PRLV SEPA STREAMIO']);
+      clustering.buildClusters.mockReturnValue([streamio]);
+      validator.validate.mockResolvedValue({ created: true });
+
+      await svc.scanAll();
+
+      expect(classifier.classify).not.toHaveBeenCalled();
+      expect(validator.validate).toHaveBeenCalledWith(
+        streamio,
+        expect.objectContaining({ classification: 'subscription', creditor: 'STREAMIO' }),
+        expect.any(String),
+      );
+    });
+
+    it('payé exclu (impôts) -> ni LLM ni suggestion, compté analysé', async () => {
+      clustering.buildClusters.mockReturnValue([
+        makeRuleCluster('dgfip', ['PRLV DGFIP IMPOT', 'PRLV DGFIP IMPOT']),
+      ]);
+
+      const result = await svc.scanAll();
+
+      expect(classifier.classify).not.toHaveBeenCalled();
+      expect(validator.validate).not.toHaveBeenCalled();
+      expect(result).toEqual({ clustersAnalyzed: 1, suggestionsCreated: 0, errors: [] });
+    });
+
+    it('ambigu (mot de crédit, non listé) -> LLM', async () => {
+      const pret = makeRuleCluster('pret', ['PRLV BANQUE EXEMPLE ECHEANCE PRET', 'PRLV BANQUE EXEMPLE ECHEANCE PRET']);
+      clustering.buildClusters.mockReturnValue([pret]);
+      classifier.classify.mockResolvedValue(makeClassification({ classification: 'classic' }));
+      validator.validate.mockResolvedValue({ created: false, reason: 'loan_insufficient_recurrence' });
+
+      await svc.scanAll();
+
+      expect(classifier.classify).toHaveBeenCalledWith(pret);
+    });
+
+    it('Ollama down mais des clusters triés par règle -> pas de 502, erreurs du LLM listées', async () => {
+      clustering.buildClusters.mockReturnValue([
+        makeRuleCluster('cofidis', ['PRLV COFIDIS 1', 'PRLV COFIDIS 2', 'PRLV COFIDIS 3']),
+        makeCluster('a'),
+      ]);
+      classifier.classify.mockRejectedValue(new TypeError('fetch failed'));
+      validator.validate.mockResolvedValue({ created: true });
+
+      const result = await svc.scanAll();
+
+      expect(result.suggestionsCreated).toBe(1);
+      expect(result.errors).toEqual([{ clusterKey: 'a', message: 'fetch failed' }]);
     });
   });
 });
