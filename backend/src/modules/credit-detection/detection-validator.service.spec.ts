@@ -2222,3 +2222,193 @@ describe('DetectionValidatorService — subscription découpée en sous-séries 
     expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
   });
 });
+
+describe("DetectionValidatorService — subscription : fraîcheur par sous-série, ordre d'émission, repli montant variable (2e relecture du lot)", () => {
+  // Données synthétiques uniquement (créanciers fictifs).
+  let loanSuggestionsService: jest.Mocked<
+    Pick<LoanSuggestionsService, 'upsertMany' | 'getAll'>
+  >;
+  let svc: DetectionValidatorService;
+
+  beforeEach(() => {
+    loanSuggestionsService = {
+      upsertMany: jest.fn().mockResolvedValue(undefined),
+      getAll: jest.fn().mockResolvedValue([]),
+    };
+    svc = new DetectionValidatorService(
+      {
+        findExistingLoan: jest.fn().mockResolvedValue(null),
+        getAll: jest.fn().mockResolvedValue([]),
+      } as unknown as LoansService,
+      loanSuggestionsService as unknown as LoanSuggestionsService,
+      {
+        getAll: jest.fn().mockResolvedValue([]),
+      } as unknown as SubscriptionsService,
+    );
+  });
+
+  const classification = (creditor: string) =>
+    makeClassification({
+      classification: 'subscription',
+      creditor,
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.85,
+    });
+
+  const clusterOf = (creditor: string, rows: [string, number][]) =>
+    makeCluster({
+      key: creditor,
+      creditor,
+      merchant: null,
+      occurrences: [...rows]
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([date, amount], i) => ({
+          date,
+          amount: -amount,
+          description: `PRLV ${creditor.toUpperCase()}`,
+          transactionId: `${creditor}-${i}`,
+          statementId: date.slice(0, 7),
+        })),
+    });
+
+  it('changement de prix : ancienne sous-série morte (> 60 j) + nouvelle vivante -> seule la vivante est suggérée', async () => {
+    const cluster = clusterOf('vidozen', [
+      ['2026-01-05', 9.99],
+      ['2026-02-05', 9.99],
+      ['2026-03-05', 9.99],
+      ['2026-06-05', 12.99],
+      ['2026-07-05', 12.99],
+      ['2026-08-05', 12.99],
+    ]);
+
+    const result = await svc.validate(
+      cluster,
+      classification('vidozen'),
+      '2026-08-05',
+    );
+
+    expect(result).toEqual({ created: true, createdCount: 1 });
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
+    const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
+    expect(incoming[0].monthlyAmount).toBe(12.99);
+  });
+
+  it('toutes les sous-séries mortes -> rejetée series_ended', async () => {
+    const cluster = clusterOf('vidozen', [
+      ['2026-01-05', 9.99],
+      ['2026-02-05', 9.99],
+      ['2026-03-05', 12.99],
+      ['2026-04-05', 12.99],
+      ['2026-06-20', 3],
+    ]);
+
+    const result = await svc.validate(
+      cluster,
+      classification('vidozen'),
+      '2026-06-20',
+    );
+
+    expect(result).toEqual({ created: false, reason: 'series_ended' });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('plusieurs sous-séries vivantes -> émises par dernière occurrence croissante (la plus récente en dernier), pas par montant', async () => {
+    // 10 € prélevé le 20 (dernière occurrence la plus récente), 30 € le 5.
+    const cluster = clusterOf('opfictif', [
+      ['2026-01-05', 30],
+      ['2026-02-05', 30],
+      ['2026-03-05', 30],
+      ['2026-01-20', 10],
+      ['2026-02-20', 10],
+      ['2026-03-20', 10],
+    ]);
+
+    const result = await svc.validate(
+      cluster,
+      classification('opfictif'),
+      '2026-03-20',
+    );
+
+    expect(result).toEqual({ created: true, createdCount: 2 });
+    const amounts = loanSuggestionsService.upsertMany.mock.calls.map(
+      ([, inc]) => inc[0].monthlyAmount,
+    );
+    expect(amounts).toEqual([30, 10]);
+  });
+
+  it("montant variable (> 5 % d'un mois à l'autre, aucune sous-série ≥ 2) -> repli sur le cluster entier : 1 suggestion au montant médian, libellé sans suffixe", async () => {
+    const cluster = clusterOf('energix', [
+      ['2026-01-12', 41.2],
+      ['2026-02-11', 58.9],
+      ['2026-03-12', 47.5],
+    ]);
+
+    const result = await svc.validate(
+      cluster,
+      classification('energix'),
+      '2026-03-12',
+    );
+
+    expect(result).toEqual({ created: true, createdCount: 1 });
+    const [statementId, incoming] =
+      loanSuggestionsService.upsertMany.mock.calls[0];
+    expect(statementId).toBe('2026-03');
+    expect(incoming[0].monthlyAmount).toBe(47.5);
+    expect(incoming[0].label).toBe('energix');
+    expect(incoming[0].occurrencesSeen).toBe(3);
+  });
+
+  it('montant variable mais espacement non mensuel -> repli rejeté subscription_interval_out_of_range', async () => {
+    const cluster = clusterOf('energix', [
+      ['2026-01-28', 41.2],
+      ['2026-02-02', 58.9],
+    ]);
+
+    const result = await svc.validate(
+      cluster,
+      classification('energix'),
+      '2026-02-02',
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'subscription_interval_out_of_range',
+    });
+  });
+
+  it("montant variable mais suggestion déjà refusée (médiane à ±5 %) -> repli bloqué par l'anti-re-suggestion", async () => {
+    loanSuggestionsService.getAll.mockResolvedValue([
+      {
+        id: 'sug-e',
+        label: 'energix',
+        monthlyAmount: 48,
+        occurrencesSeen: 3,
+        firstSeenStatementId: '2025-10',
+        firstSeenDate: '2025-10-12',
+        lastSeenDate: '2025-12-12',
+        suggestedType: 'subscription',
+        matchPattern: 'energix',
+        creditor: 'energix',
+        status: 'rejected',
+        createdAt: '2025-12-13T00:00:00.000Z',
+      },
+    ]);
+    const cluster = clusterOf('energix', [
+      ['2026-01-12', 41.2],
+      ['2026-02-11', 58.9],
+      ['2026-03-12', 47.5],
+    ]);
+
+    const result = await svc.validate(
+      cluster,
+      classification('energix'),
+      '2026-03-12',
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'subscription_already_dismissed',
+    });
+  });
+});

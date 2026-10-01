@@ -150,7 +150,11 @@ export class DetectionValidatorService {
           latestStatementDate,
         );
       case 'subscription':
-        return this.validateSubscription(cluster, classification);
+        return this.validateSubscription(
+          cluster,
+          classification,
+          latestStatementDate,
+        );
       case 'revolving':
       case 'classic':
         return this.validateStandardLoan(cluster, classification);
@@ -399,7 +403,22 @@ export class DetectionValidatorService {
    * pas mensuels alors que chaque abonnement l'est. Chaque sous-série
    * ≥ 2 occurrences est validée indépendamment et produit SA suggestion
    * (label suffixé du montant s'il y a plusieurs sous-séries) ; une
-   * sous-série rejetée n'invalide pas les autres. Checks par sous-série :
+   * sous-série rejetée n'invalide pas les autres.
+   *
+   * Ordre d'émission : sous-séries triées par dernière occurrence
+   * croissante (la plus récente en dernier) — `upsertMany` dédoublonne les
+   * suggestions non-installment par créancier, « dernier écrit gagne » :
+   * c'est le montant le plus récent qui doit rester.
+   *
+   * Repli montant variable : si AUCUNE sous-série n'a ≥ 2 occurrences
+   * (énergie, téléphone à la consommation, écart > 5 % d'un mois à
+   * l'autre), le cluster ENTIER est validé comme une seule série (montant
+   * médian, libellé sans suffixe).
+   *
+   * Checks par série :
+   *  0. fraîcheur (`series_ended`, même garde que
+   *     `validateInstallmentSubSeries`) — un ancien tarif ou une option
+   *     résiliée n'est pas suggéré à côté de la série vivante ;
    *  1. ≥MIN_SUBSCRIPTION_DISTINCT_MONTHS mois calendaires distincts ->
    *     sinon `subscription_insufficient_recurrence` ;
    *  2. espacement mensuel (`checkIntervals`, mêmes bornes que la branche
@@ -409,13 +428,25 @@ export class DetectionValidatorService {
   private async validateSubscription(
     cluster: CandidateCluster,
     classification: ClusterClassification,
+    latestStatementDate: string,
   ): Promise<ValidationResult> {
-    const subSeries = DetectionValidatorService.splitByAmount(
+    let subSeries = DetectionValidatorService.splitByAmount(
       cluster.occurrences,
     ).filter((occurrences) => occurrences.length >= 2);
     if (subSeries.length === 0) {
-      return { created: false, reason: 'subscription_insufficient_recurrence' };
+      subSeries = [
+        [...cluster.occurrences].sort((a, b) =>
+          a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+        ),
+      ];
     }
+    const lastDateOf = (occurrences: ClusterOccurrence[]) =>
+      DetectionValidatorService.maxDate(occurrences.map((o) => o.date));
+    subSeries.sort((a, b) => {
+      const la = lastDateOf(a);
+      const lb = lastDateOf(b);
+      return la < lb ? -1 : la > lb ? 1 : 0;
+    });
 
     const creditorNames = DetectionValidatorService.creditorNames(
       cluster,
@@ -431,6 +462,7 @@ export class DetectionValidatorService {
         classification,
         creditorNames,
         disambiguate,
+        latestStatementDate,
       );
       if (result.created) {
         createdCount++;
@@ -453,7 +485,17 @@ export class DetectionValidatorService {
     classification: ClusterClassification,
     creditorNames: CreditorNames,
     disambiguate: boolean,
+    latestStatementDate: string,
   ): Promise<ValidationResult> {
+    if (
+      DetectionValidatorService.daysBetween(
+        DetectionValidatorService.maxDate(occurrences.map((o) => o.date)),
+        latestStatementDate,
+      ) > SERIES_ENDED_MAX_DAYS
+    ) {
+      return { created: false, reason: 'series_ended' };
+    }
+
     const distinctMonths = new Set(occurrences.map((o) => o.date.slice(0, 7)));
     if (distinctMonths.size < MIN_SUBSCRIPTION_DISTINCT_MONTHS) {
       return { created: false, reason: 'subscription_insufficient_recurrence' };
