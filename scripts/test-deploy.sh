@@ -13,6 +13,12 @@
 #      construit, puis « rien à livrer » si les tags sont déjà à jour).
 #   3. Run d'ancêtre qui ne finit jamais : échec borné, aucun commit gitops.
 #   4. Un run en cours sur un sha qui n'est PAS un ancêtre est ignoré.
+#   5. Le run attendu finit en échec : livraison en échec, run nommé, aucun
+#      commit gitops.
+#   6. Run rouge déjà terminé, pas encore remplacé (ni livré ni reconstruit
+#      depuis) : échec aussi.
+#   7. Vieux runs rouges déjà remplacés (une image plus récente du même
+#      service est construite ou déployée) : ignorés, livraison normale.
 set -euo pipefail
 
 DEPLOY="$(cd "$(dirname "$0")" && pwd)/deploy.sh"
@@ -154,5 +160,48 @@ setup cas4
   echo ","; run_json 1 "$C0" completed success backend frontend; echo "]"; } > "$W/gh/runs.json"
 TIMEOUT=1 deploy
 check "4. run hors ascendance ignoré : livré sans attendre" test "$code" -eq 0 -a "$(tag backend)" = "${A:0:7}"
+
+# 5. Le run attendu de A finit en échec.
+setup cas5
+{ echo "["; run_json 3 "$B" completed success; echo ","; run_json 2 "$A" in_progress "" backend
+  echo ","; run_json 1 "$C0" completed success backend frontend; echo "]"; } > "$W/gh/runs.json"
+{ echo "["; run_json 3 "$B" completed success; echo ","; run_json 2 "$A" completed failure backend
+  echo ","; run_json 1 "$C0" completed success backend frontend; echo "]"; } > "$W/gh/runs-final.json"
+echo 3 > "$W/gh/finish-after"
+before=$(git -C "$W/gitops" rev-parse HEAD)
+deploy
+check "5. run attendu rouge : échec (exit ≠ 0)" test "$code" -ne 0
+check "5. run attendu rouge : run nommé (id, sha court, lien)" \
+  grep -q "run 2 (sha-${A:0:7}, backend) https://ci/runs/2" "$W/out"
+check "5. message : comment débloquer" grep -q "gh run rerun 2 --failed" "$W/out"
+check "5. run attendu rouge : aucun commit gitops" test "$(git -C "$W/gitops" rev-parse HEAD)" = "$before"
+
+# 6. Run rouge de A déjà terminé au lancement, jamais remplacé.
+setup cas6
+{ echo "["; run_json 3 "$B" completed success; echo ","; run_json 2 "$A" completed failure backend
+  echo ","; run_json 1 "$C0" completed success backend frontend; echo "]"; } > "$W/gh/runs.json"
+before=$(git -C "$W/gitops" rev-parse HEAD)
+deploy
+check "6. rouge non remplacé : échec, run nommé" \
+  bash -c "[ $code -ne 0 ] && grep -q 'run 2 (sha-${A:0:7}, backend)' '$W/out'"
+check "6. rouge non remplacé : aucun commit gitops" test "$(git -C "$W/gitops" rev-parse HEAD)" = "$before"
+
+# 7. Vieux rouges remplacés : backend rouge sur C0 puis reconstruit sur A,
+#    frontend rouge sur C0 (relance) mais déployé depuis sur C0.
+setup cas7
+{ echo "["; run_json 3 "$B" completed success; echo ","; run_json 2 "$A" completed success backend
+  echo ","; run_json 1 "$C0" completed success backend frontend
+  echo ","; run_json 0 "$C0" completed failure backend frontend; echo "]"; } > "$W/gh/runs.json"
+deploy
+check "7. rouges remplacés : livré normalement sur A" test "$code" -eq 0 -a "$(tag backend)" = "${A:0:7}"
+
+# 8. Run de A annulé avant tout job : image manquante pour les deux services.
+setup cas8
+{ echo "["; run_json 3 "$B" completed success
+  echo ',{"databaseId":2,"headSha":"'"$A"'","status":"completed","conclusion":"cancelled","url":"https://ci/runs/2","jobs":[]}'
+  echo ","; run_json 1 "$C0" completed success backend frontend; echo "]"; } > "$W/gh/runs.json"
+deploy
+check "8. run annulé sans job : échec sur les deux services" \
+  bash -c "[ $code -ne 0 ] && grep -q 'run 2 (sha-${A:0:7}, backend)' '$W/out' && grep -q 'run 2 (sha-${A:0:7}, frontend)' '$W/out'"
 
 [ "$fails" -eq 0 ] && echo "test-deploy : tout est vert" || { echo "test-deploy : $fails échec(s)"; exit 1; }

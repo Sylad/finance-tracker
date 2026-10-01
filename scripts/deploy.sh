@@ -19,9 +19,9 @@ git -C "$GITOPS" diff --quiet && git -C "$GITOPS" diff --cached --quiet ||
 # n'attend que le run de CE sha : si un commit qui ne touche que le plan est
 # poussé juste après un commit backend/frontend, son run (vide) finit avant
 # celui qui construit l'image, et sans cette attente on concluait « rien à
-# livrer » (vécu warhammer 01-10, porté de son L28). Borné par
-# DEPLOY_CI_TIMEOUT (sous le deployTimeout de cadence, 1800 s) ; un run qui
-# finit en échec est simplement ignoré ci-dessous, comme avant.
+# livrer » (vécu warhammer 01-10, correctif porté de warhammer40k). Borné
+# par DEPLOY_CI_TIMEOUT (sous le deployTimeout de cadence, 1800 s) ; un run
+# qui finit en échec bloque plus bas tant qu'il n'est pas remplacé.
 deadline=$(( $(date +%s) + ${DEPLOY_CI_TIMEOUT:-1200} ))
 while :; do
   pending_runs=$(gh run list --workflow build.yml --limit 100 --json databaseId,headSha,status \
@@ -65,6 +65,53 @@ while read -r run_id head; do
 done <<EOF
 $runs
 EOF
+
+# L46 — un build rouge PAS ENCORE REMPLACÉ bloque la livraison (sinon on
+# livrerait en silence une image antérieure à ce commit). Règle : un run
+# terminé ≠ success, dont le sha est un ancêtre de ce sha (ou ce sha), bloque
+# pour chaque service qu'il n'a pas construit — job « Build & push <svc> » non
+# vert ; détection rouge, plusieurs builds rouges ou run sans aucun job = les
+# deux services ; un job étranger au build, rouge seul, ne bloque pas —
+# SAUF si ce service a depuis une image plus récente : l'image retenue
+# ci-dessus ou celle déjà déployée descend du sha du run rouge. Les vieux
+# rouges réparés par un build ultérieur ne comptent donc pas.
+failed_runs=$(gh run list --workflow build.yml --limit 100 --json databaseId,headSha,status,conclusion,url \
+  --jq '.[] | select(.status == "completed" and .conclusion != "success") | "\(.databaseId) \(.headSha) \(.url)"')
+cur_backend=$(sed -n "/^backend:/,/^[a-z]/ s/^  tag: sha-//p" "$VALUES")
+cur_frontend=$(sed -n "/^frontend:/,/^[a-z]/ s/^  tag: sha-//p" "$VALUES")
+replaced() { # sha service : une image retenue ou déployée de ce service descend-elle de sha ?
+  if [ "$2" = backend ]; then set -- "$1" "$backend_sha" "$cur_backend"; else set -- "$1" "$frontend_sha" "$cur_frontend"; fi
+  { [ -n "$2" ] && git merge-base --is-ancestor "$1" "$2" 2>/dev/null; } ||
+    { [ -n "$3" ] && git merge-base --is-ancestor "$1" "$3" 2>/dev/null; }
+}
+blocking=""
+while read -r run_id head url; do
+  [ -n "$run_id" ] || continue
+  git merge-base --is-ancestor "$head" "$SHA" 2>/dev/null || continue
+  replaced "$head" backend && replaced "$head" frontend && continue # sans appel à gh
+  # Jobs non verts, ou « (aucun job) » pour un run annulé avant de démarrer.
+  red_jobs=$(gh run view "$run_id" --json jobs \
+    --jq 'if (.jobs | length) == 0 then "(aucun job)" else .jobs[] | select(.conclusion != "success" and .conclusion != "skipped") | .name end' |
+    grep -E '^(Build & push|Detect changed services|\(aucun job\))' || true)
+  case "$red_jobs" in
+    "Build & push backend") svcs=backend ;;
+    "Build & push frontend") svcs=frontend ;;
+    "") continue ;; # seuls des jobs étrangers au build sont rouges : aucune image manquante
+    *) svcs="backend frontend" ;;
+  esac
+  for svc in $svcs; do
+    replaced "$head" "$svc" && continue
+    blocking="$blocking
+  run $run_id (sha-$(echo "$head" | cut -c1-7), $svc) $url
+    → pour débloquer : gh run rerun $run_id --failed, ou un nouveau commit qui touche $svc/"
+  done
+done <<EOF
+$failed_runs
+EOF
+if [ -n "$blocking" ]; then
+  echo "deploy: build CI en échec, pas encore remplacé, pour un ancêtre de $SHORT :$blocking" >&2
+  exit 1
+fi
 
 bumped=""
 for svc in backend frontend; do
