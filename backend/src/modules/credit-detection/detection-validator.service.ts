@@ -285,6 +285,10 @@ export class DetectionValidatorService {
       );
     }
 
+    if (await this.hasDismissedSuggestion(creditorNames, medianAmount)) {
+      return { created: false, reason: 'loan_already_dismissed' };
+    }
+
     // Round 8 fix 1 : normalise l'installmentCount AVANT tout usage —
     // signal non fiable, jamais de chiffre fabriqué dans la suggestion.
     const normalizedInstallmentCount =
@@ -610,19 +614,37 @@ export class DetectionValidatorService {
     );
     if (known) return 'existing_subscription';
 
+    if (await this.hasDismissedSuggestion(creditorNames, medianAmount)) {
+      return 'subscription_already_dismissed';
+    }
+
+    return null;
+  }
+
+  /**
+   * Anti-re-suggestion commune (L2 pour les abonnements, étendue aux crédits
+   * et N× par L44, ex-L43) : une suggestion déjà refusée ou mise en attente
+   * (snoozed), quel que soit son type, au même montant ±5 % et dont le
+   * créancier matche en fuzzy (nom LLM ou `cluster.creditor`). `upsertMany`
+   * ne protège que le creditor exact : un alias différent recréait une
+   * suggestion pending que l'utilisateur avait déjà écartée.
+   */
+  private async hasDismissedSuggestion(
+    creditorNames: CreditorNames,
+    medianAmount: number,
+  ): Promise<boolean> {
+    if (!creditorNames.llm && !creditorNames.clusterToken) return false;
     const suggestions = await this.loanSuggestionsService.getAll();
-    const dismissed = suggestions.some(
+    return suggestions.some(
       (sug) =>
         (sug.status === 'rejected' || sug.status === 'snoozed') &&
         DetectionValidatorService.fuzzyCreditorMatch(
           sug.creditor,
           creditorNames,
         ) &&
-        withinTolerance(sug.monthlyAmount),
+        Math.abs(medianAmount - sug.monthlyAmount) <=
+          sug.monthlyAmount * AMOUNT_TOLERANCE,
     );
-    if (dismissed) return 'subscription_already_dismissed';
-
-    return null;
   }
 
   /**
@@ -855,6 +877,10 @@ export class DetectionValidatorService {
 
     if (await this.hasFuzzyKnownLoanPayment(creditorNames, medianAmount)) {
       return { created: false, reason: 'existing_loan_payment' };
+    }
+
+    if (await this.hasDismissedSuggestion(creditorNames, medianAmount)) {
+      return { created: false, reason: 'loan_already_dismissed' };
     }
 
     if (

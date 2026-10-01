@@ -2499,4 +2499,88 @@ describe("DetectionValidatorService — subscription : fraîcheur par sous-séri
     });
     expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
   });
+
+  describe('L44 (absorbe L43) : suggestion crédit / N× déjà écartée sous un autre nom', () => {
+    const dismissed = (
+      status: 'rejected' | 'snoozed',
+      creditor: string,
+      monthlyAmount: number,
+      suggestedType: 'loan' | 'subscription' = 'loan',
+    ) =>
+      ({
+        id: 'sug-dismissed',
+        label: creditor,
+        monthlyAmount,
+        occurrencesSeen: 3,
+        firstSeenStatementId: '2025-11',
+        firstSeenDate: '2025-11-10',
+        lastSeenDate: '2026-01-10',
+        suggestedType,
+        matchPattern: creditor,
+        creditor,
+        status,
+        createdAt: '2026-01-11T00:00:00.000Z',
+      }) as unknown as Awaited<ReturnType<LoanSuggestionsService['getAll']>>[number];
+
+    const revolving = (): CandidateCluster => ({
+      key: 'credimax|',
+      creditor: 'credimax',
+      merchant: null,
+      occurrences: ['2026-01-10', '2026-02-10', '2026-03-10'].map((date, i) => ({
+        date,
+        amount: -73.2,
+        description: 'PRLV CREDIMAX ECHEANCE',
+        transactionId: `r${i}`,
+        statementId: date.slice(0, 7),
+      })),
+    });
+
+    it.each(['rejected', 'snoozed'] as const)(
+      'installment : suggestion %s sous un alias (« Klarni Bank ») au même montant -> loan_already_dismissed',
+      async (status) => {
+        loanSuggestionsService.getAll.mockResolvedValue([
+          dismissed(status, 'Klarni Bank', 45),
+        ]);
+        const result = await svc.validate(makeCluster(), makeClassification(), '2026-03-07');
+        expect(result).toEqual({ created: false, reason: 'loan_already_dismissed' });
+        expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+      },
+    );
+
+    it('crédit (revolving) : suggestion refusée sous le nom complet, LLM sous un alias -> loan_already_dismissed', async () => {
+      loanSuggestionsService.getAll.mockResolvedValue([
+        dismissed('rejected', 'CREDIMAX FINANCEMENT', 73.2),
+      ]);
+      const result = await svc.validate(
+        revolving(),
+        makeClassification({ classification: 'revolving', creditor: 'Credimax Fin', merchant: null, installmentCount: null }),
+        '2026-03-10',
+      );
+      expect(result).toEqual({ created: false, reason: 'loan_already_dismissed' });
+    });
+
+    it('montant hors ±5 % -> pas bloquée (autre crédit du même créancier)', async () => {
+      loanSuggestionsService.getAll.mockResolvedValue([
+        dismissed('rejected', 'CREDIMAX FINANCEMENT', 150),
+      ]);
+      const result = await svc.validate(
+        revolving(),
+        makeClassification({ classification: 'revolving', creditor: 'credimax', merchant: null, installmentCount: null }),
+        '2026-03-10',
+      );
+      expect(result).toEqual({ created: true });
+    });
+
+    it('suggestion acceptée (pending/accepted) -> ne bloque pas', async () => {
+      loanSuggestionsService.getAll.mockResolvedValue([
+        { ...dismissed('rejected', 'CREDIMAX FINANCEMENT', 73.2), status: 'pending' },
+      ]);
+      const result = await svc.validate(
+        revolving(),
+        makeClassification({ classification: 'revolving', creditor: 'credimax', merchant: null, installmentCount: null }),
+        '2026-03-10',
+      );
+      expect(result).toEqual({ created: true });
+    });
+  });
 });
