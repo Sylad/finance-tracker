@@ -9,6 +9,7 @@ import {
 } from '../../models/credit-detection.model';
 import { LoansService, MatchResult } from '../loans/loans.service';
 import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { StorageService } from '../storage/storage.service';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
@@ -66,7 +67,7 @@ describe('DetectionValidatorService', () => {
     Pick<LoansService, 'findExistingLoan' | 'getAll'>
   >;
   let loanSuggestionsService: jest.Mocked<
-    Pick<LoanSuggestionsService, 'upsertMany'>
+    Pick<LoanSuggestionsService, 'upsertMany' | 'getAll'>
   >;
   let svc: DetectionValidatorService;
 
@@ -77,10 +78,14 @@ describe('DetectionValidatorService', () => {
     };
     loanSuggestionsService = {
       upsertMany: jest.fn().mockResolvedValue(undefined),
+      getAll: jest.fn().mockResolvedValue([]),
     };
     svc = new DetectionValidatorService(
       loansService as unknown as LoansService,
       loanSuggestionsService as unknown as LoanSuggestionsService,
+      {
+        getAll: jest.fn().mockResolvedValue([]),
+      } as unknown as SubscriptionsService,
     );
   });
 
@@ -599,7 +604,7 @@ describe('DetectionValidatorService', () => {
     expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
   });
 
-  it("(n) hasFuzzyKnownLoanPayment matche aussi un loan clôturé (isActive:false) -> rejetée existing_loan_payment", async () => {
+  it('(n) hasFuzzyKnownLoanPayment matche aussi un loan clôturé (isActive:false) -> rejetée existing_loan_payment', async () => {
     // Round 5 fix 2 : le garde créancier ne regardait que les loans actifs
     // -> un crédit tracké puis clôturé (ex. LBP Consumer Finance) était
     // re-suggéré. Doit matcher TOUS les loans, actifs ou non.
@@ -1298,6 +1303,7 @@ describe('DetectionValidatorService (intégration — vrai LoanSuggestionsServic
         DetectionValidatorService,
         LoanSuggestionsService,
         LoansService,
+        SubscriptionsService,
         {
           provide: RequestDataDirService,
           useValue: {
@@ -1428,6 +1434,9 @@ describe('DetectionValidatorService — gardes créancier existant croisent clus
     svc = new DetectionValidatorService(
       loansService as unknown as LoansService,
       loanSuggestionsService as unknown as LoanSuggestionsService,
+      {
+        getAll: jest.fn().mockResolvedValue([]),
+      } as unknown as SubscriptionsService,
     );
   });
 
@@ -1585,5 +1594,287 @@ describe('DetectionValidatorService — gardes créancier existant croisent clus
 
     expect(result).toEqual({ created: true });
     expect(loansService.findExistingLoan).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('DetectionValidatorService — branche subscription déterministe + anti-re-suggestion (backlog revue 2026-08-13 #3)', () => {
+  // Données synthétiques uniquement (créanciers fictifs).
+  type SuggestionRow = Awaited<
+    ReturnType<LoanSuggestionsService['getAll']>
+  >[number];
+  type SubscriptionRow = Awaited<
+    ReturnType<SubscriptionsService['getAll']>
+  >[number];
+  let loansService: jest.Mocked<
+    Pick<LoansService, 'findExistingLoan' | 'getAll'>
+  >;
+  let loanSuggestionsService: jest.Mocked<
+    Pick<LoanSuggestionsService, 'upsertMany' | 'getAll'>
+  >;
+  let subscriptionsService: jest.Mocked<Pick<SubscriptionsService, 'getAll'>>;
+  let svc: DetectionValidatorService;
+
+  beforeEach(() => {
+    loansService = {
+      findExistingLoan: jest.fn().mockResolvedValue(null),
+      getAll: jest.fn().mockResolvedValue([]),
+    };
+    loanSuggestionsService = {
+      upsertMany: jest.fn().mockResolvedValue(undefined),
+      getAll: jest.fn().mockResolvedValue([]),
+    };
+    subscriptionsService = { getAll: jest.fn().mockResolvedValue([]) };
+    svc = new DetectionValidatorService(
+      loansService as unknown as LoansService,
+      loanSuggestionsService as unknown as LoanSuggestionsService,
+      subscriptionsService as unknown as SubscriptionsService,
+    );
+  });
+
+  const occ = (date: string, amount: number, i: number) => ({
+    date,
+    amount: -amount,
+    description: 'PRLV STREAMIO',
+    transactionId: `s-${i}`,
+    statementId: date.slice(0, 7),
+  });
+
+  const subscriptionCluster = (dates: string[], amount = 9.99) =>
+    makeCluster({
+      key: 'streamio',
+      creditor: 'streamio',
+      merchant: null,
+      occurrences: dates.map((d, i) => occ(d, amount, i)),
+    });
+
+  const subscriptionClassification = (creditor = 'streamio') =>
+    makeClassification({
+      classification: 'subscription',
+      creditor,
+      merchant: null,
+      installmentCount: null,
+      confidence: 0.85,
+    });
+
+  const suggestion = (
+    overrides: Partial<SuggestionRow> = {},
+  ): SuggestionRow => ({
+    id: 'sug-synth',
+    label: 'streamio',
+    monthlyAmount: 9.99,
+    occurrencesSeen: 2,
+    firstSeenStatementId: '2025-11',
+    firstSeenDate: '2025-11-05',
+    lastSeenDate: '2025-12-05',
+    suggestedType: 'subscription',
+    matchPattern: 'streamio',
+    creditor: 'streamio',
+    status: 'rejected',
+    createdAt: '2025-12-06T00:00:00.000Z',
+    ...overrides,
+  });
+
+  it("2 occurrences à 4 jours d'écart dans le même mois -> rejetée subscription_insufficient_recurrence", async () => {
+    const cluster = subscriptionCluster(['2026-02-03', '2026-02-07']);
+
+    const result = await svc.validate(
+      cluster,
+      subscriptionClassification(),
+      '2026-02-07',
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'subscription_insufficient_recurrence',
+    });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('1 seule occurrence -> rejetée subscription_insufficient_recurrence', async () => {
+    const result = await svc.validate(
+      subscriptionCluster(['2026-02-03']),
+      subscriptionClassification(),
+      '2026-02-03',
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'subscription_insufficient_recurrence',
+    });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it("2 mois distincts mais 4 jours d'écart (30/01 -> 03/02) -> rejetée subscription_interval_out_of_range", async () => {
+    const result = await svc.validate(
+      subscriptionCluster(['2026-01-30', '2026-02-03']),
+      subscriptionClassification(),
+      '2026-02-03',
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'subscription_interval_out_of_range',
+    });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('3 mois avec espacement mensuel (~30 j) -> suggestion subscription créée', async () => {
+    const result = await svc.validate(
+      subscriptionCluster(['2026-01-05', '2026-02-04', '2026-03-06']),
+      subscriptionClassification(),
+      '2026-03-06',
+    );
+
+    expect(result).toEqual({ created: true });
+    const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
+    expect(incoming[0].suggestedType).toBe('subscription');
+  });
+
+  it.each(['rejected', 'snoozed'] as const)(
+    'suggestion déjà %s (même créancier, montant ±5 %%) -> rejetée subscription_already_dismissed',
+    async (status) => {
+      loanSuggestionsService.getAll.mockResolvedValue([
+        suggestion({ status, monthlyAmount: 10.2 }),
+      ]);
+
+      const result = await svc.validate(
+        subscriptionCluster(['2026-01-05', '2026-02-05']),
+        subscriptionClassification(),
+        '2026-02-05',
+      );
+
+      expect(result).toEqual({
+        created: false,
+        reason: 'subscription_already_dismissed',
+      });
+      expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+    },
+  );
+
+  it("suggestion refusée sous l'alias déterministe : creditor LLM divergent mais cluster.creditor = créancier refusé -> rejetée", async () => {
+    loanSuggestionsService.getAll.mockResolvedValue([suggestion()]);
+
+    const result = await svc.validate(
+      subscriptionCluster(['2026-01-05', '2026-02-05']),
+      subscriptionClassification('videoflux media'),
+      '2026-02-05',
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'subscription_already_dismissed',
+    });
+  });
+
+  it('suggestion refusée avec alias LLM contenu (« streamio » vs « streamio premium ») -> rejetée (containment fuzzy)', async () => {
+    loanSuggestionsService.getAll.mockResolvedValue([
+      suggestion({ creditor: 'Streamio Premium' }),
+    ]);
+
+    const result = await svc.validate(
+      subscriptionCluster(['2026-01-05', '2026-02-05']),
+      subscriptionClassification(),
+      '2026-02-05',
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'subscription_already_dismissed',
+    });
+  });
+
+  it('suggestion refusée mais montant hors ±5 % -> PAS bloquée (autre série)', async () => {
+    loanSuggestionsService.getAll.mockResolvedValue([
+      suggestion({ monthlyAmount: 19.99 }),
+    ]);
+
+    const result = await svc.validate(
+      subscriptionCluster(['2026-01-05', '2026-02-05']),
+      subscriptionClassification(),
+      '2026-02-05',
+    );
+
+    expect(result).toEqual({ created: true });
+  });
+
+  it('suggestion pending du même créancier -> PAS bloquée (mise à jour par upsertMany)', async () => {
+    loanSuggestionsService.getAll.mockResolvedValue([
+      suggestion({ status: 'pending' }),
+    ]);
+
+    const result = await svc.validate(
+      subscriptionCluster(['2026-01-05', '2026-02-05']),
+      subscriptionClassification(),
+      '2026-02-05',
+    );
+
+    expect(result).toEqual({ created: true });
+    expect(loanSuggestionsService.upsertMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('abonnement déjà suivi (creditor fuzzy, montant ±5 %) -> rejetée existing_subscription', async () => {
+    subscriptionsService.getAll.mockResolvedValue([
+      {
+        id: 'sub-synth',
+        name: 'Abonnement vidéo',
+        creditor: 'STREAMIO SAS',
+        monthlyAmount: 9.99,
+        isActive: false,
+      } as unknown as SubscriptionRow,
+    ]);
+
+    const result = await svc.validate(
+      subscriptionCluster(['2026-01-05', '2026-02-05']),
+      subscriptionClassification(),
+      '2026-02-05',
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'existing_subscription',
+    });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it('abonnement déjà suivi sans creditor, reconnu par son nom -> rejetée existing_subscription', async () => {
+    subscriptionsService.getAll.mockResolvedValue([
+      {
+        id: 'sub-synth',
+        name: 'Streamio',
+        monthlyAmount: 9.99,
+        isActive: true,
+      } as unknown as SubscriptionRow,
+    ]);
+
+    const result = await svc.validate(
+      subscriptionCluster(['2026-01-05', '2026-02-05']),
+      subscriptionClassification(),
+      '2026-02-05',
+    );
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'existing_subscription',
+    });
+  });
+
+  it('série longue reroutée en subscription : anti-re-suggestion appliquée aussi', async () => {
+    loanSuggestionsService.getAll.mockResolvedValue([suggestion()]);
+    const months = ['01', '02', '03', '04', '05', '06'];
+    const cluster = subscriptionCluster(months.map((m) => `2026-${m}-05`));
+    const classification = makeClassification({
+      classification: 'installment',
+      creditor: 'streamio',
+      merchant: null,
+      installmentCount: null,
+    });
+
+    const result = await svc.validate(cluster, classification, '2026-06-05');
+
+    expect(result).toEqual({
+      created: false,
+      reason: 'subscription_already_dismissed',
+    });
+    expect(loanSuggestionsService.upsertMany).not.toHaveBeenCalled();
   });
 });

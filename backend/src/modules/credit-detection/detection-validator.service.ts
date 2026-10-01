@@ -6,6 +6,7 @@ import {
 } from '../../models/credit-detection.model';
 import { LoansService } from '../loans/loans.service';
 import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import {
   IncomingSuggestion,
   SuggestionEvidence,
@@ -49,6 +50,10 @@ const ALLOWED_INSTALLMENT_COUNTS = new Set([2, 3, 4, 5, 6, 10, 12]);
  *  observées — au-delà, pas de preuve qu'il y ait vraiment ce nombre
  *  d'échéances futures, l'installmentCount est jugé halluciné. */
 const INSTALLMENT_COUNT_PROJECTION_MARGIN = 2;
+/** Backlog revue 2026-08-13 #3 : une suggestion `subscription` exige au
+ *  moins 2 mois calendaires distincts (2 débits à 4 jours d'écart dans le
+ *  même mois ne sont pas un abonnement). */
+const MIN_SUBSCRIPTION_DISTINCT_MONTHS = 2;
 
 export interface ValidationResult {
   created: boolean;
@@ -70,6 +75,7 @@ export class DetectionValidatorService {
   constructor(
     private readonly loansService: LoansService,
     private readonly loanSuggestionsService: LoanSuggestionsService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   async validate(
@@ -106,7 +112,7 @@ export class DetectionValidatorService {
           latestStatementDate,
         );
       case 'subscription':
-        return this.createSuggestion(cluster, classification, 'subscription');
+        return this.validateSubscription(cluster, classification);
       case 'revolving':
       case 'classic':
         return this.validateStandardLoan(cluster, classification);
@@ -231,6 +237,7 @@ export class DetectionValidatorService {
       return this.createSubscriptionFromLongSeries(
         occurrences,
         classification,
+        creditorNames,
         medianAmount,
         disambiguate,
       );
@@ -307,9 +314,16 @@ export class DetectionValidatorService {
   private async createSubscriptionFromLongSeries(
     occurrences: ClusterOccurrence[],
     classification: ClusterClassification,
+    creditorNames: string[],
     medianAmount: number,
     disambiguate: boolean,
   ): Promise<ValidationResult> {
+    const dismissed = await this.subscriptionGuardReason(
+      creditorNames,
+      medianAmount,
+    );
+    if (dismissed) return { created: false, reason: dismissed };
+
     const base = DetectionValidatorService.buildLabel(classification);
     const label = disambiguate ? `${base} (${medianAmount}€)` : base;
 
@@ -333,6 +347,95 @@ export class DetectionValidatorService {
       [incoming],
     );
     return { created: true };
+  }
+
+  /**
+   * Backlog revue 2026-08-13 #3 : la branche subscription transmettait la
+   * classification LLM telle quelle — 2 occurrences à 4 jours d'écart
+   * pouvaient devenir une suggestion « abonnement ». Checks déterministes :
+   *  1. ≥MIN_SUBSCRIPTION_DISTINCT_MONTHS mois calendaires distincts ->
+   *     sinon `subscription_insufficient_recurrence` ;
+   *  2. espacement mensuel (`checkIntervals`, mêmes bornes que la branche
+   *     installment) -> sinon `subscription_interval_out_of_range` ;
+   *  3. anti-re-suggestion (`subscriptionGuardReason`).
+   */
+  private async validateSubscription(
+    cluster: CandidateCluster,
+    classification: ClusterClassification,
+  ): Promise<ValidationResult> {
+    const occurrences = [...cluster.occurrences].sort((a, b) =>
+      a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+    );
+    const distinctMonths = new Set(occurrences.map((o) => o.date.slice(0, 7)));
+    if (distinctMonths.size < MIN_SUBSCRIPTION_DISTINCT_MONTHS) {
+      return { created: false, reason: 'subscription_insufficient_recurrence' };
+    }
+    if (!DetectionValidatorService.checkIntervals(occurrences)) {
+      return { created: false, reason: 'subscription_interval_out_of_range' };
+    }
+
+    const medianAmount = DetectionValidatorService.round2(
+      DetectionValidatorService.median(
+        occurrences.map((o) => Math.abs(o.amount)),
+      ),
+    );
+    const dismissed = await this.subscriptionGuardReason(
+      DetectionValidatorService.creditorNames(cluster, classification),
+      medianAmount,
+    );
+    if (dismissed) return { created: false, reason: dismissed };
+
+    return this.createSuggestion(cluster, classification, 'subscription');
+  }
+
+  /**
+   * Backlog revue 2026-08-13 #3 — équivalent subscriptions de
+   * `hasFuzzyKnownLoanPayment` (containment fuzzy sur le nom LLM ET
+   * `cluster.creditor`, montant ±5 %) :
+   *  - abonnement déjà suivi (actif ou non, creditor ou à défaut nom)
+   *    -> `existing_subscription` ;
+   *  - suggestion déjà refusée ou mise en attente (snoozed), quel que soit
+   *    son type -> `subscription_already_dismissed`. `upsertMany` ne protège
+   *    que le creditor exact : un alias LLM différent recréait une
+   *    suggestion pending que l'utilisateur avait déjà écartée.
+   * Retourne null si rien ne bloque.
+   */
+  private async subscriptionGuardReason(
+    creditorNames: string[],
+    medianAmount: number,
+  ): Promise<string | null> {
+    if (creditorNames.length === 0) return null;
+    const withinTolerance = (reference: number) =>
+      Math.abs(medianAmount - reference) <= reference * AMOUNT_TOLERANCE;
+
+    const subscriptions = await this.subscriptionsService.getAll();
+    const known = subscriptions.some(
+      (sub) =>
+        (DetectionValidatorService.fuzzyCreditorMatch(
+          sub.creditor,
+          creditorNames,
+        ) ||
+          DetectionValidatorService.fuzzyCreditorMatch(
+            sub.name,
+            creditorNames,
+          )) &&
+        withinTolerance(sub.monthlyAmount),
+    );
+    if (known) return 'existing_subscription';
+
+    const suggestions = await this.loanSuggestionsService.getAll();
+    const dismissed = suggestions.some(
+      (sug) =>
+        (sug.status === 'rejected' || sug.status === 'snoozed') &&
+        DetectionValidatorService.fuzzyCreditorMatch(
+          sug.creditor,
+          creditorNames,
+        ) &&
+        withinTolerance(sug.monthlyAmount),
+    );
+    if (dismissed) return 'subscription_already_dismissed';
+
+    return null;
   }
 
   /**
