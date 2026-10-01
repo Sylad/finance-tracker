@@ -358,3 +358,9 @@ lots:
       - { date: 2026-10-01, text: "Sylvain 01-10 : plus rien en prod sur le NAS ; garder ce qui sert au dev local ; supprimer local/sync-from-nas.sh (rapatriement one-shot de juin, plus utile)" }
     started: 2026-10-01
     finished: 2026-10-01
+  - id: L46
+    title: "deploy.sh : attendre aussi les runs CI EN COURS des ancêtres poussés dans le même push (sinon « rien à livrer » à tort quand le dernier commit ne touche que le plan — vécu warhammer 01-10)"
+    status: todo
+    estimate: 0.25
+    quickwin: true
+    created: 2026-10-01
