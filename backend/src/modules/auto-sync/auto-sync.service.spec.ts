@@ -900,7 +900,7 @@ describe('AutoSyncService', () => {
       ]);
       await svc.syncStatement({ ...baseStatement, transactions: [] });
       expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
-      expect(suggestions.snooze).toHaveBeenCalledWith('sg1');
+      expect(suggestions.snooze).toHaveBeenCalledWith('sg1', 'auto');
     });
 
     it('skip pay-in-3 (label "ALMA 3 FOIS") + snooze', async () => {
@@ -913,7 +913,7 @@ describe('AutoSyncService', () => {
       ]);
       await svc.syncStatement({ ...baseStatement, transactions: [] });
       expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
-      expect(suggestions.snooze).toHaveBeenCalledWith('sg2');
+      expect(suggestions.snooze).toHaveBeenCalledWith('sg2', 'auto');
     });
 
     it('skip si occurrencesSeen < 5 (sécurise contre pay-in-N non-libellé) + snooze', async () => {
@@ -926,7 +926,7 @@ describe('AutoSyncService', () => {
       ]);
       await svc.syncStatement({ ...baseStatement, transactions: [] });
       expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
-      expect(suggestions.snooze).toHaveBeenCalledWith('sg3');
+      expect(suggestions.snooze).toHaveBeenCalledWith('sg3', 'auto');
     });
 
     it('crée le loan si occurrencesSeen ≥ 5 et pas de pattern pay-in-N', async () => {
@@ -941,7 +941,7 @@ describe('AutoSyncService', () => {
       expect((loans as unknown as { create: jest.Mock }).create).toHaveBeenCalledWith(
         expect.objectContaining({ creditor: 'CETELEM', monthlyPayment: 240, type: 'classic' }),
       );
-      expect(suggestions.snooze).toHaveBeenCalledWith('sg4');
+      expect(suggestions.snooze).toHaveBeenCalledWith('sg4', 'auto');
     });
 
     it('skip pay-in-N même si occurrencesSeen suffisant (regex prioritaire)', async () => {
@@ -954,7 +954,7 @@ describe('AutoSyncService', () => {
       ]);
       await svc.syncStatement({ ...baseStatement, transactions: [] });
       expect((loans as unknown as { create: jest.Mock }).create).not.toHaveBeenCalled();
-      expect(suggestions.snooze).toHaveBeenCalledWith('sg5');
+      expect(suggestions.snooze).toHaveBeenCalledWith('sg5', 'auto');
     });
 
     it("I-1 : suggestion source llm_detection (creditor whitelisté, occurrencesSeen ≥5) -> jamais auto-créée ni snoozée par ce flux, reste pending", async () => {

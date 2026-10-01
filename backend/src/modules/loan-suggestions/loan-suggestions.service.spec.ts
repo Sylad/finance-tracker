@@ -93,6 +93,30 @@ describe('LoanSuggestionsService', () => {
     expect(all.find((x) => x.id === s.id)?.status).toBe('rejected');
   });
 
+  describe('resolvedBy (L44) : qui a écarté la suggestion', () => {
+    const inc = {
+      label: 'X', monthlyAmount: 10, occurrencesSeen: 3, firstSeenDate: '2025-11-01',
+      suggestedType: 'loan' as const, matchPattern: 'X',
+    };
+
+    it("snooze par défaut = l'utilisateur, reject = l'utilisateur", async () => {
+      await svc.upsertMany('2026-03', [inc, { ...inc, matchPattern: 'Y', label: 'Y' }]);
+      const [a, b] = await svc.getAll();
+      expect((await svc.snooze(a.id)).resolvedBy).toBe('user');
+      expect((await svc.reject(b.id)).resolvedBy).toBe('user');
+    });
+
+    it("snooze(id, 'auto') = la machine ; unsnooze et reset effacent resolvedBy", async () => {
+      await svc.upsertMany('2026-03', [inc]);
+      const [a] = await svc.getAll();
+      expect((await svc.snooze(a.id, 'auto')).resolvedBy).toBe('auto');
+      expect((await svc.unsnooze(a.id)).resolvedBy).toBeUndefined();
+      await svc.snooze(a.id, 'auto');
+      await svc.resetAllToPending();
+      expect((await svc.getAll())[0].resolvedBy).toBeUndefined();
+    });
+  });
+
   it('accept marks resolvedAt and stores acceptedAsLoanId', async () => {
     await svc.upsertMany('2026-03', [
       {

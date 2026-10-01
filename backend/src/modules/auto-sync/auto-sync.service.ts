@@ -722,7 +722,7 @@ export class AutoSyncService {
           `Skipping pay-in-N pattern: "${s.label}" (creditor=${s.creditor}) — pas un vrai crédit`,
         );
         // Snooze pour ne pas re-proposer en boucle, mais laisser l'user trier
-        try { await this.suggestions.snooze(s.id); } catch { /* noop */ }
+        try { await this.suggestions.snooze(s.id, 'auto'); } catch { /* noop */ }
         continue;
       }
       // Round to nearest euro for the bucket key (accommodates 99.37 vs 99.50 etc.)
@@ -749,7 +749,7 @@ export class AutoSyncService {
         );
         // Snooze suggestions liées
         for (const s of sugs) {
-          try { await this.suggestions.snooze(s.id); } catch { /* noop */ }
+          try { await this.suggestions.snooze(s.id, 'auto'); } catch { /* noop */ }
         }
         continue;
       }
@@ -762,7 +762,7 @@ export class AutoSyncService {
           `Skipping auto-create for ${creditorKey} @${bucketAmount}€ : ${totalOccurrences} occurrences (< ${AutoSyncService.MIN_OCCURRENCES_AUTO_CREATE}). Snooze pour tri manuel.`,
         );
         for (const s of sugs) {
-          try { await this.suggestions.snooze(s.id); } catch { /* noop */ }
+          try { await this.suggestions.snooze(s.id, 'auto'); } catch { /* noop */ }
         }
         continue;
       }
@@ -793,7 +793,7 @@ export class AutoSyncService {
       this.logger.log(`Auto-created Loan ${name} (avg ${avgMonthly}€/mois)`);
       for (const s of sugs) {
         try {
-          await this.suggestions.snooze(s.id);
+          await this.suggestions.snooze(s.id, 'auto');
         } catch (err: unknown) {
           this.logger.warn(`Failed to snooze suggestion ${s.id}: ${(err as Error)?.message ?? err}`);
         }

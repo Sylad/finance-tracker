@@ -625,8 +625,10 @@ export class DetectionValidatorService {
 
   /**
    * Anti-re-suggestion commune (L2 pour les abonnements, étendue aux crédits
-   * et N× par L44, ex-L43) : une suggestion déjà refusée ou mise en attente
-   * (snoozed), quel que soit son type, au même montant ±5 % et dont le
+   * et N× par L44, ex-L43) : une suggestion déjà refusée, ou mise en attente
+   * PAR L'UTILISATEUR (`resolvedBy: 'user'` — les reports d'auto-sync ne
+   * comptent pas, sinon la détection ne fusionnait plus son échéancier N×
+   * dans la suggestion en attente), quel que soit son type, au même montant ±5 % et dont le
    * créancier matche en fuzzy (nom LLM ou `cluster.creditor`). `upsertMany`
    * ne protège que le creditor exact : un alias différent recréait une
    * suggestion pending que l'utilisateur avait déjà écartée.
@@ -639,7 +641,8 @@ export class DetectionValidatorService {
     const suggestions = await this.loanSuggestionsService.getAll();
     return suggestions.some(
       (sug) =>
-        (sug.status === 'rejected' || sug.status === 'snoozed') &&
+        (sug.status === 'rejected' ||
+          (sug.status === 'snoozed' && sug.resolvedBy === 'user')) &&
         DetectionValidatorService.fuzzyCreditorMatch(
           sug.creditor,
           creditorNames,

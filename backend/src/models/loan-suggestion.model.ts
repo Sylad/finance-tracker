@@ -4,6 +4,7 @@ export type LoanSuggestionStatus =
   | 'rejected'
   | 'snoozed';
 export type SuggestedExpenseType = 'loan' | 'subscription' | 'utility';
+export type SuggestionResolvedBy = 'user' | 'auto';
 export type LoanSuggestionSource = 'claude_import' | 'llm_detection';
 
 /**
@@ -50,6 +51,10 @@ export interface LoanSuggestion {
   status: LoanSuggestionStatus;
   createdAt: string;
   resolvedAt?: string;
+  /** Qui a mis la suggestion dans son état (L44) : `user` (clic) ou `auto`
+   *  (auto-sync, tri machine). Absent = historique, traité comme `auto` par
+   *  l'anti-re-suggestion — seul un choix de l'utilisateur bloque. */
+  resolvedBy?: SuggestionResolvedBy;
   acceptedAsLoanId?: string;
   acceptedAsSubscriptionId?: string;
   installment?: InstallmentSuggestionInfo;

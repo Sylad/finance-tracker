@@ -1734,7 +1734,7 @@ describe('DetectionValidatorService — branche subscription déterministe + ant
     'suggestion déjà %s (même créancier, montant ±5 %%) -> rejetée subscription_already_dismissed',
     async (status) => {
       loanSuggestionsService.getAll.mockResolvedValue([
-        suggestion({ status, monthlyAmount: 10.2 }),
+        suggestion({ status, monthlyAmount: 10.2, resolvedBy: 'user' }),
       ]);
 
       const result = await svc.validate(
@@ -2519,6 +2519,7 @@ describe("DetectionValidatorService — subscription : fraîcheur par sous-séri
         matchPattern: creditor,
         creditor,
         status,
+        resolvedBy: 'user',
         createdAt: '2026-01-11T00:00:00.000Z',
       }) as unknown as Awaited<ReturnType<LoanSuggestionsService['getAll']>>[number];
 
@@ -2612,5 +2613,41 @@ describe("DetectionValidatorService — subscription : fraîcheur par sous-séri
     expect(result).toEqual({ created: true });
     const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
     expect(incoming[0].matchPattern).toBe('^(?=.*BANQUE)(?=.*PRET)');
+  });
+
+  describe('L44 : seuls les refus/reports de l\'utilisateur bloquent', () => {
+    const klarnaSnoozed = (resolvedBy?: 'user' | 'auto') =>
+      ({
+        id: 'sug-klarna',
+        label: 'PRELEVT KLARNI',
+        monthlyAmount: 45,
+        occurrencesSeen: 3,
+        firstSeenStatementId: '2026-01',
+        firstSeenDate: '2026-01-10',
+        lastSeenDate: '2026-03-07',
+        suggestedType: 'loan',
+        matchPattern: 'KLARNI',
+        creditor: 'Klarni',
+        status: 'snoozed',
+        ...(resolvedBy ? { resolvedBy } : {}),
+        createdAt: '2026-01-11T00:00:00.000Z',
+      }) as unknown as Awaited<ReturnType<LoanSuggestionsService['getAll']>>[number];
+
+    it.each([['auto'], [undefined]] as const)(
+      'suggestion mise en attente par la machine (resolvedBy=%s) -> ne bloque pas, la détection fusionne son échéancier',
+      async (by) => {
+        loanSuggestionsService.getAll.mockResolvedValue([klarnaSnoozed(by)]);
+        const result = await svc.validate(makeCluster(), makeClassification(), '2026-03-07');
+        expect(result).toEqual({ created: true, createdCount: 1 });
+        const [, incoming] = loanSuggestionsService.upsertMany.mock.calls[0];
+        expect(incoming[0].installment).toBeDefined();
+      },
+    );
+
+    it("mise en attente par l'utilisateur -> bloque (loan_already_dismissed)", async () => {
+      loanSuggestionsService.getAll.mockResolvedValue([klarnaSnoozed('user')]);
+      const result = await svc.validate(makeCluster(), makeClassification(), '2026-03-07');
+      expect(result).toEqual({ created: false, reason: 'loan_already_dismissed' });
+    });
   });
 });

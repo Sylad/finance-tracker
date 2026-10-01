@@ -11,6 +11,7 @@ import { atomicWriteJson } from '../../common/atomic-write';
 import {
   IncomingSuggestion,
   LoanSuggestion,
+  SuggestionResolvedBy,
 } from '../../models/loan-suggestion.model';
 import { Loan } from '../../models/loan.model';
 import { EventBusService } from '../events/event-bus.service';
@@ -183,8 +184,13 @@ export class LoanSuggestionsService {
     return this.transition(id, 'rejected');
   }
 
-  async snooze(id: string): Promise<LoanSuggestion> {
-    return this.transition(id, 'snoozed');
+  /** `by` = 'auto' quand c'est la machine (auto-sync) qui met en attente :
+   *  ce report ne bloque pas une re-suggestion de la détection (L44). */
+  async snooze(
+    id: string,
+    by: SuggestionResolvedBy = 'user',
+  ): Promise<LoanSuggestion> {
+    return this.transition(id, 'snoozed', undefined, by);
   }
 
   async unsnooze(id: string): Promise<LoanSuggestion> {
@@ -193,6 +199,7 @@ export class LoanSuggestionsService {
     if (idx === -1) throw new NotFoundException(`Suggestion ${id} introuvable`);
     all[idx].status = 'pending';
     delete all[idx].resolvedAt;
+    delete all[idx].resolvedBy;
     await this.persist(all);
     return all[idx];
   }
@@ -341,12 +348,14 @@ export class LoanSuggestionsService {
     id: string,
     status: LoanSuggestion['status'],
     target?: { loanId?: string; subscriptionId?: string },
+    by: SuggestionResolvedBy = 'user',
   ): Promise<LoanSuggestion> {
     const all = await this.getAll();
     const idx = all.findIndex((s) => s.id === id);
     if (idx === -1) throw new NotFoundException(`Suggestion ${id} introuvable`);
     all[idx].status = status;
     all[idx].resolvedAt = new Date().toISOString();
+    all[idx].resolvedBy = by;
     if (target?.loanId) all[idx].acceptedAsLoanId = target.loanId;
     if (target?.subscriptionId)
       all[idx].acceptedAsSubscriptionId = target.subscriptionId;
@@ -379,6 +388,7 @@ export class LoanSuggestionsService {
       if (s.status !== 'pending') {
         s.status = 'pending';
         delete s.resolvedAt;
+        delete s.resolvedBy;
         delete s.acceptedAsLoanId;
         delete s.acceptedAsSubscriptionId;
         resetCount++;
