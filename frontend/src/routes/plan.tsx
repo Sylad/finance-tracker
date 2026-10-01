@@ -1,28 +1,25 @@
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { PageHeader } from '@/components/page-header';
-import { EmptyState, LoadingState } from '@/components/loading-state';
+import { EmptyState, ErrorState, LoadingState } from '@/components/loading-state';
 import { NEWS_QUERY_KEY, fetchNews } from '@/lib/news-data';
 import {
+  PLAN_QUERY_KEY,
   RECENT_DAYS,
-  ageLabel,
+  fetchPlan,
   formatDay,
   groupPlan,
+  isEmpty,
   newsSlugByLot,
   progress,
   summary,
-  type PlanData,
   type PlanLot,
   type PlanStatus,
 } from '@/lib/plan';
 
-// Données publiques générées par `npm run plan` depuis docs/plan/raf.yaml
-// (lots visibles seulement, titres et états — jamais les notes), servies en statique.
-async function fetchPlan(): Promise<PlanData | null> {
-  const res = await fetch('/plan-data/plan.json', { cache: 'no-cache' });
-  if (!res.ok) return null;
-  return res.json();
-}
+// Données publiques générées par `npm run plan` (frontend/scripts/plan-data.mjs)
+// depuis docs/plan/raf.yaml : lots visibles, TITRES PUBLICS et états seulement.
 
 const STATUS_BADGE: Record<PlanStatus, { label: string; className: string }> = {
   doing: { label: 'En cours', className: 'badge-info' },
@@ -30,98 +27,100 @@ const STATUS_BADGE: Record<PlanStatus, { label: string; className: string }> = {
   done: { label: 'Livré', className: 'badge-positive' },
 };
 
-function LotCard({ lot, today, newsSlug }: { lot: PlanLot; today: Date; newsSlug?: string }) {
+const ACTION = 'inline-flex items-center min-h-11 text-sm text-accent-bright hover:underline rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-bright';
+
+const plural = (n: number, one: string, many: string) => (n > 1 ? many : one);
+
+function dateLine(lot: PlanLot): { day: string; text: string } | null {
+  if (lot.status === 'done' && lot.finished) return { day: lot.finished, text: `Livré le ${formatDay(lot.finished)}` };
+  if (lot.status === 'doing' && lot.started) return { day: lot.started, text: `Démarré le ${formatDay(lot.started)}` };
+  return null;
+}
+
+// Grammaire de carte commune avec Nouveautés : surtitre « badge · date » + id
+// à droite → titre → barre « n/m étapes » → actions sur une ligne (empilées < 400 px).
+function LotCard({ lot, newsSlug }: { lot: PlanLot; newsSlug?: string }) {
+  const [open, setOpen] = useState(false);
   const p = progress(lot);
   const badge = STATUS_BADGE[lot.status];
+  const date = dateLine(lot);
+  const steps = (lot.tasks ?? []).filter((t) => t.title);
+  const stepsId = `${lot.id}-etapes`;
   return (
-    <li className="card p-5">
-      <div className="flex flex-wrap items-center gap-2 mb-2">
-        <span className={badge.className}>{badge.label}</span>
-        <span className="text-xs text-fg-dim">{lot.id}</span>
+    <li id={lot.id} className="card p-5 scroll-mt-24">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
+          <span className={badge.className}>{badge.label}</span>
+          {date && (
+            <>
+              <span aria-hidden="true">·</span>
+              <time dateTime={date.day}>{date.text}</time>
+            </>
+          )}
+        </div>
+        <span className="text-xs text-fg-dim shrink-0 pt-0.5">{lot.id}</span>
       </div>
       <h3 className="font-display text-base font-bold text-fg-bright leading-snug [overflow-wrap:anywhere]">
         {lot.title}
       </h3>
-      <div className="mt-2 text-sm text-fg-muted space-y-0.5">
-        {lot.status === 'done' && lot.finished ? (
-          <p>
-            Livré le <time dateTime={lot.finished}>{formatDay(lot.finished)}</time> ({ageLabel(lot.finished, today)})
-            {lot.started && lot.started !== lot.finished && (
-              <>, démarré le <time dateTime={lot.started}>{formatDay(lot.started)}</time></>
-            )}
-          </p>
-        ) : lot.started ? (
-          <p>
-            Démarré le <time dateTime={lot.started}>{formatDay(lot.started)}</time> ({ageLabel(lot.started, today)})
-          </p>
-        ) : null}
-      </div>
       {p && (
-        <div className="mt-3">
-          <div className="flex items-center gap-3">
-            <div
-              className="h-1.5 flex-1 rounded-full bg-surface-3 overflow-hidden"
-              role="progressbar"
-              aria-label="Avancement des sous-tâches"
-              aria-valuemin={0}
-              aria-valuemax={p.total}
-              aria-valuenow={p.done}
-            >
-              <div className="h-full bg-accent" style={{ width: `${(100 * p.done) / p.total}%` }} />
-            </div>
-            <span className="text-xs text-fg-muted tabular-nums">{p.done}/{p.total} sous-tâches</span>
+        <div className="mt-3 flex items-center gap-3">
+          <div
+            className="h-1.5 flex-1 rounded-full bg-surface-3 overflow-hidden"
+            role="progressbar"
+            aria-label={`Avancement : ${lot.title}`}
+            aria-valuemin={0}
+            aria-valuemax={p.total}
+            aria-valuenow={p.done}
+            aria-valuetext={`${p.done} ${plural(p.done, 'étape faite', 'étapes faites')} sur ${p.total}`}
+          >
+            <div className="h-full bg-accent" style={{ width: `${(100 * p.done) / p.total}%` }} />
           </div>
-          <details className="mt-2 group">
-            <summary className="cursor-pointer text-sm text-accent-bright hover:underline rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-bright">
-              Voir les sous-tâches
-            </summary>
-            <ul className="mt-2 space-y-1 text-sm text-fg">
-              {lot.tasks!.map((t, i) => (
-                <li key={i} className="flex gap-2">
-                  <span aria-hidden="true" className={t.status === 'done' ? 'text-positive' : 'text-fg-dim'}>
-                    {t.status === 'done' ? '✓' : '○'}
-                  </span>
-                  <span className="[overflow-wrap:anywhere]">
-                    {t.title}
-                    <span className="sr-only">{t.status === 'done' ? ' (fait)' : ' (à faire)'}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </details>
+          <span className="text-xs text-fg-muted tabular-nums" aria-hidden="true">{p.done}/{p.total} étapes</span>
         </div>
       )}
-      {newsSlug && (
-        <Link
-          to="/nouveautes"
-          hash={newsSlug}
-          className="mt-3 inline-block text-sm text-accent-bright hover:underline"
-        >
-          Voir la nouveauté
-        </Link>
+      {(steps.length > 0 || newsSlug) && (
+        <div className="mt-2 flex flex-col items-start min-[400px]:flex-row min-[400px]:flex-wrap min-[400px]:gap-x-5">
+          {steps.length > 0 && (
+            <button type="button" className={ACTION} aria-expanded={open} aria-controls={stepsId} onClick={() => setOpen((o) => !o)}>
+              {open ? 'Masquer les étapes' : 'Voir les étapes'}
+              <span className="sr-only"> : {lot.title}</span>
+            </button>
+          )}
+          {newsSlug && (
+            <Link to="/nouveautes" hash={newsSlug} className={ACTION}>
+              Voir la nouveauté<span className="sr-only"> : {lot.title}</span>
+            </Link>
+          )}
+        </div>
+      )}
+      {open && (
+        <ul id={stepsId} className="mt-1 space-y-1 text-sm text-fg">
+          {steps.map((t, i) => (
+            <li key={i} className="flex gap-2">
+              <span aria-hidden="true" className={t.status === 'done' ? 'text-positive' : 'text-fg-dim'}>
+                {t.status === 'done' ? '✓' : '○'}
+              </span>
+              <span className="[overflow-wrap:anywhere]">
+                {t.title}
+                <span className="sr-only">{t.status === 'done' ? ' (faite)' : ' (à faire)'}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </li>
   );
 }
 
-function Group({
-  id,
-  title,
-  hint,
-  lots,
-  empty,
-  today,
-  slugs,
-  footer,
-}: {
+function Group({ id, title, hint, lots, empty, slugs, footer }: {
   id: string;
   title: string;
   hint: string;
   lots: PlanLot[];
   empty: string;
-  today: Date;
   slugs: Map<string, string>;
-  footer?: string;
+  footer?: React.ReactNode;
 }) {
   return (
     <section aria-labelledby={id} className="mb-10">
@@ -133,21 +132,70 @@ function Group({
         <EmptyState title={empty} />
       ) : (
         <ul className="space-y-3">
-          {lots.map((l) => (
-            <LotCard key={l.id} lot={l} today={today} newsSlug={slugs.get(l.id)} />
-          ))}
+          {lots.map((l) => <LotCard key={l.id} lot={l} newsSlug={slugs.get(l.id)} />)}
         </ul>
       )}
-      {footer && <p className="text-sm text-fg-muted mt-3">{footer}</p>}
+      {footer}
     </section>
   );
 }
 
+const NewsLink = ({ children }: { children: React.ReactNode }) => (
+  <Link to="/nouveautes" className="text-accent-bright hover:underline">{children}</Link>
+);
+
 export function PlanPage() {
-  const plan = useQuery({ queryKey: ['plan'], queryFn: fetchPlan, staleTime: 5 * 60_000 });
+  const plan = useQuery({ queryKey: PLAN_QUERY_KEY, queryFn: fetchPlan, staleTime: 5 * 60_000 });
   const news = useQuery({ queryKey: NEWS_QUERY_KEY, queryFn: fetchNews, staleTime: 5 * 60_000 });
-  const today = new Date();
   const slugs = newsSlugByLot(news.data?.entries ?? []);
+
+  // Lien permanent /plan#<id> : la carte n'existe qu'une fois le plan chargé.
+  useEffect(() => {
+    if (!plan.data) return;
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (id) document.getElementById(id)?.scrollIntoView?.({ block: 'start' });
+  }, [plan.data]);
+
+  let body: React.ReactNode;
+  if (plan.isLoading) body = <LoadingState />;
+  else if (plan.isError) {
+    body = (
+      <ErrorState
+        title="Le plan n'a pas pu être chargé"
+        message="Vérifiez la connexion, puis réessayez."
+        onRetry={() => plan.refetch()}
+        retrying={plan.isFetching}
+      />
+    );
+  } else if (!plan.data) body = <EmptyState title="Aucun plan publié pour l'instant." />;
+  else {
+    const g = groupPlan(plan.data.lots, new Date());
+    const older = g.olderDone;
+    body = isEmpty(g) ? (
+      <div className="card p-8 text-center">
+        <p className="text-fg-muted text-sm font-medium">Rien en préparation pour l'instant.</p>
+        <p className="text-sm mt-1.5"><NewsLink>Voir les Nouveautés</NewsLink></p>
+      </div>
+    ) : (
+      <>
+        <p className="card px-5 py-4 mb-8 text-fg">
+          <span className="stat-label text-fg-muted block mb-1">En ce moment</span>
+          {summary(g)}
+        </p>
+        <Group id="plan-doing" title="En cours" hint="Le travail commencé, pas encore livré."
+          lots={g.doing} empty="Rien en cours pour l'instant." slugs={slugs} />
+        <Group id="plan-todo" title="Prévu" hint="La suite, dans l'ordre du plan."
+          lots={g.todo} empty="Rien de prévu pour l'instant." slugs={slugs} />
+        <Group id="plan-done" title="Récemment livré" hint={`Livré ces ${RECENT_DAYS} derniers jours, le plus récent en premier.`}
+          lots={g.done} empty={`Rien de livré ces ${RECENT_DAYS} derniers jours.`} slugs={slugs}
+          footer={older > 0 && (
+            <p className="text-sm text-fg-muted mt-3">
+              {older} {plural(older, 'évolution livrée plus ancienne', 'évolutions livrées plus anciennes')} : <NewsLink>voir les Nouveautés</NewsLink>.
+            </p>
+          )} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -156,31 +204,7 @@ export function PlanPage() {
         title="Ce qui se prépare"
         subtitle="Les évolutions visibles de l'application : ce qui est en cours, ce qui est prévu et ce qui vient d'être livré."
       />
-      {plan.isLoading ? (
-        <LoadingState />
-      ) : !plan.data ? (
-        <EmptyState title="Aucun plan publié pour l'instant." />
-      ) : (
-        (() => {
-          const g = groupPlan(plan.data.lots, today);
-          const older = g.olderDone;
-          return (
-            <>
-              <p className="card px-5 py-4 mb-8 text-fg">
-                <span className="stat-label text-fg-muted block mb-1">En ce moment</span>
-                {summary(g)}
-              </p>
-              <Group id="plan-doing" title="En cours" hint="Le travail commencé, pas encore livré."
-                lots={g.doing} empty="Rien en cours pour l'instant." today={today} slugs={slugs} />
-              <Group id="plan-todo" title="Prévu" hint="La suite, dans l'ordre du plan."
-                lots={g.todo} empty="Rien de prévu pour l'instant." today={today} slugs={slugs} />
-              <Group id="plan-done" title="Récemment livré" hint={`Livré ces ${RECENT_DAYS} derniers jours, le plus récent en premier.`}
-                lots={g.done} empty={`Rien de livré ces ${RECENT_DAYS} derniers jours.`} today={today} slugs={slugs}
-                footer={older > 0 ? `${older} lot${older > 1 ? 's' : ''} livré${older > 1 ? 's' : ''} plus ancien${older > 1 ? 's' : ''} : voir les Nouveautés.` : undefined} />
-            </>
-          );
-        })()
-      )}
+      {body}
     </>
   );
 }

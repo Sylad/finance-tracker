@@ -5,8 +5,9 @@
 
 export type PlanStatus = 'doing' | 'todo' | 'done';
 
+/** Étape d'une évolution : titre public facultatif (sans titre, elle ne compte que dans n/m). */
 export interface PlanTask {
-  title: string;
+  title?: string;
   status: string;
 }
 
@@ -70,10 +71,29 @@ export function ageLabel(day: string, today: Date): string {
 
 const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
 
-/** Résumé « en ce moment », une phrase. */
+/** Résumé « en ce moment », une phrase (« évolution », féminin). */
 export function summary(g: PlanGroups): string {
-  const doing = g.doing.length === 0 ? 'Rien en cours' : plural(g.doing.length, 'lot en cours', 'lots en cours');
-  return `${doing}, ${plural(g.todo.length, 'prévu', 'prévus')}, ${plural(g.done.length, 'livré', 'livrés')} ces ${RECENT_DAYS} derniers jours.`;
+  const doing = g.doing.length === 0 ? 'Rien en cours' : plural(g.doing.length, 'évolution en cours', 'évolutions en cours');
+  return `${doing}, ${plural(g.todo.length, 'prévue', 'prévues')}, ${plural(g.done.length, 'livrée', 'livrées')} ces ${RECENT_DAYS} derniers jours.`;
+}
+
+export const isEmpty = (g: PlanGroups) => g.doing.length + g.todo.length + g.done.length === 0;
+
+export const PLAN_URL = '/plan-data/plan.json';
+export const PLAN_QUERY_KEY = ['plan'] as const;
+
+/**
+ * Plan publié. 404 → null (aucun plan publié) ; toute autre panne — 500, réseau,
+ * réponse non JSON (service worker hors ligne qui renvoie l'index), JSON sans
+ * liste de lots — lève une erreur, pour un état « Réessayer » distinct.
+ */
+export async function fetchPlan(): Promise<PlanData | null> {
+  const res = await fetch(PLAN_URL, { cache: 'no-cache' });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`plan : HTTP ${res.status}`);
+  const data = (await res.json()) as PlanData;
+  if (!data || !Array.isArray(data.lots)) throw new Error('plan : réponse inattendue');
+  return data;
 }
 
 /** Lot → slug de son entrée Nouveautés la plus récente (les entrées arrivent de la plus récente à la plus ancienne). */

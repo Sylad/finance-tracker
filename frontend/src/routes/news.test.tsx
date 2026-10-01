@@ -3,6 +3,12 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NewsPage } from './news';
 
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ to, hash, children, ...rest }: { to: string; hash?: string; children: React.ReactNode }) => (
+    <a href={hash ? `${to}#${hash}` : to} {...rest}>{children}</a>
+  ),
+}));
+
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -44,6 +50,17 @@ describe('<NewsPage />', () => {
       '/nouveautes-data/captures/l18.png',
     );
     expect(screen.getByText('29 septembre 2026')).toBeInTheDocument();
+  });
+
+  it('links an entry to its lot in the work plan when the lot is published there', async () => {
+    const entry = (slug: string, title: string, lots: string[]) => ({ slug, title, date: '2026-09-29', lots, captures: [], html: '' });
+    vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve(url.startsWith('/plan-data')
+      ? { ok: true, status: 200, json: async () => ({ version: 1, project: 'x', lots: [{ id: 'L21', title: 'Tableau', status: 'done' }] }) }
+      : { ok: true, status: 200, json: async () => ({ project: 'x', generated: 'x', entries: [entry('a', 'Tableau revu', ['L21']), entry('b', 'Autre', ['L9'])] }) })));
+    renderPage();
+    const link = await screen.findByRole('link', { name: 'Dans le plan de travail : Tableau revu' });
+    expect(link).toHaveAttribute('href', '/plan#L21');
+    expect(screen.getAllByRole('link', { name: /Dans le plan de travail/ })).toHaveLength(1);
   });
 
   it('says so when the journal is missing', async () => {

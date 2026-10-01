@@ -1,13 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState, LoadingState } from '@/components/loading-state';
 import { NEWS_BASE as BASE, NEWS_QUERY_KEY, fetchNews } from '@/lib/news-data';
+import { PLAN_QUERY_KEY, fetchPlan } from '@/lib/plan';
 
 const formatDate = (day: string) =>
   new Date(`${day}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
 export function NewsPage() {
   const news = useQuery({ queryKey: NEWS_QUERY_KEY, queryFn: fetchNews, staleTime: 5 * 60_000 });
+  // Lots publiés dans le Plan de travail (L48) : lien discret « Dans le plan de travail ».
+  const plan = useQuery({ queryKey: PLAN_QUERY_KEY, queryFn: fetchPlan, staleTime: 5 * 60_000 });
+  const inPlan = new Set((plan.data?.lots ?? []).map((l) => l.id));
 
   return (
     <>
@@ -33,6 +38,16 @@ export function NewsPage() {
                 className="text-fg leading-relaxed space-y-3 [&_a]:text-accent-bright [&_a:hover]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_code]:text-xs [&_code]:bg-surface-2 [&_code]:px-1 [&_code]:rounded"
                 dangerouslySetInnerHTML={{ __html: e.html }}
               />
+              {e.lots.filter((id) => inPlan.has(id)).map((id) => (
+                <Link
+                  key={id}
+                  to="/plan"
+                  hash={id}
+                  className="mt-3 inline-flex items-center min-h-11 text-sm text-fg-muted hover:text-accent-bright hover:underline"
+                >
+                  Dans le plan de travail<span className="sr-only"> : {e.title}</span>
+                </Link>
+              ))}
               {e.captures.map((c) => (
                 <a key={c} href={`${BASE}/${c}`} target="_blank" rel="noopener" className="block mt-4">
                   <img

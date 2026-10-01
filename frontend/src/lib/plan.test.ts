@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { ageLabel, formatDay, groupPlan, newsSlugByLot, progress, summary, type PlanLot } from './plan';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ageLabel, fetchPlan, formatDay, groupPlan, isEmpty, newsSlugByLot, progress, summary, type PlanLot } from './plan';
 
 const today = new Date('2026-10-01T10:00:00');
 
@@ -8,7 +8,7 @@ const lots: PlanLot[] = [
   { id: 'L2', title: 'Livré hier', status: 'done', started: '2026-09-29', finished: '2026-09-30' },
   { id: 'L3', title: 'Prévu A', status: 'todo' },
   { id: 'L4', title: 'En cours', status: 'doing', started: '2026-10-01', tasks: [
-    { title: 'a', status: 'done' }, { title: 'b', status: 'todo' }, { title: 'c', status: 'doing' },
+    { title: 'a', status: 'done' }, { status: 'todo' }, { title: 'c', status: 'doing' },
   ] },
   { id: 'L5', title: 'Livré il y a 30 jours', status: 'done', finished: '2026-09-01' },
   { id: 'L6', title: 'Prévu B', status: 'todo' },
@@ -53,11 +53,51 @@ describe('dates en français', () => {
 });
 
 describe('summary', () => {
-  it('résume « en ce moment » en accordant les pluriels', () => {
-    expect(summary(groupPlan(lots, today))).toBe('1 lot en cours, 2 prévus, 3 livrés ces 30 derniers jours.');
-    expect(summary({ doing: [], todo: [lots[2]], done: [lots[1]], olderDone: 0 })).toBe(
-      'Rien en cours, 1 prévu, 1 livré ces 30 derniers jours.',
+  it('résume « en ce moment » en évolutions, pluriels accordés', () => {
+    expect(summary(groupPlan(lots, today))).toBe('1 évolution en cours, 2 prévues, 3 livrées ces 30 derniers jours.');
+    expect(summary({ doing: [lots[3], lots[3]], todo: [lots[2]], done: [lots[1]], olderDone: 0 })).toBe(
+      '2 évolutions en cours, 1 prévue, 1 livrée ces 30 derniers jours.',
     );
+    expect(summary({ doing: [], todo: [], done: [], olderDone: 0 })).toBe(
+      'Rien en cours, 0 prévue, 0 livrée ces 30 derniers jours.',
+    );
+  });
+});
+
+describe('isEmpty', () => {
+  it('vrai seulement quand les trois groupes sont vides', () => {
+    expect(isEmpty({ doing: [], todo: [], done: [], olderDone: 4 })).toBe(true);
+    expect(isEmpty({ doing: [], todo: [lots[2]], done: [], olderDone: 0 })).toBe(false);
+  });
+});
+
+describe('fetchPlan', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const stub = (r: unknown) => vi.stubGlobal('fetch', vi.fn().mockResolvedValue(r));
+
+  it('404 → null (aucun plan publié)', async () => {
+    stub({ ok: false, status: 404 });
+    await expect(fetchPlan()).resolves.toBeNull();
+  });
+  it('500 → erreur', async () => {
+    stub({ ok: false, status: 500 });
+    await expect(fetchPlan()).rejects.toThrow();
+  });
+  it('réponse non JSON (index.html du service worker hors ligne) → erreur', async () => {
+    stub({ ok: true, status: 200, json: async () => { throw new SyntaxError('Unexpected token <'); } });
+    await expect(fetchPlan()).rejects.toThrow();
+  });
+  it('JSON sans liste de lots → erreur', async () => {
+    stub({ ok: true, status: 200, json: async () => ({ hello: 1 }) });
+    await expect(fetchPlan()).rejects.toThrow();
+  });
+  it('réseau coupé → erreur', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    await expect(fetchPlan()).rejects.toThrow();
+  });
+  it('plan valide', async () => {
+    stub({ ok: true, status: 200, json: async () => ({ version: 1, project: 'x', lots: [] }) });
+    await expect(fetchPlan()).resolves.toEqual({ version: 1, project: 'x', lots: [] });
   });
 });
 
