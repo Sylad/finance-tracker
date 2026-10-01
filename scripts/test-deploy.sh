@@ -19,6 +19,11 @@
 #      depuis) : échec aussi.
 #   7. Vieux runs rouges déjà remplacés (une image plus récente du même
 #      service est construite ou déployée) : ignorés, livraison normale.
+#   8. Run annulé avant tout job : bloque pour les deux services.
+#   9. Run à moitié rouge (backend rouge, frontend vert et poussé) réparé par
+#      un descendant : le frontend de ce run est livré, pas oublié.
+#  10. Panne de gh pendant le choix des images : échec, pas d'image plus ancienne.
+#  11. Panne de gh pendant l'examen d'un run rouge : échec, pas « rien à livrer ».
 set -euo pipefail
 
 DEPLOY="$(cd "$(dirname "$0")" && pwd)/deploy.sh"
@@ -203,5 +208,41 @@ setup cas8
 deploy
 check "8. run annulé sans job : échec sur les deux services" \
   bash -c "[ $code -ne 0 ] && grep -q 'run 2 (sha-${A:0:7}, backend)' '$W/out' && grep -q 'run 2 (sha-${A:0:7}, frontend)' '$W/out'"
+
+# 9. Run de A à moitié rouge : backend rouge, frontend vert (image sha-A
+#    poussée) ; B reconstruit le backend avec succès.
+setup cas9
+cat > "$W/gh/runs.json" <<JSON
+[$(run_json 3 "$B" completed success backend),
+ {"databaseId":2,"headSha":"$A","status":"completed","conclusion":"failure","url":"https://ci/runs/2",
+  "jobs":[{"name":"Detect changed services","conclusion":"success"},
+          {"name":"Build & push backend","conclusion":"failure"},
+          {"name":"Build & push frontend","conclusion":"success"}]},
+ $(run_json 1 "$C0" completed success backend frontend)]
+JSON
+deploy
+check "9. moitié rouge réparée : exit 0" test "$code" -eq 0
+check "9. backend livré sur B" test "$(tag backend)" = "${B:0:7}"
+check "9. frontend livré sur A (pas oublié)" test "$(tag frontend)" = "${A:0:7}"
+
+# 10. gh run view en panne sur le run vert de A pendant le choix des images.
+setup cas10
+{ echo "["; run_json 3 "$B" completed success; echo ","; run_json 2 "$A" completed success backend
+  echo ","; run_json 1 "$C0" completed success backend frontend; echo "]"; } > "$W/gh/runs.json"
+echo 2 > "$W/gh/fail-view"
+before=$(git -C "$W/gitops" rev-parse HEAD)
+deploy
+check "10. panne gh (choix) : échec, message clair" \
+  bash -c "[ $code -ne 0 ] && grep -q 'gh run view 2 en échec' '$W/out'"
+check "10. panne gh (choix) : aucun commit gitops" test "$(git -C "$W/gitops" rev-parse HEAD)" = "$before"
+
+# 11. gh run view en panne sur le run rouge de A pendant la règle d'échec.
+setup cas11
+{ echo "["; run_json 3 "$B" completed success; echo ","; run_json 2 "$A" completed failure backend
+  echo ","; run_json 1 "$C0" completed success backend frontend; echo "]"; } > "$W/gh/runs.json"
+echo 2 > "$W/gh/fail-view"
+deploy
+check "11. panne gh (run rouge) : échec, message clair" \
+  bash -c "[ $code -ne 0 ] && grep -q 'gh run view 2 en échec' '$W/out'"
 
 [ "$fails" -eq 0 ] && echo "test-deploy : tout est vert" || { echo "test-deploy : $fails échec(s)"; exit 1; }

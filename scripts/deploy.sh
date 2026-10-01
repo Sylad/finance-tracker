@@ -46,16 +46,24 @@ git -C "$GITOPS" pull -q --ff-only
 # Pour chaque service, la dernière image construite avec succès par un ancêtre
 # de ce sha (ou ce sha lui-même) : un commit qui ne touche ni backend/ ni
 # frontend/ ne reconstruit rien, et les images construites avant lui restent
-# à livrer. Runs du plus récent au plus ancien.
-runs=$(gh run list --workflow build.yml --status success --limit 100 --json databaseId,headSha \
-  --jq '.[] | "\(.databaseId) \(.headSha)"')
+# à livrer. Runs du plus récent au plus ancien. Tous les runs TERMINÉS, pas
+# seulement les verts : un run rouge sur un service a pu pousser l'image de
+# l'autre (L46), c'est le job « Build & push <svc> » vert qui compte.
+# Une panne de gh fait échouer la livraison (jamais d'image plus ancienne par
+# défaut) : sorties capturées sans pipe, sh n'ayant pas de pipefail.
+gh_view_jobs() { # run_id filtre-jq
+  gh run view "$1" --json jobs --jq "$2" ||
+    { echo "deploy: gh run view $1 en échec, livraison interrompue (relancer cadence deliver)" >&2; return 1; }
+}
+runs=$(gh run list --workflow build.yml --limit 100 --json databaseId,headSha,status \
+  --jq '.[] | select(.status == "completed") | "\(.databaseId) \(.headSha)"')
 backend_sha="" frontend_sha=""
 while read -r run_id head; do
   [ -n "$run_id" ] || continue
   git merge-base --is-ancestor "$head" "$SHA" 2>/dev/null || continue
   short=$(echo "$head" | cut -c1-7) # même coupe que le tag de la CI
-  for svc in $(gh run view "$run_id" --json jobs --jq '.jobs[] | select(.conclusion == "success") | .name' |
-    sed -n 's/^Build & push \(backend\|frontend\)$/\1/p'); do
+  green_jobs=$(gh_view_jobs "$run_id" '.jobs[] | select(.conclusion == "success") | .name') || exit 1
+  for svc in $(echo "$green_jobs" | sed -n 's/^Build & push \(backend\|frontend\)$/\1/p'); do
     case $svc in
       backend) [ -n "$backend_sha" ] || backend_sha=$short ;;
       frontend) [ -n "$frontend_sha" ] || frontend_sha=$short ;;
@@ -90,9 +98,10 @@ while read -r run_id head url; do
   git merge-base --is-ancestor "$head" "$SHA" 2>/dev/null || continue
   replaced "$head" backend && replaced "$head" frontend && continue # sans appel à gh
   # Jobs non verts, ou « (aucun job) » pour un run annulé avant de démarrer.
-  red_jobs=$(gh run view "$run_id" --json jobs \
-    --jq 'if (.jobs | length) == 0 then "(aucun job)" else .jobs[] | select(.conclusion != "success" and .conclusion != "skipped") | .name end' |
-    grep -E '^(Build & push|Detect changed services|\(aucun job\))' || true)
+  red_jobs=$(gh_view_jobs "$run_id" \
+    'if (.jobs | length) == 0 then "(aucun job)" else .jobs[] | select(.conclusion != "success" and .conclusion != "skipped") | .name end') ||
+    exit 1
+  red_jobs=$(echo "$red_jobs" | grep -E '^(Build & push|Detect changed services|\(aucun job\))' || true)
   case "$red_jobs" in
     "Build & push backend") svcs=backend ;;
     "Build & push frontend") svcs=frontend ;;
