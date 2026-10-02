@@ -19,7 +19,8 @@ const MOBILE_ITEMS = [
   { to: '/upload' as const, label: 'Importer', icon: Upload, exact: false },
 ];
 
-const ALL_PAGES = [...NAV_ITEMS, ...SECONDARY_ITEMS];
+// L50 : Nouveautés, Plan de travail et À propos EN TÊTE du panneau « Plus » — visibles
+// sans défiler même à 320×568 (à la fin, Nouveautés tombait juste sous l'écran).
 
 export function BottomNav() {
   const { location } = useRouterState();
@@ -98,31 +99,37 @@ export function BottomNav() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <ul className="grid grid-cols-2 gap-1">
-              {ALL_PAGES.map((item, i) => {
-                const Icon = item.icon;
-                const active = item.to === '/' ? path === '/' : path.startsWith(item.to);
-                return (
-                  <li key={item.to}>
-                    <Link
-                      ref={i === 0 ? firstLink : undefined}
-                      to={item.to}
-                      onClick={() => setOpen(false)}
-                      className={cn(
-                        'flex items-center gap-2.5 rounded-md px-3 min-h-11 text-sm transition-colors',
-                        active ? 'bg-surface-2 text-fg-bright' : 'text-fg-muted hover:bg-surface-2/60 hover:text-fg',
-                      )}
-                    >
-                      <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
-                      <span className="font-medium">{item.label}</span>
-                      {item.to === '/nouveautes' && (
-                        <NewsBadge badge={news.badge} label={news.label} className="ml-auto shrink-0" />
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+            {[SECONDARY_ITEMS, NAV_ITEMS].map((group, g) => (
+              <ul
+                key={g}
+                aria-label={g === 0 ? 'Application' : 'Pages'}
+                className={cn('grid grid-cols-2 gap-1', g === 1 && 'mt-2 pt-2 border-t border-border')}
+              >
+                {group.map((item, i) => {
+                  const Icon = item.icon;
+                  const active = item.to === '/' ? path === '/' : path.startsWith(item.to);
+                  return (
+                    <li key={item.to}>
+                      <Link
+                        ref={g === 0 && i === 0 ? firstLink : undefined}
+                        to={item.to}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                          'flex items-center gap-2.5 rounded-md px-3 min-h-11 text-sm transition-colors',
+                          active ? 'bg-surface-2 text-fg-bright' : 'text-fg-muted hover:bg-surface-2/60 hover:text-fg',
+                        )}
+                      >
+                        <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
+                        <span className="font-medium">{item.label}</span>
+                        {item.to === '/nouveautes' && (
+                          <NewsBadge badge={news.badge} label={news.label} className="ml-auto shrink-0" />
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            ))}
             <button
               type="button"
               onClick={() => { authStore.logout(); window.location.href = '/login'; }}

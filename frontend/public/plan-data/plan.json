@@ -85,6 +85,12 @@
       "status": "done",
       "started": "2026-10-01",
       "finished": "2026-10-01"
+    },
+    {
+      "id": "L50",
+      "title": "Un Plan de travail plus clair, et des liens toujours visibles dans le menu",
+      "status": "doing",
+      "started": "2026-10-02"
     }
   ]
 }

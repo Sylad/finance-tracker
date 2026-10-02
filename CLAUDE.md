@@ -33,6 +33,10 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   caractères, sans chemin, technique, identifiant ni prénom ; aussi possible sur
   les sous-tâches), sinon titre de sa Nouveauté, sinon le lot est masqué. Les
   revues UX n'y figurent qu'avec un `public:`.
+- **Où vivent les liens Nouveautés / Plan de travail / À propos** (L50) : dans le pied
+  FIXE de la barre latérale (`SECONDARY_ITEMS`, avec la pastille « nouveau » de L47) —
+  toujours visibles au bureau, seule la liste des pages au-dessus défile — et en tête
+  du panneau « Plus » au téléphone (visibles sans défiler à 320×568), plus ⌘K.
 - L'instance déployée (finance.sladoire.dev, ns `preprod` de dark-blue) ne contient
   que des données de démo ; les vraies données restent en local sur Big-Blue.
 

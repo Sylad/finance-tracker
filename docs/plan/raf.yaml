@@ -402,3 +402,11 @@ lots:
     estimate: 0.1
     quickwin: true
     created: 2026-10-01
+  - id: L50
+    title: "Plan de travail au niveau des autres applis : identifiants de lot masqués, sous-tâches abandonnées hors décompte, étapes non détaillées annoncées, focus à l'arrivée sur /plan#id sans re-défilement, dates « 1er », contrôle CI du plan publié périmé, vérification de fuite sur dist ; liens Nouveautés / Plan de travail / À propos toujours visibles dans la barre latérale (audit L47)"
+    public: "Un Plan de travail plus clair, et des liens toujours visibles dans le menu"
+    status: doing
+    estimate: 0.5
+    visible: true
+    created: 2026-10-02
+    started: 2026-10-02

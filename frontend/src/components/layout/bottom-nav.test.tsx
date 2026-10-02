@@ -47,13 +47,21 @@ describe('<BottomNav /> (L21/t8)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Plus' }));
     const dialog = screen.getByRole('dialog', { name: 'Toutes les pages' });
     const labels = within(dialog).getAllByRole('link').map((a) => a.textContent?.trim());
-    const expected = [...NAV_ITEMS, ...SECONDARY_ITEMS].map((i) => i.label);
+    const expected = [...SECONDARY_ITEMS, ...NAV_ITEMS].map((i) => i.label);
     expect(labels).toEqual(expected);
     expect(labels).toHaveLength(19);
     expect(labels).toContain('Plan de travail');
     expect(screen.getByRole('button', { name: 'Plus' })).toHaveAttribute('aria-expanded', 'true');
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('L50 : Nouveautés, Plan de travail et À propos en tête du panneau, focus sur Nouveautés', async () => {
+    await renderNav();
+    await userEvent.click(screen.getByRole('button', { name: 'Plus' }));
+    const app = within(screen.getByRole('dialog')).getByRole('list', { name: 'Application' });
+    expect(within(app).getAllByRole('link').map((a) => a.textContent?.trim())).toEqual(['Nouveautés', 'Plan de travail', 'À propos']);
+    expect(document.activeElement).toBe(within(app).getByRole('link', { name: 'Nouveautés' }));
   });
 
   it('choisir une page ferme la liste', async () => {
@@ -103,7 +111,7 @@ describe('<BottomNav /> (L21/t8)', () => {
     expect(within(nav).getAllByRole('link')[0]).toHaveAccessibleName('Tableau de bord');
     expect(NAV_ITEMS[0].label).toBe('Tableau de bord');
     await userEvent.click(screen.getByRole('button', { name: 'Plus' }));
-    expect(within(screen.getByRole('dialog')).getAllByRole('link')[0]).toHaveTextContent('Tableau de bord');
+    expect(within(screen.getByRole('dialog')).getByRole('link', { name: 'Tableau de bord' })).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/Dashboard/);
   });
 });
