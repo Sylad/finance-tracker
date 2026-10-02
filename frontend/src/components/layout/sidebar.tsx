@@ -24,6 +24,8 @@ import {
 import { cn } from '@/lib/utils';
 import { BrandMark } from '../brand-mark';
 import { authStore } from '@/lib/auth';
+import { NewsBadge } from '../news-badge';
+import { useNewsBadge } from '@/hooks/use-news-badge';
 
 export const NAV_ITEMS = [
   { to: '/', label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
@@ -53,6 +55,7 @@ export const SECONDARY_ITEMS = [
 export function Sidebar() {
   const { location } = useRouterState();
   const path = location.pathname;
+  const news = useNewsBadge();
 
   const handleLogout = () => {
     authStore.logout();
@@ -121,6 +124,9 @@ export function Sidebar() {
               )}
               <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
               <span className="font-medium">{label}</span>
+              {to === '/nouveautes' && (
+                <NewsBadge badge={news.badge} label={news.label} className="ml-auto shrink-0" />
+              )}
             </Link>
           );
         })}

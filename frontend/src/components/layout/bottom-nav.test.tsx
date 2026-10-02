@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -10,13 +11,25 @@ import {
 import { BottomNav } from './bottom-nav';
 import { NAV_ITEMS, SECONDARY_ITEMS } from './sidebar';
 
+// L47 : la barre lit le journal des Nouveautés (pastille) ; ici, aucun journal.
+beforeEach(() => {
+  localStorage.clear();
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 404, json: async () => null })));
+});
+afterEach(() => vi.unstubAllGlobals());
+
 async function renderNav() {
   const rootRoute = createRootRoute({ component: () => <BottomNav /> });
   const router = createRouter({
     routeTree: rootRoute,
     history: createMemoryHistory({ initialEntries: ['/'] }),
   });
-  render(<RouterProvider router={router} />);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
   return screen.findByRole('navigation', { name: 'Navigation principale' });
 }
 
