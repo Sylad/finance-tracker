@@ -1,11 +1,11 @@
 // @vitest-environment node
 // L48 — générateur des données publiques de la page « Plan de travail ».
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { buildPlan, checkPublicTitle, isDenied, isProcessLot, readNewsTitles, readPlan, renderPlan } from './plan-data.mjs';
+import { buildPlan, checkPublicTitle, findLeaks, isDenied, isProcessLot, privateTexts, readNewsTitles, readPlan, renderPlan, scanDir } from './plan-data.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 
@@ -30,6 +30,7 @@ const raf = {
       tasks: [
         { id: 't1', title: 'Contraste fg-dim', public: 'Textes plus contrastés', status: 'done', notes: [{ date: '2026-09-02', text: 'privé' }] },
         { id: 't2', title: 'Clavier (tabindex)', status: 'todo', sha: 'abc1234' },
+        { id: 't3', title: 'Piste abandonnée', public: 'Une piste abandonnée', status: 'dropped', reason: 'raison privée de l’abandon' },
       ],
     },
     { id: 'L2', title: 'Correctif interne', public: 'Interne', status: 'done', started: '2026-09-02', finished: '2026-09-02' },
@@ -80,6 +81,13 @@ describe('buildPlan', () => {
     }
   });
 
+  it('L50 : les sous-tâches abandonnées (dropped) ne sortent pas (ni dans n/m, ni « à faire »)', () => {
+    expect(plan.lots[0].tasks).toHaveLength(2);
+    expect(renderPlan(plan)).not.toContain('abandonnée');
+    const only = buildPlan({ project: 'x', lots: [{ id: 'L1', title: 'A', public: 'A', status: 'doing', visible: true, tasks: [{ id: 't1', status: 'dropped' }] }] });
+    expect(only.lots[0].tasks).toBeUndefined();
+  });
+
   it('refuse un titre public non conforme (chemin, technique, identifiant, > 80 caractères)', () => {
     const one = (pub) => ({ project: 'x', lots: [{ id: 'L1', title: 'A', public: pub, status: 'todo', visible: true }] });
     for (const bad of ['Route /plan', 'Plan depuis raf.yaml', 'Pastille en localStorage', 'Suite de L12', 'x'.repeat(81)]) {
@@ -102,6 +110,73 @@ describe('checkPublicTitle', () => {
   it.each(['a/b', 'raf.yaml', 'localStorage', 'voir L48', 'z'.repeat(81), ''])('rejette « %s »', (t) => {
     expect(() => checkPublicTitle(t, 'L1')).toThrow(/titre public/);
   });
+  // L50 : `public:` doit être une chaîne d'une seule ligne.
+  it.each(['Ligne 1\nligne 2', 'Retour\r chariot', 'Séparateur\u2028de ligne'])('rejette un retour à la ligne (%j)', (t) => {
+    expect(() => checkPublicTitle(t, 'L1')).toThrow(/titre public.*ligne/);
+  });
+  it.each([2026, true, { a: 1 }, ['x'], null, undefined])('rejette une valeur qui n’est pas du texte (%j)', (t) => {
+    expect(() => checkPublicTitle(t, 'L1')).toThrow(/titre public/);
+  });
+  it('YAML « public: 2026 » (nombre) refusé à la génération, aussi sur une sous-tâche', () => {
+    expect(() => buildPlan({ project: 'x', lots: [{ id: 'L1', title: 'A', public: 2026, status: 'todo', visible: true }] })).toThrow(/pas du texte/);
+    expect(() => buildPlan({ project: 'x', lots: [{ id: 'L1', title: 'A', public: 'A', status: 'todo', visible: true, tasks: [{ id: 't1', public: 12, status: 'todo' }] }] })).toThrow(/pas du texte/);
+  });
+});
+
+describe('textes privés et fuites (L50)', () => {
+  const plan = buildPlan(raf, { newsTitles: news });
+
+  it('privateTexts : notes, verdicts, raisons (dès 12 caractères), titres bruts (dès 20) — jamais un titre publié', () => {
+    const texts = privateTexts(raf, plan);
+    expect(texts).toEqual(expect.arrayContaining([
+      'note privée 1234 €', 'raison privée de l’abandon', 'Page publique (route /x, localStorage)', 'Nouvelle page (titre brut)',
+      'Prévu sans titre public ni Nouveauté', 'Corriger une faille de sécurité',
+    ]));
+    expect(texts).not.toContain('Textes plus contrastés'); // public: de sous-tâche publié
+    expect(texts).not.toContain('Correctif interne'); // titre brut < 20 caractères : trop générique
+    expect(texts).not.toContain('conforme'); // verdict < 12 caractères
+    expect(findLeaks(raf, renderPlan(plan), plan)).toEqual([]);
+  });
+
+  const note = 'note privée 1234 €';
+  it('findLeaks repère une note brute, échappée JSON, en \\uXXXX (minuscules et majuscules)', () => {
+    expect(findLeaks(raf, `bundle ${note} fin`, plan)).toEqual([note]);
+    expect(findLeaks(raf, 'x="note priv\\u00e9e 1234 \\u20ac"', plan)).toEqual([note]);
+    expect(findLeaks(raf, 'x="note priv\\u00E9e 1234 \\u20AC"', plan)).toEqual([note]);
+  });
+
+  it('findLeaks repère la forme \\xHH écrite par esbuild (≤ 0xFF), \\uHHHH au-delà, et les entités numériques', () => {
+    expect(findLeaks(raf, 'x="note priv\\xE9e 1234 \\u20AC"', plan)).toEqual([note]);
+    expect(findLeaks(raf, 'x="raison priv\\xe9e de l\\u2019abandon"', plan)).toEqual(['raison privée de l’abandon']);
+    expect(findLeaks(raf, '<p>raison priv&#233;e de l&#8217;abandon</p>', plan)).toEqual(['raison privée de l’abandon']);
+  });
+
+  it('faux positif évité : titre court ou contenu dans un titre publié affiché par l’interface', () => {
+    const r = { project: 'x', lots: [{
+      id: 'L1', title: 'Page Plan de travail', public: 'Une page Plan de travail : ce qui se prépare', status: 'doing', visible: true,
+      notes: [{ text: 'court mais privé' }],
+      tasks: [
+        { id: 't1', title: 'Plan de travail', status: 'done' },
+        { id: 't2', title: 'Une page Plan de travail', status: 'todo' },
+        { id: 't3', title: 'Lien Plan de travail dans le tiroir du téléphone', status: 'todo' },
+      ],
+    }] };
+    const p = buildPlan(r);
+    const ui = '<h1>Plan de travail</h1><p>Une page Plan de travail : ce qui se prépare</p>';
+    expect(findLeaks(r, ui, p)).toEqual([]);
+    expect(findLeaks(r, `${ui} "Lien Plan de travail dans le tiroir du téléphone"`, p)).toEqual(['Lien Plan de travail dans le tiroir du téléphone']);
+    expect(findLeaks(r, `${ui} court mais privé`, p)).toEqual(['court mais privé']);
+  });
+
+  it('scanDir : une fuite plantée en \\xHH dans un bundle est trouvée et le fichier nommé ; dossier propre = rien', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'plan-dist-'));
+    mkdirSync(join(dir, 'assets'));
+    writeFileSync(join(dir, 'index.html'), '<html></html>');
+    writeFileSync(join(dir, 'assets', 'app.js'), 'const a = "rien";');
+    expect(scanDir(raf, plan, dir)).toEqual([]);
+    writeFileSync(join(dir, 'assets', 'plan-x.js'), 'var e="note priv\\xE9e 1234 \\u20AC";');
+    expect(scanDir(raf, plan, dir)).toEqual([{ file: join('assets', 'plan-x.js'), text: note }]);
+  });
 });
 
 describe('isProcessLot', () => {
@@ -112,17 +187,20 @@ describe('isProcessLot', () => {
 });
 
 describe('readNewsTitles', () => {
-  it('lit le titre de la Nouveauté la plus récente de chaque lot', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'news-'));
-    writeFileSync(join(dir, '2026-09-01-a.md'), '---\ntitle: "Ancien titre"\ndate: 2026-09-01\nlots: [L1, L2]\n---\nTexte.\n');
-    writeFileSync(join(dir, '2026-09-10-b.md'), '---\ntitle: Nouveau titre\ndate: 2026-09-10\nlots: [L1]\n---\nTexte.\n');
-    writeFileSync(join(dir, 'README.txt'), 'pas une entrée');
-    const m = readNewsTitles(dir);
-    expect(m.get('L1')).toBe('Nouveau titre');
-    expect(m.get('L2')).toBe('Ancien titre');
+  it('L50 : lit nouveautes.json (ordre de la page) — titre de la PREMIÈRE entrée de chaque lot', () => {
+    const file = join(mkdtempSync(join(tmpdir(), 'news-')), 'nouveautes.json');
+    writeFileSync(file, JSON.stringify({ entries: [
+      { slug: '2026-09-10-b', title: 'Créée en dernier', date: '2026-09-10', lots: ['L1'] },
+      { slug: '2026-09-10-a', title: 'Créée en premier', date: '2026-09-10', lots: ['L1', 'L2'] },
+      { slug: '2026-09-01-c', title: 'Ancienne', date: '2026-09-01', lots: ['L2', 'L3'] },
+    ] }));
+    const m = readNewsTitles(file);
+    expect(m.get('L1')).toBe('Créée en dernier');
+    expect(m.get('L2')).toBe('Créée en premier');
+    expect(m.get('L3')).toBe('Ancienne');
   });
-  it('dossier absent = aucune Nouveauté', () => {
-    expect(readNewsTitles(join(tmpdir(), 'n-existe-pas-l48')).size).toBe(0);
+  it('fichier absent ou illisible = aucune Nouveauté', () => {
+    expect(readNewsTitles(join(tmpdir(), 'n-existe-pas-l50.json')).size).toBe(0);
   });
 });
 
@@ -157,9 +235,25 @@ describe('isDenied (filet de sécurité)', () => {
 describe('plan publié', () => {
   const committedText = () => readFileSync(`${root}/frontend/public/plan-data/plan.json`, 'utf8');
 
-  it('frontend/public/plan-data/plan.json est à jour avec docs/plan/raf.yaml et docs/nouveautes (npm run plan)', () => {
-    const expected = renderPlan(buildPlan(readPlan(`${root}/docs/plan/raf.yaml`), { newsTitles: readNewsTitles(`${root}/docs/nouveautes`) }));
+  const NEWS = `${root}/frontend/public/nouveautes-data/nouveautes.json`;
+  const realRaf = () => readPlan(`${root}/docs/plan/raf.yaml`);
+
+  it('frontend/public/plan-data/plan.json est à jour avec docs/plan/raf.yaml et nouveautes.json (npm run plan)', () => {
+    const expected = renderPlan(buildPlan(realRaf(), { newsTitles: readNewsTitles(NEWS) }));
     expect(committedText()).toBe(expected);
+  });
+
+  it('L50 : titre d’un lot et lien « Voir la nouveauté » viennent de la même entrée (première du lot dans nouveautes.json)', () => {
+    const { entries } = JSON.parse(readFileSync(NEWS, 'utf8'));
+    const titles = readNewsTitles(NEWS);
+    expect(titles.size).toBeGreaterThan(0);
+    for (const [lot, title] of titles) expect(entries.find((e) => e.lots.includes(lot)).title).toBe(title);
+  });
+
+  it('L50 : le plan réel a des textes privés à protéger, et AUCUN n’apparaît dans plan.json', () => {
+    const committed = JSON.parse(committedText());
+    expect(privateTexts(realRaf(), committed).length).toBeGreaterThan(20);
+    expect(findLeaks(realRaf(), committedText(), committed)).toEqual([]);
   });
 
   it('aucun titre publié ne contient de chemin, de technique, d’identifiant de lot, ni ne dépasse 80 caractères', () => {

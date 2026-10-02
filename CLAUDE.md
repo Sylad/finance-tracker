@@ -32,7 +32,15 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   lots `visible` sortent, sous leur titre public : champ `public:` du lot (≤ 80
   caractères, sans chemin, technique, identifiant ni prénom ; aussi possible sur
   les sous-tâches), sinon titre de sa Nouveauté, sinon le lot est masqué. Les
-  revues UX n'y figurent qu'avec un `public:`.
+  revues UX n'y figurent qu'avec un `public:`. `public:` = une chaîne d'une seule
+  ligne (L50). Le titre de Nouveauté vient du journal COMPILÉ
+  (`frontend/public/nouveautes-data/nouveautes.json`, première entrée du lot, comme
+  le lien « Voir la nouveauté ») : après `npm run news`, relancer `npm run plan`.
+  Sous-tâches `dropped` jamais publiées. `npm run build` (frontend) se termine par
+  `plan-data.mjs --leaks dist` : code 1 si une note, un verdict, une raison (≥ 12
+  caractères) ou un titre brut (≥ 20, hors titres publiés) du plan se trouve dans
+  `dist/` — brut, échappé JSON, `\uXXXX`, `\xHH` ou entité numérique ; sauté
+  dans le build Docker (pas de `docs/`).
 - **Où vivent les liens Nouveautés / Plan de travail / À propos** (L50) : dans le pied
   FIXE de la barre latérale (`SECONDARY_ITEMS`, avec la pastille « nouveau » de L47) —
   toujours visibles au bureau, seule la liste des pages au-dessus défile — et en tête
