@@ -4,7 +4,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { transformSync } from 'esbuild';
+import { describe, expect, it, vi } from 'vitest';
 import { buildPlan, checkPublicTitle, findLeaks, isDenied, isProcessLot, privateTexts, readNewsTitles, readPlan, renderPlan, scanDir } from './plan-data.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -176,6 +177,105 @@ describe('textes privés et fuites (L50)', () => {
     expect(scanDir(raf, plan, dir)).toEqual([]);
     writeFileSync(join(dir, 'assets', 'plan-x.js'), 'var e="note priv\\xE9e 1234 \\u20AC";');
     expect(scanDir(raf, plan, dir)).toEqual([{ file: join('assets', 'plan-x.js'), text: note }]);
+  });
+});
+
+// Revue L50 (fuite) : une note avec apostrophe, guillemet double et lettre accentuée est
+// écrite par esbuild en gabarit `…` avec un « " » brut et des \xHH — forme non cherchée.
+describe('fuites : guillemets, apostrophes et gabarits (revue L50)', () => {
+  const QUOTED = 'Le client a dit "c\'est d\'accord" pour l\'étape n° 2';
+  const SINGLE = 'Le client a répondu "oui" à l’étape n° 3 du dossier';
+  const TEMPLATE = 'Le code `npm run plan` et ${x} : "c\'est" l\'étape';
+  const r = { project: 'x', lots: [{ id: 'L1', title: 'A', public: 'A', status: 'todo', visible: true,
+    notes: [{ text: QUOTED }, { text: SINGLE }, { text: TEMPLATE }] }] };
+  const p = buildPlan(r);
+  const bundled = (s) => transformSync(`export const a=${JSON.stringify(s)};console.log(a)`, { minify: true }).code;
+
+  it('forme réelle d’esbuild (gabarit avec " brut et \\xHH) : trouvée', () => {
+    const code = bundled(QUOTED);
+    expect(code).toContain('`Le client a dit "c\'est d\'accord" pour l\'\\xE9tape n\\xB0 2`');
+    expect(findLeaks(r, code, p)).toEqual([QUOTED]);
+  });
+
+  it('chaîne entre apostrophes avec " brut et \\xHH / \\uHHHH : trouvée', () => {
+    expect(findLeaks(r, bundled(SINGLE), p)).toEqual([SINGLE]);
+    expect(findLeaks(r, `'Le client a r\\u00e9pondu "oui" \\u00e0 l\\u2019\\u00e9tape n\\u00b0 3 du dossier'`, p)).toEqual([SINGLE]);
+  });
+
+  it('apostrophes échappées en \\\' (autre minifieur) avec \\xHH : trouvée', () => {
+    expect(findLeaks(r, `'Le client a dit "c\\'est d\\'accord" pour l\\'\\xE9tape n\\xB0 2'`, p)).toEqual([QUOTED]);
+    expect(findLeaks(r, `'Le client a dit "c\\'est d\\'accord" pour l\\'étape n° 2'`, p)).toEqual([QUOTED]);
+  });
+
+  it('gabarit avec accent grave et ${ échappés, \\xHH : trouvé ; forme esbuild réelle aussi', () => {
+    expect(findLeaks(r, '`Le code \\`npm run plan\\` et \\${x} : "c\'est" l\'\\xE9tape`', p)).toEqual([TEMPLATE]);
+    expect(findLeaks(r, bundled(TEMPLATE), p)).toEqual([TEMPLATE]);
+  });
+});
+
+// Revue L50 : état de sous-tâche publié tel quel (String(t.status)).
+describe('état des sous-tâches (revue L50)', () => {
+  const lot = (tasks) => ({ project: 'x', lots: [{ id: 'L1', title: 'A', public: 'A', status: 'doing', visible: true, tasks }] });
+
+  it('seuls todo / doing / done sortent ; un autre état est ignoré avec un avertissement, jamais publié', () => {
+    const warn = vi.fn();
+    const out = buildPlan(lot([
+      { id: 't1', status: 'done' }, { id: 't2', status: 'doing' }, { id: 't3', status: 'todo' },
+      { id: 't4', status: 'bloqué en attente du fournisseur' }, { id: 't5' }, { id: 't6', status: 'dropped' },
+    ]), { warn });
+    expect(out.lots[0].tasks).toEqual([{ status: 'done' }, { status: 'doing' }, { status: 'todo' }]);
+    expect(JSON.stringify(out)).not.toMatch(/bloqu|undefined/);
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(warn.mock.calls[0][0]).toMatch(/L1\/t4/);
+    expect(warn.mock.calls[1][0]).toMatch(/L1\/t5/);
+  });
+
+  it('sous-tâche écrite comme une simple chaîne : ignorée avec un avertissement, jamais « undefined »', () => {
+    const warn = vi.fn();
+    const out = buildPlan(lot(['Faire la page détaillée du compte', { id: 't2', status: 'todo' }]), { warn });
+    expect(out.lots[0].tasks).toEqual([{ status: 'todo' }]);
+    expect(renderPlan(out)).not.toMatch(/undefined|Faire la page/);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toMatch(/L1/);
+  });
+
+  it('le plan réel ne déclenche aucun avertissement', () => {
+    const warn = vi.fn();
+    buildPlan(readPlan(join(root, 'docs/plan/raf.yaml')), { newsTitles: readNewsTitles(join(root, 'frontend/public/nouveautes-data/nouveautes.json')), warn });
+    expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+// Revue L50 : la vérification de fuite ne doit pas dépendre de la liste des champs connus.
+describe('privateTexts : toutes les formes et tous les champs (revue L50)', () => {
+  const r = { project: 'x', lots: [{
+    id: 'L1', title: 'A', public: 'A', status: 'todo', visible: true,
+    notes: 'Note écrite comme une simple chaîne',
+    ux: { date: '2026-10-01', verdict: 'OK', reserves: ['Réserve numéro un du relecteur'], detail: { mesure: 'Mesure privée à 390 px de large' } },
+    remarque: 'Champ inconnu au niveau du lot',
+    tasks: [
+      { id: 't1', status: 'todo', commentaire: 'Champ inconnu dans une sous-tâche', notes: 'Note de sous-tâche en chaîne' },
+      'Sous-tâche écrite comme une simple chaîne',
+    ],
+  }] };
+  const p = buildPlan(r, { warn: () => {} });
+
+  it('notes en chaîne, toute chaîne sous ux:, champs inconnus (lot et sous-tâche), sous-tâche en chaîne', () => {
+    expect(privateTexts(r, p)).toEqual(expect.arrayContaining([
+      'Note écrite comme une simple chaîne',
+      'Réserve numéro un du relecteur',
+      'Mesure privée à 390 px de large',
+      'Champ inconnu au niveau du lot',
+      'Champ inconnu dans une sous-tâche',
+      'Note de sous-tâche en chaîne',
+      'Sous-tâche écrite comme une simple chaîne',
+    ]));
+    expect(findLeaks(r, 'x="Mesure priv\\xE9e \\xE0 390 px de large"', p)).toEqual(['Mesure privée à 390 px de large']);
+  });
+
+  it('jamais les identifiants, états ni dates (champs connus non textuels)', () => {
+    const texts = privateTexts(r, p);
+    for (const v of ['L1', 't1', 'todo', '2026-10-01']) expect(texts).not.toContain(v);
   });
 });
 

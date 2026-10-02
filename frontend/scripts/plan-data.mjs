@@ -93,7 +93,7 @@ export function checkPublicTitle(title, where) {
  * le lot est masqué — jamais le titre brut du plan. Sous-tâche : `public:` ou
  * rien (elle ne compte alors que dans l'avancement n/m).
  */
-export function buildPlan(raf, { newsTitles = new Map() } = {}) {
+export function buildPlan(raf, { newsTitles = new Map(), warn = (m) => console.warn(`plan-data : ${m}`) } = {}) {
   if (!raf || !Array.isArray(raf.lots)) throw new Error('plan raf invalide : pas de liste « lots »');
   const lots = [];
   for (const lot of raf.lots) {
@@ -109,15 +109,29 @@ export function buildPlan(raf, { newsTitles = new Map() } = {}) {
     const finished = lot.status === 'done' ? day(lot.finished) : undefined;
     if (started) out.started = started;
     if (finished) out.finished = finished;
-    // Sous-tâches abandonnées écartées (L50) : hors du décompte n/m, jamais « à faire ».
-    const tasks = (Array.isArray(lot.tasks) ? lot.tasks : []).filter(
-      (t) => t && t.status !== 'dropped' && !isDenied(t.title ?? ''),
-    );
+    // Sous-tâches : seuls les états todo / doing / done sortent (revue L50). Abandonnées
+    // (dropped) écartées sans bruit ; tout autre état, ou une sous-tâche écrite comme une
+    // simple chaîne (sans état), est ignoré avec un avertissement — jamais publié tel quel.
+    const tasks = [];
+    for (const [i, t] of (Array.isArray(lot.tasks) ? lot.tasks : []).entries()) {
+      if (t && typeof t === 'object' && t.status === 'dropped') continue;
+      const where = `${id}/${t && typeof t === 'object' && t.id != null ? t.id : `#${i + 1}`}`;
+      if (!t || typeof t !== 'object') {
+        warn(`sous-tâche ${where} ignorée (écrite sans état, attendu { id, title, status })`);
+        continue;
+      }
+      if (!PUBLISHED_STATUSES.includes(t.status)) {
+        warn(`sous-tâche ${where} ignorée (état ${JSON.stringify(t.status) ?? 'absent'} inconnu, attendu ${PUBLISHED_STATUSES.join(' / ')})`);
+        continue;
+      }
+      if (isDenied(t.title ?? '')) continue;
+      tasks.push(t);
+    }
     if (tasks.length > 0) {
       out.tasks = tasks.map((t) =>
         t.public != null
-          ? { title: checkPublicTitle(t.public, `${id}/${t.id}`), status: String(t.status) }
-          : { status: String(t.status) },
+          ? { title: checkPublicTitle(t.public, `${id}/${t.id}`), status: t.status }
+          : { status: t.status },
       );
     }
     lots.push(out);
@@ -153,26 +167,46 @@ const MIN_PRIVATE = 12;
 const MIN_TITLE = 20;
 
 /**
+ * Champs d'un lot ou d'une sous-tâche qui ne portent pas de texte privé (identifiants,
+ * états, dates, nombres, liens entre lots). TOUT autre champ texte — notes (liste ou
+ * simple chaîne), verdict et toute chaîne sous `ux:`, raison, champ inconnu — est
+ * privé (revue L50) : la vérification ne dépend pas de la liste des champs connus.
+ */
+const NOT_TEXT = new Set(['id', 'status', 'visible', 'estimate', 'quickwin', 'created', 'started', 'finished', 'date', 'after', 'parent', 'sha', 'shas', 'commits']);
+
+/**
  * Textes du plan qui ne doivent JAMAIS sortir (L50) : notes (lots et sous-tâches),
- * verdicts UX, raisons d'abandon (dès 12 caractères), titres bruts et `public:` de
- * sous-tâches (dès 20) — sauf un texte identique à un titre publié dans `plan` (lot ou
- * sous-tâche) ou contenu dans l'un d'eux (texte public par définition).
+ * verdicts et réserves UX, raisons d'abandon, champs inconnus (dès 12 caractères),
+ * titres bruts, `public:` de sous-tâches et sous-tâches écrites comme une simple chaîne
+ * (dès 20) — sauf un texte identique à un titre publié dans `plan` (lot ou sous-tâche)
+ * ou contenu dans l'un d'eux (texte public par définition).
  */
 export function privateTexts(raf, plan) {
   const published = (plan?.lots ?? []).flatMap((l) => [l.title, ...(l.tasks ?? []).map((t) => t.title)]).filter(Boolean);
   const out = new Set();
   const add = (v, min) => {
-    if (v == null) return;
-    const s = String(v).trim();
+    if (typeof v !== 'string') return;
+    const s = v.trim();
     if (s.length >= min && !published.some((p) => p.includes(s))) out.add(s);
   };
+  // Toute chaîne d'une valeur (liste, objet imbriqué), quelle que soit la clé.
+  const strings = (v, min) => {
+    if (typeof v === 'string') add(v, min);
+    else if (Array.isArray(v)) v.forEach((x) => strings(x, min));
+    else if (v && typeof v === 'object') {
+      for (const [k, x] of Object.entries(v)) if (k !== 'date') strings(x, min);
+    }
+  };
   const walk = (item, isTask) => {
-    add(item?.title, MIN_TITLE);
-    if (isTask) add(item?.public, MIN_TITLE);
-    add(item?.reason, MIN_PRIVATE);
-    add(item?.ux?.verdict, MIN_PRIVATE);
-    for (const n of Array.isArray(item?.notes) ? item.notes : []) add(n?.text ?? n, MIN_PRIVATE);
-    for (const t of Array.isArray(item?.tasks) ? item.tasks : []) walk(t, true);
+    if (typeof item === 'string') return add(item, MIN_TITLE); // sous-tâche écrite comme une chaîne
+    if (!item || typeof item !== 'object') return;
+    for (const [k, v] of Object.entries(item)) {
+      if (NOT_TEXT.has(k)) continue;
+      if (k === 'tasks') (Array.isArray(v) ? v : []).forEach((t) => walk(t, true));
+      else if (k === 'title') add(v, MIN_TITLE);
+      else if (k === 'public') { if (isTask) add(v, MIN_TITLE); } // public: de lot = titre publié ou lot masqué
+      else strings(v, MIN_PRIVATE);
+    }
   };
   for (const lot of raf?.lots ?? []) walk(lot, false);
   return [...out];
@@ -192,15 +226,22 @@ const escapeNonAscii = (s, upper, xhh) =>
 
 /**
  * Formes sous lesquelles un texte peut apparaître dans un fichier construit : brut,
- * échappé JSON, non-ASCII en \uXXXX ou \xHH (minuscules ou majuscules), non-ASCII en
- * entités HTML numériques (&#NNNN;). Les entités nommées ne sont pas cherchées (ni Vite
- * ni esbuild n'en produisent).
+ * échappé JSON (« " » → \"), entre apostrophes (« ' » → \'), en gabarit (« ` » et
+ * « ${ » échappés) — chacune aussi avec le non-ASCII en \uXXXX ou \xHH (minuscules ou
+ * majuscules) : esbuild écrit une note qui mêle « ' » et « " » en gabarit `…` avec un
+ * « " » brut et des \xHH (revue L50) — et non-ASCII en entités HTML numériques
+ * (&#NNNN;). Les entités nommées ne sont pas cherchées (ni Vite ni esbuild n'en produisent).
  */
 function forms(s) {
+  const bs = (t) => t.replace(/\\/g, '\\\\');
   const json = JSON.stringify(s).slice(1, -1);
+  const single = bs(s).replace(/'/g, "\\'");
+  const template = bs(s).replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
   const html = s.replace(/[^\x00-\x7f]/g, (c) => `&#${c.codePointAt(0)};`);
-  const escaped = [false, true].flatMap((upper) => [false, true].map((xhh) => escapeNonAscii(json, upper, xhh)));
-  return [...new Set([s, json, ...escaped, html])];
+  const escaped = [s, json, single, template].flatMap((base) =>
+    [false, true].flatMap((upper) => [false, true].map((xhh) => escapeNonAscii(base, upper, xhh))),
+  );
+  return [...new Set([s, json, single, template, ...escaped, html])];
 }
 
 /** Textes privés du plan présents dans `text`. */
