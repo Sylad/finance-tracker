@@ -73,6 +73,22 @@ export function progressText(p: { done: number; total: number }, status?: PlanSt
   return status && status !== 'done' && p.total > 0 && p.done === p.total ? `${base} : prêt, en attente de livraison` : base;
 }
 
+/**
+ * Étapes sans titre public, annoncées sous la liste des étapes avec leur état (revue UX
+ * L50) : « + 2 autres étapes, faites », « + 1 autre étape, à faire », mélange :
+ * « + 3 autres étapes, dont 2 faites ». Vide sans étape.
+ */
+export function untitledStepsLabel(tasks: PlanTask[]): string {
+  const n = tasks.length;
+  if (n === 0) return '';
+  const done = tasks.filter((t) => t.status === 'done').length;
+  const head = n > 1 ? `+ ${n} autres étapes` : '+ 1 autre étape';
+  const fait = (k: number) => (k > 1 ? 'faites' : 'faite');
+  if (done === n) return `${head}, ${fait(n)}`;
+  if (done === 0) return `${head}, à faire`;
+  return `${head}, dont ${done} ${fait(done)}`;
+}
+
 /** « 1er octobre 2026 » : même formateur que les Nouveautés (L50). */
 export const formatDay = formatNewsDay;
 

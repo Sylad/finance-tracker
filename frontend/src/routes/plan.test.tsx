@@ -154,7 +154,7 @@ describe('<PlanPage />', () => {
     expect(document.querySelector('[data-target]')).toBeNull();
   });
 
-  it('étapes sans titre public : « + N étape(s) non détaillée(s) » ; n/m reste l’avancement réel', async () => {
+  it('étapes sans titre public : « + N autres étapes, à faire » ; n/m reste l’avancement réel', async () => {
     const mixed = { ...plan, lots: [{ id: 'L9', title: 'Mixte', status: 'doing', started: '2026-09-30',
       tasks: [{ title: 'Une étape', status: 'done' }, { status: 'todo' }, { status: 'todo' }] }] };
     vi.stubGlobal('fetch', serve(okJson(mixed)));
@@ -162,7 +162,49 @@ describe('<PlanPage />', () => {
     const card = (await screen.findByRole('heading', { level: 3, name: 'Mixte' })).closest('li')!;
     expect(within(card).getByText('1/3 étapes')).toBeInTheDocument();
     await userEvent.click(within(card).getByRole('button', { name: /Voir les étapes/ }));
-    expect(within(card).getByText('+ 2 étapes non détaillées')).toBeInTheDocument();
+    expect(within(card).getByText('+ 2 autres étapes, à faire')).toBeInTheDocument();
+  });
+
+  // Revue UX L50 : la ligne des étapes sans titre dit leur état.
+  for (const [tasks, text] of [
+    [[{ status: 'done' }, { status: 'done' }], '+ 2 autres étapes, faites'],
+    [[{ status: 'todo' }], '+ 1 autre étape, à faire'],
+    [[{ status: 'done' }], '+ 1 autre étape, faite'],
+    [[{ status: 'done' }, { status: 'doing' }, { status: 'done' }], '+ 3 autres étapes, dont 2 faites'],
+    [[{ status: 'done' }, { status: 'todo' }, { status: 'todo' }], '+ 3 autres étapes, dont 1 faite'],
+  ] as const) {
+    it(`étapes sans titre : « ${text} »`, async () => {
+      const lot = { id: 'L9', title: 'Mixte', status: 'doing', started: '2026-09-30',
+        tasks: [{ title: 'Une étape', status: 'todo' }, ...tasks] };
+      vi.stubGlobal('fetch', serve(okJson({ ...plan, lots: [lot] })));
+      renderPage();
+      const card = (await screen.findByRole('heading', { level: 3, name: 'Mixte' })).closest('li')!;
+      await userEvent.click(within(card).getByRole('button', { name: /Voir les étapes/ }));
+      expect(within(card).getByText(text)).toBeInTheDocument();
+    });
+  }
+
+  it('titre d’un groupe : le nombre de cartes, jamais « (0) » pour un groupe vide', async () => {
+    vi.stubGlobal('fetch', serve(okJson({ ...plan, lots: plan.lots.filter((l) => l.status !== 'doing') }), { ok: false, status: 404 }));
+    renderPage();
+    const todo = await screen.findByRole('heading', { level: 2, name: /Prévu/ });
+    expect(todo.textContent).toBe('Prévu (1)');
+    const doing = screen.getByRole('heading', { level: 2, name: /En cours/ });
+    expect(doing.textContent).toBe('En cours');
+  });
+
+  it('« · » avant la date : masqué sous 400 px (un espacement le remplace, il ne commence jamais la ligne de la date)', async () => {
+    vi.stubGlobal('fetch', serve(okJson(plan)));
+    renderPage();
+    const card = (await screen.findByRole('heading', { level: 3, name: 'Une page Plan de travail' })).closest('li')!;
+    const time = card.querySelector('time')!;
+    const dot = [...card.querySelectorAll('[aria-hidden="true"]')].find((n) => n.textContent?.includes('·')) as HTMLElement;
+    expect(dot).toBeDefined();
+    expect(dot.className).toMatch(/(^| )hidden( |$)/);
+    expect(dot.className).toMatch(/min-\[400px\]:inline/);
+    // Le point reste collé à la date au-delà de 400 px.
+    expect(dot.parentElement).toBe(time.parentElement);
+    expect(dot.parentElement!.className).toMatch(/whitespace-nowrap/);
   });
 
   it('toutes les étapes faites d’un lot pas encore livré : « prêt, en attente de livraison »', async () => {

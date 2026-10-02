@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ageLabel, fetchPlan, formatDay, groupPlan, isEmpty, liveTasks, newsSlugByLot, progress, progressText, summary, type PlanLot } from './plan';
+import { ageLabel, fetchPlan, formatDay, groupPlan, isEmpty, liveTasks, newsSlugByLot, progress, progressText, summary, untitledStepsLabel, type PlanLot } from './plan';
 
 const today = new Date('2026-10-01T10:00:00');
 
@@ -138,5 +138,20 @@ describe('newsSlugByLot', () => {
     expect(m.get('L2')).toBe('b-recent');
     expect(m.get('L9')).toBe('a-ancien');
     expect(m.get('L4')).toBeUndefined();
+  });
+});
+
+// Revue UX L50 : les étapes sans titre public sont annoncées avec leur état.
+describe('untitledStepsLabel', () => {
+  const t = (...st: string[]) => st.map((status) => ({ status }));
+  it('vide sans étape ; singulier et pluriel ; toutes faites, aucune faite, mélange', () => {
+    expect(untitledStepsLabel([])).toBe('');
+    expect(untitledStepsLabel(t('todo'))).toBe('+ 1 autre étape, à faire');
+    expect(untitledStepsLabel(t('doing'))).toBe('+ 1 autre étape, à faire');
+    expect(untitledStepsLabel(t('done'))).toBe('+ 1 autre étape, faite');
+    expect(untitledStepsLabel(t('done', 'done'))).toBe('+ 2 autres étapes, faites');
+    expect(untitledStepsLabel(t('todo', 'doing'))).toBe('+ 2 autres étapes, à faire');
+    expect(untitledStepsLabel(t('done', 'todo', 'done'))).toBe('+ 3 autres étapes, dont 2 faites');
+    expect(untitledStepsLabel(t('done', 'todo', 'todo'))).toBe('+ 3 autres étapes, dont 1 faite');
   });
 });

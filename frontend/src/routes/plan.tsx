@@ -17,6 +17,7 @@ import {
   progress,
   progressText,
   summary,
+  untitledStepsLabel,
   type PlanLot,
   type PlanStatus,
 } from '@/lib/plan';
@@ -50,8 +51,9 @@ function LotCard({ lot, newsSlug, target }: { lot: PlanLot; newsSlug?: string; t
   const badge = STATUS_BADGE[lot.status];
   const date = dateLine(lot);
   const steps = liveTasks(lot).filter((t) => t.title);
-  // Étapes sans titre public : comptées dans n/m (l'avancement réel), annoncées dans la liste.
-  const untitled = liveTasks(lot).length - steps.length;
+  // Étapes sans titre public : comptées dans n/m (l'avancement réel), annoncées dans la
+  // liste avec leur état.
+  const untitled = untitledStepsLabel(liveTasks(lot).filter((t) => !t.title));
   const ready = p !== null && lot.status !== 'done' && p.done === p.total;
   const stepsId = `${lot.id}-etapes`;
   return (
@@ -66,9 +68,10 @@ function LotCard({ lot, newsSlug, target }: { lot: PlanLot; newsSlug?: string; t
       <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
         <span className={badge.className}>{badge.label}</span>
         {date && (
-          // Le point reste collé à la date (jamais orphelin à 320 px) ; la date ne se coupe pas.
+          // Le point reste collé à la date ; sous 400 px, où la date peut passer à la
+          // ligne, il disparaît (l'espacement de la ligne sépare) : jamais en tête de ligne.
           <span className="whitespace-nowrap">
-            <span aria-hidden="true">· </span>
+            <span aria-hidden="true" className="hidden min-[400px]:inline">· </span>
             <time dateTime={date.day}>{date.text}</time>
           </span>
         )}
@@ -124,11 +127,7 @@ function LotCard({ lot, newsSlug, target }: { lot: PlanLot; newsSlug?: string; t
               </span>
             </li>
           ))}
-          {untitled > 0 && (
-            <li className="text-fg-muted">
-              + {untitled} {plural(untitled, 'étape non détaillée', 'étapes non détaillées')}
-            </li>
-          )}
+          {untitled && <li className="text-fg-muted">{untitled}</li>}
         </ul>
       )}
     </li>
@@ -148,7 +147,8 @@ function Group({ id, title, hint, lots, empty, slugs, target, footer }: {
   return (
     <section aria-labelledby={id} className="mb-10">
       <h2 id={id} className="font-display text-xl font-bold text-fg-bright">
-        {title} <span className="text-fg-muted font-medium">({lots.length})</span>
+        {title}
+        {lots.length > 0 && <> <span className="text-fg-muted font-medium">({lots.length})</span></>}
       </h2>
       <p className="text-sm text-fg-muted mt-1 mb-4">{hint}</p>
       {lots.length === 0 ? (
