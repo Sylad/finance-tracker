@@ -46,9 +46,12 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   de `build.yml` : il ne conditionne pas les images et `deploy.sh` ne le lit pas, mais
   `cadence deliver` attend tous les runs du sha — un plan périmé bloque la livraison.
 - **Où vivent les liens Nouveautés / Plan de travail / À propos** (L50) : dans le pied
-  FIXE de la barre latérale (`SECONDARY_ITEMS`, avec la pastille « nouveau » de L47) —
-  toujours visibles au bureau, seule la liste des pages au-dessus défile — et en tête
-  du panneau « Plus » au téléphone (visibles sans défiler à 320×568), plus ⌘K.
+  FIXE de la barre latérale (`SECONDARY_ITEMS`, avec la pastille « nouveau » de L47, et
+  Déconnexion, rien d'autre) — toujours visibles au bureau, seule la zone au-dessus
+  défile (pages, puis « Recherche rapide ⌘K » et la version, fondu en bas tant qu'il
+  reste à défiler) — et, au téléphone, dans la bande collante en bas du panneau « Plus »
+  (3 cases icône + libellé, juste au-dessus de la barre du bas, visibles sans défiler à
+  320×568) ; les pages principales viennent d'abord dans le panneau, focus sur la première.
 - L'instance déployée (finance.sladoire.dev, ns `preprod` de dark-blue) ne contient
   que des données de démo ; les vraies données restent en local sur Big-Blue.
 
@@ -77,7 +80,10 @@ l'utilisateur, pas pour le développeur), déposer au moins une capture dans
 `docs/nouveautes/captures/` et la déclarer sous `captures:` (ou
 `nocapture: raison`). `raf check` échoue tant qu'un lot visible terminé n'a
 pas son entrée. Puis `npm run news` régénère `frontend/public/nouveautes-data/`
-(versionné : la CI n'a pas cadence), servi par la page `/nouveautes`.
+(versionné : la CI n'a pas cadence), servi par la page `/nouveautes`, y compris
+`tailles.json` (taille réelle de chaque capture, L47 : place réservée avant chargement,
+sinon l'arrivée sur `/nouveautes#<slug>` dérive ; un test échoue si une capture n'a pas
+de taille).
 
 ## Variables d'env requises (`backend/.env`)
 

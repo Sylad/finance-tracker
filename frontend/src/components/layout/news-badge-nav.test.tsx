@@ -137,6 +137,9 @@ describe('pastille « nouveau » (L47)', () => {
     const dialog = screen.getByRole('dialog', { name: 'Toutes les pages' });
     const link = within(dialog).getByRole('link', { name: 'Nouveautés (2 nouveautés non vues)' });
     expect(link.querySelector('[data-news-badge]')).toHaveTextContent('2');
+    // Revue UX L50 : dans la bande collante du panneau, pastille posée sur l'icône.
+    expect(link.closest('[data-sheet-band]')).not.toBeNull();
+    expect(link.querySelector('[data-news-badge]')!.parentElement!.querySelector('svg')).not.toBeNull();
     expect(within(dialog).getByRole('link', { name: 'Plan de travail' })).toHaveAttribute('href', '/plan');
   });
 

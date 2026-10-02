@@ -19,8 +19,10 @@ const MOBILE_ITEMS = [
   { to: '/upload' as const, label: 'Importer', icon: Upload, exact: false },
 ];
 
-// L50 : Nouveautés, Plan de travail et À propos EN TÊTE du panneau « Plus » — visibles
-// sans défiler même à 320×568 (à la fin, Nouveautés tombait juste sous l'écran).
+// L50 (décision de revue UX) : dans le panneau « Plus », les pages principales D'ABORD
+// (le focus s'ouvre sur la première), Déconnexion en fin de grille ; Nouveautés, Plan de
+// travail et À propos dans une BANDE COLLANTE en bas du panneau, juste au-dessus de la
+// barre du bas — miroir du pied fixe du bureau, visible sans défiler à 320×568.
 
 export function BottomNav() {
   const { location } = useRouterState();
@@ -90,29 +92,27 @@ export function BottomNav() {
             aria-modal="true"
             aria-labelledby="all-pages-title"
             onKeyDown={onSheetKeyDown}
-            className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-border bg-surface px-4 pt-4"
-            style={{ paddingBottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
+            className="absolute inset-x-0 bottom-0 max-h-[80vh] flex flex-col rounded-t-lg border-t border-border bg-surface"
+            // La barre du bas (z-50, 60 px mesurés) recouvre le bas du panneau : la bande se pose juste au-dessus.
+            style={{ paddingBottom: 'calc(3.75rem + env(safe-area-inset-bottom))' }}
           >
-            <div className="flex items-center justify-between mb-3">
-              <h2 id="all-pages-title" className="stat-label">Toutes les pages</h2>
-              <button type="button" onClick={() => setOpen(false)} className="btn-ghost h-11 w-11 p-0" aria-label="Fermer">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            {[SECONDARY_ITEMS, NAV_ITEMS].map((group, g) => (
-              <ul
-                key={g}
-                aria-label={g === 0 ? 'Application' : 'Pages'}
-                className={cn('grid grid-cols-2 gap-1', g === 1 && 'mt-2 pt-2 border-t border-border')}
-              >
-                {group.map((item, i) => {
+            <div data-sheet-scroll className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-2">
+              <div className="flex items-center justify-between mb-3">
+                <h2 id="all-pages-title" className="stat-label">Toutes les pages</h2>
+                <button type="button" onClick={() => setOpen(false)} className="btn-ghost h-11 w-11 p-0" aria-label="Fermer">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <ul aria-label="Pages" className="grid grid-cols-2 gap-1">
+                {NAV_ITEMS.map((item, i) => {
                   const Icon = item.icon;
-                  const active = item.to === '/' ? path === '/' : path.startsWith(item.to);
+                  const active = item.exact ? path === item.to : path.startsWith(item.to);
                   return (
                     <li key={item.to}>
                       <Link
-                        ref={g === 0 && i === 0 ? firstLink : undefined}
+                        ref={i === 0 ? firstLink : undefined}
                         to={item.to}
+                        activeOptions={{ exact: item.exact }}
                         onClick={() => setOpen(false)}
                         className={cn(
                           'flex items-center gap-2.5 rounded-md px-3 min-h-11 text-sm transition-colors',
@@ -121,23 +121,51 @@ export function BottomNav() {
                       >
                         <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
                         <span className="font-medium">{item.label}</span>
-                        {item.to === '/nouveautes' && (
-                          <NewsBadge badge={news.badge} label={news.label} className="ml-auto shrink-0" />
-                        )}
                       </Link>
                     </li>
                   );
                 })}
               </ul>
-            ))}
-            <button
-              type="button"
-              onClick={() => { authStore.logout(); window.location.href = '/login'; }}
-              className="mt-2 w-full flex items-center gap-2.5 rounded-md px-3 min-h-11 text-sm text-fg-muted hover:bg-surface-2/60 hover:text-fg"
-            >
-              <LogOut className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
-              <span className="font-medium">Déconnexion</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => { authStore.logout(); window.location.href = '/login'; }}
+                className="mt-2 w-full flex items-center gap-2.5 rounded-md px-3 min-h-11 text-sm text-fg-muted hover:bg-surface-2/60 hover:text-fg"
+              >
+                <LogOut className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
+                <span className="font-medium">Déconnexion</span>
+              </button>
+            </div>
+            <div data-sheet-band className="shrink-0 border-t border-border bg-surface">
+              <ul aria-label="Application" className="grid grid-cols-3">
+                {SECONDARY_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const active = path.startsWith(item.to);
+                  const isNews = item.to === '/nouveautes';
+                  return (
+                    <li key={item.to}>
+                      <Link
+                        to={item.to}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                          'flex flex-col items-center justify-center gap-1 min-h-11 w-full py-2 transition-colors',
+                          active ? 'text-accent-bright' : 'text-fg-muted hover:text-fg',
+                        )}
+                      >
+                        {/* Pastille posée sur le coin de l'icône, comme sur « Plus » (L47). */}
+                        <span className="relative">
+                          <Icon className="h-[20px] w-[20px]" strokeWidth={active ? 2.25 : 1.75} aria-hidden />
+                          {isNews && (
+                            <NewsBadge badge={news.badge} label="" className="absolute -right-2.5 -top-2 ring-2 ring-surface" />
+                          )}
+                        </span>
+                        <span className="text-[12px] font-medium leading-tight">{item.label}</span>
+                        {isNews && news.badge && <span className="sr-only"> ({news.label})</span>}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
         </div>
       )}
