@@ -25,3 +25,14 @@ export async function fetchNews(): Promise<NewsData | null> {
 }
 
 export const NEWS_QUERY_KEY = ['nouveautes'] as const;
+
+/** Jour (AAAA-MM-JJ) en toutes lettres, sans décalage de fuseau ; « 1er » pour le premier du mois (L47). */
+export function formatNewsDay(day: string): string {
+  const text = new Date(`${day}T12:00:00Z`).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  return text.replace(/^1 /, '1er ');
+}

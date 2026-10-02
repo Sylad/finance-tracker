@@ -378,11 +378,12 @@ lots:
   - id: L47
     title: "Nouveautés : pastille « nouveau » (entrées non vues depuis la dernière visite, localStorage) + lien permanent par entrée /nouveautes#<slug> — modèle AetherWX news-badge/news-anchor et claude-code-codex L13"
     public: "Nouveautés : une pastille pour ce qui est nouveau, un lien par entrée"
-    status: todo
+    status: doing
     estimate: 0.25
     quickwin: true
     visible: true
     created: 2026-10-01
+    started: 2026-10-02
   - id: L48
     title: "Page « Plan de travail » : ce qui est prévu, en cours et récemment livré, généré au build depuis docs/plan/raf.yaml (titres et états seulement, jamais les notes) — inspirée de la page « À venir » d'AetherWX"
     public: "Une page Plan de travail : ce qui se prépare"
