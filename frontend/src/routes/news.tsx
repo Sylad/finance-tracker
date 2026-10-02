@@ -157,7 +157,7 @@ export function NewsPage() {
                     <button
                       type="button"
                       onClick={() => void copyLink(e.slug)}
-                      className="-my-3 lg:-my-0.5 [@media(pointer:coarse)]:-my-3 inline-flex min-h-11 lg:min-h-6 [@media(pointer:coarse)]:min-h-11 shrink-0 items-center gap-1.5 rounded-sm px-1 -mr-1 text-xs font-medium text-accent-bright hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bright"
+                      className="-my-3 lg:-my-0.5 [@media(pointer:coarse)]:-my-3 inline-flex min-h-11 lg:min-h-6 [@media(pointer:coarse)]:min-h-11 shrink-0 items-center gap-1.5 rounded-sm px-1 -mr-1 text-xs font-medium text-accent-bright [@media(hover:hover)]:hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bright"
                     >
                       <Link2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                       <span aria-hidden="true" className="grid text-left">
