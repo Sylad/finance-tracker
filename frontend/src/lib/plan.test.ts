@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ageLabel, fetchPlan, formatDay, groupPlan, isEmpty, newsSlugByLot, progress, summary, type PlanLot } from './plan';
+import { ageLabel, fetchPlan, formatDay, groupPlan, isEmpty, liveTasks, newsSlugByLot, progress, progressText, summary, type PlanLot } from './plan';
 
 const today = new Date('2026-10-01T10:00:00');
 
@@ -35,6 +35,20 @@ describe('progress', () => {
   it('compte les sous-tâches terminées', () => {
     expect(progress(lots[3])).toEqual({ done: 1, total: 3 });
   });
+  it('L50 : les sous-tâches abandonnées ne comptent pas (ni dans n/m, ni à faire)', () => {
+    const lot: PlanLot = { id: 'L', title: 'x', status: 'doing', tasks: [
+      { title: 'a', status: 'dropped' }, { title: 'b', status: 'done' }, { status: 'todo' },
+    ] };
+    expect(progress(lot)).toEqual({ done: 1, total: 2 });
+    expect(liveTasks(lot).map((t) => t.title)).toEqual(['b', undefined]);
+    expect(progress({ ...lot, tasks: [{ status: 'dropped' }] })).toBeNull();
+  });
+  it('L50 : avancement en mots ; toutes les étapes faites d’un lot pas encore livré → « prêt, en attente de livraison »', () => {
+    expect(progressText({ done: 1, total: 2 }, 'doing')).toBe('1 étape faite sur 2');
+    expect(progressText({ done: 3, total: 3 }, 'doing')).toBe('3 étapes faites sur 3 : prêt, en attente de livraison');
+    expect(progressText({ done: 2, total: 2 }, 'todo')).toBe('2 étapes faites sur 2 : prêt, en attente de livraison');
+    expect(progressText({ done: 2, total: 2 }, 'done')).toBe('2 étapes faites sur 2');
+  });
   it('null sans sous-tâche', () => {
     expect(progress(lots[2])).toBeNull();
     expect(progress({ ...lots[2], tasks: [] })).toBeNull();
@@ -42,8 +56,9 @@ describe('progress', () => {
 });
 
 describe('dates en français', () => {
-  it('formate un jour', () => {
+  it('formate un jour, « 1er » pour le premier du mois (formateur partagé avec les Nouveautés)', () => {
     expect(formatDay('2026-09-28')).toBe('28 septembre 2026');
+    expect(formatDay('2026-10-01')).toBe('1er octobre 2026');
   });
   it('donne un âge lisible', () => {
     expect(ageLabel('2026-10-01', today)).toBe("aujourd'hui");
@@ -58,8 +73,15 @@ describe('summary', () => {
     expect(summary({ doing: [lots[3], lots[3]], todo: [lots[2]], done: [lots[1]], olderDone: 0 })).toBe(
       '2 évolutions en cours, 1 prévue, 1 livrée ces 30 derniers jours.',
     );
+    // L50 : jamais de compte à zéro ; le premier nombre porte le nom.
     expect(summary({ doing: [], todo: [], done: [], olderDone: 0 })).toBe(
-      'Rien en cours, 0 prévue, 0 livrée ces 30 derniers jours.',
+      'Rien en cours, rien de prévu, rien de livré ces 30 derniers jours.',
+    );
+    expect(summary({ doing: [], todo: [lots[2], lots[5]], done: [lots[1]], olderDone: 0 })).toBe(
+      'Rien en cours, 2 évolutions prévues, 1 livrée ces 30 derniers jours.',
+    );
+    expect(summary({ doing: [lots[3]], todo: [], done: [], olderDone: 2 })).toBe(
+      '1 évolution en cours, rien de prévu, rien de livré ces 30 derniers jours.',
     );
   });
 });
@@ -94,6 +116,12 @@ describe('fetchPlan', () => {
   it('réseau coupé → erreur', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
     await expect(fetchPlan()).rejects.toThrow();
+  });
+  it('L50 : version inconnue → erreur (état « Réessayer »)', async () => {
+    stub({ ok: true, status: 200, json: async () => ({ version: 2, project: 'x', lots: [] }) });
+    await expect(fetchPlan()).rejects.toThrow(/version/);
+    stub({ ok: true, status: 200, json: async () => ({ project: 'x', lots: [] }) });
+    await expect(fetchPlan()).rejects.toThrow(/version/);
   });
   it('plan valide', async () => {
     stub({ ok: true, status: 200, json: async () => ({ version: 1, project: 'x', lots: [] }) });

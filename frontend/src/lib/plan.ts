@@ -2,6 +2,7 @@
 // avancement des sous-tâches, dates et âges en français. Les données viennent
 // de /plan-data/plan.json, généré par `npm run plan` (frontend/scripts/plan-data.mjs)
 // depuis docs/plan/raf.yaml : lots visibles seulement, titres et états.
+import { formatNewsDay } from './news-data';
 
 export type PlanStatus = 'doing' | 'todo' | 'done';
 
@@ -54,13 +55,26 @@ export function groupPlan(lots: PlanLot[], today: Date, recentDays = RECENT_DAYS
   return { doing, todo, done, olderDone: allDone.length - done.length };
 }
 
+/** Sous-tâches retenues : les abandonnées (dropped) ne comptent pas (le générateur les écarte déjà, L50). */
+export const liveTasks = (lot: PlanLot): PlanTask[] => (lot.tasks ?? []).filter((t) => t.status !== 'dropped');
+
 export function progress(lot: PlanLot): { done: number; total: number } | null {
-  if (!lot.tasks || lot.tasks.length === 0) return null;
-  return { done: lot.tasks.filter((t) => t.status === 'done').length, total: lot.tasks.length };
+  const tasks = liveTasks(lot);
+  if (tasks.length === 0) return null;
+  return { done: tasks.filter((t) => t.status === 'done').length, total: tasks.length };
 }
 
-export const formatDay = (day: string) =>
-  atMidnight(day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+/**
+ * Avancement en mots (L50). Toutes les étapes faites d'un lot pas encore livré : « prêt,
+ * en attente de livraison » (sinon « 3 sur 3 » laisse croire que c'est en ligne).
+ */
+export function progressText(p: { done: number; total: number }, status?: PlanStatus): string {
+  const base = `${p.done} ${p.done > 1 ? 'étapes faites' : 'étape faite'} sur ${p.total}`;
+  return status && status !== 'done' && p.total > 0 && p.done === p.total ? `${base} : prêt, en attente de livraison` : base;
+}
+
+/** « 1er octobre 2026 » : même formateur que les Nouveautés (L50). */
+export const formatDay = formatNewsDay;
 
 export function ageLabel(day: string, today: Date): string {
   const n = daysBetween(day, today);
@@ -69,30 +83,47 @@ export function ageLabel(day: string, today: Date): string {
   return `il y a ${n} jours`;
 }
 
-const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
-
-/** Résumé « en ce moment », une phrase (« évolution », féminin). */
+/**
+ * Résumé « en ce moment », une phrase sans compte à zéro (L50) : « rien de prévu » plutôt
+ * que « 0 prévue » ; le premier nombre porte le nom (« 2 évolutions prévues »).
+ */
 export function summary(g: PlanGroups): string {
-  const doing = g.doing.length === 0 ? 'Rien en cours' : plural(g.doing.length, 'évolution en cours', 'évolutions en cours');
-  return `${doing}, ${plural(g.todo.length, 'prévue', 'prévues')}, ${plural(g.done.length, 'livrée', 'livrées')} ces ${RECENT_DAYS} derniers jours.`;
+  const parts: [number, string, string, string][] = [
+    [g.doing.length, 'en cours', 'en cours', 'rien en cours'],
+    [g.todo.length, 'prévue', 'prévues', 'rien de prévu'],
+    [g.done.length, `livrée ces ${RECENT_DAYS} derniers jours`, `livrées ces ${RECENT_DAYS} derniers jours`, `rien de livré ces ${RECENT_DAYS} derniers jours`],
+  ];
+  let named = false;
+  const text = parts
+    .map(([n, one, many, none]) => {
+      if (n === 0) return none;
+      const noun = named ? '' : n > 1 ? 'évolutions ' : 'évolution ';
+      named = true;
+      return `${n} ${noun}${n > 1 ? many : one}`;
+    })
+    .join(', ');
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 }
 
 export const isEmpty = (g: PlanGroups) => g.doing.length + g.todo.length + g.done.length === 0;
 
 export const PLAN_URL = '/plan-data/plan.json';
+/** Version du format produit par plan-data.mjs ; une autre version = erreur (L50). */
+export const PLAN_VERSION = 1;
 export const PLAN_QUERY_KEY = ['plan'] as const;
 
 /**
  * Plan publié. 404 → null (aucun plan publié) ; toute autre panne — 500, réseau,
  * réponse non JSON (service worker hors ligne qui renvoie l'index), JSON sans
- * liste de lots — lève une erreur, pour un état « Réessayer » distinct.
+ * liste de lots, version inconnue — lève une erreur, pour un état « Réessayer » distinct.
  */
 export async function fetchPlan(): Promise<PlanData | null> {
   const res = await fetch(PLAN_URL, { cache: 'no-cache' });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`plan : HTTP ${res.status}`);
   const data = (await res.json()) as PlanData;
-  if (!data || !Array.isArray(data.lots)) throw new Error('plan : réponse inattendue');
+  if (!data || typeof data !== 'object' || !Array.isArray(data.lots)) throw new Error('plan : réponse inattendue');
+  if (data.version !== PLAN_VERSION) throw new Error(`plan : version ${String(data.version)} inconnue`);
   return data;
 }
 

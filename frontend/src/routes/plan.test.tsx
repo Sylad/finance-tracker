@@ -77,7 +77,7 @@ describe('<PlanPage />', () => {
     const card = (await screen.findByRole('heading', { level: 3, name: 'Une page Plan de travail' })).closest('li')!;
     expect(card).toHaveAttribute('id', 'L48');
     expect(within(card).getByText('En cours')).toBeInTheDocument();
-    expect(within(card).getByText('Démarré le 1 octobre 2026')).toBeInTheDocument();
+    expect(within(card).getByText('Démarré le 1er octobre 2026')).toBeInTheDocument();
     expect(within(card).getByText('L48')).toBeInTheDocument();
     const bar = within(card).getByRole('progressbar', { name: 'Avancement : Une page Plan de travail' });
     expect(bar).toHaveAttribute('aria-valuetext', '1 étape faite sur 2');
