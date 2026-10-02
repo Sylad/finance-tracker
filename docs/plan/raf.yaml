@@ -384,6 +384,8 @@ lots:
     visible: true
     created: 2026-10-01
     started: 2026-10-02
+    notes:
+      - { date: 2026-10-02, text: "Porté d'ol-companion/warhammer (état après revues). Clé finance.news.seen-v1 (aucune mémoire antérieure). Ligne de base posée par la navigation, donc seulement derrière le PIN ou en démo (la page de connexion ne montre rien des Nouveautés). Titre en texte simple, copie par bouton seul. Mesuré 1440/390/320 : 0 px de décalage (pastille et retour de copie). Ouvert : à moins de ~1060 px de haut, le groupe Nouveautés/Plan/À propos de la barre latérale est sous le pli (pastille invisible sans défiler) — décision à prendre." }
   - id: L48
     title: "Page « Plan de travail » : ce qui est prévu, en cours et récemment livré, généré au build depuis docs/plan/raf.yaml (titres et états seulement, jamais les notes) — inspirée de la page « À venir » d'AetherWX"
     public: "Une page Plan de travail : ce qui se prépare"
