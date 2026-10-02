@@ -76,8 +76,9 @@
     {
       "id": "L47",
       "title": "Nouveautés : une pastille pour ce qui est nouveau, un lien par entrée",
-      "status": "doing",
-      "started": "2026-10-02"
+      "status": "done",
+      "started": "2026-10-02",
+      "finished": "2026-10-02"
     },
     {
       "id": "L48",
@@ -89,8 +90,9 @@
     {
       "id": "L50",
       "title": "Un Plan de travail plus clair, et des liens toujours visibles dans le menu",
-      "status": "doing",
-      "started": "2026-10-02"
+      "status": "done",
+      "started": "2026-10-02",
+      "finished": "2026-10-02"
     }
   ]
 }

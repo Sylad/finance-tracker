@@ -1,7 +1,33 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-01 23:15",
+  "generated": "2026-10-02 16:28",
   "entries": [
+    {
+      "slug": "2026-10-02-un-plan-de-travail-plus-clair-et-des-liens-toujours-visibles",
+      "title": "Un Plan de travail plus clair, et des liens toujours visibles dans le menu",
+      "date": "2026-10-02",
+      "lots": [
+        "L50"
+      ],
+      "captures": [
+        "captures/L50-barre-laterale-liens.png",
+        "captures/L50-plan-de-travail-telephone.png"
+      ],
+      "html": "<p>Les pages <strong>Nouveautés</strong>, <strong>Plan de travail</strong> et <strong>À propos</strong> sont désormais toujours à portée de main, et le Plan de travail se lit mieux.</p>\n<ul><li>Sur ordinateur, les trois liens restent en bas du menu, même quand la liste des pages défile.</li><li>Au téléphone, ils forment une bande en bas du panneau <strong>Plus</strong>, sous la liste des pages.</li><li>Sur le Plan de travail, chaque évolution indique son état en toutes lettres et son avancement ; un lien direct vers une évolution l'affiche et la met en valeur.</li></ul>"
+    },
+    {
+      "slug": "2026-10-02-une-pastille-signale-les-nouveautes-et-chaque-nouveaute-a-so",
+      "title": "Une pastille signale les nouveautés, et chaque nouveauté a son lien",
+      "date": "2026-10-02",
+      "lots": [
+        "L47"
+      ],
+      "captures": [
+        "captures/L47-nouveautes-copier-le-lien-telephone.png",
+        "captures/L47-pastille-panneau-plus-telephone.png"
+      ],
+      "html": "<p>Vous voyez maintenant d'un coup d'œil s'il y a du nouveau, et vous pouvez partager une nouveauté précise.</p>\n<ul><li>Une <strong>pastille</strong> avec le nombre de nouveautés non vues apparaît sur le lien <strong>Nouveautés</strong> du menu, et sur <strong>Plus</strong> au téléphone. Elle compte ce qui paraît après votre première visite, et s'éteint dès que vous ouvrez la page.</li><li>Sur la page, les entrées que vous n'avez pas encore vues portent la mention <strong>Nouveau</strong>, et une ligne « Déjà vu lors de votre visite du… » marque l'endroit où vous vous étiez arrêté.</li><li>Chaque nouveauté a un bouton <strong>Copier le lien</strong> : le lien ouvre la page directement sur cette nouveauté.</li><li>Rien n'est envoyé à un serveur : la trace de votre dernière visite reste dans votre navigateur.</li></ul>"
+    },
     {
       "slug": "2026-10-01-une-page-plan-de-travail-ce-qui-se-prepare",
       "title": "Une page Plan de travail : ce qui se prépare",
@@ -49,7 +75,7 @@
       "captures": [
         "captures/L18-page-nouveautes.png"
       ],
-      "html": "<p>L'application a désormais sa page <strong>Nouveautés</strong>, accessible en bas du menu, juste au-dessus d'« À propos », et depuis la recherche rapide (⌘K).</p>\n<p>Chaque évolution visible y est décrite en quelques lignes, avec une capture d'écran, la plus récente en premier.</p>"
+      "html": "<p>L'application a désormais sa page <strong>Nouveautés</strong>, accessible en bas du menu, à côté de <strong>Plan de travail</strong> et <strong>À propos</strong>, et depuis la recherche rapide (⌘K).</p>\n<p>Chaque évolution visible y est décrite en quelques lignes, avec une capture d'écran, la plus récente en premier.</p>"
     }
   ]
 }

@@ -378,7 +378,7 @@ lots:
   - id: L47
     title: "Nouveautés : pastille « nouveau » (entrées non vues depuis la dernière visite, localStorage) + lien permanent par entrée /nouveautes#<slug> — modèle AetherWX news-badge/news-anchor et claude-code-codex L13"
     public: "Nouveautés : une pastille pour ce qui est nouveau, un lien par entrée"
-    status: doing
+    status: done
     estimate: 0.25
     quickwin: true
     visible: true
@@ -386,6 +386,8 @@ lots:
     started: 2026-10-02
     notes:
       - { date: 2026-10-02, text: "Porté d'ol-companion/warhammer (état après revues). Clé finance.news.seen-v1 (aucune mémoire antérieure). Ligne de base posée par la navigation, donc seulement derrière le PIN ou en démo (la page de connexion ne montre rien des Nouveautés). Titre en texte simple, copie par bouton seul. Mesuré 1440/390/320 : 0 px de décalage (pastille et retour de copie). Ouvert : à moins de ~1060 px de haut, le groupe Nouveautés/Plan/À propos de la barre latérale est sous le pli (pastille invisible sans défiler) — décision à prendre." }
+    ux: { date: 2026-10-02, verdict: "Revue ux-reviewer 02-10 (1440×900, 1366×768, 1280×720, 390, 320 ; instance de démo) : non conforme au 1er passage (ancre /nouveautes#slug jusqu'à 6 861 px de sa cible, captures sans dimensions), réserves levées — tailles réservées + recalage (carte à 24 / 149 / 80 px, focus dessus), Copie impossible en couleur d'erreur, « première visite », « 1er ». Pastille 7,34:1 annoncée, Copier le lien 44 px au toucher, 0 px de décalage, axe 0. Non vérifié : écran de PIN, lecteur d'écran réel, appareil tactile réel." }
+    finished: 2026-10-02
   - id: L48
     title: "Page « Plan de travail » : ce qui est prévu, en cours et récemment livré, généré au build depuis docs/plan/raf.yaml (titres et états seulement, jamais les notes) — inspirée de la page « À venir » d'AetherWX"
     public: "Une page Plan de travail : ce qui se prépare"
@@ -405,8 +407,16 @@ lots:
   - id: L50
     title: "Plan de travail au niveau des autres applis : identifiants de lot masqués, sous-tâches abandonnées hors décompte, étapes non détaillées annoncées, focus à l'arrivée sur /plan#id sans re-défilement, dates « 1er », contrôle CI du plan publié périmé, vérification de fuite sur dist ; liens Nouveautés / Plan de travail / À propos toujours visibles dans la barre latérale (audit L47)"
     public: "Un Plan de travail plus clair, et des liens toujours visibles dans le menu"
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     created: 2026-10-02
     started: 2026-10-02
+    ux: { date: 2026-10-02, verdict: "Revue ux-reviewer 02-10 : conforme avec réserves, levées — pied fixe réduit (10 pages visibles sur 16 à 1280×720 au lieu de 8, fondu), panneau Plus : pages d'abord et bande collante Nouveautés / Plan / À propos visible à 320×568, étapes non détaillées avec leur état, pas de (0), point séparateur. Liens et pastille visibles aux 3 tailles de bureau, à 200 % et en 18/20 px ; Plan sans identifiant, 0 débordement à 320 px. Non vérifié : écran de PIN, lecteur d'écran réel." }
+    finished: 2026-10-02
+  - id: L51
+    title: "Barre latérale : « Tableau de bord » porte aria-current=page sur toutes les pages (lien sans correspondance exacte) — relevé pendant les corrections du menu"
+    status: todo
+    estimate: 0.1
+    quickwin: true
+    created: 2026-10-02
