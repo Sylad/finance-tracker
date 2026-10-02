@@ -126,6 +126,17 @@ describe('news-badge', () => {
     expect(sinceLabel(0)).toBe('');
     expect(sinceLabel(1)).toBe('1 nouveauté depuis votre dernière visite');
     expect(sinceLabel(3)).toBe('3 nouveautés depuis votre dernière visite');
+    const visit = { date: '2026-09-28', slugs: [], at: '2026-09-29T08:00:00.000Z' };
+    expect(sinceLabel(2, visit)).toBe('2 nouveautés depuis votre dernière visite');
+  });
+
+  // Revue UX L47 : la ligne de base (aucun instant de visite) n'est pas une « visite » —
+  // même mot que le séparateur « … lors de votre première visite ».
+  it('ligne de base sans instant de visite : « depuis votre première visite »', () => {
+    const baseline = { date: '2026-09-28', slugs: [] };
+    expect(sinceLabel(0, baseline)).toBe('');
+    expect(sinceLabel(1, baseline)).toBe('1 nouveauté depuis votre première visite');
+    expect(sinceLabel(3, baseline)).toBe('3 nouveautés depuis votre première visite');
   });
 
   // Revue ol-companion L22 : une entrée publiée aujourd'hui mais datée d'avant la dernière visite

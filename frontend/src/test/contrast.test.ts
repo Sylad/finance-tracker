@@ -98,6 +98,12 @@ describe('contraste des jetons de texte (WCAG 1.4.3)', () => {
   it('pastille Nouveautés : texte bg sur accent plein ≥ 4,5:1', () => {
     expect(contrast('bg', 'accent')).toBeGreaterThanOrEqual(4.5);
   });
+  // L47 (revue UX) : « Copie impossible » en negative-fg, posé sur la carte.
+  for (const bg of ['surface', 'surface-2']) {
+    it(`échec de copie : negative-fg sur ${bg} ≥ 4,5:1`, () => {
+      expect(contrast('negative-fg', bg)).toBeGreaterThanOrEqual(4.5);
+    });
+  }
   it('pastille Nouveautés : la classe utilise bien bg-accent et text-bg', () => {
     const src = fs.readFileSync(path.resolve(__dirname, '../components/news-badge.tsx'), 'utf8');
     expect(src).toMatch(/bg-accent /);

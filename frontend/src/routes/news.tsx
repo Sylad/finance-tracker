@@ -22,6 +22,26 @@ import { cn } from '@/lib/utils';
 type CopyState = 'idle' | 'ok' | 'ko';
 const COPY_LABELS: Record<CopyState, string> = { idle: 'Copier le lien', ok: 'Lien copié', ko: 'Copie impossible' };
 
+/**
+ * Date d'une entrée dans le surtitre en capitales (.stat-label) : l'ordinal de « 1er »
+ * reste en minuscules (« 1ER » se lit mal) ; le texte lu reste « 1er octobre 2026 ».
+ */
+function NewsDay({ day }: { day: string }) {
+  const text = formatNewsDay(day);
+  const m = /^1er (.*)$/.exec(text);
+  return (
+    <time dateTime={day} className="whitespace-nowrap">
+      {m ? (
+        <>
+          1<span data-ordinal className="normal-case">er</span> {m[1]}
+        </>
+      ) : (
+        text
+      )}
+    </time>
+  );
+}
+
 export function NewsPage() {
   const news = useQuery({ queryKey: NEWS_QUERY_KEY, queryFn: fetchNews, staleTime: 5 * 60_000 });
   // Lots publiés dans le Plan de travail (L48) : lien discret « Dans le plan de travail ».
@@ -107,7 +127,7 @@ export function NewsPage() {
         role="status"
         className="-mt-4 mb-6 text-sm font-semibold text-fg-bright empty:hidden"
       >
-        {sinceLabel(freshCount)}
+        {sinceLabel(freshCount, previousVisit)}
       </p>
       {news.isLoading ? (
         <LoadingState />
@@ -144,7 +164,7 @@ export function NewsPage() {
                   {/* La ligne passe à la ligne ENTRE la date, « Nouveau » et le bouton, jamais dans la date. */}
                   <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-1">
                     <div className="stat-label text-fg-dim flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                      <time dateTime={e.date} className="whitespace-nowrap">{formatNewsDay(e.date)}</time>
+                      <NewsDay day={e.date} />
                       {fresh[index] && (
                         <span className="whitespace-nowrap rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] text-bg">
                           Nouveau
@@ -157,7 +177,11 @@ export function NewsPage() {
                     <button
                       type="button"
                       onClick={() => void copyLink(e.slug)}
-                      className="-my-3 lg:-my-0.5 [@media(pointer:coarse)]:-my-3 inline-flex min-h-11 lg:min-h-6 [@media(pointer:coarse)]:min-h-11 shrink-0 items-center gap-1.5 rounded-sm px-1 -mr-1 text-xs font-medium text-accent-bright [@media(hover:hover)]:hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bright"
+                      className={cn(
+                        // Échec dit dans le jeton négatif, jamais dans la couleur du succès (revue UX L47).
+                        state === 'ko' ? 'text-negative-fg' : 'text-accent-bright',
+                        '-my-3 lg:-my-0.5 [@media(pointer:coarse)]:-my-3 inline-flex min-h-11 lg:min-h-6 [@media(pointer:coarse)]:min-h-11 shrink-0 items-center gap-1.5 rounded-sm px-1 -mr-1 text-xs font-medium [@media(hover:hover)]:hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bright',
+                      )}
                     >
                       <Link2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                       <span aria-hidden="true" className="grid text-left">

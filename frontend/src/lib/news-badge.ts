@@ -134,12 +134,14 @@ export function unseenLabel(count: number): string {
   return count === 1 ? '1 nouveauté non vue' : `${count} nouveautés non vues`;
 }
 
-/** Ligne d'annonce en tête de la page Nouveautés. */
-export function sinceLabel(count: number): string {
+/**
+ * Ligne d'annonce en tête de la page Nouveautés. Mémoire sans instant de visite (ligne
+ * de base) : « depuis votre première visite », comme le séparateur (revue UX L47).
+ */
+export function sinceLabel(count: number, seen?: NewsSeen | null): string {
   if (count <= 0) return '';
-  return count === 1
-    ? '1 nouveauté depuis votre dernière visite'
-    : `${count} nouveautés depuis votre dernière visite`;
+  const since = seen && !seen.at ? 'votre première visite' : 'votre dernière visite';
+  return `${count} ${count === 1 ? 'nouveauté' : 'nouveautés'} depuis ${since}`;
 }
 
 /** localStorage, ou null s'il est inaccessible (navigation privée stricte, iframe…). */

@@ -104,10 +104,27 @@ describe('<NewsPage />', () => {
   it('date en toutes lettres avec « 1er », jamais coupée en son milieu', async () => {
     stubNews();
     renderPage();
-    const time = await screen.findByText('1er octobre 2026');
-    expect(time.tagName).toBe('TIME');
-    expect(time).toHaveAttribute('dateTime', '2026-10-01');
+    await screen.findByRole('heading', { level: 2, name: 'Une page Plan de travail' });
+    const time = document.querySelector('time[datetime="2026-10-01"]') as HTMLElement;
+    expect(time).toHaveTextContent(/^1er octobre 2026$/);
     expect(time.className).toMatch(/whitespace-nowrap/);
+  });
+
+  // Revue UX L47 : le surtitre est en capitales (.stat-label) → « 1ER OCTOBRE ». L'ordinal
+  // reste en minuscules ; le texte lu (lecteur d'écran) reste « 1er octobre 2026 ».
+  it('« 1er » dans le surtitre en capitales : ordinal hors capitales, texte lu « 1er »', async () => {
+    stubNews();
+    renderPage();
+    await screen.findByRole('heading', { level: 2, name: 'Une page Plan de travail' });
+    const time = document.querySelector('time[datetime="2026-10-01"]') as HTMLElement;
+    expect(time.closest('.stat-label')).not.toBeNull();
+    const ordinal = time.querySelector('[data-ordinal]') as HTMLElement;
+    expect(ordinal).toHaveTextContent(/^er$/);
+    expect(ordinal.className).toMatch(/(^| )normal-case( |$)/);
+    expect(ordinal).not.toHaveAttribute('aria-hidden');
+    expect(time.textContent).toBe('1er octobre 2026');
+    // Les autres jours : pas d'ordinal.
+    expect(document.querySelector('time[datetime="2026-09-28"] [data-ordinal]')).toBeNull();
   });
 
   it('premier visiteur : aucune marque « Nouveau », aucune annonce ; la visite est mémorisée et annoncée à la navigation', async () => {
@@ -171,7 +188,7 @@ describe('<NewsPage />', () => {
     renderPage();
     await screen.findByRole('heading', { level: 2, name: 'Une page Plan de travail' });
     expect(within(document.getElementById('2026-10-01-page')!).getByText('Nouveau')).toBeInTheDocument();
-    expect(screen.getByTestId('nouveautes-depuis')).toHaveTextContent('1 nouveauté depuis votre dernière visite');
+    expect(screen.getByTestId('nouveautes-depuis')).toHaveTextContent(/^1 nouveauté depuis votre première visite$/);
     expect(screen.getByTestId('nouveautes-deja-vu')).toHaveTextContent(
       "Déjà publié lors de votre première visite de l'application",
     );
@@ -208,6 +225,8 @@ describe('<NewsPage />', () => {
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/nouveautes#2026-10-01-page`);
     expect(window.location.hash).toBe('');
     expect(visible(button)).toEqual(['Lien copié']);
+    expect(button.className).toMatch(/(^| )text-accent-bright( |$)/);
+    expect(button.className).not.toMatch(/text-negative/);
     const article = document.getElementById('2026-10-01-page')!;
     const status = within(article).getByRole('status');
     expect(status).toHaveTextContent('Lien copié dans le presse-papiers');
@@ -227,6 +246,9 @@ describe('<NewsPage />', () => {
     await waitFor(() =>
       expect([...button.querySelectorAll('[data-label]')].filter((n) => !n.className.includes('invisible')).map((n) => n.textContent)).toEqual(['Copie impossible']),
     );
+    // Revue UX L47 : l'échec n'est pas dit dans la couleur du succès (accent vert).
+    expect(button.className).toMatch(/(^| )text-negative-fg( |$)/);
+    expect(button.className).not.toMatch(/(^| )text-accent-bright( |$)/);
     const address = within(article).getByTestId('nouveautes-adresse');
     expect(address).toHaveTextContent(`${window.location.origin}/nouveautes#2026-09-28-ancienne`);
     expect(address.innerHTML).toMatch(/select-all/);
