@@ -40,7 +40,11 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   `plan-data.mjs --leaks dist` : code 1 si une note, un verdict, une raison (≥ 12
   caractères) ou un titre brut (≥ 20, hors titres publiés) du plan se trouve dans
   `dist/` — brut, échappé JSON, `\uXXXX`, `\xHH` ou entité numérique ; sauté
-  dans le build Docker (pas de `docs/`).
+  dans le build Docker (pas de `docs/`). Workflow CI `.github/workflows/frontend-checks.yml`
+  (L50), à chaque push sans filtre de chemins : `plan-data.mjs --check` (plan publié
+  périmé = run rouge), Vitest, puis `npm run build` avec la vérification de fuite. Séparé
+  de `build.yml` : il ne conditionne pas les images et `deploy.sh` ne le lit pas, mais
+  `cadence deliver` attend tous les runs du sha — un plan périmé bloque la livraison.
 - **Où vivent les liens Nouveautés / Plan de travail / À propos** (L50) : dans le pied
   FIXE de la barre latérale (`SECONDARY_ITEMS`, avec la pastille « nouveau » de L47) —
   toujours visibles au bureau, seule la liste des pages au-dessus défile — et en tête

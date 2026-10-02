@@ -1,0 +1,50 @@
+name: Contrôles frontend
+
+# L50 : rend le run ROUGE si le plan publié (frontend/public/plan-data/plan.json)
+# n'est plus à jour avec docs/plan/raf.yaml et le journal des Nouveautés — cas
+# typique : un commit qui ne touche que le plan (`raf done`) sans `npm run plan` —,
+# si un test Vitest échoue, ou si un texte privé du plan (note, verdict UX, raison,
+# titre brut) se retrouve dans le bundle (npm run build se termine par
+# plan-data.mjs --leaks dist ; ici docs/ est présent, contrairement au build Docker
+# dont le contexte est frontend/).
+#
+# Workflow séparé de build.yml : il ne conditionne pas les images et n'est pas lu
+# par scripts/deploy.sh (qui ne regarde que build.yml). cadence deliver attend en
+# revanche tous les runs du sha livré : un plan périmé bloque donc sa livraison.
+# Pas de filtre `paths` : un commit de plan seul doit être contrôlé.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-checks:
+    name: Plan publié, tests et build frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Dépendances
+        run: npm ci --no-audit --no-fund
+
+      - name: Plan publié à jour (sinon npm run plan à la racine, puis commiter plan.json)
+        run: node scripts/plan-data.mjs --in ../docs/plan/raf.yaml --news public/nouveautes-data/nouveautes.json --out public/plan-data/plan.json --check
+
+      - name: Tests Vitest
+        run: npx vitest run
+
+      - name: Build (avec vérification de fuite du plan)
+        run: npm run build
