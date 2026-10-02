@@ -4,7 +4,14 @@ import { Link } from '@tanstack/react-router';
 import { Link2 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState, LoadingState } from '@/components/loading-state';
-import { NEWS_BASE as BASE, NEWS_QUERY_KEY, fetchNews, formatNewsDay } from '@/lib/news-data';
+import {
+  NEWS_BASE as BASE,
+  NEWS_QUERY_KEY,
+  NEWS_SIZES_QUERY_KEY,
+  fetchNews,
+  fetchNewsSizes,
+  formatNewsDay,
+} from '@/lib/news-data';
 import {
   NEWS_SEEN_EVENT,
   browserStorage,
@@ -48,6 +55,10 @@ export function NewsPage() {
   const plan = useQuery({ queryKey: PLAN_QUERY_KEY, queryFn: fetchPlan, staleTime: 5 * 60_000 });
   const inPlan = new Set((plan.data?.lots ?? []).map((l) => l.id));
   const entries = news.data?.entries ?? [];
+  // L47 — tailles réelles des captures : place réservée avant chargement.
+  const sizesQuery = useQuery({ queryKey: NEWS_SIZES_QUERY_KEY, queryFn: fetchNewsSizes, staleTime: 5 * 60_000 });
+  const sizes = sizesQuery.data ?? {};
+  const sizesReady = sizesQuery.isFetched;
 
   // L47 — dernière visite : lue UNE fois à l'arrivée (avant que la visite ne soit
   // mémorisée), pour marquer « Nouveau » et poser le séparateur. Dès que le journal est
@@ -67,11 +78,16 @@ export function NewsPage() {
   // L47 — lien permanent /nouveautes#<slug> : le journal arrive après la page, le
   // défilement natif vers l'ancre ne trouve rien ; la page vise l'entrée ensuite, une
   // fois par arrivée (un rechargement du journal en arrière-plan ne refait ni
-  // défilement ni focus).
+  // défilement ni focus). Attendre les tailles des captures : leur place est alors
+  // réservée et la mise en page ne bouge plus sous l'entrée visée.
   const [target, setTarget] = useState<string | null>(null);
   const revealedHash = useRef<string | null>(null);
+  // Entrée sur laquelle se recaler quand une capture AU-DESSUS finit de charger (sa
+  // taille réelle peut différer de la place réservée, ou tailles.json manquer) ;
+  // null dès le premier geste de l'utilisateur (molette, toucher, touche, clic).
+  const realignTo = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (!loaded?.length) return;
+    if (!loaded?.length || !sizesReady) return;
     const hash = window.location.hash;
     const slug = entryForFragment(hash, loaded);
     setTarget(slug);
@@ -80,14 +96,36 @@ export function NewsPage() {
       revealedHash.current = hash;
       el.scrollIntoView?.({ block: 'start' });
       el.focus({ preventScroll: true });
+      realignTo.current = el;
     }
     const onHash = () => {
       revealedHash.current = window.location.hash;
-      setTarget(entryForFragment(window.location.hash, loaded));
+      const next = entryForFragment(window.location.hash, loaded);
+      setTarget(next);
+      realignTo.current = next ? document.getElementById(next) : null;
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
-  }, [loaded]);
+  }, [loaded, sizesReady]);
+  useEffect(() => {
+    const GESTURES = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
+    const stop = () => {
+      realignTo.current = null;
+    };
+    // « load » ne remonte pas : écouté en capture sur le document.
+    const onLoad = (ev: Event) => {
+      const el = realignTo.current;
+      const img = ev.target;
+      if (!el || !el.isConnected || !(img instanceof HTMLImageElement)) return;
+      if (el.compareDocumentPosition(img) & Node.DOCUMENT_POSITION_PRECEDING) el.scrollIntoView?.({ block: 'start' });
+    };
+    GESTURES.forEach((g) => window.addEventListener(g, stop, { capture: true, passive: true }));
+    document.addEventListener('load', onLoad, true);
+    return () => {
+      GESTURES.forEach((g) => window.removeEventListener(g, stop, { capture: true }));
+      document.removeEventListener('load', onLoad, true);
+    };
+  }, []);
 
   // « Copier le lien » : copie seulement — l'adresse ne change pas, la page ne défile
   // pas. Retour dans le libellé du bouton (largeur réservée) et annonce masquée ; une
@@ -231,16 +269,25 @@ export function NewsPage() {
                       Dans le plan de travail<span className="sr-only"> : {e.title}</span>
                     </Link>
                   ))}
-                  {e.captures.map((c) => (
-                    <a key={c} href={`${BASE}/${c}`} target="_blank" rel="noopener" className="block mt-4">
-                      <img
-                        src={`${BASE}/${c}`}
-                        alt={`Capture : ${e.title}`}
-                        loading="lazy"
-                        className="w-full rounded-md border border-border"
-                      />
-                    </a>
-                  ))}
+                  {e.captures.map((c) => {
+                    // Place réservée AVANT chargement (tailles.json, L47) : la capture ne
+                    // grandit pas après coup et l'arrivée sur une ancre ne dérive pas.
+                    const size = sizes[c];
+                    return (
+                      <a key={c} href={`${BASE}/${c}`} target="_blank" rel="noopener" className="block mt-4">
+                        <img
+                          src={`${BASE}/${c}`}
+                          alt={`Capture : ${e.title}`}
+                          loading="lazy"
+                          decoding="async"
+                          width={size?.[0]}
+                          height={size?.[1]}
+                          style={size ? { aspectRatio: `${size[0]} / ${size[1]}` } : undefined}
+                          className="w-full h-auto rounded-md border border-border"
+                        />
+                      </a>
+                    );
+                  })}
                 </article>
               </Fragment>
             );

@@ -280,6 +280,132 @@ describe('<NewsPage />', () => {
     expect(document.getElementById('2026-10-01-page')).not.toHaveAttribute('data-target');
   });
 
+  // ── Revue L47 (bloquant) : arrivée sur /nouveautes#<slug> avec des captures au-dessus ──
+  const WITH_CAPTURES = {
+    ...NEWS,
+    entries: [
+      { ...NEWS.entries[0], captures: ['captures/haut-a.png', 'captures/haut-b.png'] },
+      { ...NEWS.entries[1], captures: ['captures/bas.png'] },
+    ],
+  };
+  const SIZES = { 'captures/haut-a.png': [1440, 900], 'captures/haut-b.png': [390, 844], 'captures/bas.png': [780, 1688] };
+  function stubWithSizes(sizes: unknown = SIZES, sizesOk = true) {
+    const fetchMock = vi.fn(async (url: string) =>
+      url.endsWith('/nouveautes.json')
+        ? { ok: true, status: 200, json: async () => WITH_CAPTURES }
+        : url.endsWith('/tailles.json')
+          ? { ok: sizesOk, status: sizesOk ? 200 : 404, json: async () => sizes }
+          : { ok: false, status: 404, json: async () => null },
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  it('place réservée avant chargement : width, height et aspect-ratio de chaque capture issus de tailles.json', async () => {
+    const fetchMock = stubWithSizes();
+    renderPage();
+    await screen.findByRole('heading', { level: 2, name: 'Une page Plan de travail' });
+    expect(fetchMock).toHaveBeenCalledWith('/nouveautes-data/tailles.json', expect.anything());
+    const img = await waitFor(() => {
+      const i = document.querySelector('img[src="/nouveautes-data/captures/haut-a.png"]') as HTMLImageElement;
+      expect(i).toHaveAttribute('width', '1440');
+      return i;
+    });
+    expect(img).toHaveAttribute('height', '900');
+    expect(img.style.aspectRatio).toBe('1440 / 900');
+    expect(img.className).toMatch(/(^| )h-auto( |$)/);
+    const tall = document.querySelector('img[src="/nouveautes-data/captures/bas.png"]') as HTMLImageElement;
+    expect(tall).toHaveAttribute('width', '780');
+    expect(tall).toHaveAttribute('height', '1688');
+  });
+
+  it('tailles.json absent : captures affichées quand même, sans dimensions', async () => {
+    stubWithSizes(null, false);
+    renderPage();
+    await screen.findByRole('heading', { level: 2, name: 'Une page Plan de travail' });
+    const img = document.querySelector('img[src="/nouveautes-data/captures/haut-a.png"]') as HTMLImageElement;
+    expect(img).not.toHaveAttribute('width');
+    expect(img.style.aspectRatio).toBe('');
+  });
+
+  it('arrivée sur une ancre : défilement seulement une fois les tailles connues (mise en page stable)', async () => {
+    let releaseSizes!: () => void;
+    const gate = new Promise<void>((r) => (releaseSizes = r));
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.endsWith('/nouveautes.json')) return { ok: true, status: 200, json: async () => WITH_CAPTURES };
+      if (url.endsWith('/tailles.json')) {
+        await gate;
+        return { ok: true, status: 200, json: async () => SIZES };
+      }
+      return { ok: false, status: 404, json: async () => null };
+    }));
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    window.history.replaceState(null, '', '/nouveautes#2026-09-28-ancienne');
+    renderPage();
+    await screen.findByRole('heading', { level: 2, name: 'Une nouveauté plus ancienne' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(scroll).not.toHaveBeenCalled();
+    releaseSizes();
+    await waitFor(() => expect(document.getElementById('2026-09-28-ancienne')).toHaveFocus());
+    expect(scroll).toHaveBeenCalledTimes(1);
+  });
+
+  it('une capture AU-DESSUS de l’entrée visée finit de charger : la page se recale sur l’entrée, jusqu’au premier geste', async () => {
+    stubWithSizes();
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    window.history.replaceState(null, '', '/nouveautes#2026-09-28-ancienne');
+    renderPage();
+    await screen.findByRole('heading', { level: 2, name: 'Une nouveauté plus ancienne' });
+    const target = document.getElementById('2026-09-28-ancienne')!;
+    await waitFor(() => expect(target).toHaveFocus());
+    expect(scroll).toHaveBeenCalledTimes(1);
+    const above = document.querySelector('img[src="/nouveautes-data/captures/haut-a.png"]')!;
+    const below = document.querySelector('img[src="/nouveautes-data/captures/bas.png"]')!;
+
+    above.dispatchEvent(new Event('load'));
+    expect(scroll).toHaveBeenCalledTimes(2);
+    expect(scroll.mock.contexts[1]).toBe(target);
+    expect(scroll).toHaveBeenLastCalledWith({ block: 'start' });
+    expect(target).toHaveFocus();
+    // Une capture sous l'entrée ne déplace pas l'entrée : pas de recalage.
+    below.dispatchEvent(new Event('load'));
+    expect(scroll).toHaveBeenCalledTimes(2);
+
+    // Premier geste de l'utilisateur : plus aucun recalage.
+    window.dispatchEvent(new Event('wheel'));
+    document.querySelector('img[src="/nouveautes-data/captures/haut-b.png"]')!.dispatchEvent(new Event('load'));
+    expect(scroll).toHaveBeenCalledTimes(2);
+  });
+
+  for (const gesture of ['touchstart', 'keydown', 'pointerdown']) {
+    it(`recalage arrêté par le geste « ${gesture} »`, async () => {
+      stubWithSizes();
+      const scroll = vi.fn();
+      Element.prototype.scrollIntoView = scroll;
+      window.history.replaceState(null, '', '/nouveautes#2026-09-28-ancienne');
+      renderPage();
+      await screen.findByRole('heading', { level: 2, name: 'Une nouveauté plus ancienne' });
+      await waitFor(() => expect(document.getElementById('2026-09-28-ancienne')).toHaveFocus());
+      window.dispatchEvent(new Event(gesture));
+      document.querySelector('img[src="/nouveautes-data/captures/haut-a.png"]')!.dispatchEvent(new Event('load'));
+      expect(scroll).toHaveBeenCalledTimes(1);
+    });
+  }
+
+  it('sans ancre : le chargement des captures ne fait jamais défiler la page', async () => {
+    stubWithSizes();
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    renderPage();
+    await screen.findByRole('heading', { level: 2, name: 'Une nouveauté plus ancienne' });
+    document.querySelectorAll('img').forEach((i) => i.dispatchEvent(new Event('load')));
+    expect(scroll).not.toHaveBeenCalled();
+  });
+
   it('changement d’ancre (hashchange) : la nouvelle entrée est signalée ; ancre inconnue : aucune', async () => {
     stubNews();
     renderPage();

@@ -26,6 +26,22 @@ export async function fetchNews(): Promise<NewsData | null> {
 
 export const NEWS_QUERY_KEY = ['nouveautes'] as const;
 
+/** Capture → [largeur, hauteur] en pixels (tailles.json, écrit par `npm run news`, L47). */
+export type NewsSizes = Record<string, [number, number]>;
+export const NEWS_SIZES_QUERY_KEY = ['nouveautes', 'tailles'] as const;
+
+/** Tailles réelles des captures ; {} si absentes ou illisibles (les captures s'affichent quand même). */
+export async function fetchNewsSizes(): Promise<NewsSizes> {
+  try {
+    const res = await fetch(`${NEWS_BASE}/tailles.json`, { cache: 'no-cache' });
+    if (!res.ok) return {};
+    const data: unknown = await res.json();
+    return data && typeof data === 'object' ? (data as NewsSizes) : {};
+  } catch {
+    return {};
+  }
+}
+
 /** Jour (AAAA-MM-JJ) en toutes lettres, sans décalage de fuseau ; « 1er » pour le premier du mois (L47). */
 export function formatNewsDay(day: string): string {
   const text = new Date(`${day}T12:00:00Z`).toLocaleDateString('fr-FR', {
