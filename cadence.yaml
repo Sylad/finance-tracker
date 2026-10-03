@@ -1,3 +1,7 @@
+# Fichiers dérivés du plan : un commit qui ne touche que le plan et ceux-ci est de
+# l'entretien du plan (pas de lot à citer, ne compte pour aucun lot).
+plan:
+  files: [frontend/public/plan-data/plan.json]
 # Livraison par `cadence deliver` (https://github.com/Sylad/cadence) :
 # CI du sha poussé → bump du tag dans developpeur-gitops → vérification de l'effet.
 deliver:
