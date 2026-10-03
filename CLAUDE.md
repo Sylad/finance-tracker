@@ -57,6 +57,17 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   périmé = run rouge), Vitest, puis `npm run build` avec la vérification de fuite. Séparé
   de `build.yml` : il ne conditionne pas les images et `deploy.sh` ne le lit pas, mais
   `cadence deliver` attend tous les runs du sha — un plan périmé bloque la livraison.
+- **Tests Jest du backend en CI** (L53) : `.github/workflows/backend-checks.yml`, à
+  chaque push sans filtre de chemins et sur les pull requests — `npm ci --no-audit
+  --no-fund` puis `npm test` dans `backend/`, Node 20 ; rejouable tel quel en local. La
+  suite ne reçoit ni secret ni variable d'environnement et doit rester verte sans
+  réseau : un test qui a besoin d'`ANTHROPIC_API_KEY`, d'`APP_PIN`, d'Ollama ou de
+  `data/` se corrige (simulation, dossier jetable), il ne s'alimente pas par un secret
+  du dépôt. `build.yml` rejoue les deux mêmes commandes dans le job « Build & push
+  backend », avant le build : suite rouge = job rouge = pas d'image backend poussée, et
+  `deploy.sh` bloque comme pour tout build rouge (l'image frontend n'est pas retenue).
+  Des étapes dans le job, pas un job à part en `needs` : un build sauté (`skipped`)
+  n'est pas un build rouge pour `deploy.sh`.
 - **Où vivent les liens Nouveautés / Plan de travail / À propos** (L50) : dans le pied
   FIXE de la barre latérale (`SECONDARY_ITEMS`, avec la pastille « nouveau » de L47, et
   Déconnexion, rien d'autre) — toujours visibles au bureau, seule la zone au-dessus
