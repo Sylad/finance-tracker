@@ -74,7 +74,14 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
     steps:
+      # persist-credentials: false (L53) — depuis que ce job lance npm ci et
+      # Jest (code des dépendances exécuté), le jeton du workflow
+      # (packages: write) ne reste pas dans .git/config. Aucune étape suivante
+      # ne fait de git : le login GHCR lit secrets.GITHUB_TOKEN directement et
+      # le build Docker part d'un contexte de fichiers.
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       # L53 — pas d'image backend sur une suite Jest rouge : les trois étapes
       # ci-dessous ne tournent que pour le service backend et précèdent le
