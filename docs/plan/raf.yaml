@@ -420,10 +420,14 @@ lots:
     finished: 2026-10-02
   - id: L51
     title: "Barre latérale : « Tableau de bord » porte aria-current=page sur toutes les pages (lien sans correspondance exacte) — relevé pendant les corrections du menu"
-    status: todo
+    status: done
     estimate: 0.1
     quickwin: true
     created: 2026-10-02
+    started: 2026-10-03
+    notes:
+      - { date: 2026-10-03, text: "03-10 : défaut NON reproduit — avec @tanstack/react-router 1.169.1 le lien « / » n'est courant que sur « / » (test flou : startsWith + caractère suivant « / »), vérifié par 22 tests écrits d'abord (verts sur le code inchangé) et dans un vrai navigateur sur la démo (/loans, /history, /budget, /plan, /). Aucun correctif : les tests restent comme garde contre une montée de version du routeur. Écarté : activeOptions exact (sans includeSearch:false, « /?x=1 » perdrait aria-current — régression). Relevé hors lot : sur « / », le logo porte aussi aria-current en plus de « Tableau de bord »." }
+    finished: 2026-10-03
   - id: L52
     title: "Nettoyage récurrent des fichiers de travail devenus inutiles (consigne Sylvain 02-10) : dossier tmp partagé (captures, scripts de mesure, builds de démonstration), documents périmés (specs et plans de lots livrés, audits dépassés), scripts jetables, captures non référencées, dépendances et fichiers générés orphelins — lister avant de supprimer, ne rien effacer hors tmp sans l'avoir regardé, garder ce que les Nouveautés ou la doc référencent ; à refaire à chaque clôture de vague, rouvrir ce lot ou en créer un nouveau"
     status: todo

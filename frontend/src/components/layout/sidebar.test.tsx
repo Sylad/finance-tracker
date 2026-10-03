@@ -12,10 +12,10 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-async function renderSidebar() {
+async function renderSidebar(path = '/') {
   const router = createRouter({
     routeTree: createRootRoute({ component: () => <Sidebar /> }),
-    history: createMemoryHistory({ initialEntries: ['/'] }),
+    history: createMemoryHistory({ initialEntries: [path] }),
   });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -95,5 +95,54 @@ describe('<Sidebar /> (L50)', () => {
       window.dispatchEvent(new Event('resize'));
     });
     expect(fade()).toHaveAttribute('data-visible', 'true');
+  });
+});
+
+// L51 — « Tableau de bord » (route `/`) portait aria-current="page" sur TOUTES les pages :
+// la correspondance d'un lien TanStack est approximative par défaut, et `/` préfixe tout.
+describe('<Sidebar /> — page courante (L51)', () => {
+  const sidebarLinks = () => within(screen.getByRole('complementary')).getAllByRole('link');
+  const current = () => sidebarLinks().filter((a) => a.getAttribute('aria-current') === 'page');
+  const pageLinks = () => [
+    ...within(screen.getByRole('navigation', { name: 'Pages' })).getAllByRole('link'),
+    ...within(screen.getByRole('navigation', { name: 'Application' })).getAllByRole('link'),
+  ];
+  // État visuel « actif » d'une entrée : fond plein (`bg-surface-2`, pas le survol `hover:bg-surface-2/60`).
+  const looksActive = (a: HTMLElement) => /(^| )bg-surface-2( |$)/.test(a.className);
+
+  it('hors du tableau de bord, un seul lien porte aria-current, et ce n’est pas « Tableau de bord »', async () => {
+    await renderSidebar('/loans');
+    expect(current().map((a) => a.textContent)).toEqual(['Crédits']);
+    expect(screen.getByRole('link', { name: 'Tableau de bord' })).not.toHaveAttribute('aria-current');
+    // Le logo mène aussi à `/` : même règle.
+    for (const a of sidebarLinks().filter((l) => l.getAttribute('href') === '/')) {
+      expect(a).not.toHaveAttribute('aria-current');
+    }
+  });
+
+  it.each([...NAV_ITEMS, ...SECONDARY_ITEMS].map((i) => [i.label, i.to] as const))(
+    '« %s » porte seule aria-current sur sa page (%s), et l’état visuel suit',
+    async (label, to) => {
+      await renderSidebar(to);
+      expect(pageLinks().filter((a) => a.getAttribute('aria-current') === 'page').map((a) => a.textContent)).toEqual([label]);
+      // Dans toute la barre (logo compris), seuls des liens vers cette page sont marqués.
+      expect(current().map((a) => a.getAttribute('href'))).toEqual(current().map(() => to));
+      // Style actif et aria-current disent la même chose pour chaque entrée.
+      for (const a of pageLinks()) {
+        expect([a.textContent, looksActive(a)]).toEqual([a.textContent, a.getAttribute('aria-current') === 'page']);
+      }
+    },
+  );
+
+  it('une sous-route garde son entrée courante (/history/… → Historique)', async () => {
+    await renderSidebar('/history/2026-03');
+    expect(current().map((a) => a.textContent)).toEqual(['Historique']);
+    expect(looksActive(screen.getByRole('link', { name: 'Historique' }))).toBe(true);
+  });
+
+  it('au tableau de bord avec des paramètres d’URL, « Tableau de bord » reste la page courante', async () => {
+    await renderSidebar('/?ref=pwa');
+    expect(pageLinks().filter((a) => a.getAttribute('aria-current') === 'page').map((a) => a.textContent)).toEqual(['Tableau de bord']);
+    expect(looksActive(screen.getByRole('link', { name: 'Tableau de bord' }))).toBe(true);
   });
 });
