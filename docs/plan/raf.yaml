@@ -436,10 +436,11 @@ lots:
     created: 2026-10-02
   - id: L53
     title: "CI : lancer les tests Jest du backend à chaque push (aucun workflow ne les exécute — le test de build de L49 ne protège rien hors poste local)"
-    status: todo
+    status: doing
     estimate: 0.25
     quickwin: true
     created: 2026-10-03
+    started: 2026-10-03
   - id: L54
     title: "Livraison : index.html servi sans Cache-Control — un visiteur revenu garde l'ancienne appli après une livraison (mesuré le 03-10 sur ol-companion, même nginx.conf ici) ; un fichier d'actif absent répond 200 text/html max-age=14400 et Cloudflare le met en cache (page blanche possible) — no-cache sur index.html, 404 sur un actif manquant, cache long sur les fichiers à empreinte, contrôle d'effet dans cadence.yaml"
     status: done

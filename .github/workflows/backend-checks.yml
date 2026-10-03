@@ -1,0 +1,49 @@
+name: Contrôles backend
+
+# L53 : rend le run ROUGE si un test Jest du backend échoue. Avant ce workflow,
+# aucun run ne lançait la suite : le test de build de L49 (demo-fixtures.json
+# copié dans dist/) ne protégeait rien hors du poste local.
+#
+# À chaque push de main, sans filtre `paths` (comme frontend-checks.yml), et sur
+# les pull requests. La suite n'a besoin ni de secret ni de réseau : tout appel
+# à Claude ou à Ollama est simulé, les fichiers vont dans des dossiers jetables.
+# Un test qui en aurait besoin doit être corrigé, pas alimenté par un secret ici.
+#
+# Rejouable à l'identique en local, depuis backend/ :
+#   npm ci --no-audit --no-fund && npm test
+#
+# Workflow séparé de build.yml : scripts/deploy.sh ne le lit pas. C'est
+# build.yml qui refuse de construire l'image backend sur une suite rouge (mêmes
+# commandes, dans le job « Build & push backend ») ; ici la suite tourne aussi
+# quand backend/ n'a pas changé. cadence deliver attend tous les runs du sha
+# livré : une suite rouge bloque donc sa livraison.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-checks:
+    name: Tests Jest backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Dépendances
+        run: npm ci --no-audit --no-fund
+
+      - name: Tests Jest
+        run: npm test
