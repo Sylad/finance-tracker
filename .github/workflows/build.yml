@@ -69,6 +69,12 @@ jobs:
     needs: [detect-changes]
     if: ${{ needs.detect-changes.outputs.services != '[]' }}
     runs-on: ubuntu-latest
+    # L53 — sans borne, le job tombait sur les 360 min par défaut : un
+    # `nest build` bloqué dans le test de L49 (execFileSync sans délai) aurait
+    # laissé le run « en cours » des heures, et deploy.sh attend tout run
+    # d'ancêtre non terminé — plus aucune livraison. 15 min : backend-checks.yml
+    # borne les mêmes commandes à 10, le build d'image s'y ajoute.
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
