@@ -25,6 +25,18 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   construits par la CI (elle ne construit que le service modifié) et pousse → ArgoCD
   → `scripts/verify-rollout.sh` (pods sur les tags du values.yaml, `kubectl` lecture
   seule, contexte `dark-blue`) + `/api/health`. Jamais deux livraisons à la fois.
+- **Cache HTTP du frontend** (`frontend/nginx.conf`, L54) : `index.html` — par `/`,
+  `/index.html` ou en repli d'une route — et tout fichier SANS empreinte du build
+  (`sw.js`, manifest, icônes, `nouveautes-data/`, `plan-data/`) partent en
+  `Cache-Control: no-cache` (gardés mais revalidés, 304 possible) : sans cela le
+  navigateur montrait l'ancienne appli après une livraison. `/assets/` (sorties Vite à
+  empreinte) : un an `immutable` ; un fichier absent y répond **404** `no-store`, jamais
+  le repli HTML (Cloudflare le mettait en cache sous un nom en `.js`). Un fichier copié
+  tel quel va donc dans `public/`, jamais dans `assets/`. `sw.js` est réseau d'abord et
+  ne sert son cache qu'hors ligne : il dépend de ce `no-cache` pour ne pas recevoir un
+  vieil `index.html` du cache HTTP. Preuve sur un vrai nginx :
+  `scripts/test-nginx-cache.sh` (Docker, `frontend/dist` construit) ; effet en prod :
+  `scripts/verify-cache.sh`, joué par `cadence deliver`.
 - **Plan de travail public** (`/plan`, L48) : après TOUT `raf` qui modifie le plan
   (`add`, `start`, `done`, `drop`…) ou une nouvelle entrée Nouveautés, lancer
   `npm run plan` (régénère `frontend/public/plan-data/plan.json`, versionné : la CI

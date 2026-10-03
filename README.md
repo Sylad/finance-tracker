@@ -63,6 +63,7 @@ Curieux de savoir qui (toi / Claude / le backend) décide de quoi dans le pipeli
 | Storage | JSON local (pas de DB) |
 | Build | Docker multi-stage (node:20-alpine → nginx:alpine) |
 | Déploiement | Instance de démo : images sur GHCR (CI GitHub), chart Helm sur k3s via ArgoCD (GitOps), tunnel Cloudflare · données réelles : en local uniquement |
+| Cache HTTP | nginx : `index.html` et fichiers sans empreinte en `no-cache` (revalidés à chaque visite), `/assets/` à empreinte un an `immutable`, actif absent = 404 — testé par `scripts/test-nginx-cache.sh`, vérifié à chaque livraison par `scripts/verify-cache.sh` |
 
 ## Setup local
 
