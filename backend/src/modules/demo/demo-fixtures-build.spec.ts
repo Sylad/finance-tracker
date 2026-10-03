@@ -32,7 +32,13 @@ describe('build backend — assets de la démo (L49)', () => {
       tsconfigPath,
       JSON.stringify({
         extends: path.join(backendRoot, 'tsconfig.build.json'),
-        compilerOptions: { outDir, rootDir: path.join(backendRoot, 'src') },
+        // incremental: false — sinon le .tsbuildinfo peut tomber hors de workDir
+        // (selon TMPDIR) et survivre au nettoyage.
+        compilerOptions: {
+          outDir,
+          rootDir: path.join(backendRoot, 'src'),
+          incremental: false,
+        },
         // include/exclude d'un tsconfig se résolvent depuis SON dossier :
         // on les ancre sur le backend, comme tsconfig.build.json.
         include: [path.join(backendRoot, 'src', '**', '*')],
