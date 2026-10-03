@@ -91,10 +91,14 @@ jobs:
 
       # L53 — pas d'image backend sur une suite Jest rouge : les trois étapes
       # ci-dessous ne tournent que pour le service backend et précèdent le
-      # build. Un test rouge rend le job « Build & push backend » rouge, rien
-      # n'est poussé sur GHCR, et scripts/deploy.sh bloque la livraison du
-      # backend comme pour tout build rouge (le frontend n'est pas retenu :
-      # fail-fast: false). Étapes DANS ce job, pas un job à part en `needs` :
+      # build. Un test rouge rend le job « Build & push backend » rouge et
+      # aucune image backend n'est poussée sur GHCR. L'image frontend du même
+      # run, elle, est construite et poussée (fail-fast: false), mais
+      # scripts/deploy.sh refuse alors toute la livraison, comme pour tout
+      # build rouge : aucun tag n'est bumpé, la livraison des deux services
+      # reste bloquée tant que le backend n'est pas réparé (rerun vert ou
+      # commit qui touche backend/) — l'image frontend déjà poussée part avec
+      # cette réparation. Étapes DANS ce job, pas un job à part en `needs` :
       # un job de build sauté (skipped) n'est pas un build rouge pour
       # deploy.sh, et le frontend aurait attendu les tests du backend.
       # Mêmes commandes que backend-checks.yml (qui, lui, tourne à chaque

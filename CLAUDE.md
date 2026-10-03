@@ -64,9 +64,14 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   réseau : un test qui a besoin d'`ANTHROPIC_API_KEY`, d'`APP_PIN`, d'Ollama ou de
   `data/` se corrige (simulation, dossier jetable), il ne s'alimente pas par un secret
   du dépôt. `build.yml` rejoue les deux mêmes commandes dans le job « Build & push
-  backend », avant le build : suite rouge = job rouge = pas d'image backend poussée, et
-  `deploy.sh` bloque comme pour tout build rouge (l'image frontend n'est pas retenue).
-  Des étapes dans le job, pas un job à part en `needs` : un build sauté (`skipped`)
+  backend », avant le build : suite rouge = job rouge = pas d'image backend poussée.
+  L'image frontend du même run est, elle, construite et poussée (`fail-fast: false`),
+  mais `deploy.sh` refuse alors toute la livraison, comme pour tout build rouge : aucun
+  tag bumpé, la livraison des deux services reste bloquée tant que le backend n'est pas
+  réparé (`gh run rerun <id> --failed` vert, ou commit qui touche `backend/`) ; l'image
+  frontend déjà poussée part avec cette réparation. Le job est borné à 15 min
+  (`timeout-minutes`) et son checkout ne garde pas le jeton (`persist-credentials:
+  false`) : `npm ci` et Jest y tournent sous `packages: write`. Des étapes dans le job, pas un job à part en `needs` : un build sauté (`skipped`)
   n'est pas un build rouge pour `deploy.sh`.
 - **Où vivent les liens Nouveautés / Plan de travail / À propos** (L50) : dans le pied
   FIXE de la barre latérale (`SECONDARY_ITEMS`, avec la pastille « nouveau » de L47, et
