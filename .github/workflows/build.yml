@@ -76,6 +76,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # L53 — pas d'image backend sur une suite Jest rouge : les trois étapes
+      # ci-dessous ne tournent que pour le service backend et précèdent le
+      # build. Un test rouge rend le job « Build & push backend » rouge, rien
+      # n'est poussé sur GHCR, et scripts/deploy.sh bloque la livraison du
+      # backend comme pour tout build rouge (le frontend n'est pas retenu :
+      # fail-fast: false). Étapes DANS ce job, pas un job à part en `needs` :
+      # un job de build sauté (skipped) n'est pas un build rouge pour
+      # deploy.sh, et le frontend aurait attendu les tests du backend.
+      # Mêmes commandes que backend-checks.yml (qui, lui, tourne à chaque
+      # push) ; node_modules est écarté du contexte Docker par .dockerignore.
+      - name: Node (tests backend)
+        if: matrix.service == 'backend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Dépendances (tests backend)
+        if: matrix.service == 'backend'
+        working-directory: backend
+        run: npm ci --no-audit --no-fund
+
+      - name: Tests Jest backend (rouge = pas d'image)
+        if: matrix.service == 'backend'
+        working-directory: backend
+        run: npm test
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
