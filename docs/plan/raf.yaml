@@ -400,10 +400,14 @@ lots:
     finished: 2026-10-01
   - id: L49
     title: "Backend : demo-fixtures.json absent de dist/ (nest build ne copie pas les assets JSON) → /api/demo/seed en 500 ENOENT sur une instance neuve ; ajouter l'asset à nest-cli.json et un test"
-    status: todo
+    status: done
     estimate: 0.1
     quickwin: true
     created: 2026-10-01
+    started: 2026-10-03
+    finished: 2026-10-03
+    notes:
+      - { date: 2026-10-03, text: "Relecture indépendante : but atteint (201 sur instance neuve, 500 en contre-épreuve). Défaut mineur corrigé (ca0a663, tsbuildinfo). Reste : aucune CI ne lance le jest backend → lot dédié. Boucle find du Dockerfile laissée (doublon inoffensif). Image Docker non reconstruite en local." }
   - id: L50
     title: "Plan de travail au niveau des autres applis : identifiants de lot masqués, sous-tâches abandonnées hors décompte, étapes non détaillées annoncées, focus à l'arrivée sur /plan#id sans re-défilement, dates « 1er », contrôle CI du plan publié périmé, vérification de fuite sur dist ; liens Nouveautés / Plan de travail / À propos toujours visibles dans la barre latérale (audit L47)"
     public: "Un Plan de travail plus clair, et des liens toujours visibles dans le menu"
@@ -425,3 +429,9 @@ lots:
     status: todo
     estimate: 0.25
     created: 2026-10-02
+  - id: L53
+    title: "CI : lancer les tests Jest du backend à chaque push (aucun workflow ne les exécute — le test de build de L49 ne protège rien hors poste local)"
+    status: todo
+    estimate: 0.25
+    quickwin: true
+    created: 2026-10-03
