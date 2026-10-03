@@ -18,10 +18,13 @@
 # Cloudflare en dépend, la réponse vient donc de l'origine et pas d'une entrée
 # gardée d'avant la livraison (sans elle : faux rouge à la livraison tant que
 # l'ancienne entrée vit, faux vert ensuite).
-# Mesuré le 03-10 sur l'app sœur : Cloudflare réécrit en max-age=14400 le
-# no-cache d'un fichier hors /assets/ à extension mise en cache d'office
-# (/sw.js, icônes), même lu à l'origine — on n'exige donc pas d'en-tête sur
-# /sw.js : ce serait un rouge à chaque livraison pour un réglage du CDN.
+# On n'exige pas d'en-tête sur /sw.js : ce qu'un navigateur reçoit pour un
+# fichier hors /assets/ à extension mise en cache d'office (/sw.js, icônes)
+# dépend du réglage « Browser Cache TTL » de la zone Cloudflare, pas de l'appli.
+# Réglé sur 4 heures, il réécrivait le no-cache d'origine en max-age=14400
+# (mesuré le 03-10) ; depuis le 03-10 il est sur « Respect Existing Headers »
+# et /sw.js arrive en no-cache. L'exiger ici rendrait la livraison rouge si ce
+# réglage changeait.
 #
 # VERIFY_BASE_URL : autre cible (scripts/test-nginx-cache.sh y met le
 # conteneur local).

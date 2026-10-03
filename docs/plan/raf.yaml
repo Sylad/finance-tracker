@@ -454,3 +454,10 @@ lots:
     status: todo
     estimate: 0.5
     created: 2026-10-03
+  - id: L56
+    title: "verify-cache.sh : commentaire faux depuis le 03-10 — la zone Cloudflare est passée sur « Respect Existing Headers », /sw.js arrive en no-cache"
+    status: doing
+    estimate: 0.1
+    quickwin: true
+    created: 2026-10-03
+    started: 2026-10-03
