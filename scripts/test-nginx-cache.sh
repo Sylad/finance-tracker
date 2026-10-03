@@ -2,6 +2,9 @@
 # Teste frontend/nginx.conf sur un VRAI nginx : les en-têtes de cache et le
 # repli SPA, cas par cas, sur le dist/ réellement construit.
 #
+# Rejoue aussi scripts/verify-cache.sh (le contrôle d'effet de la livraison)
+# contre ce conteneur.
+#
 # Pourquoi : sans Cache-Control, un navigateur garde index.html par fraîcheur
 # heuristique et montre l'ancienne appli après une livraison ; et si un actif
 # absent répond le repli HTML en 200, Cloudflare met ce HTML en cache sous le
@@ -173,6 +176,14 @@ if [ -z "$bad" ]; then
   echo "ok   tout dist/ : $n_assets fichiers sous assets/ en cache long, $n_other autres en no-cache"
 else
   echo "FAIL tout dist/ ($n_assets sous assets/, $n_other autres) :$bad"; fails=$((fails + 1))
+fi
+
+# Le contrôle d'effet de la livraison (cadence.yaml → scripts/verify-cache.sh),
+# rejoué ici contre le conteneur : ce qu'il exigera de la prod passe en local.
+if VERIFY_BASE_URL="$BASE" sh "$ROOT/scripts/verify-cache.sh" > "$TMP/verify" 2>&1; then
+  echo "ok   scripts/verify-cache.sh contre le conteneur"
+else
+  echo "FAIL scripts/verify-cache.sh contre le conteneur"; sed 's/^/     | /' "$TMP/verify"; fails=$((fails + 1))
 fi
 
 # Toute empreinte de assets/ est bien une empreinte : le nom du fichier change

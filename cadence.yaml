@@ -9,4 +9,8 @@ deliver:
     - url: https://finance.sladoire.dev/api/health
       contains: '"status":"ok"'
     - url: https://finance.sladoire.dev/
+    # Politique de cache vue à travers Cloudflare : document en no-cache,
+    # actif absent en 404 (sonde à query string unique), actif à empreinte en
+    # cache long, sw.js en no-cache.
+    - command: ./scripts/verify-cache.sh
   verifyTimeout: 600
