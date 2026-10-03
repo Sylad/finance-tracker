@@ -436,11 +436,13 @@ lots:
     created: 2026-10-02
   - id: L53
     title: "CI : lancer les tests Jest du backend à chaque push (aucun workflow ne les exécute — le test de build de L49 ne protège rien hors poste local)"
-    status: doing
+    status: done
     estimate: 0.25
     quickwin: true
     created: 2026-10-03
     started: 2026-10-03
+    review: { date: 2026-10-03, verdict: "conforme — relecture indépendante en deux passes : suite rejouée sur export propre (39 suites, 572 tests, sans variable d'environnement ni réseau, UTC, Node 20), test-deploy 26/26, 4 scénarios rouges simulés sur deploy.sh (aucune image backend antérieure livrée en silence) ; 3 mineurs corrigés et relus (checkout sans jeton persisté, job borné à 15 min, formulation du backend rouge conforme à deploy.sh) ; 2 mineurs restants (étapes dupliquées laissées volontairement, jeton GHCR encore présent dans le job après les tests, reporté en lot à part) ; revérifié par le lead : 572 tests, test-deploy vert, 8 derniers runs de build.yml tous sous 2 min pour une borne de 15 ; workflows à prouver par le run du push", commit: 46623340a2f0990500ef8fce9e480091987ca24d }
+    finished: 2026-10-03
   - id: L54
     title: "Livraison : index.html servi sans Cache-Control — un visiteur revenu garde l'ancienne appli après une livraison (mesuré le 03-10 sur ol-companion, même nginx.conf ici) ; un fichier d'actif absent répond 200 text/html max-age=14400 et Cloudflare le met en cache (page blanche possible) — no-cache sur index.html, 404 sur un actif manquant, cache long sur les fichiers à empreinte, contrôle d'effet dans cadence.yaml"
     status: done
@@ -465,3 +467,17 @@ lots:
     notes:
       - { date: 2026-10-03, text: "Commentaire seul, aucun code exécuté changé ; script rejoué contre la prod (vert). Fermé sans relecture par un agent (--force) : rien à relire qu'un commentaire." }
     finished: 2026-10-03
+  - id: L57
+    title: "cadence.yaml : déclarer le plan publié (frontend/public/plan-data/plan.json) sous plan.files — depuis cadence 0.7.0 seul un commit dont tous les fichiers sont des fichiers du plan est de l'entretien"
+    status: done
+    estimate: 0.1
+    quickwin: true
+    created: 2026-10-03
+    started: 2026-10-03
+    review: { date: 2026-10-03, verdict: "conforme — une ligne de configuration (plan.files), écrite et relue par le lead, non relue par un agent ; effet mesuré : raf now et cadence deliver --dry-run lisent toujours le fichier, raf check propre après un commit plan + plan publié sans lot", commit: a4fc22d8efe1675700ebcc51c1ca9fad06d340b0 }
+    finished: 2026-10-03
+  - id: L58
+    title: "build.yml : la suite Jest tourne dans le job qui reçoit ensuite le jeton GHCR (login après les tests) — décider si les tests passent dans l'étape builder du Dockerfile ou si le risque résiduel est accepté (relecture de L53)"
+    status: todo
+    estimate: 0.5
+    created: 2026-10-03
