@@ -736,6 +736,74 @@ describe('LoansService', () => {
       expect(merged.occurrencesDetected).toHaveLength(2);
     });
 
+    it('keeps one debit per calendar month, highest-priority source wins', async () => {
+      const mk = (name: string) => svc.create({
+        name, type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', maxAmount: 3000, usedAmount: 0,
+      });
+      const canonical = await mk('A');
+      const dup = await mk('B');
+      await svc.addOccurrence(canonical.id, {
+        statementId: '2026-03', date: '2026-03-05', amount: -80, transactionId: 'tx-a', source: 'bank_statement',
+      });
+      // même mois, autre jour/transaction, source canonique
+      await svc.addOccurrence(dup.id, {
+        statementId: 'cs-03', date: '2026-03-20', amount: -80, transactionId: 'tx-b', source: 'credit_statement',
+      });
+      // tirage et remboursement anticipé : exemptés
+      await svc.addOccurrence(dup.id, {
+        statementId: '2026-03', date: '2026-03-25', amount: 500, transactionId: 'tx-draw', source: 'draw',
+      });
+
+      const merged = await svc.mergeDuplicates(canonical.id, [dup.id]);
+      const march = merged.occurrencesDetected.filter((o) => o.date.startsWith('2026-03'));
+      const debits = march.filter((o) => o.amount < 0);
+      expect(debits).toHaveLength(1);
+      expect(debits[0].source).toBe('credit_statement');
+      expect(march.some((o) => o.amount > 0)).toBe(true);
+    });
+
+    it('adopts the encours of the dup carrying the latest credit statement', async () => {
+      const canonical = await svc.create({
+        name: 'A', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', maxAmount: 3000, usedAmount: 0,
+      });
+      const dup = await svc.create({
+        name: 'B', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', maxAmount: 5000, usedAmount: 1234,
+      });
+      const snapshot = {
+        date: '2026-04-10T00:00:00.000Z', source: 'pdf-import' as const,
+        extractedValues: { currentBalance: 1234, maxAmount: 5000, statementDate: '2026-04-09' },
+      };
+      const all = await svc.getAll();
+      all.find((l) => l.id === dup.id)!.lastStatementSnapshot = snapshot;
+      await (svc as any).persist(all);
+
+      const merged = await svc.mergeDuplicates(canonical.id, [dup.id]);
+      expect(merged.usedAmount).toBe(1234);
+      expect(merged.maxAmount).toBe(5000);
+      expect(merged.lastStatementSnapshot).toEqual(snapshot);
+    });
+
+    it('keeps the canonical encours when it carries it', async () => {
+      const canonical = await svc.create({
+        name: 'A', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', maxAmount: 3000, usedAmount: 900,
+      });
+      const dup = await svc.create({
+        name: 'B', type: 'revolving', category: 'consumer',
+        monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+        creditor: 'Cofidis', maxAmount: 3000, usedAmount: 0,
+      });
+      const merged = await svc.mergeDuplicates(canonical.id, [dup.id]);
+      expect(merged.usedAmount).toBe(900);
+    });
+
     it('rejects merge when creditor differs', async () => {
       const a = await svc.create({
         name: 'Cofidis', type: 'revolving', category: 'consumer',

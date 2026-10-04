@@ -1478,9 +1478,10 @@ export class LoansService {
    * adoption du `contractRef` du dup si canonical n'en a pas, puis suppression
    * des duplicates.
    *
-   * NB : `usedAmount` du canonical est PRESERVÉ (on suppose qu'il est à jour),
-   * `maxAmount` aussi. Les statement snapshots des dups ne sont pas migrés
-   * (un seul snapshot conservé = celui du canonical).
+   * Un seul débit par mois calendaire est conservé (source la plus prioritaire).
+   * L'encours (`usedAmount`, `maxAmount`, `lastStatementSnapshot`) est celui du
+   * porteur : le loan au relevé de crédit le plus récent, à défaut le plus gros
+   * `usedAmount` ; le canonical l'emporte à égalité.
    */
   async mergeDuplicates(canonicalId: string, duplicateIds: string[]): Promise<Loan> {
     if (!duplicateIds || duplicateIds.length === 0) {
@@ -1539,8 +1540,46 @@ export class LoansService {
         }
       }
     }
+    // Invariant "1 débit/mois" : un seul débit par mois calendaire, la source la
+    // plus prioritaire gagne (égalité → le premier rencontré, donc celui du
+    // canonical). Tirages et remboursements anticipés restent exemptés.
+    const prio = (s: LoanOccurrenceSource | undefined): number =>
+      s === 'credit_statement' ? 3 : s === 'bank_statement' || s === undefined ? 2 : 1;
+    const keptByMonth = new Map<string, LoanOccurrence>();
+    for (const occ of canonical.occurrencesDetected) {
+      if (occ.amount >= 0 || occ.source === 'early_repayment') continue;
+      const month = occ.date.slice(0, 7);
+      const kept = keptByMonth.get(month);
+      if (!kept || prio(occ.source) > prio(kept.source)) keptByMonth.set(month, occ);
+    }
+    canonical.occurrencesDetected = canonical.occurrencesDetected.filter(
+      (o) =>
+        o.amount >= 0 ||
+        o.source === 'early_repayment' ||
+        keptByMonth.get(o.date.slice(0, 7)) === o,
+    );
     // Re-tri chrono
     canonical.occurrencesDetected.sort((a, b) => a.date.localeCompare(b.date));
+
+    // Porteur d'encours : le canonical adopte l'encours du loan (lui compris) au
+    // relevé de crédit le plus récent ; à défaut, celui du plus gros usedAmount.
+    const carrierScore = (l: Loan): [string, number] => [
+      l.lastStatementSnapshot?.extractedValues?.statementDate ?? '',
+      l.usedAmount ?? 0,
+    ];
+    let carrier = canonical;
+    for (const d of dups) {
+      const [cd, cu] = carrierScore(carrier);
+      const [dd, du] = carrierScore(d);
+      if (dd > cd || (dd === cd && du > cu)) carrier = d;
+    }
+    if (carrier !== canonical) {
+      canonical.usedAmount = carrier.usedAmount;
+      if (carrier.maxAmount != null) canonical.maxAmount = carrier.maxAmount;
+      if (carrier.lastStatementSnapshot) {
+        canonical.lastStatementSnapshot = carrier.lastStatementSnapshot;
+      }
+    }
 
     canonical.updatedAt = new Date().toISOString();
 
