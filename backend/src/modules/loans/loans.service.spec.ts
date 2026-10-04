@@ -96,6 +96,24 @@ describe('LoansService', () => {
     expect(reloaded.usedAmount).toBe(1120);
   });
 
+  it('addOccurrence — le remplacement d\'une occurrence ne décrémente pas l\'encours deux fois', async () => {
+    const loan = await svc.create({
+      name: 'Carte', type: 'revolving', category: 'consumer', monthlyPayment: 80,
+      matchPattern: 'C', isActive: true, maxAmount: 3000, usedAmount: 1000,
+    });
+    await svc.addOccurrence(loan.id, {
+      statementId: 'm-05', date: '2026-05-05', amount: -80, transactionId: 'tx-manual', source: 'manual',
+    });
+    expect((await svc.getOne(loan.id)).usedAmount).toBe(920);
+    // la source bancaire (plus prioritaire) remplace la saisie manuelle du même mois
+    await svc.addOccurrence(loan.id, {
+      statementId: '2026-05', date: '2026-05-10', amount: -80, transactionId: 'tx-bank', source: 'bank_statement',
+    });
+    const reloaded = await svc.getOne(loan.id);
+    expect(reloaded.occurrencesDetected.filter((o) => o.amount < 0)).toHaveLength(1);
+    expect(reloaded.usedAmount).toBe(920);
+  });
+
   it('addOccurrence early_repayment coexiste avec la mensualité du même mois et décrémente l\'encours', async () => {
     const loan = await svc.create({
       name: 'Cofidis Accessio', type: 'revolving', category: 'consumer',
@@ -863,6 +881,24 @@ describe('LoansService', () => {
       const march = merged.occurrencesDetected.filter((o) => o.date.startsWith('2026-03'));
       expect(march.filter((o) => o.source === 'early_repayment')).toHaveLength(1);
       expect(march.filter((o) => o.source !== 'early_repayment' && o.amount < 0)).toHaveLength(1);
+    });
+
+    it('does not decrement twice a month whose carrier debit loses the monthly dedup', async () => {
+      const canonical = await mkRev('A', 0);
+      const dup = await mkRev('B', 1000);
+      await setSnapshot(dup.id, '2026-04-09', 1000);
+      // le porteur a déjà imputé son débit de mai (1000 → 920)
+      await svc.addOccurrence(dup.id, {
+        statementId: '2026-05', date: '2026-05-05', amount: -80, transactionId: 'tx-dup-may',
+      });
+      // même mois, même priorité : celui du canonical gagne l'égalité
+      await svc.addOccurrence(canonical.id, {
+        statementId: '2026-05b', date: '2026-05-12', amount: -80, transactionId: 'tx-can-may',
+      });
+
+      const merged = await svc.mergeDuplicates(canonical.id, [dup.id]);
+      expect(merged.occurrencesDetected.filter((o) => o.amount < 0)).toHaveLength(1);
+      expect(merged.usedAmount).toBe(920);
     });
 
     it('keeps the canonical encours when it carries it', async () => {

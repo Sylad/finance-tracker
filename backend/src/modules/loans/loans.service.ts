@@ -251,6 +251,15 @@ export class LoansService {
       loan.occurrencesDetected = loan.occurrencesDetected.filter(
         (o) => o.id !== existingSameMonth.id,
       );
+      // L'occurrence remplacée avait déjà décrémenté l'encours (hors relevé de
+      // crédit et après la baseline) : on rend ce montant, sinon la nouvelle
+      // occurrence le décrémente une seconde fois.
+      if (loan.type === 'revolving' && loan.usedAmount != null && existingSameMonth.source !== 'credit_statement') {
+        const baseline = loan.lastStatementSnapshot?.extractedValues?.statementDate;
+        if (!baseline || existingSameMonth.date > baseline) {
+          loan.usedAmount = Math.round((loan.usedAmount + Math.abs(existingSameMonth.amount)) * 100) / 100;
+        }
+      }
     }
 
     const newOcc: LoanOccurrence = { id: randomUUID(), ...occ, source };
@@ -1584,6 +1593,17 @@ export class LoansService {
           carrier.occurrencesDetected.map((o) => `${o.statementId}::${o.transactionId ?? '_'}`),
         );
         let used = canonical.usedAmount;
+        // Débit du porteur écarté par la dédup mensuelle : son décrément est déjà
+        // dans l'encours du porteur, on le rend avant de rejouer celui qui reste.
+        const keptKeys = new Set(
+          canonical.occurrencesDetected.map((o) => `${o.statementId}::${o.transactionId ?? '_'}`),
+        );
+        for (const o of carrier.occurrencesDetected) {
+          if (keptKeys.has(`${o.statementId}::${o.transactionId ?? '_'}`)) continue;
+          if (o.amount >= 0 || o.source === 'credit_statement') continue;
+          if (baseline && o.date <= baseline) continue;
+          used = Math.round((used + Math.abs(o.amount)) * 100) / 100;
+        }
         for (const o of canonical.occurrencesDetected) {
           if (carrierKeys.has(`${o.statementId}::${o.transactionId ?? '_'}`)) continue;
           if (o.source === 'credit_statement') continue;
