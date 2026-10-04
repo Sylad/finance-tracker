@@ -1575,6 +1575,24 @@ export class LoansService {
     }
     if (carrier !== canonical) {
       canonical.usedAmount = carrier.usedAmount;
+      // Rejeu : les débits/tirages venus des AUTRES crédits et datés après la
+      // baseline du porteur ne sont pas dans son solde — même règle que
+      // addOccurrence (relevé de crédit exclu, débit/tirage ≤ baseline ignoré).
+      if (canonical.type === 'revolving' && canonical.usedAmount != null) {
+        const baseline = carrier.lastStatementSnapshot?.extractedValues?.statementDate;
+        const carrierKeys = new Set(
+          carrier.occurrencesDetected.map((o) => `${o.statementId}::${o.transactionId ?? '_'}`),
+        );
+        let used = canonical.usedAmount;
+        for (const o of canonical.occurrencesDetected) {
+          if (carrierKeys.has(`${o.statementId}::${o.transactionId ?? '_'}`)) continue;
+          if (o.source === 'credit_statement') continue;
+          if (baseline && o.date <= baseline) continue;
+          used = o.amount > 0 ? used + o.amount : Math.max(0, used - Math.abs(o.amount));
+          used = Math.round(used * 100) / 100;
+        }
+        canonical.usedAmount = used;
+      }
       if (carrier.maxAmount != null) canonical.maxAmount = carrier.maxAmount;
       if (carrier.lastStatementSnapshot) {
         canonical.lastStatementSnapshot = carrier.lastStatementSnapshot;

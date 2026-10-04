@@ -789,6 +789,82 @@ describe('LoansService', () => {
       expect(merged.lastStatementSnapshot).toEqual(snapshot);
     });
 
+    const mkRev = (name: string, usedAmount: number) => svc.create({
+      name, type: 'revolving', category: 'consumer',
+      monthlyPayment: 80, matchPattern: 'COFIDIS', isActive: true,
+      creditor: 'Cofidis', maxAmount: 3000, usedAmount,
+    });
+    const setSnapshot = async (id: string, statementDate: string, balance: number) => {
+      const all = await svc.getAll();
+      all.find((l) => l.id === id)!.lastStatementSnapshot = {
+        date: `${statementDate}T00:00:00.000Z`, source: 'pdf-import' as const,
+        extractedValues: { currentBalance: balance, maxAmount: 3000, statementDate },
+      };
+      await (svc as any).persist(all);
+    };
+
+    it('replays debits and draws of the other loans dated after the carrier baseline', async () => {
+      const canonical = await mkRev('A', 0);
+      const dup = await mkRev('B', 1234);
+      await setSnapshot(dup.id, '2026-04-09', 1234);
+      await svc.addOccurrence(canonical.id, {
+        statementId: '2026-05', date: '2026-05-05', amount: -80, transactionId: 'tx-may',
+      });
+      // antérieur à la baseline du porteur : déjà dans son solde
+      await svc.addOccurrence(canonical.id, {
+        statementId: '2026-04', date: '2026-04-05', amount: -80, transactionId: 'tx-apr',
+      });
+      await svc.addOccurrence(canonical.id, {
+        statementId: '2026-06', date: '2026-06-10', amount: 200, transactionId: 'tx-draw', source: 'draw',
+      });
+
+      const merged = await svc.mergeDuplicates(canonical.id, [dup.id]);
+      expect(merged.usedAmount).toBe(1234 - 80 + 200);
+    });
+
+    it('adopts the latest statement even when it carries the smallest encours', async () => {
+      const canonical = await mkRev('A', 900);
+      await setSnapshot(canonical.id, '2026-02-09', 900);
+      const dup = await mkRev('B', 0);
+      await setSnapshot(dup.id, '2026-04-09', 0);
+
+      const merged = await svc.mergeDuplicates(canonical.id, [dup.id]);
+      expect(merged.usedAmount).toBe(0);
+      expect(merged.lastStatementSnapshot?.extractedValues?.statementDate).toBe('2026-04-09');
+    });
+
+    it('keeps the canonical as carrier on a statement date tie (even with a smaller encours is not enough)', async () => {
+      const canonical = await mkRev('A', 500);
+      await setSnapshot(canonical.id, '2026-04-09', 500);
+      const dup = await mkRev('B', 500);
+      await setSnapshot(dup.id, '2026-04-09', 500);
+      const all = await svc.getAll();
+      all.find((l) => l.id === dup.id)!.maxAmount = 9999;
+      await (svc as any).persist(all);
+
+      const merged = await svc.mergeDuplicates(canonical.id, [dup.id]);
+      expect(merged.maxAmount).toBe(3000);
+    });
+
+    it('does not drop an early repayment sharing a month with a debit', async () => {
+      const canonical = await mkRev('A', 0);
+      const dup = await mkRev('B', 0);
+      await svc.addOccurrence(canonical.id, {
+        statementId: '2026-03', date: '2026-03-05', amount: -80, transactionId: 'tx-a',
+      });
+      await svc.addOccurrence(dup.id, {
+        statementId: '2026-03', date: '2026-03-12', amount: -2000, transactionId: 'tx-early', source: 'early_repayment',
+      });
+      await svc.addOccurrence(dup.id, {
+        statementId: '2026-03b', date: '2026-03-20', amount: -80, transactionId: 'tx-b', source: 'credit_statement',
+      });
+
+      const merged = await svc.mergeDuplicates(canonical.id, [dup.id]);
+      const march = merged.occurrencesDetected.filter((o) => o.date.startsWith('2026-03'));
+      expect(march.filter((o) => o.source === 'early_repayment')).toHaveLength(1);
+      expect(march.filter((o) => o.source !== 'early_repayment' && o.amount < 0)).toHaveLength(1);
+    });
+
     it('keeps the canonical encours when it carries it', async () => {
       const canonical = await svc.create({
         name: 'A', type: 'revolving', category: 'consumer',
