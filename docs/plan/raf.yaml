@@ -35,11 +35,12 @@ lots:
     finished: 2026-10-01
   - id: L3
     title: "mergeDuplicates : dédup par mois calendaire, préférer le porteur d'encours"
-    status: todo
+    status: doing
     estimate: 1
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #4" }
+    started: 2026-10-04
   - id: L4
     title: "Scans de détection concurrents : mutex / skip si scan en cours"
     status: todo
