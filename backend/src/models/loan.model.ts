@@ -58,6 +58,7 @@ export interface LoanOccurrence {
   transactionId: string | null;
   description?: string;  // Libellé de la transaction d'origine (pour split par référence)
   source?: LoanOccurrenceSource;  // Default 'bank_statement' pour rétro-compat
+  recordedAt?: string;  // ISO : moment de l'enregistrement (absent des occurrences historiques)
 }
 
 /**

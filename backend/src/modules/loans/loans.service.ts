@@ -268,13 +268,18 @@ export class LoansService {
         source !== 'credit_statement'
       ) {
         const baseline = loan.lastStatementSnapshot?.extractedValues?.statementDate;
-        if (!baseline || existingSameMonth.date > baseline) {
+        // Un snapshot appliqué APRÈS l'enregistrement de l'occurrence a écrasé
+        // son décrément : rien à rendre (sans recordedAt, repli sur la date).
+        const snapshotAt = loan.lastStatementSnapshot?.date;
+        const overwritten =
+          !!snapshotAt && !!existingSameMonth.recordedAt && existingSameMonth.recordedAt < snapshotAt;
+        if (!overwritten && (!baseline || existingSameMonth.date > baseline)) {
           loan.usedAmount = Math.round((loan.usedAmount + Math.abs(existingSameMonth.amount)) * 100) / 100;
         }
       }
     }
 
-    const newOcc: LoanOccurrence = { id: randomUUID(), ...occ, source };
+    const newOcc: LoanOccurrence = { id: randomUUID(), ...occ, source, recordedAt: new Date().toISOString() };
     loan.occurrencesDetected.push(newOcc);
     // Décrément d'encours : PAS pour une occurrence credit_statement (le
     // snapshot officiel qui l'accompagne pose déjà usedAmount = solde du

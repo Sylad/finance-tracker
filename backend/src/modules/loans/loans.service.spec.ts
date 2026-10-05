@@ -343,6 +343,33 @@ describe('LoansService', () => {
       expect((await svc.getOne(loan.id)).usedAmount).toBe(900);
     });
 
+    it("usedAmount — pas de restitution quand un snapshot de relevé a écrasé le décrément de l'occurrence remplacée", async () => {
+      jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate', 'setTimeout'] });
+      try {
+        const loan = await svc.create({
+          name: 'Sofinco', type: 'revolving', category: 'consumer', monthlyPayment: 100,
+          matchPattern: 'SOFINCO', isActive: true, maxAmount: 10000, usedAmount: 1000,
+        });
+        jest.setSystemTime(new Date('2026-03-02T10:00:00Z'));
+        await svc.addOccurrence(loan.id, {
+          statementId: 'm', date: '2026-03-02', amount: -100, transactionId: 'tx-m', source: 'manual',
+        });
+        expect((await svc.getOne(loan.id)).usedAmount).toBe(900);
+        jest.setSystemTime(new Date('2026-03-03T10:00:00Z'));
+        await svc.applyStatementSnapshot(loan.id, {
+          creditor: 'Sofinco', creditType: 'revolving', currentBalance: 950, maxAmount: 10000,
+          monthlyPayment: 100, endDate: null, taeg: null, statementDate: '2026-02-28',
+        });
+        jest.setSystemTime(new Date('2026-03-04T10:00:00Z'));
+        await svc.addOccurrence(loan.id, {
+          statementId: '2026-03', date: '2026-03-03', amount: -100, transactionId: 'tx-b',
+        });
+        expect((await svc.getOne(loan.id)).usedAmount).toBe(850);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it('removeOccurrencesForStatement — reverse les effets sur usedAmount (mensualités et tirages)', async () => {
       const loan = await svc.create({
         name: 'Floa', type: 'revolving', category: 'consumer', monthlyPayment: 100,
