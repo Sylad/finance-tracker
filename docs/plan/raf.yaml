@@ -46,6 +46,9 @@ lots:
       - { id: t2, title: "addOccurrence (loans.service.ts:259) et mergeDuplicates (l.1601) : ne rendre le montant de l'occurrence remplacée que si son décrément est encore dans l'encours (pas après un applyStatementSnapshot) + test relevé crédit daté avant le prélèvement (ordre réel loans.controller.ts:223-238)", status: todo }
       - { id: t3, title: "test du départage du porteur à date égale par encours (du > cu, l.1583) ; corriger le titre du test loans.service.spec.ts:854", status: todo }
       - { id: t4, title: une seule table de priorité des sources d'occurrence partagée par addOccurrence (sourcePriority l.222) et mergeDuplicates (prio l.1555), status: todo }
+      - { id: t5, title: "addOccurrence : restitution de l'occurrence remplacée limitée aux décréments encore dans l'encours — couvrir le snapshot appliqué après l'occurrence (occurrence manuelle du 03-02, relevé du 02-28, bancaire du 03-03 → 850 €), avec test", status: todo }
+      - { id: t6, title: "mergeDuplicates : appliquer le garde recordedAt < snapshot.date du porteur à la restitution du débit écarté par la dédup mensuelle (l.1622), avec test : débit manuel du porteur enregistré avant son snapshot puis bank_statement du doublon → 850", status: todo }
+      - { id: t7, title: "mergeDuplicates : mettre à jour recordedAt des occurrences dont la fusion rejoue le décrément, pour qu'un remplacement ultérieur dans addOccurrence les rende, avec test : fusion puis bank_statement du même mois → 850 et non 750", status: todo }
     review: { date: 2026-10-05, verdict: "conforme — orchestré (vague 2026-10-05-0800, 1 passe(s) de correction + passe des mineurs)", commit: 4c1d2c9783ea4c1c2df9d944abb46e0bda7465be }
   - id: L4
     title: "Scans de détection concurrents : mutex / skip si scan en cours"
