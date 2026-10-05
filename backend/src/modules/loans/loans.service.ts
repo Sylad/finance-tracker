@@ -21,6 +21,18 @@ export interface CreditStatementSnapshotInput {
 }
 
 /**
+ * Priorité des sources d'occurrence pour la dédup mensuelle (plus haut = plus
+ * prioritaire), partagée par `addOccurrence` et `mergeDuplicates`.
+ * credit_statement = source canonique (émise par l'organisme prêteur), donc
+ * elle remplace bank_statement et manual ; undefined = legacy = bank.
+ */
+export function occurrenceSourcePriority(s: LoanOccurrenceSource | undefined): number {
+  if (s === 'credit_statement') return 3;
+  if (s === 'bank_statement' || s === undefined) return 2;
+  return 1; // manual
+}
+
+/**
  * Source d'un patch appliqué à un Loan. Détermine la priorité d'écrasement
  * dans `mergeLoanPatch` : user > amortization > credit_statement >
  * bank_statement > suggestion. Cf doc dans CLAUDE.md du repo.
@@ -219,13 +231,6 @@ export class LoansService {
       await this.persist(all);
       return loan;
     }
-    const sourcePriority = (s: LoanOccurrenceSource | undefined): number => {
-      // Plus haut = plus prioritaire. credit_statement = source canonique
-      // (émis par l'organisme prêteur), donc remplace bank_statement et manual.
-      if (s === 'credit_statement') return 3;
-      if (s === 'bank_statement' || s === undefined) return 2; // undefined = legacy = bank
-      return 1; // manual
-    };
     // Un remboursement anticipé n'est pas une mensualité : il échappe à
     // l'invariant "1 débit/mois" dans les deux sens (il n'est pas bloqué par
     // la mensualité du mois, et ne bloque pas celle-ci).
@@ -236,8 +241,8 @@ export class LoansService {
             (o) => o.amount < 0 && o.source !== 'early_repayment' && monthOf(o.date) === newMonth,
           );
     if (existingSameMonth) {
-      const existingPrio = sourcePriority(existingSameMonth.source);
-      const newPrio = sourcePriority(source);
+      const existingPrio = occurrenceSourcePriority(existingSameMonth.source);
+      const newPrio = occurrenceSourcePriority(source);
       if (newPrio <= existingPrio) {
         this.logger.debug(
           `Skipping occurrence on loan ${id} for ${newMonth} — existing ${existingSameMonth.source ?? 'bank'} has equal/higher priority`,
@@ -253,8 +258,15 @@ export class LoansService {
       );
       // L'occurrence remplacée avait déjà décrémenté l'encours (hors relevé de
       // crédit et après la baseline) : on rend ce montant, sinon la nouvelle
-      // occurrence le décrémente une seconde fois.
-      if (loan.type === 'revolving' && loan.usedAmount != null && existingSameMonth.source !== 'credit_statement') {
+      // occurrence le décrémente une seconde fois. Sauf si la remplaçante est
+      // un relevé de crédit : son snapshot, appliqué juste avant (ordre réel de
+      // l'import), a posé usedAmount = solde du relevé et écrasé ce décrément.
+      if (
+        loan.type === 'revolving' &&
+        loan.usedAmount != null &&
+        existingSameMonth.source !== 'credit_statement' &&
+        source !== 'credit_statement'
+      ) {
         const baseline = loan.lastStatementSnapshot?.extractedValues?.statementDate;
         if (!baseline || existingSameMonth.date > baseline) {
           loan.usedAmount = Math.round((loan.usedAmount + Math.abs(existingSameMonth.amount)) * 100) / 100;
@@ -1536,6 +1548,12 @@ export class LoansService {
     }
     canonical.rumRefs = allRums.size > 0 ? [...allRums] : undefined;
 
+    // Occurrences de chaque loan AVANT migration (le canonical est muté ensuite) :
+    // elles disent ce que l'encours du porteur contient déjà.
+    const originalOccs = new Map<Loan, LoanOccurrence[]>(
+      [canonical, ...dups].map((l) => [l, [...l.occurrencesDetected]]),
+    );
+
     // Migration des occurrencesDetected — dédup par (statementId, transactionId)
     const seenKey = new Set<string>(
       canonical.occurrencesDetected.map((o) => `${o.statementId}::${o.transactionId ?? '_'}`),
@@ -1552,14 +1570,12 @@ export class LoansService {
     // Invariant "1 débit/mois" : un seul débit par mois calendaire, la source la
     // plus prioritaire gagne (égalité → le premier rencontré, donc celui du
     // canonical). Tirages et remboursements anticipés restent exemptés.
-    const prio = (s: LoanOccurrenceSource | undefined): number =>
-      s === 'credit_statement' ? 3 : s === 'bank_statement' || s === undefined ? 2 : 1;
     const keptByMonth = new Map<string, LoanOccurrence>();
     for (const occ of canonical.occurrencesDetected) {
       if (occ.amount >= 0 || occ.source === 'early_repayment') continue;
       const month = occ.date.slice(0, 7);
       const kept = keptByMonth.get(month);
-      if (!kept || prio(occ.source) > prio(kept.source)) keptByMonth.set(month, occ);
+      if (!kept || occurrenceSourcePriority(occ.source) > occurrenceSourcePriority(kept.source)) keptByMonth.set(month, occ);
     }
     canonical.occurrencesDetected = canonical.occurrencesDetected.filter(
       (o) =>
@@ -1582,37 +1598,35 @@ export class LoansService {
       const [dd, du] = carrierScore(d);
       if (dd > cd || (dd === cd && du > cu)) carrier = d;
     }
-    if (carrier !== canonical) {
-      canonical.usedAmount = carrier.usedAmount;
-      // Rejeu : les débits/tirages venus des AUTRES crédits et datés après la
-      // baseline du porteur ne sont pas dans son solde — même règle que
-      // addOccurrence (relevé de crédit exclu, débit/tirage ≤ baseline ignoré).
-      if (canonical.type === 'revolving' && canonical.usedAmount != null) {
-        const baseline = carrier.lastStatementSnapshot?.extractedValues?.statementDate;
-        const carrierKeys = new Set(
-          carrier.occurrencesDetected.map((o) => `${o.statementId}::${o.transactionId ?? '_'}`),
-        );
-        let used = canonical.usedAmount;
-        // Débit du porteur écarté par la dédup mensuelle : son décrément est déjà
-        // dans l'encours du porteur, on le rend avant de rejouer celui qui reste.
-        const keptKeys = new Set(
-          canonical.occurrencesDetected.map((o) => `${o.statementId}::${o.transactionId ?? '_'}`),
-        );
-        for (const o of carrier.occurrencesDetected) {
-          if (keptKeys.has(`${o.statementId}::${o.transactionId ?? '_'}`)) continue;
-          if (o.amount >= 0 || o.source === 'credit_statement') continue;
-          if (baseline && o.date <= baseline) continue;
-          used = Math.round((used + Math.abs(o.amount)) * 100) / 100;
-        }
-        for (const o of canonical.occurrencesDetected) {
-          if (carrierKeys.has(`${o.statementId}::${o.transactionId ?? '_'}`)) continue;
-          if (o.source === 'credit_statement') continue;
-          if (baseline && o.date <= baseline) continue;
-          used = o.amount > 0 ? used + o.amount : Math.max(0, used - Math.abs(o.amount));
-          used = Math.round(used * 100) / 100;
-        }
-        canonical.usedAmount = used;
+    canonical.usedAmount = carrier.usedAmount;
+    // Rejeu : les débits/tirages absents de l'historique du porteur et datés
+    // après sa baseline ne sont pas dans son solde — même règle que
+    // addOccurrence (relevé de crédit exclu, débit/tirage ≤ baseline ignoré).
+    // Valable aussi quand le porteur est le canonical : le résultat ne dépend
+    // pas du sens de la fusion.
+    if (canonical.type === 'revolving' && canonical.usedAmount != null) {
+      const baseline = carrier.lastStatementSnapshot?.extractedValues?.statementDate;
+      const keyOf = (o: LoanOccurrence) => `${o.statementId}::${o.transactionId ?? '_'}`;
+      const carrierOccs = originalOccs.get(carrier) ?? [];
+      const carrierKeys = new Set(carrierOccs.map(keyOf));
+      const keptKeys = new Set(canonical.occurrencesDetected.map(keyOf));
+      const counts = (o: LoanOccurrence) =>
+        o.source !== 'credit_statement' && (!baseline || o.date > baseline);
+      let used = canonical.usedAmount;
+      // Débit du porteur écarté par la dédup mensuelle : son décrément est déjà
+      // dans l'encours du porteur, on le rend avant de rejouer celui qui reste.
+      for (const o of carrierOccs) {
+        if (keptKeys.has(keyOf(o)) || o.amount >= 0 || !counts(o)) continue;
+        used = Math.round((used + Math.abs(o.amount)) * 100) / 100;
       }
+      for (const o of canonical.occurrencesDetected) {
+        if (carrierKeys.has(keyOf(o)) || !counts(o)) continue;
+        used = o.amount > 0 ? used + o.amount : Math.max(0, used - Math.abs(o.amount));
+        used = Math.round(used * 100) / 100;
+      }
+      canonical.usedAmount = used;
+    }
+    if (carrier !== canonical) {
       if (carrier.maxAmount != null) canonical.maxAmount = carrier.maxAmount;
       if (carrier.lastStatementSnapshot) {
         canonical.lastStatementSnapshot = carrier.lastStatementSnapshot;
