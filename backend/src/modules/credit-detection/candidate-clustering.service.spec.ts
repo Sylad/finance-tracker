@@ -1,11 +1,12 @@
 import { CandidateClusteringService } from './candidate-clustering.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
+import { Transaction } from '../../models/transaction.model';
 
-const tx = (id: string, date: string, description: string, amount: number) => ({
+const tx = (id: string, date: string, description: string, amount: number): Transaction => ({
   id, date, description, normalizedDescription: description.toLowerCase(),
-  amount, currency: 'EUR', category: 'shopping', subcategory: '', isRecurring: false, confidence: 1,
+  amount, currency: 'EUR', category: 'other', subcategory: '', isRecurring: false, confidence: 1,
 });
-const stmt = (id: string, month: number, txs: ReturnType<typeof tx>[]): MonthlyStatement => ({
+const stmt = (id: string, month: number, txs: Transaction[]): MonthlyStatement => ({
   id, month, year: 2026, uploadedAt: '', bankName: 'X', accountHolder: 'Demo', currency: 'EUR',
   openingBalance: 0, closingBalance: 0, totalCredits: 0, totalDebits: 0, transactions: txs,
   healthScore: { total: 50, breakdown: { savingsRate: 50, expenseControl: 50, debtBurden: 50, cashFlowBalance: 50, irregularSpending: 50 }, trend: 'insufficient_data', claudeComment: '' },

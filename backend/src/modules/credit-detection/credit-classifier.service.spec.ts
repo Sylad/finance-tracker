@@ -179,7 +179,7 @@ describe('CreditClassifierService', () => {
   it('fetch reject -> throw', async () => {
     jest
       .spyOn(global, 'fetch' as never)
-      .mockRejectedValue(new Error('ECONNREFUSED'));
+      .mockRejectedValue(new Error('ECONNREFUSED') as never);
 
     await expect(svc.classify(CLUSTER)).rejects.toThrow();
   });

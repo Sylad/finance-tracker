@@ -8,6 +8,9 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { StorageService } from '../storage/storage.service';
 import { EventBusService } from '../events/event-bus.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
+import { Loan } from '../../models/loan.model';
+import { SavingsAccount } from '../../models/savings-account.model';
+import { Transaction } from '../../models/transaction.model';
 
 const baseStatement: MonthlyStatement = {
   id: '2026-03',
@@ -35,7 +38,7 @@ describe('AutoSyncService', () => {
   let loansUpdate: jest.Mock;
   let storageGetAllStatements: jest.Mock;
 
-  const mkStaleLoan = (over: Record<string, unknown>) => ({
+  const mkStaleLoan = (over: Partial<Loan> = {}): Loan => ({
     id: 'loan-x', name: 'X', type: 'classic', category: 'consumer',
     monthlyPayment: 100, matchPattern: 'ZZZ-NO-MATCH', isActive: true,
     occurrencesDetected: [], createdAt: '2026-01-01T00:00:00Z', updatedAt: '', ...over,
@@ -215,7 +218,7 @@ describe('AutoSyncService', () => {
   });
 
   describe('syncSavings — recalibrage bank-extract robuste au désordre (bug PEL 2026-08-13)', () => {
-    const mkPel = (over: Record<string, unknown>) => ({
+    const mkPel = (over: Partial<SavingsAccount> = {}): SavingsAccount => ({
       id: 'pel-1', name: 'PEL', type: 'pel', initialBalance: 300, initialBalanceDate: '2026-03-31',
       matchPattern: '', accountNumber: '75627146', interestRate: 0.02, interestAnniversaryMonth: 1,
       currentBalance: 600, lastSyncedStatementId: null, movements: [], createdAt: '', updatedAt: '', ...over,
@@ -345,13 +348,13 @@ describe('AutoSyncService', () => {
   });
 
   describe('syncLoans — matcher standard : débits only, 1/mois au plus proche, cross-loan dedup', () => {
-    const mkLoan = (over: Record<string, unknown>) => ({
+    const mkLoan = (over: Partial<Loan> = {}): Loan => ({
       id: 'loan-1', name: 'Revolving', type: 'revolving', category: 'consumer',
       monthlyPayment: 100, matchPattern: 'CREDITOR', isActive: true,
       maxAmount: 3000, usedAmount: 1200,
       occurrencesDetected: [], createdAt: '', updatedAt: '', ...over,
     });
-    const mkTx = (id: string, date: string, description: string, amount: number) => ({
+    const mkTx = (id: string, date: string, description: string, amount: number): Transaction => ({
       id, date, description, normalizedDescription: description.toLowerCase(),
       amount, currency: 'EUR', category: 'subscriptions', subcategory: '', isRecurring: true, confidence: 1,
     });
@@ -459,13 +462,13 @@ describe('AutoSyncService', () => {
     // Vécu 2026-08 : 5 virements instantanés (22 691 €) vers Cofidis/Sofinco
     // ignorés par le matcher — le mois était déjà « pris » par la mensualité
     // et le n° de contrat stocké avec espaces ne matchait pas le libellé.
-    const mkLoan = (over: Record<string, unknown>) => ({
+    const mkLoan = (over: Partial<Loan> = {}): Loan => ({
       id: 'loan-1', name: 'Cofidis Accessio', type: 'revolving', category: 'consumer',
       monthlyPayment: 186, matchPattern: 'COFIDIS', isActive: true,
       contractRef: '289.770.015.047.35', maxAmount: 6000, usedAmount: 5403.1,
       occurrencesDetected: [], createdAt: '', updatedAt: '', ...over,
     });
-    const mkTx = (id: string, date: string, description: string, amount: number) => ({
+    const mkTx = (id: string, date: string, description: string, amount: number): Transaction => ({
       id, date, description, normalizedDescription: description.toLowerCase(),
       amount, currency: 'EUR', category: 'transfers', subcategory: '', isRecurring: false, confidence: 1,
     });
@@ -550,13 +553,13 @@ describe('AutoSyncService', () => {
   });
 
   describe('syncLoans — tirages (draws) sur revolving', () => {
-    const mkRev = (over: Record<string, unknown>) => ({
+    const mkRev = (over: Partial<Loan> = {}): Loan => ({
       id: 'rev-1', name: 'Réserve', type: 'revolving', category: 'consumer',
       monthlyPayment: 100, matchPattern: 'CREDITOR', isActive: true,
       maxAmount: 5000, usedAmount: 2000,
       occurrencesDetected: [], createdAt: '', updatedAt: '', ...over,
     });
-    const mkTx = (id: string, date: string, description: string, amount: number) => ({
+    const mkTx = (id: string, date: string, description: string, amount: number): Transaction => ({
       id, date, description, normalizedDescription: description.toLowerCase(),
       amount, currency: 'EUR', category: 'other', subcategory: '', isRecurring: false, confidence: 1,
     });
@@ -634,7 +637,7 @@ describe('AutoSyncService', () => {
       savings.getAll.mockResolvedValue([]);
       const staleOcc = [{
         id: 'o1', statementId: '2026-04', date: '2026-04-20', amount: -150,
-        transactionId: 'tx-old', description: 'old', source: 'bank_statement',
+        transactionId: 'tx-old', description: 'old', source: 'bank_statement' as const,
       }];
       loans.getAll.mockResolvedValue([
         mkStaleLoan({ id: 'rev-1', name: 'Revolving encours', type: 'revolving', maxAmount: 6000, usedAmount: 5000, occurrencesDetected: staleOcc }),

@@ -1,7 +1,8 @@
 import { detectStableIncome } from './income-detection.helper';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
+import { Transaction } from '../../models/transaction.model';
 
-const tx = (id: string, date: string, description: string, amount: number) => ({
+const tx = (id: string, date: string, description: string, amount: number): Transaction => ({
   id,
   date,
   description,
@@ -16,7 +17,7 @@ const tx = (id: string, date: string, description: string, amount: number) => ({
 const stmt = (
   id: string,
   month: number,
-  txs: ReturnType<typeof tx>[],
+  txs: Transaction[],
 ): MonthlyStatement => ({
   id,
   month,

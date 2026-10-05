@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { HealthThresholdsService } from './health-thresholds.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
-import { DEFAULT_THRESHOLDS } from '../../models/health.model';
+import { DEFAULT_THRESHOLDS, HealthThresholds } from '../../models/health.model';
 
 describe('HealthThresholdsService', () => {
   let svc: HealthThresholdsService;
@@ -92,7 +92,8 @@ describe('HealthThresholdsService', () => {
     expect(current.tauxEffort).toEqual({ orangeAbovePct: 30, redAbovePct: 45 });
 
     // Update partiel : on change seulement redAbovePct
-    const out = await svc.update({ tauxEffort: { redAbovePct: 40 } });
+    // Le service fusionne champ par champ : le patch réel est partiel, le type ne l'exprime pas.
+    const out = await svc.update({ tauxEffort: { redAbovePct: 40 } } as unknown as Partial<HealthThresholds>);
     // Attendu : orangeAbovePct reste 30, redAbovePct change à 40 (pas revert aux défauts)
     expect(out.tauxEffort).toEqual({ orangeAbovePct: 30, redAbovePct: 40 });
     // Vérifier persistence
