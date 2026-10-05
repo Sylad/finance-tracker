@@ -495,8 +495,9 @@ lots:
     created: 2026-10-03
   - id: L59
     title: "Type-check backend : 49 erreurs tsc --noEmit dans des specs antérieures (44 dans auto-sync.service.spec.ts, littéraux non typés Transaction/Loan/SavingsAccount ; 1 à 2 dans credit-detection, health) — corriger les fixtures typées et ajouter tsc --noEmit à la CI backend"
-    status: doing
+    status: done
     estimate: 1
     created: 2026-10-05
     started: 2026-10-05
     review: { date: 2026-10-05, verdict: "compliant — orchestré (vague 2026-10-05-0913, 0 passe(s) de correction + passe des mineurs)", commit: 4c02ec040c8f4654d5b2d128b94677e7278f46cd }
+    finished: 2026-10-05
