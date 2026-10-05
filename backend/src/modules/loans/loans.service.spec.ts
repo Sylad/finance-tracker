@@ -949,6 +949,53 @@ describe('LoansService', () => {
       expect(march.filter((o) => o.source !== 'early_repayment' && o.amount < 0)).toHaveLength(1);
     });
 
+    const setRecordedAt = async (id: string, transactionId: string, recordedAt: string) => {
+      const all = await svc.getAll();
+      all.find((l) => l.id === id)!.occurrencesDetected.find((o) => o.transactionId === transactionId)!.recordedAt = recordedAt;
+      await (svc as any).persist(all);
+    };
+    const setUsed = async (id: string, usedAmount: number) => {
+      const all = await svc.getAll();
+      all.find((l) => l.id === id)!.usedAmount = usedAmount;
+      await (svc as any).persist(all);
+    };
+
+    it('does not give back a carrier debit already overwritten by a later statement snapshot', async () => {
+      const carrier = await mkRev('A', 1000);
+      const dup = await mkRev('B', 0);
+      await svc.addOccurrence(carrier.id, {
+        statementId: '2026-03', date: '2026-03-02', amount: -100, transactionId: 'tx-manual', source: 'manual',
+      });
+      // enregistré AVANT le snapshot : le snapshot a écrasé son décrément
+      await setRecordedAt(carrier.id, 'tx-manual', '2026-02-27T00:00:00.000Z');
+      await setSnapshot(carrier.id, '2026-02-28', 950);
+      await setUsed(carrier.id, 950);
+      await svc.addOccurrence(dup.id, {
+        statementId: '2026-03b', date: '2026-03-03', amount: -100, transactionId: 'tx-bank', source: 'bank_statement',
+      });
+
+      const merged = await svc.mergeDuplicates(carrier.id, [dup.id]);
+      expect(merged.usedAmount).toBe(850);
+    });
+
+    it('counts once a replayed debit that is replaced after the merge', async () => {
+      const carrier = await mkRev('A', 1000);
+      const dup = await mkRev('B', 0);
+      await svc.addOccurrence(dup.id, {
+        statementId: '2026-03', date: '2026-03-02', amount: -100, transactionId: 'tx-manual', source: 'manual',
+      });
+      await setRecordedAt(dup.id, 'tx-manual', '2026-02-27T00:00:00.000Z');
+      await setSnapshot(carrier.id, '2026-02-28', 950);
+      await setUsed(carrier.id, 950);
+
+      const merged = await svc.mergeDuplicates(carrier.id, [dup.id]);
+      expect(merged.usedAmount).toBe(850);
+      const after = await svc.addOccurrence(carrier.id, {
+        statementId: '2026-03b', date: '2026-03-03', amount: -100, transactionId: 'tx-bank', source: 'bank_statement',
+      });
+      expect(after.usedAmount).toBe(850);
+    });
+
     it('does not decrement twice a month whose carrier debit loses the monthly dedup', async () => {
       const canonical = await mkRev('A', 0);
       const dup = await mkRev('B', 1000);

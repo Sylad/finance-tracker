@@ -1618,14 +1618,23 @@ export class LoansService {
       const counts = (o: LoanOccurrence) =>
         o.source !== 'credit_statement' && (!baseline || o.date > baseline);
       let used = canonical.usedAmount;
+      const mergedAt = new Date().toISOString();
       // Débit du porteur écarté par la dédup mensuelle : son décrément est déjà
       // dans l'encours du porteur, on le rend avant de rejouer celui qui reste.
+      // Sauf si un snapshot appliqué après son enregistrement l'a écrasé
+      // (même garde `recordedAt` que addOccurrence).
+      const snapshotAt = carrier.lastStatementSnapshot?.date;
       for (const o of carrierOccs) {
         if (keptKeys.has(keyOf(o)) || o.amount >= 0 || !counts(o)) continue;
+        if (snapshotAt && o.recordedAt && o.recordedAt < snapshotAt) continue;
         used = Math.round((used + Math.abs(o.amount)) * 100) / 100;
       }
       for (const o of canonical.occurrencesDetected) {
         if (carrierKeys.has(keyOf(o)) || !counts(o)) continue;
+        // Son mouvement entre dans l'encours à l'instant de la fusion : sans
+        // ce nouvel horodatage, un remplacement ultérieur le croirait écrasé
+        // par le snapshot du porteur (addOccurrence) et le compterait deux fois.
+        o.recordedAt = mergedAt;
         used = o.amount > 0 ? used + o.amount : Math.max(0, used - Math.abs(o.amount));
         used = Math.round(used * 100) / 100;
       }
