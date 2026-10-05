@@ -10,7 +10,7 @@ name: Contrôles backend
 # Un test qui en aurait besoin doit être corrigé, pas alimenté par un secret ici.
 #
 # Rejouable à l'identique en local, depuis backend/ :
-#   npm ci --no-audit --no-fund && npm test
+#   npm ci --no-audit --no-fund && npm run typecheck && npm test
 #
 # Workflow séparé de build.yml : scripts/deploy.sh ne le lit pas. C'est
 # build.yml qui refuse de construire l'image backend sur une suite rouge (mêmes
@@ -44,6 +44,12 @@ jobs:
 
       - name: Dépendances
         run: npm ci --no-audit --no-fund
+
+      # L59 : `nest build` ne compile pas les *.spec.ts (exclus du build) ; sans
+      # cette étape, une fixture mal typée passait inaperçue (49 erreurs
+      # accumulées). Rejouable en local : npm run typecheck.
+      - name: Type-check (tsc --noEmit, specs comprises)
+        run: npm run typecheck
 
       - name: Tests Jest
         run: npm test
