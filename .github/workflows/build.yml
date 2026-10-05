@@ -101,8 +101,8 @@ jobs:
       # cette réparation. Étapes DANS ce job, pas un job à part en `needs` :
       # un job de build sauté (skipped) n'est pas un build rouge pour
       # deploy.sh, et le frontend aurait attendu les tests du backend.
-      # Mêmes commandes que backend-checks.yml (qui, lui, tourne à chaque
-      # push) ; node_modules est écarté du contexte Docker par .dockerignore.
+      # Mêmes `npm ci` + `npm test` que backend-checks.yml (qui, lui, tourne à
+      # chaque push et ajoute `npm run typecheck`, absent d'ici) ; node_modules est écarté du contexte Docker par .dockerignore.
       - name: Node (tests backend)
         if: matrix.service == 'backend'
         uses: actions/setup-node@v4

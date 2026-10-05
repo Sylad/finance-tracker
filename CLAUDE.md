@@ -59,11 +59,14 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   `cadence deliver` attend tous les runs du sha — un plan périmé bloque la livraison.
 - **Tests Jest du backend en CI** (L53) : `.github/workflows/backend-checks.yml`, à
   chaque push sans filtre de chemins et sur les pull requests — `npm ci --no-audit
-  --no-fund` puis `npm test` dans `backend/`, Node 20 ; rejouable tel quel en local. La
+  --no-fund`, `npm run typecheck` (`tsc --noEmit`, specs comprises, L59) puis `npm test`
+  dans `backend/`, Node 20 ; rejouable tel quel en local. Le type-check ne tourne que
+  là : une spec mal typée rend ce run rouge (livraison bloquée) mais n'empêche pas
+  l'image backend, dont le job de `build.yml` ne rejoue que `npm ci` + `npm test`. La
   suite ne reçoit ni secret ni variable d'environnement et doit rester verte sans
   réseau : un test qui a besoin d'`ANTHROPIC_API_KEY`, d'`APP_PIN`, d'Ollama ou de
   `data/` se corrige (simulation, dossier jetable), il ne s'alimente pas par un secret
-  du dépôt. `build.yml` rejoue les deux mêmes commandes dans le job « Build & push
+  du dépôt. `build.yml` rejoue `npm ci` et `npm test` dans le job « Build & push
   backend », avant le build : suite rouge = job rouge = pas d'image backend poussée.
   L'image frontend du même run est, elle, construite et poussée (`fail-fast: false`),
   mais `deploy.sh` refuse alors toute la livraison, comme pour tout build rouge : aucun

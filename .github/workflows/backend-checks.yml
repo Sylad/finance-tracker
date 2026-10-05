@@ -13,10 +13,12 @@ name: Contrôles backend
 #   npm ci --no-audit --no-fund && npm run typecheck && npm test
 #
 # Workflow séparé de build.yml : scripts/deploy.sh ne le lit pas. C'est
-# build.yml qui refuse de construire l'image backend sur une suite rouge (mêmes
-# commandes, dans le job « Build & push backend ») ; ici la suite tourne aussi
-# quand backend/ n'a pas changé. cadence deliver attend tous les runs du sha
-# livré : une suite rouge bloque donc sa livraison.
+# build.yml qui refuse de construire l'image backend sur une suite Jest rouge
+# (job « Build & push backend » : `npm test` seulement). Le type-check
+# (`npm run typecheck`) ne tourne qu'ici : une spec mal typée ne bloque PAS
+# l'image, mais rend ce run rouge. Ici les contrôles tournent aussi quand
+# backend/ n'a pas changé. cadence deliver attend tous les runs du sha livré :
+# un run rouge bloque donc sa livraison.
 
 on:
   push:
