@@ -184,6 +184,30 @@ describe('AutoSyncService', () => {
       await svc.replaySavings(baseStatement, { estimateInterestFor: 'pel-1' });
       expect(interestCalls().map(([id]) => id)).toEqual(['pel-1']);
     });
+
+    it('resync : estime sur le solde reconstruit à la date du relevé, pas sur le solde du jour (mouvements manual / bank-extract postérieurs retirés)', async () => {
+      const acc = mkPel();
+      // Solde du jour 5 000 € dont +1 000 € manuel et +500 € de recalibrage postérieurs au relevé de mars.
+      acc.movements = [
+        { id: 'm1', date: '2026-06-10', amount: 1000, source: 'manual', statementId: null, transactionId: null, note: '' },
+        { id: 'm2', date: '2026-07-01', amount: 500, source: 'bank-extract', statementId: '2026-07', transactionId: null, note: '' },
+        { id: 'm0', date: '2026-02-10', amount: 200, source: 'manual', statementId: null, transactionId: null, note: '' },
+      ] as SavingsAccount['movements'];
+      savings.getAll.mockResolvedValue([acc]);
+      await svc.replaySavings(baseStatement, { estimateInterestFor: 'pel-1' });
+      expect(interestCalls()).toHaveLength(1);
+      expect(interestCalls()[0][1].amount).toBe(70); // (5000 − 1500) × 2 %
+    });
+
+    it('import normal : le solde courant reste la base (aucune reconstruction)', async () => {
+      const acc = mkPel();
+      acc.movements = [
+        { id: 'm1', date: '2026-06-10', amount: 1000, source: 'manual', statementId: null, transactionId: null, note: '' },
+      ] as SavingsAccount['movements'];
+      savings.getAll.mockResolvedValue([acc]);
+      await svc.syncStatement(baseStatement);
+      expect(interestCalls()[0][1].amount).toBe(100);
+    });
   });
 
   it('skips entities with empty matchPattern', async () => {

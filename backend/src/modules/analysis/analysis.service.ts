@@ -46,7 +46,7 @@ export class AnalysisService {
       // les dédups (statementId, transactionId) sont inopérantes et tirages +
       // virements épargne sont comptés en double (review 2026-08-13).
       await this.autoSync.removeForStatement(candidate.id);
-      await this.autoSync.syncStatement(candidate, result.suggestedRecurringExpenses ?? []);
+      await this.autoSync.syncStatement(candidate, result.suggestedRecurringExpenses ?? [], { replay: true });
     } catch (e) {
       this.logger.error(`AutoSync failed for ${candidate.id}`, e as Error);
       // Don't block persistence — log and continue.
@@ -91,7 +91,7 @@ export class AnalysisService {
         // nouveaux UUID, les anciennes occurrences doivent partir d'abord.
         await this.autoSync.removeForStatement(statement.id);
       }
-      await this.autoSync.syncStatement(statement, result.suggestedRecurringExpenses ?? []);
+      await this.autoSync.syncStatement(statement, result.suggestedRecurringExpenses ?? [], { replay: replaced });
     } catch (e) {
       this.logger.error(`AutoSync failed for ${statement.id}`, e as Error);
       // Don't block persistence — log and continue.

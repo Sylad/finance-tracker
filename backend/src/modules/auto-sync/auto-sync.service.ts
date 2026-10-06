@@ -61,9 +61,15 @@ export class AutoSyncService {
     private readonly bus: EventBusService,
   ) {}
 
-  async syncStatement(statement: MonthlyStatement, claudeSuggestions: IncomingSuggestion[] = []): Promise<void> {
+  /** `replay` : relevé déjà connu (reanalyze, remplacement) — le solde du jour
+   *  n'est pas celui de l'époque, aucun intérêt n'est estimé. */
+  async syncStatement(
+    statement: MonthlyStatement,
+    claudeSuggestions: IncomingSuggestion[] = [],
+    opts: { replay?: boolean } = {},
+  ): Promise<void> {
     await this.autoDiscoverSavings(statement);
-    await this.syncSavings(statement);
+    await this.syncSavings(statement, { replay: opts.replay ?? false });
     await this.syncLoans(statement);
     await this.syncSubscriptions(statement);
     if (claudeSuggestions.length > 0) {
@@ -272,8 +278,11 @@ export class AutoSyncService {
     const accounts = await this.savings.getAll();
     const externalBalances = statement.externalAccountBalances ?? [];
 
+    const replay = opts.replay ?? false;
     for (const acc of accounts) {
       let handled = false;
+      const estimateInterest = () =>
+        this.maybeAddInterest(acc, statement, replay && acc.id !== opts.estimateInterestFor, replay);
 
       // Priority 1: bank-extract recalibration (if account has an accountNumber)
       if (acc.accountNumber) {
@@ -323,7 +332,7 @@ export class AutoSyncService {
             const epargneAmount = -t.amount;
             await this.safeAddMovement(acc, t, epargneAmount, statement.id);
           }
-          await this.maybeAddInterest(acc, statement, (opts.replay ?? false) && acc.id !== opts.estimateInterestFor);
+          await estimateInterest();
           handled = true;
         }
       }
@@ -332,7 +341,7 @@ export class AutoSyncService {
 
       // Priority 3: regex fallback
       if (!acc.matchPattern) {
-        await this.maybeAddInterest(acc, statement, (opts.replay ?? false) && acc.id !== opts.estimateInterestFor);
+        await estimateInterest();
         continue;
       }
       let regex: RegExp;
@@ -340,7 +349,7 @@ export class AutoSyncService {
         regex = new RegExp(acc.matchPattern, 'i');
       } catch (e) {
         this.logger.warn(`Invalid regex on savings ${acc.id}: ${acc.matchPattern}`);
-        await this.maybeAddInterest(acc, statement, (opts.replay ?? false) && acc.id !== opts.estimateInterestFor);
+        await estimateInterest();
         continue;
       }
       // Un mouvement daté avant le solde initial est déjà compris dans ce
@@ -353,7 +362,7 @@ export class AutoSyncService {
         const epargneAmount = -t.amount;
         await this.safeAddMovement(acc, t, epargneAmount, statement.id);
       }
-      await this.maybeAddInterest(acc, statement, (opts.replay ?? false) && acc.id !== opts.estimateInterestFor);
+      await estimateInterest();
     }
   }
 
@@ -370,11 +379,16 @@ export class AutoSyncService {
     });
   }
 
-  private async maybeAddInterest(acc: SavingsAccount, statement: MonthlyStatement, replay: boolean): Promise<void> {
+  private async maybeAddInterest(
+    acc: SavingsAccount,
+    statement: MonthlyStatement,
+    skip: boolean,
+    reconstruct: boolean,
+  ): Promise<void> {
     // Estimation = solde COURANT × taux : valable seulement à l'import du
     // relevé du moment. Rejouer un ancien relevé l'appliquerait à un solde
     // d'une autre époque (vécu : +10,38 € sur un PEL ouvert après coup).
-    if (replay) return;
+    if (skip) return;
     if (statement.month !== acc.interestAnniversaryMonth) return;
     // Pas d'intérêts pour une période où le compte n'existait pas encore
     // (vécu : replay du relevé de janvier → +10,38 € d'intérêts sur un PEL
@@ -383,8 +397,14 @@ export class AutoSyncService {
     if (acc.initialBalanceDate && stmtKey < acc.initialBalanceDate.slice(0, 7)) return;
     const alreadyDone = acc.movements.some((m) => m.source === 'interest' && m.date.startsWith(`${statement.year}-`));
     if (alreadyDone) return;
-    // Estimation simple : balance courante × taux annuel.
-    const interest = Math.round(acc.currentBalance * acc.interestRate * 100) / 100;
+    // Estimation simple : balance × taux annuel. En rejeu (resync), le solde
+    // courant contient encore les mouvements manual / bank-extract postérieurs
+    // au relevé : on les retire pour retrouver le solde à la fin du mois du relevé.
+    const monthEnd = `${statement.year}-${String(statement.month).padStart(2, '0')}-31`;
+    const balance = reconstruct
+      ? acc.currentBalance - acc.movements.filter((m) => m.date > monthEnd).reduce((s, m) => s + m.amount, 0)
+      : acc.currentBalance;
+    const interest = Math.round(balance * acc.interestRate * 100) / 100;
     if (interest <= 0) return;
     await this.savings.addMovement(acc.id, {
       date: `${statement.year}-${String(statement.month).padStart(2, '0')}-31`,

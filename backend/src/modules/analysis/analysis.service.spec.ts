@@ -57,3 +57,47 @@ describe('AnalysisService.applyExceptionalIncome', () => {
     expect(scoreCalc.compute).not.toHaveBeenCalled();
   });
 });
+
+describe('AnalysisService — resynchro épargne en replay (L5)', () => {
+  let svc: AnalysisService;
+  let storage: { getStatement: jest.Mock; saveStatement: jest.Mock };
+  let autoSync: { removeForStatement: jest.Mock; syncStatement: jest.Mock };
+  const stmt = salaryStmt('2026-03', 3000);
+
+  beforeEach(async () => {
+    storage = { getStatement: jest.fn(), saveStatement: jest.fn() };
+    autoSync = { removeForStatement: jest.fn(), syncStatement: jest.fn() };
+    const mod = await Test.createTestingModule({
+      providers: [
+        AnalysisService,
+        { provide: AnthropicService, useValue: { analyzeBankStatement: jest.fn().mockResolvedValue({ suggestedRecurringExpenses: [] }) } },
+        { provide: StorageService, useValue: storage },
+        { provide: SnapshotService, useValue: { takeSnapshot: jest.fn() } },
+        { provide: AutoSyncService, useValue: autoSync },
+        { provide: CategoryRulesService, useValue: { apply: jest.fn().mockImplementation(async (t) => t) } },
+        { provide: ScoreCalculatorService, useValue: {} },
+      ],
+    }).compile();
+    svc = mod.get(AnalysisService);
+    jest.spyOn(svc as any, 'buildStatement').mockReturnValue(stmt);
+    jest.spyOn(svc, 'applyExceptionalIncome').mockResolvedValue([]);
+  });
+
+  it('reanalyze : le re-sync passe replay (pas d\'intérêts estimés sur le solde du jour)', async () => {
+    storage.getStatement.mockResolvedValue(stmt);
+    await svc.reanalyzeStatement('2026-03', Buffer.from(''));
+    expect(autoSync.syncStatement).toHaveBeenCalledWith(stmt, [], { replay: true });
+  });
+
+  it('remplacement d\'un relevé existant : replay', async () => {
+    storage.getStatement.mockResolvedValue(stmt);
+    await svc.analyzeAndPersist(Buffer.from(''));
+    expect(autoSync.syncStatement).toHaveBeenCalledWith(stmt, [], { replay: true });
+  });
+
+  it('nouveau relevé : import normal, estimation autorisée', async () => {
+    storage.getStatement.mockResolvedValue(null);
+    await svc.analyzeAndPersist(Buffer.from(''));
+    expect(autoSync.syncStatement).toHaveBeenCalledWith(stmt, [], { replay: false });
+  });
+});
