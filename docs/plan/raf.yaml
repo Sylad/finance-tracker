@@ -71,11 +71,12 @@ lots:
     started: 2026-10-06
   - id: L6
     title: Paires neutres à cheval sur 2 mois côté /expenses
-    status: todo
+    status: doing
     estimate: 1
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #7" }
+    started: 2026-10-06
   - id: L7
     title: paidOccurrenceId normalisé sur l'UUID d'occurrence partout
     status: todo
