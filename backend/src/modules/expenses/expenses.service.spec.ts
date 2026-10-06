@@ -139,6 +139,27 @@ describe('ExpensesService — breakdown', () => {
     expect(neutral.has('pay')).toBe(false);
   });
 
+  const loansAvecMotifs = [
+    { isActive: true, matchPattern: 'FLOA', occurrencesDetected: [] },
+    { isActive: false, matchPattern: 'ACME', occurrencesDetected: [] },
+  ];
+
+  it('getBreakdown : le motif d\'un crédit actif écarte la paire, celui d\'un crédit inactif non', async () => {
+    getAllStatements.mockResolvedValue([{
+      id: '2026-07',
+      transactions: [
+        tx('floa-out', -120, { description: 'PRLV FLOA 123', date: '2026-07-05' }),
+        tx('floa-in', 120, { date: '2026-07-06' }),
+        tx('acme-out', -60, { description: 'PRLV ACME', date: '2026-07-05' }),
+        tx('acme-in', 60, { date: '2026-07-06' }),
+      ],
+    }]);
+    loansGetAll.mockResolvedValue(loansAvecMotifs);
+    const out = await svc.getBreakdown('2026-07');
+    expect(out.buckets.neutral.transactions.map((t) => t.id)).toEqual(['acme-out']);
+    expect(out.categories.flatMap((c) => c.transactions.map((t) => t.id))).toEqual(['floa-out']);
+  });
+
   describe('proposeCuts', () => {
     it('apparie sur les relevés à plat (paire à cheval) et exclut crédits/abos/épargne', async () => {
       getAllStatements.mockResolvedValue([
@@ -155,6 +176,21 @@ describe('ExpensesService — breakdown', () => {
       await svc.proposeCuts();
       const excluded = build.mock.calls[0][1] as Set<string>;
       expect([...excluded].sort()).toEqual(['out-j', 't-loan', 't-sav', 't-sub']);
+    });
+
+    it("le motif d'un crédit actif écarte la paire, celui d'un crédit inactif non", async () => {
+      getAllStatements.mockResolvedValue([
+        { id: '2026-07', transactions: [
+          tx('floa-out', -120, { description: 'PRLV FLOA 123', date: '2026-07-05' }),
+          tx('floa-in', 120, { date: '2026-07-06' }),
+          tx('acme-out', -60, { description: 'PRLV ACME', date: '2026-07-05' }),
+          tx('acme-in', 60, { date: '2026-07-06' }),
+        ] },
+      ]);
+      loansGetAll.mockResolvedValue(loansAvecMotifs);
+      const build = jest.spyOn(svc['clustering'], 'buildClusters').mockReturnValue([]);
+      await svc.proposeCuts();
+      expect([...(build.mock.calls[0][1] as Set<string>)]).toEqual(['acme-out']);
     });
 
     it("l'épargne entrante ne rend pas un débit neutre", async () => {
