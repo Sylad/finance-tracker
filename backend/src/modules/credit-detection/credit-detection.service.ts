@@ -24,6 +24,14 @@ import { MonthlyStatement } from '../../models/monthly-statement.model';
 @Injectable()
 export class CreditDetectionService {
   private readonly logger = new Logger(CreditDetectionService.name);
+  /**
+   * L4 : un seul scan à la fois. Deux scans concurrents (bouton /loans +
+   * hook post-import, ou deux imports) clusterisent sur les mêmes relevés
+   * et classifient les mêmes clusters deux fois sur un Ollama unique, puis
+   * écrivent les mêmes suggestions en parallèle. Le second est sauté, pas
+   * mis en file : le premier couvre déjà l'historique.
+   */
+  private scanning = false;
 
   constructor(
     private readonly clustering: CandidateClusteringService,
@@ -34,7 +42,26 @@ export class CreditDetectionService {
     private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
+  isScanning(): boolean {
+    return this.scanning;
+  }
+
   async scanAll(): Promise<DetectionScanResult> {
+    if (this.scanning) return this.skippedResult();
+    this.scanning = true;
+    try {
+      return await this.doScanAll();
+    } finally {
+      this.scanning = false;
+    }
+  }
+
+  private skippedResult(): DetectionScanResult {
+    this.logger.warn('scan de détection déjà en cours — scan sauté');
+    return { clustersAnalyzed: 0, suggestionsCreated: 0, errors: [], skipped: true };
+  }
+
+  private async doScanAll(): Promise<DetectionScanResult> {
     const statements = await this.storage.getAllStatements();
     const clusters = await this.buildClustersFor(statements);
     const latestStatementDate =
@@ -54,6 +81,18 @@ export class CreditDetectionService {
    * couverts par un `scanAll` précédent.
    */
   async scanStatement(
+    statement: MonthlyStatement,
+  ): Promise<DetectionScanResult> {
+    if (this.scanning) return this.skippedResult();
+    this.scanning = true;
+    try {
+      return await this.doScanStatement(statement);
+    } finally {
+      this.scanning = false;
+    }
+  }
+
+  private async doScanStatement(
     statement: MonthlyStatement,
   ): Promise<DetectionScanResult> {
     const allStatements = await this.storage.getAllStatements();

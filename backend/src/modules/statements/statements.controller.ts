@@ -58,7 +58,9 @@ export class StatementsController {
           uploadedAt: new Date().toISOString(),
           durationMs: 0,
           status: 'success',
-          note: `détection IA : ${r.suggestionsCreated} suggestions, ${r.errors.length} erreurs`,
+          note: r.skipped
+            ? 'détection IA sautée : un scan est déjà en cours'
+            : `détection IA : ${r.suggestionsCreated} suggestions, ${r.errors.length} erreurs`,
         }),
       )
       .catch((e) =>

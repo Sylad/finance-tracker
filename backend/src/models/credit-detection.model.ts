@@ -31,4 +31,6 @@ export interface DetectionScanResult {
   clustersAnalyzed: number;
   suggestionsCreated: number;
   errors: { clusterKey: string; message: string }[];
+  /** L4 : vrai quand le scan a été sauté parce qu'un autre était en cours. */
+  skipped?: boolean;
 }

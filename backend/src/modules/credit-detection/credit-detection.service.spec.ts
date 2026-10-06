@@ -300,6 +300,74 @@ describe('CreditDetectionService', () => {
     });
   });
 
+  describe('L4 : un seul scan à la fois', () => {
+    const cluster = makeCluster('c1');
+
+    it('un second scan lancé pendant le premier est sauté (aucun accès aux relevés, aucun appel LLM)', async () => {
+      let release!: () => void;
+      clustering.buildClusters.mockResolvedValue([cluster] as never);
+      classifier.classify.mockReturnValue(
+        new Promise((resolve) => {
+          release = () => resolve({} as never);
+        }) as never,
+      );
+      validator.validate.mockResolvedValue({ created: false } as never);
+
+      const first = svc.scanAll();
+      await new Promise((r) => setImmediate(r));
+      storage.getAllStatements.mockClear();
+      classifier.classify.mockClear();
+
+      const second = await svc.scanAll();
+      const third = await svc.scanStatement(stmt('2026-02'));
+
+      expect(second).toEqual({
+        clustersAnalyzed: 0,
+        suggestionsCreated: 0,
+        errors: [],
+        skipped: true,
+      });
+      expect(third.skipped).toBe(true);
+      expect(storage.getAllStatements).not.toHaveBeenCalled();
+      expect(classifier.classify).not.toHaveBeenCalled();
+
+      release();
+      const done = await first;
+      expect(done.skipped).toBeUndefined();
+    });
+
+    it('le verrou est libéré après un scan réussi', async () => {
+      clustering.buildClusters.mockResolvedValue([] as never);
+      await svc.scanAll();
+      const again = await svc.scanAll();
+      expect(again.skipped).toBeUndefined();
+    });
+
+    it('le verrou est libéré quand le scan échoue (502 Ollama ou exception)', async () => {
+      clustering.buildClusters.mockRejectedValueOnce(new Error("boom") as never);
+      await expect(svc.scanAll()).rejects.toThrow('boom');
+      clustering.buildClusters.mockResolvedValue([] as never);
+      const again = await svc.scanAll();
+      expect(again.skipped).toBeUndefined();
+    });
+
+    it('isScanning reflète l\'état du verrou', async () => {
+      let release!: () => void;
+      clustering.buildClusters.mockReturnValue(
+        new Promise((resolve) => {
+          release = () => resolve([]);
+        }) as never,
+      );
+      expect(svc.isScanning()).toBe(false);
+      const p = svc.scanAll();
+      await new Promise((r) => setImmediate(r));
+      expect(svc.isScanning()).toBe(true);
+      release();
+      await p;
+      expect(svc.isScanning()).toBe(false);
+    });
+  });
+
   describe('L44 : tri déterministe avant le LLM', () => {
     it('établissement listé -> pas de LLM, validate avec la classification de la règle', async () => {
       const cofidis = makeRuleCluster('cofidis', ['PRLV COFIDIS 1', 'PRLV COFIDIS 2', 'PRLV COFIDIS 3']);
