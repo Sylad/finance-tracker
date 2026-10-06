@@ -168,7 +168,23 @@ describe('AutoSyncService', () => {
       expect(interestCalls()[0][1].amount).toBe(100);
     });
 
-    it('syncStatement { replay: true } (reanalyze, remplacement) : transmet replay à syncSavings, aucun intérêt estimé', async () => {
+    it('syncStatement { replay: true } (reanalyze, remplacement) : réestime l\'intérêt supprimé par removeForStatement, sur le solde reconstruit', async () => {
+      const acc = mkPel();
+      acc.movements = [
+        { id: 'm1', date: '2026-06-10', amount: 1000, source: 'manual', statementId: null, transactionId: null, note: '' },
+      ] as SavingsAccount['movements'];
+      savings.getAll.mockResolvedValue([acc]);
+      await svc.syncStatement(baseStatement, [], { replay: true });
+      expect(interestCalls()).toHaveLength(1);
+      expect(interestCalls()[0][1].amount).toBe(80); // (5000 − 1000) × 2 %
+    });
+
+    it('syncStatement { replay: true } : pas de doublon si l\'intérêt de l\'année existe déjà', async () => {
+      const acc = mkPel();
+      acc.movements = [
+        { id: 'i1', date: '2026-03-31', amount: 80, source: 'interest', statementId: '2026-03', transactionId: null, note: '' },
+      ] as SavingsAccount['movements'];
+      savings.getAll.mockResolvedValue([acc]);
       await svc.syncStatement(baseStatement, [], { replay: true });
       expect(interestCalls()).toHaveLength(0);
     });

@@ -61,15 +61,16 @@ export class AutoSyncService {
     private readonly bus: EventBusService,
   ) {}
 
-  /** `replay` : relevé déjà connu (reanalyze, remplacement) — le solde du jour
-   *  n'est pas celui de l'époque, aucun intérêt n'est estimé. */
+  /** `replay` : relevé déjà connu (reanalyze, remplacement) — `removeForStatement`
+   *  a supprimé l'intérêt estimé du relevé ; le solde du jour n'étant pas celui de
+   *  l'époque, il est recréé sur le solde reconstruit (jamais sur le solde courant). */
   async syncStatement(
     statement: MonthlyStatement,
     claudeSuggestions: IncomingSuggestion[] = [],
     opts: { replay?: boolean } = {},
   ): Promise<void> {
     await this.autoDiscoverSavings(statement);
-    await this.syncSavings(statement, { replay: opts.replay ?? false });
+    await this.syncSavings(statement, { replay: opts.replay ?? false, estimateInterestForAll: opts.replay ?? false });
     await this.syncLoans(statement);
     await this.syncSubscriptions(statement);
     if (claudeSuggestions.length > 0) {
@@ -273,7 +274,7 @@ export class AutoSyncService {
 
   private async syncSavings(
     statement: MonthlyStatement,
-    opts: { replay?: boolean; estimateInterestFor?: string } = {},
+    opts: { replay?: boolean; estimateInterestFor?: string; estimateInterestForAll?: boolean } = {},
   ): Promise<void> {
     const accounts = await this.savings.getAll();
     const externalBalances = statement.externalAccountBalances ?? [];
@@ -282,7 +283,7 @@ export class AutoSyncService {
     for (const acc of accounts) {
       let handled = false;
       const estimateInterest = () =>
-        this.maybeAddInterest(acc, statement, replay && acc.id !== opts.estimateInterestFor, replay);
+        this.maybeAddInterest(acc, statement, replay && !opts.estimateInterestForAll && acc.id !== opts.estimateInterestFor, replay);
 
       // Priority 1: bank-extract recalibration (if account has an accountNumber)
       if (acc.accountNumber) {
