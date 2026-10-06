@@ -252,10 +252,12 @@ export class AutoSyncService {
 
   /** Replays ciblés (resync) : uniquement la brique demandée, sans
    *  auto-création/désactivation ni sync des autres domaines. */
-  async replaySavings(statement: MonthlyStatement): Promise<void> {
-    // Replay : jamais d'intérêts estimés (le solde courant n'est pas celui de
-    // l'époque du relevé rejoué).
-    await this.syncSavings(statement, { replay: true });
+  async replaySavings(statement: MonthlyStatement, opts: { estimateInterest?: boolean } = {}): Promise<void> {
+    // Par défaut, jamais d'intérêts estimés : rejouer UN relevé ancien les
+    // appliquerait au solde courant, pas à celui de l'époque. Le resync complet
+    // (ASC, après clearDetectedMovements) passe estimateInterest : le solde y
+    // est reconstruit relevé après relevé, l'estimation redevient juste.
+    await this.syncSavings(statement, { replay: !opts.estimateInterest });
   }
 
   async replayLoans(statement: MonthlyStatement): Promise<void> {

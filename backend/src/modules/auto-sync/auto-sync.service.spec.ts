@@ -172,6 +172,12 @@ describe('AutoSyncService', () => {
       await svc.replaySavings(baseStatement);
       expect(interestCalls()).toHaveLength(0);
     });
+
+    it('replaySavings { estimateInterest: true } (resync) : recrée l\'estimation retirée par clearDetectedMovements', async () => {
+      await svc.replaySavings(baseStatement, { estimateInterest: true });
+      expect(interestCalls()).toHaveLength(1);
+      expect(interestCalls()[0][1].amount).toBe(100);
+    });
   });
 
   it('skips entities with empty matchPattern', async () => {

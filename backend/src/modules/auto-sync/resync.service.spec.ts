@@ -36,8 +36,39 @@ describe('ResyncService.replayStatement', () => {
     expect(res).toEqual({ statementId: '2026-08' });
   });
 
+  it('le rejeu d\'un seul relevé n\'estime pas d\'intérêts (solde courant ≠ solde de l\'époque)', async () => {
+    const stmt = { id: '2026-08', month: 8, year: 2026 };
+    storage.getStatement.mockResolvedValue(stmt);
+    await svc.replayStatement('2026-08');
+    expect(autoSync.replaySavings).toHaveBeenCalledWith(stmt);
+    expect(autoSync.replaySavings.mock.calls[0][1]).toBeUndefined();
+  });
+
   it('404 si le relevé n\'existe pas', async () => {
     storage.getStatement.mockResolvedValue(null);
     await expect(svc.replayStatement('1999-01')).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('ResyncService.resyncSavings', () => {
+  it('rejeu complet ASC avec estimation des intérêts (solde reconstruit au fil des relevés)', async () => {
+    const autoSync = { replaySavings: jest.fn() };
+    const storage = { getAllStatements: jest.fn().mockResolvedValue([{ id: '2026-02' }, { id: '2026-01' }]) };
+    const savings = { getOne: jest.fn(), clearDetectedMovements: jest.fn() };
+    const mod = await Test.createTestingModule({
+      providers: [
+        ResyncService,
+        { provide: AutoSyncService, useValue: autoSync },
+        { provide: StorageService, useValue: storage },
+        { provide: SavingsService, useValue: savings },
+        { provide: LoansService, useValue: {} },
+      ],
+    }).compile();
+    const res = await mod.get(ResyncService).resyncSavings('a');
+    expect(res).toEqual({ rescanned: 2 });
+    expect(autoSync.replaySavings.mock.calls).toEqual([
+      [{ id: '2026-01' }, { estimateInterest: true }],
+      [{ id: '2026-02' }, { estimateInterest: true }],
+    ]);
   });
 });
