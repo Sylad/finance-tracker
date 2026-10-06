@@ -253,14 +253,16 @@ export class AutoSyncService {
   /** Replays ciblés (resync) : uniquement la brique demandée, sans
    *  auto-création/désactivation ni sync des autres domaines. */
   async replaySavings(statement: MonthlyStatement): Promise<void> {
-    await this.syncSavings(statement);
+    // Replay : jamais d'intérêts estimés (le solde courant n'est pas celui de
+    // l'époque du relevé rejoué).
+    await this.syncSavings(statement, { replay: true });
   }
 
   async replayLoans(statement: MonthlyStatement): Promise<void> {
     await this.syncLoans(statement);
   }
 
-  private async syncSavings(statement: MonthlyStatement): Promise<void> {
+  private async syncSavings(statement: MonthlyStatement, opts: { replay?: boolean } = {}): Promise<void> {
     const accounts = await this.savings.getAll();
     const externalBalances = statement.externalAccountBalances ?? [];
 
@@ -315,7 +317,7 @@ export class AutoSyncService {
             const epargneAmount = -t.amount;
             await this.safeAddMovement(acc, t, epargneAmount, statement.id);
           }
-          await this.maybeAddInterest(acc, statement);
+          await this.maybeAddInterest(acc, statement, opts.replay ?? false);
           handled = true;
         }
       }
@@ -324,7 +326,7 @@ export class AutoSyncService {
 
       // Priority 3: regex fallback
       if (!acc.matchPattern) {
-        await this.maybeAddInterest(acc, statement);
+        await this.maybeAddInterest(acc, statement, opts.replay ?? false);
         continue;
       }
       let regex: RegExp;
@@ -332,7 +334,7 @@ export class AutoSyncService {
         regex = new RegExp(acc.matchPattern, 'i');
       } catch (e) {
         this.logger.warn(`Invalid regex on savings ${acc.id}: ${acc.matchPattern}`);
-        await this.maybeAddInterest(acc, statement);
+        await this.maybeAddInterest(acc, statement, opts.replay ?? false);
         continue;
       }
       // Un mouvement daté avant le solde initial est déjà compris dans ce
@@ -345,7 +347,7 @@ export class AutoSyncService {
         const epargneAmount = -t.amount;
         await this.safeAddMovement(acc, t, epargneAmount, statement.id);
       }
-      await this.maybeAddInterest(acc, statement);
+      await this.maybeAddInterest(acc, statement, opts.replay ?? false);
     }
   }
 
@@ -362,7 +364,11 @@ export class AutoSyncService {
     });
   }
 
-  private async maybeAddInterest(acc: SavingsAccount, statement: MonthlyStatement): Promise<void> {
+  private async maybeAddInterest(acc: SavingsAccount, statement: MonthlyStatement, replay: boolean): Promise<void> {
+    // Estimation = solde COURANT × taux : valable seulement à l'import du
+    // relevé du moment. Rejouer un ancien relevé l'appliquerait à un solde
+    // d'une autre époque (vécu : +10,38 € sur un PEL ouvert après coup).
+    if (replay) return;
     if (statement.month !== acc.interestAnniversaryMonth) return;
     // Pas d'intérêts pour une période où le compte n'existait pas encore
     // (vécu : replay du relevé de janvier → +10,38 € d'intérêts sur un PEL

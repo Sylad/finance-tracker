@@ -149,6 +149,31 @@ describe('AutoSyncService', () => {
     expect(savings.addMovement).toHaveBeenCalledWith('ldds-1', expect.objectContaining({ transactionId: 'tx-new', amount: 500 }));
   });
 
+  describe('maybeAddInterest — jamais d\'estimation en replay (L5)', () => {
+    const mkPel = (): SavingsAccount => ({
+      id: 'pel-1', name: 'PEL', type: 'pel', initialBalance: 1000, initialBalanceDate: '2026-01-01',
+      matchPattern: 'VIR.*PEL', interestRate: 0.02, interestAnniversaryMonth: 3,
+      currentBalance: 5000, lastSyncedStatementId: null, movements: [], createdAt: '', updatedAt: '',
+    });
+    const interestCalls = () => savings.addMovement.mock.calls.filter(([, m]) => m.source === 'interest');
+
+    beforeEach(() => {
+      savings.getAll.mockResolvedValue([mkPel()]);
+      loans.getAll.mockResolvedValue([]);
+    });
+
+    it('import normal : le mois anniversaire estime les intérêts (comportement inchangé)', async () => {
+      await svc.syncStatement(baseStatement);
+      expect(interestCalls()).toHaveLength(1);
+      expect(interestCalls()[0][1].amount).toBe(100);
+    });
+
+    it('replaySavings : aucune estimation, le solde courant n\'est pas celui de l\'époque', async () => {
+      await svc.replaySavings(baseStatement);
+      expect(interestCalls()).toHaveLength(0);
+    });
+  });
+
   it('skips entities with empty matchPattern', async () => {
     savings.getAll.mockResolvedValue([{
       id: 'a', name: 'A', type: 'other', initialBalance: 0, initialBalanceDate: '2026-01-01',
