@@ -63,11 +63,12 @@ lots:
     review: { date: 2026-10-06, verdict: "conforme : isScanning retiré sans casse, duplication de triggerDetection reportée à L14/t2 — orchestré (vague 2026-10-06-1801, 2 passe(s) de correction + passe des mineurs)", commit: d4a818da50d79b513c597a02ae07acbad60ff213 }
   - id: L5
     title: "maybeAddInterest : ne jamais estimer en replay"
-    status: todo
+    status: doing
     estimate: 0.5
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #6" }
+    started: 2026-10-06
   - id: L6
     title: Paires neutres à cheval sur 2 mois côté /expenses
     status: todo
