@@ -168,6 +168,11 @@ describe('AutoSyncService', () => {
       expect(interestCalls()[0][1].amount).toBe(100);
     });
 
+    it('syncStatement { replay: true } (reanalyze, remplacement) : transmet replay à syncSavings, aucun intérêt estimé', async () => {
+      await svc.syncStatement(baseStatement, [], { replay: true });
+      expect(interestCalls()).toHaveLength(0);
+    });
+
     it('replaySavings : aucune estimation, le solde courant n\'est pas celui de l\'époque', async () => {
       await svc.replaySavings(baseStatement);
       expect(interestCalls()).toHaveLength(0);
