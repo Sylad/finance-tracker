@@ -35,7 +35,11 @@ export class CreditDetectionService {
    * (import de plusieurs PDF d'affilée). À sa fin, UN scan complet rattrape.
    */
   private scanning = false;
-  private catchUpPending = false;
+  private catchUp: {
+    promise: Promise<DetectionScanResult>;
+    resolve: (r: DetectionScanResult) => void;
+    reject: (e: unknown) => void;
+  } | null = null;
 
   constructor(
     private readonly clustering: CandidateClusteringService,
@@ -62,14 +66,32 @@ export class CreditDetectionService {
 
   private release(): void {
     this.scanning = false;
-    if (!this.catchUpPending) return;
-    this.catchUpPending = false;
+    const pending = this.catchUp;
+    if (!pending) return;
+    this.catchUp = null;
     this.logger.log('scan de rattrapage après un scan de relevé sauté');
-    this.scanAll().catch((e) =>
+    this.scanAll().then(pending.resolve, (e) => {
       this.logger.error(
         `scan de rattrapage échoué: ${(e as Error).message ?? e}`,
-      ),
-    );
+      );
+      pending.reject(e);
+    });
+  }
+
+  /** Promesse partagée par tous les relevés sautés pendant le même scan. */
+  private requestCatchUp(): Promise<DetectionScanResult> {
+    if (!this.catchUp) {
+      let resolve!: (r: DetectionScanResult) => void;
+      let reject!: (e: unknown) => void;
+      const promise = new Promise<DetectionScanResult>((res, rej) => {
+        resolve = res;
+        reject = rej;
+      });
+      // Les appelants la consomment ; sans eux, pas de rejet non géré.
+      promise.catch(() => undefined);
+      this.catchUp = { promise, resolve, reject };
+    }
+    return this.catchUp.promise;
   }
 
   private skippedResult(): DetectionScanResult {
@@ -100,8 +122,7 @@ export class CreditDetectionService {
     statement: MonthlyStatement,
   ): Promise<DetectionScanResult> {
     if (this.scanning) {
-      this.catchUpPending = true;
-      return this.skippedResult();
+      return { ...this.skippedResult(), catchUp: this.requestCatchUp() };
     }
     this.scanning = true;
     try {

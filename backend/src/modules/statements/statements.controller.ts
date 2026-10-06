@@ -52,8 +52,8 @@ export class StatementsController {
   private triggerDetection(statement: MonthlyStatement): void {
     void this.creditDetection
       .scanStatement(statement)
-      .then((r) =>
-        this.importLogs.log({
+      .then(async (r) => {
+        await this.importLogs.log({
           filename: `Détection IA — ${statement.id}`,
           uploadedAt: new Date().toISOString(),
           durationMs: 0,
@@ -61,8 +61,20 @@ export class StatementsController {
           note: r.skipped
             ? 'détection IA sautée : un scan est déjà en cours, un scan complet suivra à sa fin'
             : `détection IA : ${r.suggestionsCreated} suggestions, ${r.errors.length} erreurs`,
-        }),
-      )
+        });
+        // L4 : le scan de rattrapage promis par la note ci-dessus inscrit
+        // lui aussi son résultat (ou son échec) dans l'import-log.
+        if (r.catchUp) {
+          const c = await r.catchUp;
+          await this.importLogs.log({
+            filename: `Détection IA — ${statement.id}`,
+            uploadedAt: new Date().toISOString(),
+            durationMs: 0,
+            status: 'success',
+            note: `détection IA (rattrapage) : ${c.suggestionsCreated} suggestions, ${c.errors.length} erreurs`,
+          });
+        }
+      })
       .catch((e) =>
         this.importLogs.log({
           filename: `Détection IA — ${statement.id}`,

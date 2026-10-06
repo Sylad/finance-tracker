@@ -9,6 +9,7 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import {
   CandidateCluster,
   ClusterClassification,
+  DetectionScanResult,
 } from '../../models/credit-detection.model';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 
@@ -358,6 +359,47 @@ describe('CreditDetectionService', () => {
       expect(clustering.buildClusters).toHaveBeenCalledTimes(2);
       await new Promise((r) => setImmediate(r));
       expect(clustering.buildClusters).toHaveBeenCalledTimes(2);
+      expect(svc.isScanning()).toBe(false);
+    });
+
+    it('le relevé sauté reçoit le résultat du scan de rattrapage (catchUp), partagé entre relevés', async () => {
+      let release!: () => void;
+      clustering.buildClusters.mockResolvedValue([] as never);
+      clustering.buildClusters.mockReturnValueOnce(
+        new Promise((resolve) => {
+          release = () => resolve([]);
+        }) as never,
+      );
+      const first = svc.scanAll();
+      await new Promise((r) => setImmediate(r));
+      const a = await svc.scanStatement(stmt('2026-02'));
+      const b = await svc.scanStatement(stmt('2026-03'));
+      expect(a.catchUp).toBeDefined();
+      expect(b.catchUp).toBe(a.catchUp);
+
+      release();
+      await first;
+      const result = await (a.catchUp as Promise<DetectionScanResult>);
+      expect(result.skipped).toBeUndefined();
+      expect(result.errors).toEqual([]);
+    });
+
+    it("l'échec du scan de rattrapage rejette catchUp (visible de l'import-log)", async () => {
+      let release!: () => void;
+      clustering.buildClusters.mockResolvedValue([] as never);
+      clustering.buildClusters.mockReturnValueOnce(
+        new Promise((resolve) => {
+          release = () => resolve([]);
+        }) as never,
+      );
+      const first = svc.scanAll();
+      await new Promise((r) => setImmediate(r));
+      const a = await svc.scanStatement(stmt('2026-02'));
+      clustering.buildClusters.mockRejectedValueOnce(new Error('ollama down') as never);
+
+      release();
+      await first;
+      await expect(a.catchUp).rejects.toThrow('ollama down');
       expect(svc.isScanning()).toBe(false);
     });
 

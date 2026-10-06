@@ -33,4 +33,7 @@ export interface DetectionScanResult {
   errors: { clusterKey: string; message: string }[];
   /** L4 : vrai quand le scan a été sauté parce qu'un autre était en cours. */
   skipped?: boolean;
+  /** L4 : sur un scan de relevé sauté, résultat du scan complet de rattrapage
+   *  qui suivra (rejette si ce scan échoue) — pour l'import-log du hook. */
+  catchUp?: Promise<DetectionScanResult>;
 }

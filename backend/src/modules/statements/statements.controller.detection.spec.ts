@@ -50,4 +50,44 @@ describe('StatementsController — note du hook de détection post-import (L4)',
       }),
     );
   });
+
+  it('journalise le résultat du scan de rattrapage une fois terminé', async () => {
+    const { ctrl, importLogs } = build({
+      clustersAnalyzed: 0,
+      suggestionsCreated: 0,
+      errors: [],
+      skipped: true,
+      catchUp: Promise.resolve({
+        clustersAnalyzed: 4,
+        suggestionsCreated: 3,
+        errors: [],
+      }),
+    });
+    (ctrl['triggerDetection'] as (s: unknown) => void).call(ctrl, statement);
+    await flush();
+    expect(importLogs.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'success',
+        note: 'détection IA (rattrapage) : 3 suggestions, 0 erreurs',
+      }),
+    );
+  });
+
+  it("journalise en erreur l'échec du scan de rattrapage", async () => {
+    const { ctrl, importLogs } = build({
+      clustersAnalyzed: 0,
+      suggestionsCreated: 0,
+      errors: [],
+      skipped: true,
+      catchUp: Promise.reject(new Error('ollama down')),
+    });
+    (ctrl['triggerDetection'] as (s: unknown) => void).call(ctrl, statement);
+    await flush();
+    expect(importLogs.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'error',
+        error: expect.stringContaining('ollama down'),
+      }),
+    );
+  });
 });
