@@ -252,19 +252,23 @@ export class AutoSyncService {
 
   /** Replays ciblés (resync) : uniquement la brique demandée, sans
    *  auto-création/désactivation ni sync des autres domaines. */
-  async replaySavings(statement: MonthlyStatement, opts: { estimateInterest?: boolean } = {}): Promise<void> {
+  async replaySavings(statement: MonthlyStatement, opts: { estimateInterestFor?: string } = {}): Promise<void> {
     // Par défaut, jamais d'intérêts estimés : rejouer UN relevé ancien les
     // appliquerait au solde courant, pas à celui de l'époque. Le resync complet
-    // (ASC, après clearDetectedMovements) passe estimateInterest : le solde y
-    // est reconstruit relevé après relevé, l'estimation redevient juste.
-    await this.syncSavings(statement, { replay: !opts.estimateInterest });
+    // (ASC, après clearDetectedMovements) passe estimateInterestFor : le solde
+    // du SEUL compte remis à zéro y est reconstruit relevé après relevé, son
+    // estimation redevient juste ; les autres comptes gardent leur solde courant.
+    await this.syncSavings(statement, { replay: true, estimateInterestFor: opts.estimateInterestFor });
   }
 
   async replayLoans(statement: MonthlyStatement): Promise<void> {
     await this.syncLoans(statement);
   }
 
-  private async syncSavings(statement: MonthlyStatement, opts: { replay?: boolean } = {}): Promise<void> {
+  private async syncSavings(
+    statement: MonthlyStatement,
+    opts: { replay?: boolean; estimateInterestFor?: string } = {},
+  ): Promise<void> {
     const accounts = await this.savings.getAll();
     const externalBalances = statement.externalAccountBalances ?? [];
 
@@ -319,7 +323,7 @@ export class AutoSyncService {
             const epargneAmount = -t.amount;
             await this.safeAddMovement(acc, t, epargneAmount, statement.id);
           }
-          await this.maybeAddInterest(acc, statement, opts.replay ?? false);
+          await this.maybeAddInterest(acc, statement, (opts.replay ?? false) && acc.id !== opts.estimateInterestFor);
           handled = true;
         }
       }
@@ -328,7 +332,7 @@ export class AutoSyncService {
 
       // Priority 3: regex fallback
       if (!acc.matchPattern) {
-        await this.maybeAddInterest(acc, statement, opts.replay ?? false);
+        await this.maybeAddInterest(acc, statement, (opts.replay ?? false) && acc.id !== opts.estimateInterestFor);
         continue;
       }
       let regex: RegExp;
@@ -336,7 +340,7 @@ export class AutoSyncService {
         regex = new RegExp(acc.matchPattern, 'i');
       } catch (e) {
         this.logger.warn(`Invalid regex on savings ${acc.id}: ${acc.matchPattern}`);
-        await this.maybeAddInterest(acc, statement, opts.replay ?? false);
+        await this.maybeAddInterest(acc, statement, (opts.replay ?? false) && acc.id !== opts.estimateInterestFor);
         continue;
       }
       // Un mouvement daté avant le solde initial est déjà compris dans ce
@@ -349,7 +353,7 @@ export class AutoSyncService {
         const epargneAmount = -t.amount;
         await this.safeAddMovement(acc, t, epargneAmount, statement.id);
       }
-      await this.maybeAddInterest(acc, statement, opts.replay ?? false);
+      await this.maybeAddInterest(acc, statement, (opts.replay ?? false) && acc.id !== opts.estimateInterestFor);
     }
   }
 

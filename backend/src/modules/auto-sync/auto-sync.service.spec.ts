@@ -173,10 +173,16 @@ describe('AutoSyncService', () => {
       expect(interestCalls()).toHaveLength(0);
     });
 
-    it('replaySavings { estimateInterest: true } (resync) : recrée l\'estimation retirée par clearDetectedMovements', async () => {
-      await svc.replaySavings(baseStatement, { estimateInterest: true });
+    it('replaySavings { estimateInterestFor } (resync) : recrée l\'estimation du compte remis à zéro', async () => {
+      await svc.replaySavings(baseStatement, { estimateInterestFor: 'pel-1' });
       expect(interestCalls()).toHaveLength(1);
       expect(interestCalls()[0][1].amount).toBe(100);
+    });
+
+    it('replaySavings { estimateInterestFor } : les AUTRES comptes (solde courant) ne reçoivent aucune estimation', async () => {
+      savings.getAll.mockResolvedValue([mkPel(), { ...mkPel(), id: 'pel-2' }]);
+      await svc.replaySavings(baseStatement, { estimateInterestFor: 'pel-1' });
+      expect(interestCalls().map(([id]) => id)).toEqual(['pel-1']);
     });
   });
 

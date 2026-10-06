@@ -23,7 +23,7 @@ export class ResyncService {
     // en side effect d'un resync épargne (review 2026-08-13).
     const statements = (await this.storage.getAllStatements()).slice().reverse();
     for (const s of statements) {
-      await this.autoSync.replaySavings(s, { estimateInterest: true });
+      await this.autoSync.replaySavings(s, { estimateInterestFor: id });
     }
     this.logger.log(`Resynced savings ${id} over ${statements.length} statements`);
     return { rescanned: statements.length };

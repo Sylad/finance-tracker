@@ -67,8 +67,8 @@ describe('ResyncService.resyncSavings', () => {
     const res = await mod.get(ResyncService).resyncSavings('a');
     expect(res).toEqual({ rescanned: 2 });
     expect(autoSync.replaySavings.mock.calls).toEqual([
-      [{ id: '2026-01' }, { estimateInterest: true }],
-      [{ id: '2026-02' }, { estimateInterest: true }],
+      [{ id: '2026-01' }, { estimateInterestFor: 'a' }],
+      [{ id: '2026-02' }, { estimateInterestFor: 'a' }],
     ]);
   });
 });
