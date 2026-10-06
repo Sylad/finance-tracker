@@ -149,7 +149,7 @@ describe('AutoSyncService', () => {
     expect(savings.addMovement).toHaveBeenCalledWith('ldds-1', expect.objectContaining({ transactionId: 'tx-new', amount: 500 }));
   });
 
-  describe('maybeAddInterest — jamais d\'estimation en replay (L5)', () => {
+  describe('maybeAddInterest — en replay : estimation sur le solde reconstruit, jamais sur le solde du jour (L5)', () => {
     const mkPel = (): SavingsAccount => ({
       id: 'pel-1', name: 'PEL', type: 'pel', initialBalance: 1000, initialBalanceDate: '2026-01-01',
       matchPattern: 'VIR.*PEL', interestRate: 0.02, interestAnniversaryMonth: 3,

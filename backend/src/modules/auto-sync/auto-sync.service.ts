@@ -386,9 +386,11 @@ export class AutoSyncService {
     skip: boolean,
     reconstruct: boolean,
   ): Promise<void> {
-    // Estimation = solde COURANT × taux : valable seulement à l'import du
-    // relevé du moment. Rejouer un ancien relevé l'appliquerait à un solde
-    // d'une autre époque (vécu : +10,38 € sur un PEL ouvert après coup).
+    // `skip` = rejeu sans estimation (solde du jour sans rapport avec l'époque
+    // du relevé : vécu, +10,38 € sur un PEL ouvert après coup). Ce n'est PAS la
+    // règle de tout replay : reanalyze, remplacement de relevé et resync
+    // estiment, sur le solde RECONSTRUIT (`reconstruct`), pour ne pas perdre
+    // l'intérêt supprimé par removeForStatement — ne pas rétablir `skip` partout.
     if (skip) return;
     if (statement.month !== acc.interestAnniversaryMonth) return;
     // Pas d'intérêts pour une période où le compte n'existait pas encore
