@@ -54,16 +54,17 @@ lots:
     finished: 2026-10-05
   - id: L4
     title: "Scans de détection concurrents : mutex / skip si scan en cours"
-    status: doing
+    status: done
     estimate: 0.5
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #5" }
     started: 2026-10-06
     review: { date: 2026-10-06, verdict: "conforme : isScanning retiré sans casse, duplication de triggerDetection reportée à L14/t2 — orchestré (vague 2026-10-06-1801, 2 passe(s) de correction + passe des mineurs)", commit: d4a818da50d79b513c597a02ae07acbad60ff213 }
+    finished: 2026-10-06
   - id: L5
     title: "maybeAddInterest : ne jamais estimer en replay"
-    status: doing
+    status: done
     estimate: 0.5
     created: 2026-09-28
     notes:
@@ -71,15 +72,17 @@ lots:
       - { date: 2026-10-06, text: "Revue 06-10 : 2 majeurs à corriger (session neuve) — (1) resync : maybeAddInterest calcule sur currentBalance qui contient encore les mouvements manual et bank-extract postérieurs au relevé rejoué → n'estimer que sur le solde reconstruit à la date du relevé, ou ne pas estimer si des mouvements non rejoués existent ; test qui fait jouer la reconstruction. (2) reanalyze et remplacement d'un relevé (analysis.service.ts l.48-49, 92-94) appellent syncSavings sans replay → intérêts ré-estimés sur le solde du jour ; passer replay, test. Décision Sylvain : L4/L5/L6 livrés ensemble." }
     started: 2026-10-06
     review: { date: 2026-10-06, verdict: "conforme — passe des mineurs vérifiée (commentaire et titre de test alignés sur le code), 634 tests verts, typecheck propre, aucun nouveau défaut — orchestré (vague 2026-10-06-2138, 2 passe(s) de correction + passe des mineurs)", commit: 91419fdd92a5e7c2e3c2b7fe0356fd94308f2d95 }
+    finished: 2026-10-06
   - id: L6
     title: Paires neutres à cheval sur 2 mois côté /expenses
-    status: doing
+    status: done
     estimate: 1
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #7" }
     started: 2026-10-06
     review: { date: 2026-10-06, verdict: "conforme (1 constat mineur de lint) — orchestré (vague 2026-10-06-1801, 2 passe(s) de correction + passe des mineurs)", commit: e77673b655d9cdf3bb24e71e763b86fbd07699ee }
+    finished: 2026-10-06
   - id: L7
     title: paidOccurrenceId normalisé sur l'UUID d'occurrence partout
     status: todo
