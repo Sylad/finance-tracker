@@ -336,6 +336,38 @@ describe('CreditDetectionService', () => {
       expect(done.skipped).toBeUndefined();
     });
 
+    it('un relevé sauté pendant un scan relance UN scan complet à la fin (L4)', async () => {
+      let release!: () => void;
+      clustering.buildClusters.mockResolvedValue([] as never);
+      clustering.buildClusters.mockReturnValueOnce(
+        new Promise((resolve) => {
+          release = () => resolve([]);
+        }) as never,
+      );
+      const first = svc.scanAll();
+      await new Promise((r) => setImmediate(r));
+      expect((await svc.scanStatement(stmt('2026-02'))).skipped).toBe(true);
+      expect((await svc.scanStatement(stmt('2026-03'))).skipped).toBe(true);
+      expect(clustering.buildClusters).toHaveBeenCalledTimes(1);
+
+      release();
+      await first;
+      await new Promise((r) => setImmediate(r));
+      await new Promise((r) => setImmediate(r));
+
+      expect(clustering.buildClusters).toHaveBeenCalledTimes(2);
+      await new Promise((r) => setImmediate(r));
+      expect(clustering.buildClusters).toHaveBeenCalledTimes(2);
+      expect(svc.isScanning()).toBe(false);
+    });
+
+    it('sans scan sauté, aucun scan de rattrapage', async () => {
+      clustering.buildClusters.mockResolvedValue([] as never);
+      await svc.scanAll();
+      await new Promise((r) => setImmediate(r));
+      expect(clustering.buildClusters).toHaveBeenCalledTimes(1);
+    });
+
     it('le verrou est libéré après un scan réussi', async () => {
       clustering.buildClusters.mockResolvedValue([] as never);
       await svc.scanAll();

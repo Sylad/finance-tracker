@@ -62,7 +62,7 @@ export class AnalysisController {
           durationMs: 0,
           status: 'success',
           note: r.skipped
-            ? 'détection IA sautée : un scan est déjà en cours'
+            ? 'détection IA sautée : un scan est déjà en cours, un scan complet suivra à sa fin'
             : `détection IA : ${r.suggestionsCreated} suggestions, ${r.errors.length} erreurs`,
         }),
       )

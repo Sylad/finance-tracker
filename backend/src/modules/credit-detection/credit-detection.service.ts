@@ -30,8 +30,12 @@ export class CreditDetectionService {
    * et classifient les mêmes clusters deux fois sur un Ollama unique, puis
    * écrivent les mêmes suggestions en parallèle. Le second est sauté, pas
    * mis en file : le premier couvre déjà l'historique.
+   * Exception : un scan de relevé sauté lève `catchUpPending` — le scan en
+   * cours a lu les relevés à son démarrage et peut ne pas voir celui-là
+   * (import de plusieurs PDF d'affilée). À sa fin, UN scan complet rattrape.
    */
   private scanning = false;
+  private catchUpPending = false;
 
   constructor(
     private readonly clustering: CandidateClusteringService,
@@ -52,8 +56,20 @@ export class CreditDetectionService {
     try {
       return await this.doScanAll();
     } finally {
-      this.scanning = false;
+      this.release();
     }
+  }
+
+  private release(): void {
+    this.scanning = false;
+    if (!this.catchUpPending) return;
+    this.catchUpPending = false;
+    this.logger.log('scan de rattrapage après un scan de relevé sauté');
+    this.scanAll().catch((e) =>
+      this.logger.error(
+        `scan de rattrapage échoué: ${(e as Error).message ?? e}`,
+      ),
+    );
   }
 
   private skippedResult(): DetectionScanResult {
@@ -83,12 +99,15 @@ export class CreditDetectionService {
   async scanStatement(
     statement: MonthlyStatement,
   ): Promise<DetectionScanResult> {
-    if (this.scanning) return this.skippedResult();
+    if (this.scanning) {
+      this.catchUpPending = true;
+      return this.skippedResult();
+    }
     this.scanning = true;
     try {
       return await this.doScanStatement(statement);
     } finally {
-      this.scanning = false;
+      this.release();
     }
   }
 
