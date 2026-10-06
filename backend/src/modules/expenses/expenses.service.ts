@@ -84,7 +84,7 @@ export class ExpensesService {
       : statements[0];
     if (!statement) throw new NotFoundException(`Relevé ${monthId} introuvable`);
 
-    const { loanTxIds, subTxIds, savingsTxIds } = await this.collectAllocatedTxIds();
+    const { loanTxIds, subTxIds, savingsTxIds, loanPatterns } = await this.collectAllocatedTxIds();
     // Fenêtre de 3 relevés (voisins chronologiques inclus) : une paire à cheval
     // sur 2 mois est neutre ici comme pour /health. Seuls les débits du relevé
     // consulté sont ensuite classés (les ids des voisins ne s'y trouvent pas).
@@ -92,6 +92,8 @@ export class ExpensesService {
     const window = statements.slice(Math.max(0, idx - 1), idx + 2);
     const neutralTxIds = ExpensesService.findNeutralOutgoingTxIds(
       window.flatMap((s) => s.transactions),
+      new Set([...loanTxIds, ...subTxIds, ...savingsTxIds]),
+      loanPatterns,
     );
 
     const mk = (t: Transaction): ExpenseTx => ({
@@ -152,10 +154,15 @@ export class ExpensesService {
     const statements = (await this.storage.getAllStatements()).slice(0, 3);
     if (statements.length === 0) throw new NotFoundException('Aucun relevé importé');
 
-    const { loanTxIds, subTxIds, savingsTxIds } = await this.collectAllocatedTxIds();
+    const { loanTxIds, subTxIds, savingsTxIds, loanPatterns } = await this.collectAllocatedTxIds();
     const excluded = new Set<string>([...loanTxIds, ...subTxIds, ...savingsTxIds]);
     // Un seul appariement sur les relevés ensemble : les paires à cheval sur 2 mois comptent.
-    for (const id of ExpensesService.findNeutralOutgoingTxIds(statements.flatMap((st) => st.transactions))) {
+    const neutralIds = ExpensesService.findNeutralOutgoingTxIds(
+      statements.flatMap((st) => st.transactions),
+      excluded,
+      loanPatterns,
+    );
+    for (const id of neutralIds) {
       excluded.add(id);
     }
 
@@ -295,7 +302,7 @@ export class ExpensesService {
   // ------------------------------------------------------------------ helpers
 
   private async collectAllocatedTxIds(): Promise<{
-    loanTxIds: Set<string>; subTxIds: Set<string>; savingsTxIds: Set<string>;
+    loanTxIds: Set<string>; subTxIds: Set<string>; savingsTxIds: Set<string>; loanPatterns: string[];
   }> {
     const [loans, subs, savings] = await Promise.all([
       this.loans.getAll(),
@@ -308,7 +315,8 @@ export class ExpensesService {
     for (const s of subs) for (const o of s.occurrencesDetected) if (o.transactionId) subTxIds.add(o.transactionId);
     const savingsTxIds = new Set<string>();
     for (const a of savings) for (const m of a.movements) if (m.transactionId) savingsTxIds.add(m.transactionId);
-    return { loanTxIds, subTxIds, savingsTxIds };
+    const loanPatterns = loans.filter((l) => l.isActive && l.matchPattern).map((l) => l.matchPattern as string);
+    return { loanTxIds, subTxIds, savingsTxIds, loanPatterns };
   }
 
   /**
@@ -316,10 +324,27 @@ export class ExpensesService {
    * à ≤7 jours (remboursement redirigé, annulation). Les transactions peuvent
    * venir de plusieurs relevés adjacents. Appariement glouton global par
    * proximité de date, comme health.service : chaque tx entre dans une paire max.
+   * Comme health, les tx déjà allouées (crédit, abonnement, épargne) et celles
+   * dont le libellé matche un crédit actif sont écartées AVANT l'appariement.
    */
-  static findNeutralOutgoingTxIds(transactions: Transaction[]): Set<string> {
-    const debits = transactions.filter((t) => t.amount < 0);
-    const credits = transactions.filter((t) => t.amount > 0);
+  static findNeutralOutgoingTxIds(
+    transactions: Transaction[],
+    excludedTxIds: Set<string> = new Set(),
+    loanMatchPatterns: string[] = [],
+  ): Set<string> {
+    const patterns: RegExp[] = [];
+    for (const p of loanMatchPatterns) {
+      try {
+        patterns.push(new RegExp(p, 'i'));
+      } catch {
+        // matchPattern invalide (saisie libre) — ignoré, comme health.
+      }
+    }
+    const eligible = transactions.filter(
+      (t) => !excludedTxIds.has(t.id) && !patterns.some((re) => re.test(t.description)),
+    );
+    const debits = eligible.filter((t) => t.amount < 0);
+    const credits = eligible.filter((t) => t.amount > 0);
     const maxGap = 7 * 24 * 3600 * 1000;
     const pairs: { d: string; c: string; gap: number }[] = [];
     for (const d of debits) {

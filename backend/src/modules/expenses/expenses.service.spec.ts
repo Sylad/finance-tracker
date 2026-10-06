@@ -100,4 +100,72 @@ describe('ExpensesService — breakdown', () => {
     expect(neutral.has('near')).toBe(true);
     expect(neutral.has('far')).toBe(false);
   });
+
+  it("l'épargne n'est jamais appariée : un virement d'épargne entrant ne rend pas un achat neutre", async () => {
+    getAllStatements.mockResolvedValue([
+      { id: '2026-07', transactions: [tx('buy', -800, { date: '2026-07-02', category: 'shopping' })] },
+      { id: '2026-06', transactions: [tx('sav-in', 800, { date: '2026-06-30' })] },
+    ]);
+    savingsGetAll.mockResolvedValue([{ movements: [{ transactionId: 'sav-in' }] }]);
+    const july = await svc.getBreakdown('2026-07');
+    expect(july.buckets.neutral.total).toBe(0);
+    expect(july.categories[0]).toEqual(expect.objectContaining({ category: 'shopping', total: 800 }));
+  });
+
+  it("un débit d'épargne ne consomme pas le crédit d'une vraie paire neutre", async () => {
+    getAllStatements.mockResolvedValue([{
+      id: '2026-07',
+      transactions: [
+        tx('sav-out', -50, { date: '2026-07-10' }),
+        tx('real-out', -50, { date: '2026-07-04' }),
+        tx('in', 50, { date: '2026-07-08' }),
+      ],
+    }]);
+    savingsGetAll.mockResolvedValue([{ movements: [{ transactionId: 'sav-out' }] }]);
+    const out = await svc.getBreakdown('2026-07');
+    expect(out.buckets.savings.total).toBe(50);
+    expect(out.buckets.neutral.total).toBe(50);
+  });
+
+  it("le matchPattern d'un crédit actif écarte la tx de l'appariement", () => {
+    const neutral = ExpensesService.findNeutralOutgoingTxIds(
+      [
+        tx('pay', -120, { description: 'PRLV FLOA 123', date: '2026-07-05' }),
+        tx('in', 120, { date: '2026-07-06' }),
+      ] as never,
+      new Set(),
+      ['FLOA'],
+    );
+    expect(neutral.has('pay')).toBe(false);
+  });
+
+  describe('proposeCuts', () => {
+    it('apparie sur les relevés à plat (paire à cheval) et exclut crédits/abos/épargne', async () => {
+      getAllStatements.mockResolvedValue([
+        { id: '2026-07', transactions: [tx('in-j', 120, { date: '2026-07-02' })] },
+        { id: '2026-06', transactions: [
+          tx('out-j', -120, { date: '2026-06-29' }),
+          tx('t-loan', -10), tx('t-sub', -11), tx('t-sav', -12),
+        ] },
+      ]);
+      loansGetAll.mockResolvedValue([{ occurrencesDetected: [{ transactionId: 't-loan' }] }]);
+      subsGetAll.mockResolvedValue([{ occurrencesDetected: [{ transactionId: 't-sub' }] }]);
+      savingsGetAll.mockResolvedValue([{ movements: [{ transactionId: 't-sav' }] }]);
+      const build = jest.spyOn(svc['clustering'], 'buildClusters').mockReturnValue([]);
+      await svc.proposeCuts();
+      const excluded = build.mock.calls[0][1] as Set<string>;
+      expect([...excluded].sort()).toEqual(['out-j', 't-loan', 't-sav', 't-sub']);
+    });
+
+    it("l'épargne entrante ne rend pas un débit neutre", async () => {
+      getAllStatements.mockResolvedValue([
+        { id: '2026-07', transactions: [tx('buy', -800, { date: '2026-07-02' })] },
+        { id: '2026-06', transactions: [tx('sav-in', 800, { date: '2026-06-30' })] },
+      ]);
+      savingsGetAll.mockResolvedValue([{ movements: [{ transactionId: 'sav-in' }] }]);
+      const build = jest.spyOn(svc['clustering'], 'buildClusters').mockReturnValue([]);
+      await svc.proposeCuts();
+      expect((build.mock.calls[0][1] as Set<string>).has('buy')).toBe(false);
+    });
+  });
 });
