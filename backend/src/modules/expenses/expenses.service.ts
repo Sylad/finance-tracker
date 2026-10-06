@@ -85,7 +85,14 @@ export class ExpensesService {
     if (!statement) throw new NotFoundException(`Relevé ${monthId} introuvable`);
 
     const { loanTxIds, subTxIds, savingsTxIds } = await this.collectAllocatedTxIds();
-    const neutralTxIds = ExpensesService.findNeutralOutgoingTxIds(statement.transactions);
+    // Fenêtre de 3 relevés (voisins chronologiques inclus) : une paire à cheval
+    // sur 2 mois est neutre ici comme pour /health. Seuls les débits du relevé
+    // consulté sont ensuite classés (les ids des voisins ne s'y trouvent pas).
+    const idx = statements.indexOf(statement);
+    const window = statements.slice(Math.max(0, idx - 1), idx + 2);
+    const neutralTxIds = ExpensesService.findNeutralOutgoingTxIds(
+      window.flatMap((s) => s.transactions),
+    );
 
     const mk = (t: Transaction): ExpenseTx => ({
       id: t.id, date: t.date, description: t.description, amount: t.amount,
@@ -147,8 +154,9 @@ export class ExpensesService {
 
     const { loanTxIds, subTxIds, savingsTxIds } = await this.collectAllocatedTxIds();
     const excluded = new Set<string>([...loanTxIds, ...subTxIds, ...savingsTxIds]);
-    for (const st of statements) {
-      for (const id of ExpensesService.findNeutralOutgoingTxIds(st.transactions)) excluded.add(id);
+    // Un seul appariement sur les relevés ensemble : les paires à cheval sur 2 mois comptent.
+    for (const id of ExpensesService.findNeutralOutgoingTxIds(statements.flatMap((st) => st.transactions))) {
+      excluded.add(id);
     }
 
     // minOccurrences=1 : un achat ponctuel important est aussi une coupe possible.
@@ -304,28 +312,30 @@ export class ExpensesService {
   }
 
   /**
-   * Paires neutres locales au relevé : un débit compensé par un crédit de
-   * même montant (±0.01€) à ≤7 jours (remboursement redirigé, annulation).
-   * Version simplifiée de health.service — greedy par proximité de date.
+   * Paires neutres : un débit compensé par un crédit de même montant (±0.01€)
+   * à ≤7 jours (remboursement redirigé, annulation). Les transactions peuvent
+   * venir de plusieurs relevés adjacents. Appariement glouton global par
+   * proximité de date, comme health.service : chaque tx entre dans une paire max.
    */
   static findNeutralOutgoingTxIds(transactions: Transaction[]): Set<string> {
     const debits = transactions.filter((t) => t.amount < 0);
     const credits = transactions.filter((t) => t.amount > 0);
-    const usedCredits = new Set<string>();
-    const neutral = new Set<string>();
+    const maxGap = 7 * 24 * 3600 * 1000;
+    const pairs: { d: string; c: string; gap: number }[] = [];
     for (const d of debits) {
-      let best: { id: string; gap: number } | null = null;
       for (const c of credits) {
-        if (usedCredits.has(c.id)) continue;
         if (Math.abs(c.amount + d.amount) > 0.01) continue;
         const gap = Math.abs(new Date(c.date).getTime() - new Date(d.date).getTime());
-        if (gap > 7 * 24 * 3600 * 1000) continue;
-        if (!best || gap < best.gap) best = { id: c.id, gap };
+        if (gap <= maxGap) pairs.push({ d: d.id, c: c.id, gap });
       }
-      if (best) {
-        usedCredits.add(best.id);
-        neutral.add(d.id);
-      }
+    }
+    pairs.sort((a, b) => a.gap - b.gap);
+    const usedCredits = new Set<string>();
+    const neutral = new Set<string>();
+    for (const p of pairs) {
+      if (neutral.has(p.d) || usedCredits.has(p.c)) continue;
+      neutral.add(p.d);
+      usedCredits.add(p.c);
     }
     return neutral;
   }

@@ -77,4 +77,27 @@ describe('ExpensesService — breakdown', () => {
     expect(neutral.has('out1')).toBe(true);
     expect(neutral.has('out2')).toBe(false);
   });
+
+  it('paire neutre à cheval sur 2 relevés : débit fin juin, crédit début juillet', async () => {
+    getAllStatements.mockResolvedValue([
+      { id: '2026-07', transactions: [tx('in-j', 120, { date: '2026-07-02' }), tx('b', -10, { date: '2026-07-03' })] },
+      { id: '2026-06', transactions: [tx('out-j', -120, { date: '2026-06-29' })] },
+    ]);
+    const june = await svc.getBreakdown('2026-06');
+    expect(june.buckets.neutral.total).toBe(120);
+    expect(june.categories).toHaveLength(0);
+    const july = await svc.getBreakdown('2026-07');
+    expect(july.buckets.neutral.total).toBe(0);
+    expect(july.categories[0].total).toBe(10);
+  });
+
+  it('appariement global par proximité : un débit voisin ne vole pas le crédit plus proche', () => {
+    const neutral = ExpensesService.findNeutralOutgoingTxIds([
+      tx('far', -50, { date: '2026-07-03' }),
+      tx('near', -50, { date: '2026-07-08' }),
+      tx('in', 50, { date: '2026-07-09' }),
+    ] as never);
+    expect(neutral.has('near')).toBe(true);
+    expect(neutral.has('far')).toBe(false);
+  });
 });
