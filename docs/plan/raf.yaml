@@ -78,6 +78,7 @@ lots:
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #7" }
     started: 2026-10-06
+    review: { date: 2026-10-06, verdict: "conforme (1 constat mineur de lint) — orchestré (vague 2026-10-06-1801, 2 passe(s) de correction + passe des mineurs)", commit: e77673b655d9cdf3bb24e71e763b86fbd07699ee }
   - id: L7
     title: paidOccurrenceId normalisé sur l'UUID d'occurrence partout
     status: todo
