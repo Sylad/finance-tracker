@@ -7,6 +7,7 @@ import { SavingsService } from '../savings/savings.service';
 import { CandidateClusteringService } from '../credit-detection/candidate-clustering.service';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
+import { pairNeutralTransactions } from '../../common/neutral-pairs';
 
 /**
  * ⚠️ PRIVACY — même exception documentée que credit-detection :
@@ -315,53 +316,22 @@ export class ExpensesService {
     for (const s of subs) for (const o of s.occurrencesDetected) if (o.transactionId) subTxIds.add(o.transactionId);
     const savingsTxIds = new Set<string>();
     for (const a of savings) for (const m of a.movements) if (m.transactionId) savingsTxIds.add(m.transactionId);
-    const loanPatterns = loans.filter((l) => l.isActive && l.matchPattern).map((l) => l.matchPattern as string);
+    const loanPatterns = loans.filter((l) => l.isActive && l.matchPattern).map((l) => l.matchPattern);
     return { loanTxIds, subTxIds, savingsTxIds, loanPatterns };
   }
 
   /**
-   * Paires neutres : un débit compensé par un crédit de même montant (±0.01€)
-   * à ≤7 jours (remboursement redirigé, annulation). Les transactions peuvent
-   * venir de plusieurs relevés adjacents. Appariement glouton global par
-   * proximité de date, comme health.service : chaque tx entre dans une paire max.
-   * Comme health, les tx déjà allouées (crédit, abonnement, épargne) et celles
-   * dont le libellé matche un crédit actif sont écartées AVANT l'appariement.
+   * Jambes sortantes des paires neutres (débit compensé par un crédit de même
+   * montant à ≤7 jours). Les transactions peuvent venir de plusieurs relevés
+   * adjacents. Règle unique partagée avec /health : `pairNeutralTransactions`.
    */
   static findNeutralOutgoingTxIds(
     transactions: Transaction[],
     excludedTxIds: Set<string> = new Set(),
     loanMatchPatterns: string[] = [],
   ): Set<string> {
-    const patterns: RegExp[] = [];
-    for (const p of loanMatchPatterns) {
-      try {
-        patterns.push(new RegExp(p, 'i'));
-      } catch {
-        // matchPattern invalide (saisie libre) — ignoré, comme health.
-      }
-    }
-    const eligible = transactions.filter(
-      (t) => !excludedTxIds.has(t.id) && !patterns.some((re) => re.test(t.description)),
+    return new Set(
+      pairNeutralTransactions(transactions, excludedTxIds, loanMatchPatterns).map((p) => p.outId),
     );
-    const debits = eligible.filter((t) => t.amount < 0);
-    const credits = eligible.filter((t) => t.amount > 0);
-    const maxGap = 7 * 24 * 3600 * 1000;
-    const pairs: { d: string; c: string; gap: number }[] = [];
-    for (const d of debits) {
-      for (const c of credits) {
-        if (Math.abs(c.amount + d.amount) > 0.01) continue;
-        const gap = Math.abs(new Date(c.date).getTime() - new Date(d.date).getTime());
-        if (gap <= maxGap) pairs.push({ d: d.id, c: c.id, gap });
-      }
-    }
-    pairs.sort((a, b) => a.gap - b.gap);
-    const usedCredits = new Set<string>();
-    const neutral = new Set<string>();
-    for (const p of pairs) {
-      if (neutral.has(p.d) || usedCredits.has(p.c)) continue;
-      neutral.add(p.d);
-      usedCredits.add(p.c);
-    }
-    return neutral;
   }
 }

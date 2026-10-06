@@ -17,6 +17,7 @@ import {
 } from '../../models/health.model';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Loan } from '../../models/loan.model';
+import { pairNeutralTransactions } from '../../common/neutral-pairs';
 import { Subscription } from '../../models/subscription.model';
 
 export interface HealthContext {
@@ -194,75 +195,13 @@ export class HealthService {
     loans: Loan[],
     excludedTxIds: Set<string>,
   ): { neutralOutgoingTxIds: Set<string>; operationsNeutres: number } {
-    const activePatterns: RegExp[] = [];
-    for (const loan of loans) {
-      if (!loan.isActive || !loan.matchPattern) continue;
-      try {
-        activePatterns.push(new RegExp(loan.matchPattern, 'i'));
-      } catch {
-        // matchPattern invalide (saisie libre côté user) — ignoré silencieusement.
-      }
-    }
-    const matchesActiveLoanPattern = (description: string): boolean =>
-      activePatterns.some((re) => re.test(description));
-
-    interface Candidate {
-      id: string;
-      date: number;
-      amount: number;
-    }
-    const incoming: Candidate[] = [];
-    const outgoing: Candidate[] = [];
-    for (const st of recent) {
-      for (const t of st.transactions) {
-        if (t.amount === 0) continue;
-        if (excludedTxIds.has(t.id)) continue;
-        if (matchesActiveLoanPattern(t.description)) continue;
-        const candidate: Candidate = {
-          id: t.id,
-          date: new Date(t.date).getTime(),
-          amount: t.amount,
-        };
-        if (t.amount > 0) incoming.push(candidate);
-        else outgoing.push(candidate);
-      }
-    }
-
-    interface PairCandidate {
-      inId: string;
-      outId: string;
-      outAmount: number;
-      dateDiffDays: number;
-    }
-    const pairCandidates: PairCandidate[] = [];
-    const MS_PER_DAY = 24 * 60 * 60 * 1000;
-    for (const inTx of incoming) {
-      for (const outTx of outgoing) {
-        const amountDiff = Math.abs(Math.abs(inTx.amount) - Math.abs(outTx.amount));
-        if (amountDiff > 0.01) continue;
-        const dateDiffDays = Math.abs(inTx.date - outTx.date) / MS_PER_DAY;
-        if (dateDiffDays > 7) continue;
-        pairCandidates.push({
-          inId: inTx.id,
-          outId: outTx.id,
-          outAmount: Math.abs(outTx.amount),
-          dateDiffDays,
-        });
-      }
-    }
-    pairCandidates.sort((a, b) => a.dateDiffDays - b.dateDiffDays);
-
-    const usedIn = new Set<string>();
-    const usedOut = new Set<string>();
-    const neutralOutgoingTxIds = new Set<string>();
-    let operationsNeutres = 0;
-    for (const pc of pairCandidates) {
-      if (usedIn.has(pc.inId) || usedOut.has(pc.outId)) continue;
-      usedIn.add(pc.inId);
-      usedOut.add(pc.outId);
-      neutralOutgoingTxIds.add(pc.outId);
-      operationsNeutres += pc.outAmount;
-    }
+    const pairs = pairNeutralTransactions(
+      recent.flatMap((st) => st.transactions),
+      excludedTxIds,
+      loans.filter((l) => l.isActive && l.matchPattern).map((l) => l.matchPattern),
+    );
+    const neutralOutgoingTxIds = new Set(pairs.map((p) => p.outId));
+    const operationsNeutres = pairs.reduce((sum, p) => sum + p.outAmount, 0);
 
     return { neutralOutgoingTxIds, operationsNeutres };
   }

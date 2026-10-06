@@ -139,6 +139,18 @@ describe('ExpensesService — breakdown', () => {
     expect(neutral.has('pay')).toBe(false);
   });
 
+  it("un matchPattern invalide est ignoré sans planter l'appariement", () => {
+    const neutral = ExpensesService.findNeutralOutgoingTxIds(
+      [
+        tx('out', -80, { date: '2026-07-05' }),
+        tx('in', 80, { date: '2026-07-06' }),
+      ] as never,
+      new Set(),
+      ['(', 'FLOA'],
+    );
+    expect(neutral.has('out')).toBe(true);
+  });
+
   const loansAvecMotifs = [
     { isActive: true, matchPattern: 'FLOA', occurrencesDetected: [] },
     { isActive: false, matchPattern: 'ACME', occurrencesDetected: [] },
