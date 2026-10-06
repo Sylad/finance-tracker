@@ -359,7 +359,8 @@ describe('CreditDetectionService', () => {
       expect(clustering.buildClusters).toHaveBeenCalledTimes(2);
       await new Promise((r) => setImmediate(r));
       expect(clustering.buildClusters).toHaveBeenCalledTimes(2);
-      expect(svc.isScanning()).toBe(false);
+      clustering.buildClusters.mockResolvedValue([] as never);
+      expect((await svc.scanAll()).skipped).toBeUndefined();
     });
 
     it('le relevé sauté reçoit le résultat du scan de rattrapage (catchUp), partagé entre relevés', async () => {
@@ -400,7 +401,8 @@ describe('CreditDetectionService', () => {
       release();
       await first;
       await expect(a.catchUp).rejects.toThrow('ollama down');
-      expect(svc.isScanning()).toBe(false);
+      clustering.buildClusters.mockResolvedValue([] as never);
+      expect((await svc.scanAll()).skipped).toBeUndefined();
     });
 
     it('sans scan sauté, aucun scan de rattrapage', async () => {
@@ -423,22 +425,6 @@ describe('CreditDetectionService', () => {
       clustering.buildClusters.mockResolvedValue([] as never);
       const again = await svc.scanAll();
       expect(again.skipped).toBeUndefined();
-    });
-
-    it('isScanning reflète l\'état du verrou', async () => {
-      let release!: () => void;
-      clustering.buildClusters.mockReturnValue(
-        new Promise((resolve) => {
-          release = () => resolve([]);
-        }) as never,
-      );
-      expect(svc.isScanning()).toBe(false);
-      const p = svc.scanAll();
-      await new Promise((r) => setImmediate(r));
-      expect(svc.isScanning()).toBe(true);
-      release();
-      await p;
-      expect(svc.isScanning()).toBe(false);
     });
   });
 

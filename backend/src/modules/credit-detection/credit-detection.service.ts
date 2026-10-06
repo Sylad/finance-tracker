@@ -50,10 +50,6 @@ export class CreditDetectionService {
     private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
-  isScanning(): boolean {
-    return this.scanning;
-  }
-
   async scanAll(): Promise<DetectionScanResult> {
     if (this.scanning) return this.skippedResult();
     this.scanning = true;
