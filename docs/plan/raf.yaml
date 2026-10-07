@@ -511,3 +511,8 @@ lots:
     started: 2026-10-05
     review: { date: 2026-10-05, verdict: "compliant — orchestré (vague 2026-10-05-0913, 0 passe(s) de correction + passe des mineurs)", commit: 4c02ec040c8f4654d5b2d128b94677e7278f46cd }
     finished: 2026-10-05
+  - id: L60
+    title: "Démo locale isolée pour la revue UX automatique : commande de lancement (DATA_DIR vers un jeu de démo versionné hors data-local/, DEMO_FORCED=true, APP_PIN vide, ports front/back distincts d'ol 5174/3002) ; test qui prouve qu'aucun fichier de data-local/ n'est ouvert ; puis orchestrate.ux dans cadence.yaml (suite de cadence L95)"
+    status: todo
+    estimate: 0.5
+    created: 2026-10-07
