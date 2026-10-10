@@ -41,15 +41,26 @@ function printEnv(extra: NodeJS.ProcessEnv = {}): Record<string, string> {
 }
 
 describe('démo locale isolée (L60) — environnement du lanceur', () => {
-  it('verrouille la démo, sans PIN, sur les ports 3002 / 5174 distincts d’ol-companion', () => {
+  it('verrouille la démo, sans PIN, sur les ports 3052 / 5192', () => {
     const env = printEnv();
     expect(env.DEMO_FORCED).toBe('true');
     expect(env.APP_PIN).toBe('');
     expect(env.ANTHROPIC_API_KEY).toBe(''); // pas de clé : la démo ne dépense rien
-    expect(env.PORT).toBe('3002');
-    expect(env.FRONT_PORT).toBe('5174');
-    expect(env.CORS_ORIGIN).toBe('http://localhost:5174');
-    expect(env.VITE_API_TARGET).toBe('http://localhost:3002');
+    expect(env.PORT).toBe('3052');
+    expect(env.FRONT_PORT).toBe('5192');
+    expect(env.CORS_ORIGIN).toBe('http://localhost:5192');
+    expect(env.VITE_API_TARGET).toBe('http://localhost:3052');
+  });
+
+  it('n’empiète sur aucun port connu des autres instances (réelle 3000/4200, ol-companion 3002/5174, Vite 5173)', () => {
+    const env = printEnv();
+    const taken = ['3000', '4200', '3002', '5174', '5173', '3010', '4201', '4202', '4204'];
+    expect(taken).not.toContain(env.PORT);
+    expect(taken).not.toContain(env.FRONT_PORT);
+    // Le port annoncé à cadence est bien celui du frontend de la démo.
+    const cadence = fs.readFileSync(path.join(REPO, 'cadence.yaml'), 'utf-8');
+    expect(cadence).toContain(`url: http://localhost:${env.FRONT_PORT}`);
+    expect(cadence).not.toMatch(/localhost:(5174|3002)/);
   });
 
   it('place DATA_DIR et UPLOAD_DIR hors de data-local/ et de data/', () => {

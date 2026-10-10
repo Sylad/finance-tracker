@@ -8,7 +8,7 @@
 #   - DEMO_FORCED=true (démo verrouillée, lecture seule), APP_PIN vide, pas de
 #     clé Anthropic : rien à saisir, rien à dépenser ;
 #   - ports distincts d'ol-companion et de l'instance réelle (3000/4200) :
-#     backend 3002, frontend Vite 5174.
+#     backend 3052, frontend Vite 5192.
 # Preuve : backend/src/modules/demo/ux-demo.spec.ts.
 #
 #   local/ux-demo.sh               lance backend + frontend, au premier plan (Ctrl-C = tout arrêter)
@@ -17,8 +17,8 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACK_PORT=3002
-FRONT_PORT=5174
+BACK_PORT=3052
+FRONT_PORT=5192
 
 DEMO_BASE="$(realpath -m "${UX_DEMO_DIR:-$REPO/../tmp/finance-ux-demo}")"
 
