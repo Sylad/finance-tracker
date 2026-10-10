@@ -18,3 +18,14 @@ deliver:
     # cache long, sw.js en no-cache.
     - command: ./scripts/verify-cache.sh
   verifyTimeout: 600
+
+# Revue UX automatique des vagues (cadence orchestrate, L60) : démo locale ISOLÉE —
+# backend NestJS (3002) + frontend Vite (5174), ports distincts d'ol-companion et de
+# l'instance réelle (3000/4200), DEMO_FORCED=true, APP_PIN et clé Anthropic vides,
+# DATA_DIR jetable hors data-local/ rempli depuis les fixtures versionnées. Un seul
+# groupe de processus, tué ensemble par le programme. Preuve : ux-demo.spec.ts.
+orchestrate:
+  ux:
+    command: ./local/ux-demo.sh
+    url: http://localhost:5174
+    timeout: 300
