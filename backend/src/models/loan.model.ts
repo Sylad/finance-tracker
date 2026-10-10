@@ -24,7 +24,7 @@ export interface InstallmentLine {
   dueDate: string;             // YYYY-MM-DD
   amount: number;              // montant exact attendu
   paid: boolean;               // true quand match trouvé dans un bank statement
-  paidOccurrenceId?: string;   // id de l'occurrence qui satisfait cette ligne
+  paidOccurrenceId?: string;   // UUID (LoanOccurrence.id) de l'occurrence qui satisfait cette ligne — jamais un statementId ni un id de transaction (L7)
 }
 
 /**
