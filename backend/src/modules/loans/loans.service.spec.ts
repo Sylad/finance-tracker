@@ -611,6 +611,90 @@ describe('LoansService', () => {
     });
   });
 
+  describe('cache de lecture (L13 t1)', () => {
+    const base = {
+      name: 'Crédit', type: 'classic' as const, category: 'auto' as const,
+      monthlyPayment: 100, matchPattern: 'X', isActive: true,
+    };
+
+    it('ne relit pas le fichier tant qu\'il est inchangé', async () => {
+      await svc.create(base);
+      const spy = jest.spyOn(fs.promises, 'readFile');
+      await svc.getAll();
+      await svc.getAll();
+      await svc.getAll();
+      const reads = spy.mock.calls.filter((c) => String(c[0]).endsWith('loans.json'));
+      spy.mockRestore();
+      expect(reads).toHaveLength(0);
+    });
+
+    it('relit après une écriture externe du fichier', async () => {
+      await svc.create(base);
+      expect(await svc.getAll()).toHaveLength(1);
+      fs.writeFileSync(path.join(tmpDir, 'loans.json'), '[]');
+      expect(await svc.getAll()).toEqual([]);
+    });
+
+    it('renvoie des copies : muter le résultat ne corrompt pas le cache', async () => {
+      const l = await svc.create(base);
+      const a = await svc.getAll();
+      a[0].name = 'MUTÉ';
+      a[0].occurrencesDetected.push({ id: 'x' } as any);
+      const b = await svc.getAll();
+      expect(b[0].name).toBe(l.name);
+      expect(b[0].occurrencesDetected).toEqual([]);
+    });
+
+    it('un répertoire de données différent n\'utilise pas le cache de l\'autre', async () => {
+      await svc.create(base);
+      const other = fs.mkdtempSync(path.join(os.tmpdir(), 'ft-loans-other-'));
+      const prev = tmpDir;
+      tmpDir = other;
+      try {
+        expect(await svc.getAll()).toEqual([]);
+      } finally {
+        tmpDir = prev;
+        fs.rmSync(other, { recursive: true, force: true });
+      }
+      expect(await svc.getAll()).toHaveLength(1);
+    });
+  });
+
+  describe('addOccurrences — lot en un seul read-modify-write (L13 t1)', () => {
+    it('applique les mêmes règles que addOccurrence, avec une seule écriture', async () => {
+      const mk = () => svc.create({
+        name: 'R', type: 'revolving', category: 'consumer', monthlyPayment: 100,
+        matchPattern: 'C', isActive: true, creditor: 'C', maxAmount: 5000, usedAmount: 2000,
+      });
+      const a = await mk();
+      const b = await mk();
+      const occs = [
+        { statementId: 's', date: '2026-04-05', amount: -100, transactionId: 't1' },
+        { statementId: 's', date: '2026-04-06', amount: -100, transactionId: 't2' }, // même mois : ignorée
+        { statementId: 's', date: '2026-04-10', amount: 650, transactionId: 't3', source: 'draw' as const },
+        { statementId: 's', date: '2026-04-05', amount: -100, transactionId: 't1' }, // doublon strict
+      ];
+      for (const o of occs) await svc.addOccurrence(a.id, o);
+      const writes = jest.spyOn(fs.promises, 'rename');
+      await svc.addOccurrences(b.id, occs);
+      const nb = writes.mock.calls.length;
+      writes.mockRestore();
+      const [ra, rb] = [await svc.getOne(a.id), await svc.getOne(b.id)];
+      expect(nb).toBe(1);
+      expect(rb.usedAmount).toBe(ra.usedAmount);
+      expect(rb.occurrencesDetected.map((o) => o.transactionId)).toEqual(ra.occurrencesDetected.map((o) => o.transactionId));
+    });
+
+    it('lot vide : aucune écriture', async () => {
+      const l = await svc.create({ name: 'C', type: 'classic', category: 'auto', monthlyPayment: 1, matchPattern: 'X', isActive: true });
+      const w = jest.spyOn(fs.promises, 'rename');
+      await svc.addOccurrences(l.id, []);
+      const n = w.mock.calls.length;
+      w.mockRestore();
+      expect(n).toBe(0);
+    });
+  });
+
   describe('addOccurrence — tirages (draws)', () => {
     it('un tirage (amount > 0) sur un revolving AUGMENTE usedAmount', async () => {
       const loan = await svc.create({

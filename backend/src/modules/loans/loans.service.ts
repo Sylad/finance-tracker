@@ -110,6 +110,15 @@ export interface AmortizationSnapshotInput {
   schedule: AmortizationLine[];
 }
 
+export interface OccurrenceInput {
+  statementId: string;
+  date: string;
+  amount: number;
+  transactionId: string | null;
+  description?: string;
+  source?: LoanOccurrenceSource;
+}
+
 @Injectable()
 export class LoansService {
   private readonly logger = new Logger(LoansService.name);
@@ -124,14 +133,36 @@ export class LoansService {
     return path.resolve(this.dataDir.getDataDir(), 'loans.json');
   }
 
+  /**
+   * Lecture avec cache (L13 t1) : un scan d'import relisait et reparsait
+   * `loans.json` des dizaines de fois. Le cache est validé par la signature du
+   * fichier (mtime, taille, inode — l'écriture atomique change l'inode), donc
+   * une écriture externe (seed démo, restauration) est vue. Clé = chemin, donc
+   * le dossier démo isolé a son propre cache. Chaque appel reçoit une COPIE :
+   * les appelants mutent puis `persist` ; une mutation abandonnée ne doit pas
+   * corrompre le cache.
+   */
+  private readonly cache = new Map<string, { sig: string; data: Loan[] }>();
+
+  private static fileSig(st: fs.Stats): string {
+    return `${st.mtimeMs}|${st.size}|${st.ino}`;
+  }
+
   async getAll(): Promise<Loan[]> {
+    const file = this.filepath;
     try {
-      const c = await fs.promises.readFile(this.filepath, 'utf8');
-      return JSON.parse(c) as Loan[];
+      const sig = LoansService.fileSig(await fs.promises.stat(file));
+      const hit = this.cache.get(file);
+      if (hit && hit.sig === sig) return structuredClone(hit.data);
+      const c = await fs.promises.readFile(file, 'utf8');
+      const data = JSON.parse(c) as Loan[];
+      this.cache.set(file, { sig, data });
+      return structuredClone(data);
     } catch (err: unknown) {
+      this.cache.delete(file);
       const e = err as NodeJS.ErrnoException;
       if (e?.code !== 'ENOENT') {
-        this.logger.warn(`Failed to read ${this.filepath}: ${e?.message ?? err}`);
+        this.logger.warn(`Failed to read ${file}: ${e?.message ?? err}`);
       }
       return [];
     }
@@ -192,6 +223,32 @@ export class LoansService {
    */
   async addOccurrence(
     id: string,
+    occ: OccurrenceInput,
+  ): Promise<Loan> {
+    const all = await this.getAll();
+    const loan = all.find((l) => l.id === id);
+    if (!loan) throw new NotFoundException(`Crédit ${id} introuvable`);
+    if (this.applyOccurrence(loan, occ)) await this.persist(all);
+    return loan;
+  }
+
+  /**
+   * Même règles que `addOccurrence`, appliquées dans l'ordre à un lot sur UN
+   * SEUL read-modify-write (L13 t1) : une seule lecture, une seule écriture,
+   * un seul `loans-changed`. Aucune écriture si le lot ne change rien.
+   */
+  async addOccurrences(id: string, occs: OccurrenceInput[]): Promise<Loan> {
+    const all = await this.getAll();
+    const loan = all.find((l) => l.id === id);
+    if (!loan) throw new NotFoundException(`Crédit ${id} introuvable`);
+    let changed = false;
+    for (const occ of occs) changed = this.applyOccurrence(loan, occ) || changed;
+    if (changed) await this.persist(all);
+    return loan;
+  }
+
+  private applyOccurrence(
+    loan: Loan,
     occ: {
       statementId: string;
       date: string;
@@ -200,19 +257,15 @@ export class LoansService {
       description?: string;
       source?: LoanOccurrenceSource;
     },
-  ): Promise<Loan> {
-    const all = await this.getAll();
-    const idx = all.findIndex((l) => l.id === id);
-    if (idx === -1) throw new NotFoundException(`Crédit ${id} introuvable`);
-    const loan = all[idx];
+  ): boolean {
     const source: LoanOccurrenceSource = occ.source ?? 'bank_statement';
 
     // Niveau 1 : dédup stricte (statementId, transactionId)
     const dupKey = (o: LoanOccurrence) => `${o.statementId}|${o.transactionId ?? ''}`;
     const newKey = `${occ.statementId}|${occ.transactionId ?? ''}`;
     if (loan.occurrencesDetected.some((o) => dupKey(o) === newKey)) {
-      this.logger.debug(`Skipping exact duplicate occurrence on loan ${id} (${newKey})`);
-      return loan;
+      this.logger.debug(`Skipping exact duplicate occurrence on loan ${loan.id} (${newKey})`);
+      return false;
     }
 
     // Niveau 2 : dédup mensuelle (YYYY-MM, loanId) — gère les décalages temporels.
@@ -228,8 +281,7 @@ export class LoansService {
         loan.usedAmount = Math.round((loan.usedAmount + occ.amount) * 100) / 100;
       }
       loan.updatedAt = new Date().toISOString();
-      await this.persist(all);
-      return loan;
+      return true;
     }
     // Un remboursement anticipé n'est pas une mensualité : il échappe à
     // l'invariant "1 débit/mois" dans les deux sens (il n'est pas bloqué par
@@ -245,13 +297,13 @@ export class LoansService {
       const newPrio = occurrenceSourcePriority(source);
       if (newPrio <= existingPrio) {
         this.logger.debug(
-          `Skipping occurrence on loan ${id} for ${newMonth} — existing ${existingSameMonth.source ?? 'bank'} has equal/higher priority`,
+          `Skipping occurrence on loan ${loan.id} for ${newMonth} — existing ${existingSameMonth.source ?? 'bank'} has equal/higher priority`,
         );
-        return loan;
+        return false;
       }
       // Nouvelle source plus prioritaire → remplacement
       this.logger.log(
-        `Replacing ${existingSameMonth.source ?? 'bank'} occurrence with ${source} on loan ${id} for ${newMonth}`,
+        `Replacing ${existingSameMonth.source ?? 'bank'} occurrence with ${source} on loan ${loan.id} for ${newMonth}`,
       );
       loan.occurrencesDetected = loan.occurrencesDetected.filter(
         (o) => o.id !== existingSameMonth.id,
@@ -294,8 +346,7 @@ export class LoansService {
       }
     }
     loan.updatedAt = new Date().toISOString();
-    await this.persist(all);
-    return loan;
+    return true;
   }
 
   async removeOccurrencesForStatement(statementId: string): Promise<void> {
@@ -1672,7 +1723,13 @@ export class LoansService {
   }
 
   private async persist(all: Loan[]): Promise<void> {
-    await atomicWriteJson(this.filepath, all);
+    const file = this.filepath;
+    await atomicWriteJson(file, all);
+    try {
+      this.cache.set(file, { sig: LoansService.fileSig(await fs.promises.stat(file)), data: structuredClone(all) });
+    } catch {
+      this.cache.delete(file);
+    }
     this.bus.emit('loans-changed');
   }
 }
