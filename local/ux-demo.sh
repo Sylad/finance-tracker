@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Démo locale ISOLÉE pour la revue UX automatique (cadence orchestrate.ux, L60).
+#
+# Tourne sur Big-Blue, là où vivent les vraies données (data-local/). Garanties :
+#   - DATA_DIR est un dossier jetable HORS de data-local/ et de data/ (défaut :
+#     ../tmp/finance-ux-demo, le dossier temporaire du projet), rempli à chaque
+#     lancement depuis les fixtures VERSIONNÉES (backend/src/modules/demo/demo-fixtures.json) ;
+#   - DEMO_FORCED=true (démo verrouillée, lecture seule), APP_PIN vide, pas de
+#     clé Anthropic : rien à saisir, rien à dépenser ;
+#   - ports distincts d'ol-companion et de l'instance réelle (3000/4200) :
+#     backend 3002, frontend Vite 5174.
+# Preuve : backend/src/modules/demo/ux-demo.spec.ts.
+#
+#   local/ux-demo.sh               lance backend + frontend, au premier plan (Ctrl-C = tout arrêter)
+#   local/ux-demo.sh --print-env   affiche l'environnement qui serait utilisé, sans rien lancer
+#   UX_DEMO_DIR=/chemin local/ux-demo.sh   autre dossier de données (refusé s'il touche data-local/ ou data/)
+set -euo pipefail
+
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BACK_PORT=3002
+FRONT_PORT=5174
+
+DEMO_BASE="$(realpath -m "${UX_DEMO_DIR:-$REPO/../tmp/finance-ux-demo}")"
+
+# Refuse un dossier qui est, contient ou se trouve dans data-local/ ou data/.
+for protected in "$REPO/data-local" "$REPO/data" "$REPO/backend/data"; do
+  p="$(realpath -m "$protected")"
+  case "$DEMO_BASE/" in "$p/"*) echo "ERREUR : UX_DEMO_DIR ($DEMO_BASE) est dans $p" >&2; exit 2;; esac
+  case "$p/" in "$DEMO_BASE/"*) echo "ERREUR : UX_DEMO_DIR ($DEMO_BASE) contient $p" >&2; exit 2;; esac
+done
+
+print_env() {
+  cat <<ENV
+DATA_DIR=$DEMO_BASE
+UPLOAD_DIR=$DEMO_BASE/uploads
+DEMO_FORCED=true
+APP_PIN=
+ANTHROPIC_API_KEY=
+PORT=$BACK_PORT
+FRONT_PORT=$FRONT_PORT
+CORS_ORIGIN=http://localhost:$FRONT_PORT
+VITE_API_TARGET=http://localhost:$BACK_PORT
+ENV
+}
+
+if [ "${1:-}" = "--print-env" ]; then
+  print_env
+  exit 0
+fi
+
+# Variables exportées VIDES incluses : dotenv n'écrase pas process.env, donc
+# backend/.env (vrai PIN, vraie clé) ne passe pas.
+while IFS='=' read -r k v; do export "$k=$v"; done < <(print_env)
+
+# Jeu de démo frais à chaque lancement : seul <DATA_DIR>/demo est effacé.
+mkdir -p "$DATA_DIR/uploads"
+rm -rf "$DATA_DIR/demo"
+
+echo "Build backend…"
+(cd "$REPO/backend" && npm run build >/dev/null)
+
+pids=()
+cleanup() { for p in "${pids[@]:-}"; do kill "$p" 2>/dev/null || true; done; }
+trap cleanup EXIT INT TERM
+
+(cd "$REPO/backend" && exec node dist/main) &
+pids+=($!)
+
+for _ in $(seq 1 30); do
+  curl -sf "http://localhost:$BACK_PORT/api/health" >/dev/null 2>&1 && break
+  sleep 1
+done
+curl -sf "http://localhost:$BACK_PORT/api/health" >/dev/null \
+  || { echo "ERREUR : backend de démo muet sur $BACK_PORT" >&2; exit 1; }
+curl -sf -X POST "http://localhost:$BACK_PORT/api/demo/seed" >/dev/null
+
+echo "Démo isolée prête : http://localhost:$FRONT_PORT (données : $DATA_DIR/demo)"
+(cd "$REPO/frontend" && exec npm run dev -- --port "$FRONT_PORT" --strictPort) &
+pids+=($!)
+wait
