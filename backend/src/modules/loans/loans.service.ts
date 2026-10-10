@@ -1087,7 +1087,7 @@ export class LoansService {
     // s'appuyant sur le fait que les deux tris (occurrences puis schedule)
     // sont stables sur la même clé `date`, donc alignés index à index.
     occurrences.forEach((o, i) => {
-      schedule[i].paidOccurrenceId = o.statementId ?? undefined;
+      schedule[i].paidOccurrenceId = o.id;
     });
     loan.kind = 'installment';
     loan.installmentSchedule = schedule;

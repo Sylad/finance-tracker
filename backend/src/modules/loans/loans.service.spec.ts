@@ -1339,6 +1339,7 @@ describe('LoansService', () => {
       await svc.addOccurrence(loan.id, { statementId: 's-2026-01', date: '2026-01-04', amount: -65.81, transactionId: null });
       await svc.addOccurrence(loan.id, { statementId: 's-2026-02', date: '2026-02-03', amount: -65.81, transactionId: null });
 
+      const before = await svc.getOne(loan.id);
       const converted = await svc.convertToInstallment(loan.id);
 
       expect(converted.kind).toBe('installment');
@@ -1347,8 +1348,12 @@ describe('LoansService', () => {
         dueDate: '2025-11-02',
         amount: 65.81,
         paid: true,
-        paidOccurrenceId: 's-2025-11',
+        paidOccurrenceId: before.occurrencesDetected.find((o) => o.statementId === 's-2025-11')!.id,
       });
+      // L7 : l'UUID de l'occurrence, jamais le statementId
+      for (const line of converted.installmentSchedule!) {
+        expect(converted.occurrencesDetected.some((o) => o.id === line.paidOccurrenceId)).toBe(true);
+      }
       expect(converted.installmentMerchant).toBe('COFIDIS');
       expect(converted.installmentSignatureDate).toBe('2025-11-02');
     });
