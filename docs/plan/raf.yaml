@@ -520,8 +520,11 @@ lots:
     finished: 2026-10-05
   - id: L60
     title: "Démo locale isolée pour la revue UX automatique : commande de lancement (DATA_DIR vers un jeu de démo versionné hors data-local/, DEMO_FORCED=true, APP_PIN vide, ports front/back distincts d'ol 5174/3002) ; test qui prouve qu'aucun fichier de data-local/ n'est ouvert ; puis orchestrate.ux dans cadence.yaml (suite de cadence L95)"
-    status: doing
+    status: done
     estimate: 0.5
     created: 2026-10-07
     started: 2026-10-10
     review: { date: 2026-10-10, verdict: "compliant — les 3 constats mineurs sont corrigés (d59717f), 1 remarque mineure sur un test statique — orchestré (vague 2026-10-10-1930, 1 passe(s) de correction + passe des mineurs)", commit: d59717f301a945f31413bf6ae24c0c6ff55e4ed5 }
+    notes:
+      - { date: 2026-10-10, text: "Re-vérifié par le lead 10-10 : ./local/ux-demo.sh prête en 8 s (3052/5192), empreinte md5 de data-local/ identique avant/après, aucun processus restant, 660 tests jest (ux-demo.spec.ts). orchestrate.ux branché : les vagues finance auront désormais leur revue UX automatique sur la démo" }
+    finished: 2026-10-10
