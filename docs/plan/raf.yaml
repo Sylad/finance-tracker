@@ -524,3 +524,4 @@ lots:
     estimate: 0.5
     created: 2026-10-07
     started: 2026-10-10
+    review: { date: 2026-10-10, verdict: "compliant — les 3 constats mineurs sont corrigés (d59717f), 1 remarque mineure sur un test statique — orchestré (vague 2026-10-10-1930, 1 passe(s) de correction + passe des mineurs)", commit: d59717f301a945f31413bf6ae24c0c6ff55e4ed5 }
