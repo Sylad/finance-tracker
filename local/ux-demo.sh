@@ -2,6 +2,7 @@
 # Démo locale ISOLÉE pour la revue UX automatique (cadence orchestrate.ux, L60).
 #
 # Tourne sur Big-Blue, là où vivent les vraies données (data-local/). Garanties :
+#   - le backend est compilé dans <DATA_DIR>/build, jamais dans backend/dist (celui de l'instance réelle) ;
 #   - DATA_DIR est un dossier jetable HORS de data-local/ et de data/ (défaut :
 #     ../tmp/finance-ux-demo, le dossier temporaire du projet), rempli à chaque
 #     lancement depuis les fixtures VERSIONNÉES (backend/src/modules/demo/demo-fixtures.json) ;
@@ -33,6 +34,7 @@ print_env() {
   cat <<ENV
 DATA_DIR=$DEMO_BASE
 UPLOAD_DIR=$DEMO_BASE/uploads
+BUILD_DIR=$DEMO_BASE/build
 DEMO_FORCED=true
 APP_PIN=
 ANTHROPIC_API_KEY=
@@ -56,14 +58,18 @@ while IFS='=' read -r k v; do export "$k=$v"; done < <(print_env)
 mkdir -p "$DATA_DIR/uploads"
 rm -rf "$DATA_DIR/demo"
 
-echo "Build backend…"
-(cd "$REPO/backend" && npm run build >/dev/null)
+# Compilation dans un dossier PROPRE à la démo : backend/dist est celui que
+# local/run.sh exécute avec les vraies données, il n'est ni effacé ni réécrit ici.
+echo "Build backend (dans $BUILD_DIR)…"
+rm -rf "$BUILD_DIR"
+(cd "$REPO/backend" && npx tsc -p tsconfig.build.json --outDir "$BUILD_DIR" --tsBuildInfoFile "$BUILD_DIR/.tsbuildinfo" >/dev/null \
+  && (cd src && find . -name '*.json' -exec cp --parents {} "$BUILD_DIR" \;))
 
 pids=()
 cleanup() { for p in "${pids[@]:-}"; do kill "$p" 2>/dev/null || true; done; }
 trap cleanup EXIT INT TERM
 
-(cd "$REPO/backend" && exec node dist/main) &
+(cd "$REPO/backend" && NODE_PATH="$REPO/backend/node_modules" exec node "$BUILD_DIR/main") &
 pids+=($!)
 
 for _ in $(seq 1 30); do

@@ -73,6 +73,15 @@ describe('démo locale isolée (L60) — environnement du lanceur', () => {
     }
   });
 
+  it('compile dans un dossier propre à la démo, jamais dans backend/dist (celui de l’instance réelle)', () => {
+    const env = printEnv();
+    expect(inside(env.BUILD_DIR, env.DATA_DIR)).toBe(true);
+    expect(inside(env.BUILD_DIR, path.join(REPO, 'backend', 'dist'))).toBe(false);
+    const script = fs.readFileSync(SCRIPT, 'utf-8').split('\n').filter((l) => !l.trim().startsWith('#')).join('\n');
+    expect(script).not.toMatch(/npm run build|nest build|dist\/main/);
+    expect(script).toContain('--outDir "$BUILD_DIR"');
+  });
+
   it('refuse un UX_DEMO_DIR qui pointe dans data-local/ ou data/ (ou les contient)', () => {
     for (const bad of [path.join(REPO, 'data-local'), path.join(REPO, 'data-local', 'x'), path.join(REPO, 'data'), REPO]) {
       expect(() => printEnv({ UX_DEMO_DIR: bad })).toThrow();
