@@ -62,11 +62,23 @@ rm -rf "$DATA_DIR/demo"
 # local/run.sh exécute avec les vraies données, il n'est ni effacé ni réécrit ici.
 echo "Build backend (dans $BUILD_DIR)…"
 rm -rf "$BUILD_DIR"
-(cd "$REPO/backend" && npx tsc -p tsconfig.build.json --outDir "$BUILD_DIR" --tsBuildInfoFile "$BUILD_DIR/.tsbuildinfo" >/dev/null \
+(cd "$REPO/backend" && npx tsc -p tsconfig.build.json --outDir "$BUILD_DIR" --tsBuildInfoFile "$BUILD_DIR/.tsbuildinfo" \
   && (cd src && find . -name '*.json' -exec cp --parents {} "$BUILD_DIR" \;))
 
+# Les dépendances du backend se résolvent dans backend/node_modules AVANT tout
+# node_modules d'un dossier parent (Node remonte les parents avant NODE_PATH) :
+# la démo charge les mêmes versions que le code testé.
+ln -s "$REPO/backend/node_modules" "$BUILD_DIR/node_modules"
+
 pids=()
-cleanup() { for p in "${pids[@]:-}"; do kill "$p" 2>/dev/null || true; done; }
+# Tue un processus et ses descendants (npm run dev → vite → esbuild) : un simple
+# kill du pid noté laisserait un Vite orphelin qui garde le port.
+kill_tree() {
+  local c
+  for c in $(pgrep -P "$1" 2>/dev/null || true); do kill_tree "$c"; done
+  kill "$1" 2>/dev/null || true
+}
+cleanup() { for p in "${pids[@]:-}"; do kill_tree "$p"; done; }
 trap cleanup EXIT INT TERM
 
 (cd "$REPO/backend" && NODE_PATH="$REPO/backend/node_modules" exec node "$BUILD_DIR/main") &

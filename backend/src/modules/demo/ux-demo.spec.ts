@@ -82,6 +82,25 @@ describe('démo locale isolée (L60) — environnement du lanceur', () => {
     expect(script).toContain('--outDir "$BUILD_DIR"');
   });
 
+  const code = () => fs.readFileSync(SCRIPT, 'utf-8').split('\n').filter((l) => !l.trim().startsWith('#')).join('\n');
+
+  it('laisse tsc écrire ses diagnostics (sortie standard non jetée)', () => {
+    const tsc = code().split('\n').find((l) => l.includes('tsc -p'));
+    expect(tsc).toBeDefined();
+    expect(tsc).not.toMatch(/>\s*\/dev\/null/);
+  });
+
+  it('arrête toute l’arborescence des processus lancés (Vite, esbuild compris)', () => {
+    const script = code();
+    expect(script).toMatch(/pgrep -P/);
+    expect(script).toMatch(/kill_tree/);
+  });
+
+  it('résout les dépendances du backend dans backend/node_modules avant tout node_modules parent', () => {
+    const script = code();
+    expect(script).toContain('ln -s "$REPO/backend/node_modules" "$BUILD_DIR/node_modules"');
+  });
+
   it('refuse un UX_DEMO_DIR qui pointe dans data-local/ ou data/ (ou les contient)', () => {
     for (const bad of [path.join(REPO, 'data-local'), path.join(REPO, 'data-local', 'x'), path.join(REPO, 'data'), REPO]) {
       expect(() => printEnv({ UX_DEMO_DIR: bad })).toThrow();
