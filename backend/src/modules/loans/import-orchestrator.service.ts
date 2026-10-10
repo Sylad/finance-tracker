@@ -196,15 +196,11 @@ export class ImportOrchestratorService {
         description: best.tx.description,
       });
       // paidOccurrenceId = UUID de l'occurrence (L7), jamais l'id de la transaction.
-      // Si la dédup mensuelle a écarté la nouvelle occurrence, l'échéance est
-      // satisfaite par celle déjà présente ce mois-là.
-      const occ =
-        updated.occurrencesDetected.find(
-          (o) => o.statementId === best!.statementId && o.transactionId === best!.tx.id,
-        ) ??
-        updated.occurrencesDetected.find(
-          (o) => o.amount < 0 && o.date.slice(0, 7) === best!.tx.date.slice(0, 7),
-        );
+      // Si la dédup mensuelle a écarté la nouvelle occurrence, il reste vide
+      // (comme auto-sync) : une occurrence ne paie qu'une seule échéance.
+      const occ = updated.occurrencesDetected.find(
+        (o) => o.statementId === best!.statementId && o.transactionId === best!.tx.id,
+      );
       await this.loans.markInstallmentPaid(loan.id, i, occ?.id);
       marked++;
     }

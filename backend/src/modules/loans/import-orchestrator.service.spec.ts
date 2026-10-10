@@ -39,7 +39,7 @@ describe('ImportOrchestratorService.retroMatchInstallment — paidOccurrenceId (
     await (svc as any).retroMatchInstallment(loan);
     expect(loans.markInstallmentPaid).toHaveBeenCalledWith('loan-1', 0, 'occ-uuid-1');
   });
-  it("retombe sur l'occurrence du même mois quand la dédup mensuelle écarte la nouvelle", async () => {
+  it("laisse paidOccurrenceId vide quand la dédup mensuelle écarte la nouvelle occurrence (une occurrence ne paie qu'une échéance)", async () => {
     const loan = {
       id: 'loan-1',
       creditor: 'COFIDIS',
@@ -76,6 +76,6 @@ describe('ImportOrchestratorService.retroMatchInstallment — paidOccurrenceId (
     const svc = new ImportOrchestratorService(loans as any, storage as any);
     await (svc as any).retroMatchInstallment(loan);
     expect(loans.markInstallmentPaid).toHaveBeenNthCalledWith(1, 'loan-1', 0, 'occ-1');
-    expect(loans.markInstallmentPaid).toHaveBeenNthCalledWith(2, 'loan-1', 1, 'occ-1');
+    expect(loans.markInstallmentPaid).toHaveBeenNthCalledWith(2, 'loan-1', 1, undefined);
   });
 });
