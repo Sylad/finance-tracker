@@ -54,6 +54,11 @@ describe('AutoSyncService', () => {
     loans = {
       getAll: jest.fn(),
       addOccurrence: jest.fn(),
+      // Le lot passe par addOccurrences (un seul RMW) : le mock rejoue chaque
+      // occurrence sur addOccurrence pour garder les assertions par occurrence.
+      addOccurrences: jest.fn(async (id: string, occs: unknown[]) => {
+        for (const o of occs) await (loans.addOccurrence as jest.Mock)(id, o);
+      }),
       update: loansUpdate,
       removeOccurrencesForStatement: jest.fn(),
     } as unknown as jest.Mocked<LoansService>;
@@ -553,6 +558,21 @@ describe('AutoSyncService', () => {
     const mkTx = (id: string, date: string, description: string, amount: number): Transaction => ({
       id, date, description, normalizedDescription: description.toLowerCase(),
       amount, currency: 'EUR', category: 'transfers', subcategory: '', isRecurring: false, confidence: 1,
+    });
+
+    it('L13 : les occurrences d\'un crédit sur un relevé partent en UN SEUL lot (addOccurrences)', async () => {
+      savings.getAll.mockResolvedValue([]);
+      loans.getAll.mockResolvedValue([mkLoan({})]);
+      const stmt: MonthlyStatement = {
+        ...baseStatement,
+        transactions: [
+          mkTx('tx-mens', '2026-03-05', 'Prélèvement Cofidis échéance', -186),
+          mkTx('tx-early', '2026-03-31', 'Virement instantané Cofidis 289.770.015.047.35', -5000),
+        ],
+      };
+      await svc.syncStatement(stmt);
+      expect(loans.addOccurrences).toHaveBeenCalledTimes(1);
+      expect((loans.addOccurrences as jest.Mock).mock.calls[0][1]).toHaveLength(2);
     });
 
     it('gros virement avec n° de contrat le même mois que la mensualité → occurrence source=early_repayment EN PLUS de la mensualité', async () => {

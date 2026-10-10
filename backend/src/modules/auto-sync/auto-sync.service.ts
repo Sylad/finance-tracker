@@ -481,6 +481,7 @@ export class AutoSyncService {
       return !baseline || date > baseline;
     };
 
+    const drawsByLoan = new Map<string, Parameters<LoansService['addOccurrences']>[1]>();
     for (const t of statement.transactions) {
       if (t.amount <= 0 || allocatedTxIds.has(t.id)) continue;
       const candidates = revolvings.filter((l) => matchesLoan(l, t.description) && afterBaseline(l, t.date));
@@ -493,18 +494,22 @@ export class AutoSyncService {
         );
       }
       allocatedTxIds.add(t.id);
-      await this.loans.addOccurrence(target.id, {
+      const batch = drawsByLoan.get(target.id) ?? [];
+      batch.push({
         statementId: statement.id,
         date: t.date,
         amount: t.amount,
         transactionId: t.id,
         description: t.description,
-        source: 'draw',
+        source: 'draw' as const,
       });
+      drawsByLoan.set(target.id, batch);
       // Répercute localement pour que le choix de marge des tirages suivants
       // du même statement reste cohérent.
       target.usedAmount = (target.usedAmount ?? 0) + t.amount;
     }
+    // Un RMW par crédit, après le choix des cibles (L13).
+    for (const [loanId, occs] of drawsByLoan) await this.loans.addOccurrences(loanId, occs);
   }
 
   /**
@@ -682,17 +687,21 @@ export class AutoSyncService {
       picked.push(txs[0]);
     }
 
-    for (const t of picked) {
-      allocatedTxIds.add(t.id);
-      await this.loans.addOccurrence(loan.id, {
+    // Un seul read-modify-write pour tout le lot du relevé (L13) ; l'ordre est
+    // conservé, donc la dédup mensuelle de addOccurrence s'applique comme avant.
+    for (const t of picked) allocatedTxIds.add(t.id);
+    if (picked.length === 0) return;
+    await this.loans.addOccurrences(
+      loan.id,
+      picked.map((t) => ({
         statementId: statement.id,
         date: t.date,
         amount: t.amount,
         transactionId: t.id,
         description: t.description,
         ...(isEarly(t) ? { source: 'early_repayment' as const } : {}),
-      });
-    }
+      })),
+    );
   }
 
   // Whitelist stricte des organismes de crédit : liste UNIQUE partagée avec
