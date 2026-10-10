@@ -1327,6 +1327,43 @@ export class LoansService {
   }
 
   /**
+   * Enregistre, pour un crédit N×, un lot de paiements `{ lineIndex, occ }` en
+   * UN SEUL read-modify-write (L13 t3) : chaque occurrence passe par les règles
+   * d'`addOccurrence`, puis l'échéance `lineIndex` est marquée payée avec l'id
+   * de l'occurrence retrouvée (transactionId + date ; absent si la dédup l'a
+   * écartée, comme avant). Une échéance déjà payée n'est pas retouchée. Tous
+   * les indices sont validés AVANT toute mutation. Rien n'est écrit si rien ne
+   * change.
+   */
+  async recordInstallmentPayments(
+    loanId: string,
+    payments: Array<{ lineIndex: number; occ: OccurrenceInput }>,
+  ): Promise<Loan> {
+    const all = await this.getAll();
+    const loan = all.find((l) => l.id === loanId);
+    if (!loan) throw new NotFoundException(`Crédit ${loanId} introuvable`);
+    const schedule = loan.installmentSchedule;
+    for (const { lineIndex } of payments) {
+      if (!schedule || lineIndex < 0 || lineIndex >= schedule.length) {
+        throw new BadRequestException(`installmentSchedule[${lineIndex}] introuvable sur loan ${loanId}`);
+      }
+    }
+    let changed = false;
+    for (const { lineIndex, occ } of payments) {
+      changed = this.applyOccurrence(loan, occ) || changed;
+      if (schedule![lineIndex].paid) continue;
+      const added = loan.occurrencesDetected.find(
+        (o) => o.transactionId === occ.transactionId && o.date === occ.date,
+      );
+      schedule![lineIndex] = { ...schedule![lineIndex], paid: true, paidOccurrenceId: added?.id };
+      loan.updatedAt = new Date().toISOString();
+      changed = true;
+    }
+    if (changed) await this.persist(all);
+    return loan;
+  }
+
+  /**
    * Ajoute un RUM à la liste rumRefs[] d'un loan si pas déjà présent
    * (comparaison normalisée). No-op si le RUM est déjà connu.
    * Utilisé après matching réussi quand le relevé courant porte un

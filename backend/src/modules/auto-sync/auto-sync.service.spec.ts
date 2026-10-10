@@ -754,14 +754,7 @@ describe('AutoSyncService', () => {
       };
       savings.getAll.mockResolvedValue([]);
       loans.getAll.mockResolvedValue([installmentLoan as any]);
-      // Mock getOne pour retourner le state après addOccurrence
-      (loans as unknown as { getOne: jest.Mock }).getOne = jest.fn().mockResolvedValue({
-        ...installmentLoan,
-        occurrencesDetected: [
-          { id: 'occ-1', statementId: '2025-11', date: '2025-11-03', amount: -65.81, transactionId: 'tx-a' },
-        ],
-      });
-      (loans as unknown as { markInstallmentPaid: jest.Mock }).markInstallmentPaid = jest.fn();
+      (loans as unknown as { recordInstallmentPayments: jest.Mock }).recordInstallmentPayments = jest.fn();
 
       const stmt: MonthlyStatement = {
         ...baseStatement,
@@ -777,12 +770,14 @@ describe('AutoSyncService', () => {
         ],
       };
       await svc.syncStatement(stmt);
-      // addOccurrence appelée + markInstallmentPaid avec index 0
-      expect(loans.addOccurrence).toHaveBeenCalledWith('cofidis-4x', expect.objectContaining({
-        date: '2025-11-03', amount: -65.81, transactionId: 'tx-a',
-      }));
-      expect((loans as unknown as { markInstallmentPaid: jest.Mock }).markInstallmentPaid)
-        .toHaveBeenCalledWith('cofidis-4x', 0, 'occ-1');
+      // Un seul read-modify-write : occurrence + ligne 0 payée (L13 t3)
+      const record = (loans as unknown as { recordInstallmentPayments: jest.Mock }).recordInstallmentPayments;
+      expect(record).toHaveBeenCalledTimes(1);
+      expect(record).toHaveBeenCalledWith('cofidis-4x', [{
+        lineIndex: 0,
+        occ: expect.objectContaining({ date: '2025-11-03', amount: -65.81, transactionId: 'tx-a', source: 'bank_statement' }),
+      }]);
+      expect(loans.addOccurrence).not.toHaveBeenCalled();
     });
 
     it("ne match PAS si la date est hors fenêtre [-3j, +15j]", async () => {
@@ -823,11 +818,7 @@ describe('AutoSyncService', () => {
       };
       savings.getAll.mockResolvedValue([]);
       loans.getAll.mockResolvedValue([installmentLoan as any]);
-      (loans as unknown as { getOne: jest.Mock }).getOne = jest.fn().mockResolvedValue({
-        ...installmentLoan,
-        occurrencesDetected: [{ id: 'occ-late', statementId: '2025-11', date: '2025-11-12', amount: -65.81, transactionId: 'tx-late' }],
-      });
-      (loans as unknown as { markInstallmentPaid: jest.Mock }).markInstallmentPaid = jest.fn();
+      (loans as unknown as { recordInstallmentPayments: jest.Mock }).recordInstallmentPayments = jest.fn();
       const stmt: MonthlyStatement = {
         ...baseStatement,
         id: '2025-11', month: 11, year: 2025,
@@ -840,9 +831,10 @@ describe('AutoSyncService', () => {
         ],
       };
       await svc.syncStatement(stmt);
-      expect(loans.addOccurrence).toHaveBeenCalledWith('cofidis-4x', expect.objectContaining({
-        transactionId: 'tx-late',
-      }));
+      expect((loans as unknown as { recordInstallmentPayments: jest.Mock }).recordInstallmentPayments)
+        .toHaveBeenCalledWith('cofidis-4x', [expect.objectContaining({
+          lineIndex: 0, occ: expect.objectContaining({ transactionId: 'tx-late' }),
+        })]);
     });
 
     it("ne match PAS si l'amount diffère de >0.50€", async () => {

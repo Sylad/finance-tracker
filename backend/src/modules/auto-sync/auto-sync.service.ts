@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SavingsService } from '../savings/savings.service';
-import { LoansService } from '../loans/loans.service';
+import { LoansService, type OccurrenceInput } from '../loans/loans.service';
 import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { StorageService } from '../storage/storage.service';
@@ -541,7 +541,7 @@ export class AutoSyncService {
 
     const txs = statement.transactions;
     const localUsed = new Set<string>();
-    let mutated = false;
+    const payments: Array<{ lineIndex: number; occ: OccurrenceInput }> = [];
     for (let i = 0; i < schedule.length; i++) {
       const line = schedule[i];
       if (line.paid) continue;
@@ -571,29 +571,23 @@ export class AutoSyncService {
       if (matchedTx) localUsed.add(matchedTx.id);
       if (!matchedTx) continue;
 
-      // Add occurrence (la dedup par addOccurrence évite les doublons)
-      await this.loans.addOccurrence(loan.id, {
-        statementId: statement.id,
-        date: matchedTx.date,
-        amount: matchedTx.amount,
-        transactionId: matchedTx.id,
-        description: matchedTx.description,
-        source: 'bank_statement',
+      payments.push({
+        lineIndex: i,
+        occ: {
+          statementId: statement.id,
+          date: matchedTx.date,
+          amount: matchedTx.amount,
+          transactionId: matchedTx.id,
+          description: matchedTx.description,
+          source: 'bank_statement',
+        },
       });
-      // Mark line as paid (relit le loan car addOccurrence persiste)
-      const refreshed = await this.loans.getOne(loan.id);
-      const refLine = (refreshed.installmentSchedule ?? [])[i];
-      if (refLine && !refLine.paid) {
-        // Find the just-added occurrence id
-        const newOcc = refreshed.occurrencesDetected.find(
-          (o) => o.transactionId === matchedTx.id && o.date === matchedTx.date,
-        );
-        await this.loans.markInstallmentPaid(loan.id, i, newOcc?.id);
-        mutated = true;
-      }
     }
-    if (mutated) {
-      this.logger.log(`syncInstallmentLoan ${loan.id} : marked ${schedule.filter((l) => l.paid).length}/${schedule.length} as paid`);
+    // Un seul read-modify-write pour tout le relevé (L13 t3) : l'occurrence et
+    // la ligne payée sont écrites ensemble (dédup par addOccurrence conservée).
+    if (payments.length > 0) {
+      await this.loans.recordInstallmentPayments(loan.id, payments);
+      this.logger.log(`syncInstallmentLoan ${loan.id} : ${payments.length} échéance(s) marquée(s) payée(s)`);
     }
   }
 

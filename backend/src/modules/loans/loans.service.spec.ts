@@ -695,6 +695,63 @@ describe('LoansService', () => {
     });
   });
 
+  describe('recordInstallmentPayments — un seul read-modify-write (L13 t3)', () => {
+    const mk = () => svc.create({
+      name: '4× X', type: 'classic', category: 'consumer', monthlyPayment: 50,
+      matchPattern: 'X', isActive: true, creditor: 'X', kind: 'installment',
+      installmentSchedule: [
+        { dueDate: '2026-01-02', amount: 50, paid: false },
+        { dueDate: '2026-02-02', amount: 50, paid: false },
+        { dueDate: '2026-03-02', amount: 50, paid: true, paidOccurrenceId: 'old' },
+      ],
+    } as any);
+
+    it('ajoute les occurrences ET marque les échéances payées avec une seule écriture', async () => {
+      const loan = await mk();
+      const w = jest.spyOn(fs.promises, 'rename');
+      const res = await svc.recordInstallmentPayments(loan.id, [
+        { lineIndex: 0, occ: { statementId: 's', date: '2026-01-03', amount: -50, transactionId: 't1' } },
+        { lineIndex: 1, occ: { statementId: 's', date: '2026-02-03', amount: -50, transactionId: 't2' } },
+      ]);
+      const n = w.mock.calls.length;
+      w.mockRestore();
+      expect(n).toBe(1);
+      expect(res.occurrencesDetected).toHaveLength(2);
+      const sched = res.installmentSchedule!;
+      expect(sched[0]).toMatchObject({ paid: true, paidOccurrenceId: res.occurrencesDetected[0].id });
+      expect(sched[1]).toMatchObject({ paid: true, paidOccurrenceId: res.occurrencesDetected[1].id });
+      expect(await svc.getOne(loan.id)).toEqual(res);
+    });
+
+    it('idempotent : ligne déjà payée inchangée, rien d\'écrit si rien ne change', async () => {
+      const loan = await mk();
+      const w = jest.spyOn(fs.promises, 'rename');
+      await svc.recordInstallmentPayments(loan.id, [
+        { lineIndex: 2, occ: { statementId: 's', date: '2026-03-03', amount: -50, transactionId: 't9' } },
+      ]);
+      const first = w.mock.calls.length;
+      await svc.recordInstallmentPayments(loan.id, [
+        { lineIndex: 2, occ: { statementId: 's', date: '2026-03-03', amount: -50, transactionId: 't9' } },
+      ]);
+      const second = w.mock.calls.length - first;
+      w.mockRestore();
+      expect(second).toBe(0);
+      expect((await svc.getOne(loan.id)).installmentSchedule![2].paidOccurrenceId).toBe('old');
+    });
+
+    it('échéance hors plan : BadRequest, sans écriture', async () => {
+      const loan = await mk();
+      await expect(svc.recordInstallmentPayments(loan.id, [
+        { lineIndex: 7, occ: { statementId: 's', date: '2026-01-03', amount: -50, transactionId: 't1' } },
+      ])).rejects.toThrow();
+      expect((await svc.getOne(loan.id)).occurrencesDetected).toEqual([]);
+    });
+
+    it('crédit introuvable : NotFound', async () => {
+      await expect(svc.recordInstallmentPayments('nope', [])).rejects.toThrow(/introuvable/);
+    });
+  });
+
   describe('addOccurrence — tirages (draws)', () => {
     it('un tirage (amount > 0) sur un revolving AUGMENTE usedAmount', async () => {
       const loan = await svc.create({
