@@ -188,14 +188,24 @@ export class ImportOrchestratorService {
       }
       if (!best) continue;
       localUsed.add(best.tx.id);
-      await this.loans.addOccurrence(loan.id, {
+      const updated = await this.loans.addOccurrence(loan.id, {
         statementId: best.statementId,
         date: best.tx.date,
         amount: best.tx.amount,
         transactionId: best.tx.id,
         description: best.tx.description,
       });
-      await this.loans.markInstallmentPaid(loan.id, i, best.tx.id);
+      // paidOccurrenceId = UUID de l'occurrence (L7), jamais l'id de la transaction.
+      // Si la dédup mensuelle a écarté la nouvelle occurrence, l'échéance est
+      // satisfaite par celle déjà présente ce mois-là.
+      const occ =
+        updated.occurrencesDetected.find(
+          (o) => o.statementId === best!.statementId && o.transactionId === best!.tx.id,
+        ) ??
+        updated.occurrencesDetected.find(
+          (o) => o.amount < 0 && o.date.slice(0, 7) === best!.tx.date.slice(0, 7),
+        );
+      await this.loans.markInstallmentPaid(loan.id, i, occ?.id);
       marked++;
     }
     if (marked > 0) {
