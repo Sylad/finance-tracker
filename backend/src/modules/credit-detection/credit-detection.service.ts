@@ -165,7 +165,10 @@ export class CreditDetectionService {
     statements: MonthlyStatement[],
   ): Promise<{ clusters: CandidateCluster[]; loans: Loan[] }> {
     // `loans` est lu ici UNE fois pour tout le scan (exclusion des tx connues
-    // ET gardes du validateur, L13 t2) : le scan ne modifie pas les loans.
+    // ET gardes du validateur, L13 t2). Le scan lui-même ne modifie pas les
+    // loans, mais un accept ou un syncStatement concurrent peut en créer un
+    // pendant ces ~2 min : photo volontairement figée, `upsertMany` regroupe
+    // par créancier et absorbe le doublon éventuel.
     const [loans, subscriptions] = await Promise.all([
       this.loansService.getAll(),
       this.subscriptionsService.getAll(),
