@@ -149,12 +149,13 @@ lots:
     estimate: 2
     created: 2026-09-28
     tasks:
-      - { id: t1, title: cache LoansService + batching des occurrences (#14), status: todo }
-      - { id: t2, title: passer les loans une fois aux gardes du validateur (#15), status: todo }
-      - { id: t3, title: "syncInstallmentLoan : un seul read-modify-write (#16)", status: todo }
+      - { id: t1, title: cache LoansService + batching des occurrences (#14), status: done }
+      - { id: t2, title: passer les loans une fois aux gardes du validateur (#15), status: done }
+      - { id: t3, title: "syncInstallmentLoan : un seul read-modify-write (#16)", status: done }
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #14 #15 #16" }
     started: 2026-10-10
+    review: { date: 2026-10-10, verdict: "conforme : 2 remarques mineures en notes (regroupement des tirages non testé, commentaire du scan trop large) — orchestré (vague 2026-10-10-1825, 0 passe(s) de correction + passe des mineurs)", commit: 38be8d4a574b0fff4b0dde64e6da8d5048f5e460 }
   - id: L14
     title: "Dédoublonner les controllers : replayAll, triggerDetection, boucle d'import crédit"
     status: todo
