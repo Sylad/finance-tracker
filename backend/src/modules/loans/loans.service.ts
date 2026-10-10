@@ -849,8 +849,10 @@ export class LoansService {
    * importAmortization, autoCreateLoansFromSuggestions) via
    * ImportOrchestratorService pour éviter les doublons.
    */
-  async findExistingLoan(signals: MatchSignals): Promise<MatchResult | null> {
-    const all = await this.getAll();
+  async findExistingLoan(signals: MatchSignals, loans?: Loan[]): Promise<MatchResult | null> {
+    // `loans` : liste déjà lue par l'appelant (scan de détection : une lecture
+    // par scan au lieu d'une par garde, L13 t2).
+    const all = loans ?? (await this.getAll());
     if (all.length === 0) return null;
 
     // 1. contractRef → high

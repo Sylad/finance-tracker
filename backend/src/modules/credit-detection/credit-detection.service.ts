@@ -10,6 +10,7 @@ import {
   CandidateCluster,
   DetectionScanResult,
 } from '../../models/credit-detection.model';
+import type { Loan } from '../../models/loan.model';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 
 /**
@@ -97,10 +98,10 @@ export class CreditDetectionService {
 
   private async doScanAll(): Promise<DetectionScanResult> {
     const statements = await this.storage.getAllStatements();
-    const clusters = await this.buildClustersFor(statements);
+    const { clusters, loans } = await this.buildClustersFor(statements);
     const latestStatementDate =
       CreditDetectionService.computeLatestTransactionDate(statements);
-    return this.runScan(clusters, latestStatementDate);
+    return this.runScan(clusters, latestStatementDate, loans);
   }
 
   /**
@@ -132,13 +133,13 @@ export class CreditDetectionService {
     statement: MonthlyStatement,
   ): Promise<DetectionScanResult> {
     const allStatements = await this.storage.getAllStatements();
-    const clusters = await this.buildClustersFor(allStatements);
+    const { clusters, loans } = await this.buildClustersFor(allStatements);
     const touchedClusters = clusters.filter((c) =>
       c.occurrences.some((o) => o.statementId === statement.id),
     );
     const latestStatementDate =
       CreditDetectionService.computeLatestTransactionDate(allStatements);
-    return this.runScan(touchedClusters, latestStatementDate);
+    return this.runScan(touchedClusters, latestStatementDate, loans);
   }
 
   /**
@@ -162,7 +163,9 @@ export class CreditDetectionService {
 
   private async buildClustersFor(
     statements: MonthlyStatement[],
-  ): Promise<CandidateCluster[]> {
+  ): Promise<{ clusters: CandidateCluster[]; loans: Loan[] }> {
+    // `loans` est lu ici UNE fois pour tout le scan (exclusion des tx connues
+    // ET gardes du validateur, L13 t2) : le scan ne modifie pas les loans.
     const [loans, subscriptions] = await Promise.all([
       this.loansService.getAll(),
       this.subscriptionsService.getAll(),
@@ -171,12 +174,16 @@ export class CreditDetectionService {
       loans,
       subscriptions,
     );
-    return this.clustering.buildClusters(statements, excludedTxIds);
+    return {
+      clusters: await this.clustering.buildClusters(statements, excludedTxIds),
+      loans,
+    };
   }
 
   private async runScan(
     clusters: CandidateCluster[],
     latestStatementDate: string,
+    loans: Loan[],
   ): Promise<DetectionScanResult> {
     const errors: { clusterKey: string; message: string }[] = [];
     let suggestionsCreated = 0;
@@ -218,6 +225,7 @@ export class CreditDetectionService {
           cluster,
           classification,
           latestStatementDate,
+          loans,
         );
         if (validation.created) {
           suggestionsCreated += validation.createdCount ?? 1;

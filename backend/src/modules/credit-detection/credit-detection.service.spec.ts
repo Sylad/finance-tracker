@@ -429,6 +429,21 @@ describe('CreditDetectionService', () => {
   });
 
   describe('L44 : tri déterministe avant le LLM', () => {
+    it('L13 t2 : loans lus une fois pour le scan et transmis à chaque validate', async () => {
+      const a = makeRuleCluster('cofidis', ['PRLV COFIDIS 1', 'PRLV COFIDIS 2', 'PRLV COFIDIS 3']);
+      const b = makeRuleCluster('cofidis', ['PRLV COFIDIS 4', 'PRLV COFIDIS 5', 'PRLV COFIDIS 6']);
+      const loans = [{ id: 'l1', occurrencesDetected: [] }] as never;
+      loansService.getAll.mockResolvedValue(loans);
+      clustering.buildClusters.mockReturnValue([a, b]);
+      validator.validate.mockResolvedValue({ created: false });
+
+      await svc.scanAll();
+
+      expect(validator.validate).toHaveBeenCalledTimes(2);
+      for (const call of validator.validate.mock.calls) expect(call[3]).toBe(loans);
+      expect(loansService.getAll).toHaveBeenCalledTimes(1);
+    });
+
     it('établissement listé -> pas de LLM, validate avec la classification de la règle', async () => {
       const cofidis = makeRuleCluster('cofidis', ['PRLV COFIDIS 1', 'PRLV COFIDIS 2', 'PRLV COFIDIS 3']);
       clustering.buildClusters.mockReturnValue([cofidis]);
@@ -441,6 +456,7 @@ describe('CreditDetectionService', () => {
         cofidis,
         expect.objectContaining({ classification: 'classic', creditor: 'COFIDIS', confidence: 1 }),
         expect.any(String),
+        [],
       );
       expect(result).toEqual({ clustersAnalyzed: 1, suggestionsCreated: 1, errors: [] });
     });
@@ -457,6 +473,7 @@ describe('CreditDetectionService', () => {
         streamio,
         expect.objectContaining({ classification: 'subscription', creditor: 'STREAMIO' }),
         expect.any(String),
+        [],
       );
     });
 

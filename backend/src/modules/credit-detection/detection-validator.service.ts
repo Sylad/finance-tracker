@@ -5,6 +5,7 @@ import {
   ClusterOccurrence,
 } from '../../models/credit-detection.model';
 import { LoansService } from '../loans/loans.service';
+import type { Loan } from '../../models/loan.model';
 import { LoanSuggestionsService } from '../loan-suggestions/loan-suggestions.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import {
@@ -88,6 +89,8 @@ const GENERIC_CLUSTER_TOKENS = new Set([
 /** Noms candidats d'un cluster pour les gardes « créancier existant » :
  *  le nom LLM (comparé en containment fuzzy) et le jeton déterministe
  *  `cluster.creditor` (comparé par mot entier, cf `tokenCreditorMatch`). */
+type LoansSource = () => Promise<Loan[]>;
+
 interface CreditorNames {
   llm: string | null;
   clusterToken: string | null;
@@ -120,7 +123,15 @@ export class DetectionValidatorService {
     cluster: CandidateCluster,
     classification: ClusterClassification,
     latestStatementDate: string,
+    loans?: Loan[],
   ): Promise<ValidationResult> {
+    // Crédits suivis : fournis par l'appelant (une lecture par scan) ou lus au
+    // premier garde qui en a besoin, puis partagés par tous les gardes de ce
+    // cluster (L13 t2). Paresseux : les sorties anticipées ne lisent rien.
+    const getLoans = DetectionValidatorService.loansSource(
+      loans,
+      () => this.loansService.getAll(),
+    );
     if (classification.confidence < MIN_CONFIDENCE) {
       return { created: false, reason: 'low_confidence' };
     }
@@ -148,6 +159,7 @@ export class DetectionValidatorService {
           cluster,
           classification,
           latestStatementDate,
+          getLoans,
         );
       case 'subscription':
         return this.validateSubscription(
@@ -157,7 +169,7 @@ export class DetectionValidatorService {
         );
       case 'revolving':
       case 'classic':
-        return this.validateStandardLoan(cluster, classification);
+        return this.validateStandardLoan(cluster, classification, getLoans);
       default:
         return { created: false, reason: 'unknown_classification' };
     }
@@ -186,6 +198,7 @@ export class DetectionValidatorService {
     cluster: CandidateCluster,
     classification: ClusterClassification,
     latestStatementDate: string,
+    getLoans: LoansSource,
   ): Promise<ValidationResult> {
     const subSeries = DetectionValidatorService.splitByAmount(
       cluster.occurrences,
@@ -210,6 +223,7 @@ export class DetectionValidatorService {
         creditorNames,
         disambiguate,
         latestStatementDate,
+        getLoans,
       );
       if (result.created) {
         createdCount++;
@@ -233,6 +247,7 @@ export class DetectionValidatorService {
     creditorNames: CreditorNames,
     disambiguate: boolean,
     latestStatementDate: string,
+    getLoans: LoansSource,
   ): Promise<ValidationResult> {
     // Round 7 fix 1 : garde de fraîcheur PAR sous-série (le check
     // cluster-niveau de `validate()` reste en early-exit économe, mais ne
@@ -268,7 +283,7 @@ export class DetectionValidatorService {
     // Round 3 fix 2 : vérifié AVANT toute autre décision (reroute
     // subscription incluse) — si c'est un crédit déjà suivi, on ne veut
     // jamais le re-suggérer, peu importe sous quelle forme.
-    if (await this.hasFuzzyKnownLoanPayment(creditorNames, medianAmount)) {
+    if (await this.hasFuzzyKnownLoanPayment(creditorNames, medianAmount, getLoans)) {
       return { created: false, reason: 'existing_loan_payment' };
     }
 
@@ -309,6 +324,7 @@ export class DetectionValidatorService {
         creditorNames,
         medianAmount,
         occurrences[occurrences.length - 1].description,
+        getLoans,
       )
     ) {
       return { created: false, reason: 'existing_loan_match' };
@@ -672,9 +688,10 @@ export class DetectionValidatorService {
   private async hasFuzzyKnownLoanPayment(
     creditorNames: CreditorNames,
     medianAmount: number,
+    getLoans: LoansSource,
   ): Promise<boolean> {
     if (!creditorNames.llm && !creditorNames.clusterToken) return false;
-    const loans = await this.loansService.getAll();
+    const loans = await getLoans();
     return loans.some((loan) => {
       if (
         !DetectionValidatorService.fuzzyCreditorMatch(
@@ -698,6 +715,7 @@ export class DetectionValidatorService {
     creditorNames: CreditorNames,
     monthlyAmount: number,
     description: string,
+    getLoans: LoansSource,
   ): Promise<boolean> {
     const names = [creditorNames.llm, creditorNames.clusterToken].filter(
       (n): n is string => !!n,
@@ -709,11 +727,10 @@ export class DetectionValidatorService {
       names.pop();
     }
     for (const creditor of names) {
-      const match = await this.loansService.findExistingLoan({
-        creditor,
-        monthlyAmount,
-        description,
-      });
+      const match = await this.loansService.findExistingLoan(
+        { creditor, monthlyAmount, description },
+        await getLoans(),
+      );
       if (
         match &&
         (match.confidence === 'high' || match.confidence === 'medium')
@@ -731,6 +748,17 @@ export class DetectionValidatorService {
    * `cluster.creditor` déterministe. Ce dernier n'est que le premier mot du
    * libellé : un mot générique (`GENERIC_CLUSTER_TOKENS`) est écarté.
    */
+  /** Source mémoïsée des crédits suivis : `provided` si fourni, sinon une
+   *  seule lecture (`read`) au premier usage. */
+  private static loansSource(
+    provided: Loan[] | undefined,
+    read: () => Promise<Loan[]>,
+  ): LoansSource {
+    if (provided) return async () => provided;
+    let pending: Promise<Loan[]> | null = null;
+    return () => (pending ??= read());
+  }
+
   private static creditorNames(
     cluster: CandidateCluster,
     classification: ClusterClassification,
@@ -849,6 +877,7 @@ export class DetectionValidatorService {
   private async validateStandardLoan(
     cluster: CandidateCluster,
     classification: ClusterClassification,
+    getLoans: LoansSource,
   ): Promise<ValidationResult> {
     const occurrences = cluster.occurrences;
     const creditorNames = DetectionValidatorService.creditorNames(
@@ -880,7 +909,7 @@ export class DetectionValidatorService {
       DetectionValidatorService.median(amountsAbs),
     );
 
-    if (await this.hasFuzzyKnownLoanPayment(creditorNames, medianAmount)) {
+    if (await this.hasFuzzyKnownLoanPayment(creditorNames, medianAmount, getLoans)) {
       return { created: false, reason: 'existing_loan_payment' };
     }
 
@@ -893,6 +922,7 @@ export class DetectionValidatorService {
         creditorNames,
         medianAmount,
         occurrences[occurrences.length - 1].description,
+        getLoans,
       )
     ) {
       return { created: false, reason: 'existing_loan_match' };

@@ -507,6 +507,47 @@ describe('DetectionValidatorService', () => {
     expect(incoming[0].monthlyAmount).toBeCloseTo(1.99, 2);
   });
 
+  describe('loans lus une fois (L13 t2)', () => {
+    const standardCluster = () =>
+      makeCluster({
+        creditor: 'sofinco',
+        occurrences: [
+          { date: '2026-01-10', amount: -60, description: 'CA CONSUMER FINANCE', transactionId: 'a', statementId: '2026-01' },
+          { date: '2026-02-10', amount: -60, description: 'CA CONSUMER FINANCE', transactionId: 'b', statementId: '2026-02' },
+          { date: '2026-03-10', amount: -60, description: 'CA CONSUMER FINANCE', transactionId: 'c', statementId: '2026-03' },
+        ],
+      });
+    const standardClass = () =>
+      makeClassification({ classification: 'classic', creditor: 'sofinco', merchant: null, installmentCount: null, confidence: 0.9 });
+
+    it('sans liste fournie : getAll appelé UNE fois pour les deux gardes, liste transmise à findExistingLoan', async () => {
+      const cluster = standardCluster();
+      await svc.validate(cluster, standardClass(), '2026-03-10');
+      expect(loansService.getAll).toHaveBeenCalledTimes(1);
+      const [, passed] = loansService.findExistingLoan.mock.calls[0] as unknown as [unknown, unknown];
+      expect(passed).toEqual([]);
+    });
+
+    it('liste fournie par l\'appelant : getAll jamais appelé, la même liste sert aux deux gardes', async () => {
+      const loans = [
+        { id: 'l1', creditor: 'AUTRE', isActive: true, monthlyPayment: 999 },
+      ] as unknown as Parameters<DetectionValidatorService['validate']>[3];
+      await svc.validate(standardCluster(), standardClass(), '2026-03-10', loans);
+      expect(loansService.getAll).not.toHaveBeenCalled();
+      const [, passed] = loansService.findExistingLoan.mock.calls[0] as unknown as [unknown, unknown];
+      expect(passed).toBe(loans);
+    });
+
+    it('la liste fournie décide du garde fuzzy (existing_loan_payment)', async () => {
+      const loans = [
+        { id: 'l1', creditor: 'SOFINCO', isActive: true, monthlyPayment: 60 },
+      ] as unknown as Parameters<DetectionValidatorService['validate']>[3];
+      const r = await svc.validate(standardCluster(), standardClass(), '2026-03-10', loans);
+      expect(r).toEqual({ created: false, reason: 'existing_loan_payment' });
+      expect(loansService.getAll).not.toHaveBeenCalled();
+    });
+  });
+
   it('(l) sous-série "carrefour" à un montant proche de la mensualité d\'un loan actif "CARREFOUR BANQUE" -> rejetée (existing_loan_payment)', async () => {
     // Round 3 fix 2 : creditor cluster 'carrefour' != creditor loan exact
     // 'CARREFOUR BANQUE' -> findExistingLoan (match exact) ne le voyait
