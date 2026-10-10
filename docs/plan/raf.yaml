@@ -85,13 +85,14 @@ lots:
     finished: 2026-10-06
   - id: L7
     title: paidOccurrenceId normalisé sur l'UUID d'occurrence partout
-    status: doing
+    status: done
     estimate: 1
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #8" }
     started: 2026-10-10
     review: { date: 2026-10-10, verdict: "conforme — orchestré (vague 2026-10-10-1140, 1 passe(s) de correction + passe des mineurs)", commit: 82432785b86d6da7c2a415841ad797a98516b2e0 }
+    finished: 2026-10-10
   - id: L8
     title: 'numberLike : milliers à la française ("3.000")'
     status: done
