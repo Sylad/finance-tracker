@@ -145,7 +145,7 @@ lots:
     finished: 2026-09-28
   - id: L13
     title: "Perf crédits : cache LoansService, loans lus une fois par scan, syncInstallmentLoan en un seul RMW"
-    status: todo
+    status: doing
     estimate: 2
     created: 2026-09-28
     tasks:
@@ -154,6 +154,7 @@ lots:
       - { id: t3, title: "syncInstallmentLoan : un seul read-modify-write (#16)", status: todo }
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #14 #15 #16" }
+    started: 2026-10-10
   - id: L14
     title: "Dédoublonner les controllers : replayAll, triggerDetection, boucle d'import crédit"
     status: todo
