@@ -165,12 +165,13 @@ lots:
     after: [ L4 ]
     created: 2026-09-28
     tasks:
-      - { id: t1, title: "CategoryRulesService.replayAll() unique, un replay par lot (#17)", status: todo }
-      - { id: t2, title: CreditDetectionService.scanInBackground (#18), status: todo }
-      - { id: t3, title: boucle d'import crédit → ImportOrchestratorService (#19), status: todo }
+      - { id: t1, title: "CategoryRulesService.replayAll() unique, un replay par lot (#17)", status: done }
+      - { id: t2, title: CreditDetectionService.scanInBackground (#18), status: done }
+      - { id: t3, title: boucle d'import crédit → ImportOrchestratorService (#19), status: done }
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #17 #18 #19 — après le mutex L4, qui touche triggerDetection" }
     started: 2026-10-11
+    review: { date: 2026-10-11, verdict: "compliant — orchestré (vague 2026-10-11-1605, 1 passe(s) de correction + passe des mineurs)", commit: 4c9f970e266449f9dc1eb6ad1c5813f534530ad5 }
   - id: L15
     title: "Helpers communs : money, slugify, month-key, clustering, paires neutres"
     status: todo
