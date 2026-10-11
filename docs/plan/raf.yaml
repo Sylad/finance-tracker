@@ -160,7 +160,7 @@ lots:
     finished: 2026-10-10
   - id: L14
     title: "Dédoublonner les controllers : replayAll, triggerDetection, boucle d'import crédit"
-    status: todo
+    status: doing
     estimate: 2
     after: [ L4 ]
     created: 2026-09-28
@@ -170,6 +170,7 @@ lots:
       - { id: t3, title: boucle d'import crédit → ImportOrchestratorService (#19), status: todo }
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #17 #18 #19 — après le mutex L4, qui touche triggerDetection" }
+    started: 2026-10-11
   - id: L15
     title: "Helpers communs : money, slugify, month-key, clustering, paires neutres"
     status: todo
