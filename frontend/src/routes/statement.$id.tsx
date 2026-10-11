@@ -30,6 +30,7 @@ import {
 } from '@/types/api';
 import { formatEUR, formatMonth, formatDate, cn, chartTooltipProps, prevMonthId } from '@/lib/utils';
 import { recognizeMerchant } from '@/lib/merchants';
+import { categoryLabelFr } from '@/lib/category-label';
 
 const CATEGORY_COLOR: Record<TransactionCategory, string> = {
   income: 'hsl(160 84% 50%)',
@@ -528,7 +529,7 @@ function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (t: Tran
           <div className="truncate text-fg font-medium">{merchant?.name ?? t.description}</div>
           <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5 truncate">
             {merchant ? <span className="normal-case lowercase italic mr-2 text-fg-dim/80">{t.description}</span> : null}
-            {t.subcategory || label}
+            {categoryLabelFr(t.subcategory || label)}
             {t.isRecurring && <span className="ml-2 text-accent-bright">· récurrent</span>}
           </div>
         </div>

@@ -17,6 +17,7 @@ import {
   type DeclarationType,
 } from '@/types/api';
 import { formatEUR, formatDate, cn } from '@/lib/utils';
+import { categoryLabelFr } from '@/lib/category-label';
 
 const TYPES: DeclarationType[] = ['income', 'loan', 'subscription', 'expense'];
 const PERIODICITIES: DeclarationPeriodicity[] = ['monthly', 'quarterly', 'yearly', 'one-shot'];
@@ -87,7 +88,7 @@ export function DeclarationsPage() {
                 <div className="text-sm font-medium text-fg-bright truncate">{d.label}</div>
                 <div className="text-xs text-fg-dim mt-0.5 flex items-center gap-2 flex-wrap">
                   <span>{PERIODICITY_LABELS[d.periodicity]}</span>
-                  {d.category && <><span>·</span><span>{d.category}</span></>}
+                  {d.category && <><span>·</span><span>{categoryLabelFr(d.category)}</span></>}
                   {d.startDate && <><span>·</span><span>Depuis {formatDate(d.startDate)}</span></>}
                   {d.endDate && <><span>·</span><span>Jusqu'à {formatDate(d.endDate)}</span></>}
                 </div>

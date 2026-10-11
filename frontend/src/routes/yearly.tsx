@@ -7,6 +7,7 @@ import { LoadingState, EmptyState } from '@/components/loading-state';
 import { ScoreBadge } from '@/components/score-ring';
 import { cashFlowSeries } from '@/lib/yearly-cashflow';
 import { formatEUR, formatEURCompact, formatMonth, formatMonthShort, cn, chartTooltipProps } from '@/lib/utils';
+import { categoryLabelFr } from '@/lib/category-label';
 
 export function YearlyPage() {
   const list = useYearlySummaries();
@@ -160,7 +161,7 @@ export function YearlyPage() {
                       <div className="flex items-center justify-between text-xs mb-1">
                         <span className="text-fg-muted font-medium">
                           <span className="tabular text-fg-dim mr-2">#{i + 1}</span>
-                          {c.category}
+                          {categoryLabelFr(c.category)}
                         </span>
                         <span className="tabular text-fg">{formatEUR(c.totalAmount)}</span>
                       </div>
