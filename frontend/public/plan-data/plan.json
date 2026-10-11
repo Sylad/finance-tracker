@@ -97,14 +97,16 @@
     {
       "id": "L65",
       "title": "Bilan annuel : le graphique de trésorerie montre enfin des euros",
-      "status": "doing",
-      "started": "2026-10-11"
+      "status": "done",
+      "started": "2026-10-11",
+      "finished": "2026-10-11"
     },
     {
       "id": "L66",
       "title": "Catégories affichées en français partout",
-      "status": "doing",
-      "started": "2026-10-11"
+      "status": "done",
+      "started": "2026-10-11",
+      "finished": "2026-10-11"
     },
     {
       "id": "L68",

@@ -575,21 +575,25 @@ lots:
   - id: L65
     title: "Bilan annuel (/yearly) : le graphique « Cash flow mensuel » trace le score (axe 0–100, mêmes 6 points que « Progression du score », yearly.tsx ~181 sur scoreProgression) au lieu des entrées/sorties mensuelles en € — QA prod 11-10"
     public: "Bilan annuel : le graphique de trésorerie montre enfin des euros"
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     created: 2026-10-11
     started: 2026-10-11
     review: { date: 2026-10-11, verdict: "conforme (2 notes mineures) — orchestré (vague 2026-10-11-1725, 1 passe(s) de correction + passe des mineurs)", commit: c0532e97f025b9d3df8b1d7d9a950ebd9f79babc }
+    ux: { date: 2026-10-11, verdict: "Sylvain 11-10 : ok L65 (Cash flow mensuel en €) ; revue UX automatique conforme" }
+    finished: 2026-10-11
   - id: L66
     title: "Libellés de catégorie en anglais à l'écran : /yearly top catégories (#1housing…), /declarations (utilities, insurance), étiquettes du détail de relevé (SALARY, LOAN, MORTGAGE…) — passer par le libellé français de la catégorie, test — QA prod 11-10"
     public: Catégories affichées en français partout
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     created: 2026-10-11
     started: 2026-10-11
     review: { date: 2026-10-11, verdict: "conforme (4 notes mineures, dont 1 sous-tâche proposée : recherche insensible aux accents) — orchestré (vague 2026-10-11-1725, 2 passe(s) de correction)", commit: f2ebf42189581184e8443b6696781a51b2f299a0 }
+    ux: { date: 2026-10-11, verdict: "Sylvain 11-10 : ok L66 (catégories en français) ; revue UX automatique conforme" }
+    finished: 2026-10-11
   - id: L67
     title: "expectations.md : « Vue d'ensemble basée sur N relevés » en 1440 only (le tableau de bord téléphone l'omet) ; api: de /heatmap (/api/statements et /api/statements/<mois>) et /api/statements/yearly/<année> ; /api/health-check/advice may be empty — QA prod 11-10"
     status: done
