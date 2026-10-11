@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { categoryLabelFr, normalizeForSearch, transactionMatchesSearch } from './category-label';
+import { categoryLabelFr, frenchHint, normalizeForSearch, transactionMatchesSearch } from './category-label';
 
 describe('categoryLabelFr', () => {
   it('traduit les catégories de transaction', () => {
@@ -77,5 +77,18 @@ describe('transactionMatchesSearch', () => {
 describe('normalizeForSearch', () => {
   it('retire accents et casse', () => {
     expect(normalizeForSearch('Énergie / Prêt')).toBe('energie / pret');
+  });
+});
+
+describe('frenchHint', () => {
+  it("donne le libellé français quand la saisie brute est un mot anglais connu", () => {
+    expect(frenchHint('utilities')).toBe('Énergie / eau');
+  });
+
+  it("se tait si la saisie est vide, inconnue ou déjà en français", () => {
+    expect(frenchHint('')).toBeNull();
+    expect(frenchHint('  ')).toBeNull();
+    expect(frenchHint('Cadeaux de Noël')).toBeNull();
+    expect(frenchHint('Énergie / eau')).toBeNull();
   });
 });

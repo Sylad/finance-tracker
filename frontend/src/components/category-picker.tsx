@@ -4,6 +4,7 @@ import { Loader2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { CATEGORY_LABELS, type Transaction, type TransactionCategory } from '@/types/api';
 import { cn } from '@/lib/utils';
+import { frenchHint } from '@/lib/category-label';
 
 interface CategoryRulesPayload {
   rules: Array<{ id: string; pattern: string; category: string; subcategory: string; priority: number }>;
@@ -159,6 +160,9 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
               value={subcategory}
               onChange={(e) => setSubcategory(e.target.value)}
             />
+            {frenchHint(subcategory) && (
+              <div className="text-xs text-fg-muted mt-1">Affichée : {frenchHint(subcategory)}</div>
+            )}
           </div>
 
           <div className="border-t border-border pt-4 space-y-3">

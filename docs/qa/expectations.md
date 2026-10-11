@@ -17,7 +17,7 @@ Les fixtures s'arrêtent en mars 2026 mais sont décalées de mois entiers à ch
 
 ## *
 
-never: Erreur, Impossible de charger, undefined, « NaN € », « NaN % », « NaN/100 »
+never: « Erreur : », « Erreur inconnue », « Erreur de chargement », Impossible de charger, undefined, « NaN € », « NaN % », « NaN/100 »
 
 ## /
 

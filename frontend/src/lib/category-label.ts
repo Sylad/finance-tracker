@@ -49,6 +49,13 @@ export function categoryLabelFr(value: string): string {
   return KNOWN[value.trim().toLowerCase()] ?? value;
 }
 
+/** Libellé français à afficher sous un champ de saisie brute, ou null s'il n'apporte rien. */
+export function frenchHint(raw: string): string | null {
+  if (!raw.trim()) return null;
+  const label = categoryLabelFr(raw);
+  return label === raw ? null : label;
+}
+
 /** Minuscules sans accents, pour qu'une recherche « pret » trouve « Prêt ». */
 export function normalizeForSearch(value: string): string {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();

@@ -2,16 +2,8 @@ import { Repeat } from 'lucide-react';
 import { useRecurringCredits } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
+import { categoryLabelFr } from '@/lib/category-label';
 import { formatEUR, formatDate, cn } from '@/lib/utils';
-
-const CATEGORY_LABEL: Record<string, string> = {
-  salary: 'Salaire',
-  rental: 'Loyer perçu',
-  pension: 'Pension',
-  subsidy: 'Aide / Subvention',
-  investment: 'Placement',
-  other: 'Autre',
-};
 
 const FREQUENCY_LABEL: Record<string, string> = {
   monthly: 'Mensuel',
@@ -52,7 +44,7 @@ export function IncomePage() {
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-fg-bright truncate">{c.description}</div>
                 <div className="flex items-center gap-2 text-xs text-fg-dim mt-0.5 flex-wrap">
-                  <span>{CATEGORY_LABEL[c.category] ?? c.category}</span>
+                  <span>{categoryLabelFr(c.category)}</span>
                   <span>·</span>
                   <span>{FREQUENCY_LABEL[c.frequency] ?? c.frequency}</span>
                   <span>·</span>

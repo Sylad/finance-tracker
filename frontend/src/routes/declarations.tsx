@@ -17,7 +17,7 @@ import {
   type DeclarationType,
 } from '@/types/api';
 import { formatEUR, formatDate, cn } from '@/lib/utils';
-import { categoryLabelFr } from '@/lib/category-label';
+import { categoryLabelFr, frenchHint } from '@/lib/category-label';
 
 const TYPES: DeclarationType[] = ['income', 'loan', 'subscription', 'expense'];
 const PERIODICITIES: DeclarationPeriodicity[] = ['monthly', 'quarterly', 'yearly', 'one-shot'];
@@ -191,6 +191,9 @@ function DeclarationForm({
             </Field>
             <Field label="Catégorie">
               <input className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+              {frenchHint(form.category) && (
+                <span className="text-xs text-fg-muted">Affichée : {frenchHint(form.category)}</span>
+              )}
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">

@@ -42,7 +42,7 @@ Le rôle de Claude : poser le code, expliquer, itérer.
 - **Suivi des crédits de bout en bout** — import batch des relevés de crédit ET plans d'amortissement (type de document auto-détecté, rattachement par n° de contrat), tirages sur réserves renouvelables, restant dû officiel prioritaire sur l'estimation
 - **Détection LLM locale des crédits et paiements en N fois** (Klarna, PayPal 4×…) — le LLM propose, un validateur déterministe vérifie (1 débit/mois, jour stable, fraîcheur), l'humain accepte
 - **Score de santé financière** sur 100 (5 dimensions : épargne, contrôle, dette, cash flow, irrégularité)
-- **Catégorisation auto** des transactions (logement, alimentation, etc.) avec sous-catégorie + niveau de confiance
+- **Catégorisation auto** des transactions (logement, alimentation, etc.) avec sous-catégorie + niveau de confiance ; libellés français partout, y compris sous les champs de saisie brute (déclarations, changement de catégorie) ; la recherche du détail d'un relevé couvre catégorie et sous-catégorie, sans tenir compte des accents
 - **Détection des crédits récurrents** (salaire, loyers, pensions) avec date de fin estimée
 - **Budgets par catégorie** — progression visuelle au fil du mois
 - **Déclarations** d'engagements (revenus, crédits, abonnements) → moteur de **prévisions** mensuel
