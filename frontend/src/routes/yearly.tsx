@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
 import { ScoreBadge } from '@/components/score-ring';
 import { cashFlowSeries } from '@/lib/yearly-cashflow';
-import { formatEUR, formatMonth, formatMonthShort, cn, chartTooltipProps } from '@/lib/utils';
+import { formatEUR, formatEURCompact, formatMonth, formatMonthShort, cn, chartTooltipProps } from '@/lib/utils';
 
 export function YearlyPage() {
   const list = useYearlySummaries();
@@ -186,7 +186,7 @@ export function YearlyPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={cashFlow} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
                     <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={50} tickFormatter={(v: number) => `${Math.round(v / 100) / 10} k€`} />
+                    <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={64} allowDecimals={false} tickFormatter={formatEURCompact} />
                     <Tooltip {...chartTooltipProps} formatter={(v: number) => formatEUR(v)} />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     <Line type="monotone" name="Entrées" dataKey="credits" stroke="hsl(160 84% 50%)" strokeWidth={2} dot={{ r: 3 }} />
