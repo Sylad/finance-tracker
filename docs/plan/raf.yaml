@@ -537,16 +537,22 @@ lots:
     status: todo
     estimate: 0.25
     created: 2026-10-11
+    notes:
+      - { date: 2026-10-11, text: "Démo seulement : compléter demo-fixtures.json (recurringCredits, déclarations) ; aucun changement de calcul ; ne jamais lire ni écrire data-local." }
   - id: L62
     title: "Démo finance : demo-seed.service.ts n'écrit pas import-logs.json (4 entrées dans les fixtures) ni de bilan 2025 — Historique des imports (/upload) et Bilan annuel (/yearly) vides — QA prod L14 11-10"
     status: todo
     estimate: 0.25
     created: 2026-10-11
+    notes:
+      - { date: 2026-10-11, text: "Démo seulement : demo-seed.service.ts écrit import-logs.json et un bilan 2025 depuis les fixtures ; ne jamais lire ni écrire data-local." }
   - id: L63
     title: "Démo finance : données arrêtées en mars 2026 — les 6 crédits en « Trou » (getLoanHealth compte 180 j avant la date du jour), FLOA « 0 mois restants » parmi les actifs ; recaler les dates de la démo au chargement ou calculer la santé par rapport au dernier relevé — QA prod L14 11-10"
     status: todo
     estimate: 0.5
     created: 2026-10-11
+    notes:
+      - { date: 2026-10-11, text: "Décision du lead : DÉMO SEULEMENT — recaler les dates des données de démonstration au chargement (dernier relevé = mois précédent la date du jour), sans toucher getLoanHealth ni aucun calcul utilisé par l'instance locale aux vraies données ; ne jamais lire ni écrire data-local." }
   - id: L64
     title: "QA : écrire docs/qa/expectations.md (aucun fichier d'attentes) à partir du brouillon du rapport QA L14 du 11-10 (22 routes, lignes shows/api/never)"
     status: todo
