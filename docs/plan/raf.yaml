@@ -552,3 +552,5 @@ lots:
     status: todo
     estimate: 0.25
     created: 2026-10-11
+    notes:
+      - { date: 2026-10-11, text: "Brouillon du qa-reviewer : ~/projects/developpeur/tmp/qa-finance-l14/expectations-brouillon.md (hors dépôt) — à reprendre et corriger ; les lignes de /income, /forecast, /yearly, /upload et de la santé des crédits dépendent de L61 L62 L63 (faire L64 après eux)." }
