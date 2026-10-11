@@ -147,7 +147,7 @@ CORS_ORIGIN=http://localhost:4200
 ## Règles projet (durables)
 
 ### Données réelles
-- ❌ **JAMAIS de vraies transactions** dans les fixtures, seeds, snapshots de tests, ou dataset démo. Le dataset démo (`/api/demo`) est synthétique : 6 statements (Oct 2025 → Mar 2026), 6 crédits fictifs, 2 épargnes fictives, 4 suggestions.
+- ❌ **JAMAIS de vraies transactions** dans les fixtures, seeds, snapshots de tests, ou dataset démo. Le dataset démo (`/api/demo`) est synthétique : 6 statements recalés au chargement (L63 : les six mois qui précèdent le mois en cours, fixtures d'origine Oct 2025 → Mar 2026, `demo-date-shift.ts`), 6 crédits fictifs, 2 épargnes fictives, 4 suggestions.
 - ❌ Ne pas commit le contenu de `data/finance/` ni de `uploads/`. C'est dans `.gitignore` et ça doit y rester.
 
 ### PIN guard
