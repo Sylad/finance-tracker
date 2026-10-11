@@ -572,3 +572,22 @@ lots:
     started: 2026-10-11
     review: { date: 2026-10-11, verdict: "conforme, 4 notes mineures — orchestré (vague 2026-10-11-1640, 2 passe(s) de correction)", commit: c81859dde61755e6b0495386ebb76fa0474b0e11 }
     finished: 2026-10-11
+  - id: L65
+    title: "Bilan annuel (/yearly) : le graphique « Cash flow mensuel » trace le score (axe 0–100, mêmes 6 points que « Progression du score », yearly.tsx ~181 sur scoreProgression) au lieu des entrées/sorties mensuelles en € — QA prod 11-10"
+    public: "Bilan annuel : le graphique de trésorerie montre enfin des euros"
+    status: todo
+    estimate: 0.5
+    visible: true
+    created: 2026-10-11
+  - id: L66
+    title: "Libellés de catégorie en anglais à l'écran : /yearly top catégories (#1housing…), /declarations (utilities, insurance), étiquettes du détail de relevé (SALARY, LOAN, MORTGAGE…) — passer par le libellé français de la catégorie, test — QA prod 11-10"
+    public: Catégories affichées en français partout
+    status: todo
+    estimate: 0.5
+    visible: true
+    created: 2026-10-11
+  - id: L67
+    title: "expectations.md : « Vue d'ensemble basée sur N relevés » en 1440 only (le tableau de bord téléphone l'omet) ; api: de /heatmap (/api/statements et /api/statements/<mois>) et /api/statements/yearly/<année> ; /api/health-check/advice may be empty — QA prod 11-10"
+    status: todo
+    estimate: 0.25
+    created: 2026-10-11
