@@ -316,7 +316,22 @@
         "trend": "insufficient_data",
         "claudeComment": "Premier mois analysé. Le poids des remboursements (43% du salaire) est élevé mais maîtrisé. L'épargne automatique de 150€/mois est un bon réflexe à maintenir."
       },
-      "recurringCredits": [],
+      "recurringCredits": [
+        {
+          "id": "demo-rc-salaire",
+          "description": "VIR SALAIRE ENTREPRISE DEMO",
+          "normalizedDescription": "salaire entreprise demo",
+          "monthlyAmount": 2800.0,
+          "currency": "EUR",
+          "frequency": "monthly",
+          "firstSeenDate": "2025-10-02",
+          "lastSeenDate": "2025-10-02",
+          "contractEndDate": null,
+          "endDateConfidence": "none",
+          "category": "salary",
+          "isActive": true
+        }
+      ],
       "analysisNarrative": "Octobre dans le vert (+59€). Les charges fixes de crédits sont lourdes mais l'épargne systématique sur PEL et Livret A est assurée."
     },
     {
@@ -611,7 +626,22 @@
         "trend": "declining",
         "claudeComment": "Le voyage à Barcelone (480€) explique le recul du solde de 271€. Les charges fixes restent sous contrôle mais une dépense exceptionnelle laisse peu de marge avec ce niveau d'endettement."
       },
-      "recurringCredits": [],
+      "recurringCredits": [
+        {
+          "id": "demo-rc-salaire",
+          "description": "VIR SALAIRE ENTREPRISE DEMO",
+          "normalizedDescription": "salaire entreprise demo",
+          "monthlyAmount": 2800.0,
+          "currency": "EUR",
+          "frequency": "monthly",
+          "firstSeenDate": "2025-10-02",
+          "lastSeenDate": "2025-11-02",
+          "contractEndDate": null,
+          "endDateConfidence": "none",
+          "category": "salary",
+          "isActive": true
+        }
+      ],
       "analysisNarrative": "Novembre difficile : -271€ sur le mois à cause du weekend à Barcelone. Les dépenses courantes restent contenues à ~200€ hors voyage."
     },
     {
@@ -918,7 +948,22 @@
         "trend": "improving",
         "claudeComment": "La prime de Noël (150€) remonte le solde. Les courses de décembre augmentent légèrement. Klarna se terminera dès ce mois, libérant 71€/mois dès janvier."
       },
-      "recurringCredits": [],
+      "recurringCredits": [
+        {
+          "id": "demo-rc-salaire",
+          "description": "VIR SALAIRE ENTREPRISE DEMO",
+          "normalizedDescription": "salaire entreprise demo",
+          "monthlyAmount": 2800.0,
+          "currency": "EUR",
+          "frequency": "monthly",
+          "firstSeenDate": "2025-10-02",
+          "lastSeenDate": "2025-12-02",
+          "contractEndDate": null,
+          "endDateConfidence": "none",
+          "category": "salary",
+          "isActive": true
+        }
+      ],
       "analysisNarrative": "Décembre positif (+249€) grâce à la prime annuelle. Dernière mensualité Klarna en vue : +71€/mois de marge dès janvier."
     },
     {
@@ -1237,7 +1282,22 @@
         "trend": "improving",
         "claudeComment": "Le remboursement mutuelle (89€) et la fin de Klarna contribuent positivement. Le nouveau crédit Younited alourdit néanmoins les charges. Taux d'endettement à 53%."
       },
-      "recurringCredits": [],
+      "recurringCredits": [
+        {
+          "id": "demo-rc-salaire",
+          "description": "VIR SALAIRE ENTREPRISE DEMO",
+          "normalizedDescription": "salaire entreprise demo",
+          "monthlyAmount": 2800.0,
+          "currency": "EUR",
+          "frequency": "monthly",
+          "firstSeenDate": "2025-10-02",
+          "lastSeenDate": "2026-01-02",
+          "contractEndDate": null,
+          "endDateConfidence": "none",
+          "category": "salary",
+          "isActive": true
+        }
+      ],
       "analysisNarrative": "Janvier positif (+204€). Fin de Klarna mais apparition de Younited. Le remboursement mutuelle a aussi aidé ce mois."
     },
     {
@@ -1556,7 +1616,22 @@
         "trend": "stable",
         "claudeComment": "Février calme, dépenses variables bien contenues (~250€). La trésorerie progresse doucement. Le FLOA se termine en septembre 2026, ce qui libérera 257€/mois."
       },
-      "recurringCredits": [],
+      "recurringCredits": [
+        {
+          "id": "demo-rc-salaire",
+          "description": "VIR SALAIRE ENTREPRISE DEMO",
+          "normalizedDescription": "salaire entreprise demo",
+          "monthlyAmount": 2800.0,
+          "currency": "EUR",
+          "frequency": "monthly",
+          "firstSeenDate": "2025-10-02",
+          "lastSeenDate": "2026-02-02",
+          "contractEndDate": null,
+          "endDateConfidence": "none",
+          "category": "salary",
+          "isActive": true
+        }
+      ],
       "analysisNarrative": "Février positif (+85€). Mois sans surprise, épargne maintenue. La fin prochaine du FLOA (sept. 2026) sera un vrai soulagement budgétaire."
     },
     {
@@ -1891,7 +1966,22 @@
         "trend": "improving",
         "claudeComment": "Meilleur mois depuis octobre. Dépenses variables bien contrôlées (230€). Le PEL (13 580€) et le Livret A (6 750€) forment une épargne de précaution, mais le crédit immobilier et les crédits à la consommation pèsent bien plus lourd : le patrimoine net reste négatif et le reste à vivre est serré."
       },
-      "recurringCredits": [],
+      "recurringCredits": [
+        {
+          "id": "demo-rc-salaire",
+          "description": "VIR SALAIRE ENTREPRISE DEMO",
+          "normalizedDescription": "salaire entreprise demo",
+          "monthlyAmount": 2800.0,
+          "currency": "EUR",
+          "frequency": "monthly",
+          "firstSeenDate": "2025-10-02",
+          "lastSeenDate": "2026-03-02",
+          "contractEndDate": null,
+          "endDateConfidence": "none",
+          "category": "salary",
+          "isActive": true
+        }
+      ],
       "analysisNarrative": "Mars positif (+105€). Les comptes épargne visibles dans le relevé (PEL 13 580€, Livret A 6 750€) rassurent sur la situation patrimoniale globale."
     }
   ],
@@ -2491,7 +2581,36 @@
       "createdAt": "2025-10-27T00:00:00Z"
     }
   ],
-  "declarations": [],
+  "declarations": [
+    {
+      "id": "demo-decl-edf",
+      "type": "expense",
+      "label": "Électricité EDF",
+      "amount": 65.0,
+      "periodicity": "monthly",
+      "startDate": "2025-10-01",
+      "endDate": null,
+      "category": "utilities",
+      "notes": "Facture mensualisée (démo)",
+      "matchPattern": "EDF",
+      "createdAt": "2025-10-01T10:00:00Z",
+      "updatedAt": "2025-10-01T10:00:00Z"
+    },
+    {
+      "id": "demo-decl-assurance",
+      "type": "expense",
+      "label": "Assurance habitation",
+      "amount": 28.23,
+      "periodicity": "monthly",
+      "startDate": "2025-10-01",
+      "endDate": null,
+      "category": "insurance",
+      "notes": "Contrat fictif (démo)",
+      "matchPattern": "BPCE ASSURANCES",
+      "createdAt": "2025-10-01T10:00:00Z",
+      "updatedAt": "2025-10-01T10:00:00Z"
+    }
+  ],
   "budgets": {
     "food": 400,
     "entertainment": 100,
