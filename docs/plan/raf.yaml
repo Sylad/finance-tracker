@@ -613,6 +613,7 @@ lots:
     created: 2026-10-11
     notes:
       - { date: 2026-10-11, text: "QA prod L65/L66 11-10 (03cc542) — à inclure : le filtre du détail de relevé ignore le libellé de la catégorie principale (transactionMatchesSearch, category-label.ts, ne compare que categoryLabelFr(subcategory || …)) : « logement », « virements », « transport » → 0/24 alors que l'étiquette est affichée ; comparer catégorie ET sous-catégorie. Et expectations.md : la règle never « Erreur » de ## * prend « par erreur » dans le texte des Nouveautés — écrire les formes réelles ou exclure /nouveautes." }
+      - { date: 2026-10-11, text: "QA prod 11-10 (a2fb182) : 6/6 pages conformes aux deux largeurs ; filtre logement 3, virements 4, transport 2, pret/énergie 1 sur 24 ; « Affichée : … » sous les champs des deux formulaires." }
     started: 2026-10-11
     review: { date: 2026-10-11, verdict: "conforme — orchestré (vague 2026-10-11-1815, 0 passe(s) de correction + passe des mineurs)", commit: 1ada36049f9051de1983659915e56080821769f6 }
     ux: { date: 2026-10-11, verdict: "Sylvain 11-10 : ok L68 (filtre catégorie + sans accents ; champ brut avec « Affichée : … » dessous) ; revue UX automatique conforme" }
