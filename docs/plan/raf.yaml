@@ -534,11 +534,12 @@ lots:
     finished: 2026-10-10
   - id: L61
     title: "Démo finance : fixtures sans recurringCredits ni déclarations — /income vide (« Importe au moins 2 relevés ») et /forecast à 0 € d'entrées malgré ~2 800 €/mois de crédits (backend/src/modules/demo/demo-fixtures.json) — QA prod L14 11-10"
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-10-11
     notes:
       - { date: 2026-10-11, text: "Démo seulement : compléter demo-fixtures.json (recurringCredits, déclarations) ; aucun changement de calcul ; ne jamais lire ni écrire data-local." }
+    started: 2026-10-11
   - id: L62
     title: "Démo finance : demo-seed.service.ts n'écrit pas import-logs.json (4 entrées dans les fixtures) ni de bilan 2025 — Historique des imports (/upload) et Bilan annuel (/yearly) vides — QA prod L14 11-10"
     status: todo
