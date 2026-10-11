@@ -21,7 +21,7 @@ never: Erreur, Impossible de charger, undefined, NaN
 
 ## /
 
-shows: « Vue d'ensemble basée sur 6 relevés », PATRIMOINE NET, SANTÉ FINANCIÈRE /100, RELEVÉS RÉCENTS (5 cartes)
+shows: « Vue d'ensemble basée sur 6 relevés », PATRIMOINE NET, SANTÉ FINANCIÈRE /100, RELEVÉS RÉCENTS (5 cartes à 1440 px, 3 à 390 px)
 api: /api/statements, /api/statements/score-history, /api/loans, /api/savings-accounts, /api/budgets, /api/dashboard/net-worth, /api/dashboard/yearly-overview?months=12, /api/health-check/diagnostic, /api/dashboard/alerts
 may be empty when aucune alerte (`/api/dashboard/alerts`)
 
