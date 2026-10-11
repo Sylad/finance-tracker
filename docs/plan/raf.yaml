@@ -558,6 +558,7 @@ lots:
     notes:
       - { date: 2026-10-11, text: "Décision du lead : DÉMO SEULEMENT — recaler les dates des données de démonstration au chargement (dernier relevé = mois précédent la date du jour), sans toucher getLoanHealth ni aucun calcul utilisé par l'instance locale aux vraies données ; ne jamais lire ni écrire data-local." }
     started: 2026-10-11
+    review: { date: 2026-10-11, verdict: "compliant (1 minor note: README.md:134 still names the year 2025 for the demo's yearly summary) — orchestré (vague 2026-10-11-1640, 0 passe(s) de correction + passe des mineurs)", commit: 7ecb519d764e521b308ea5d837963b6d0295a283 }
   - id: L64
     title: "QA : écrire docs/qa/expectations.md (aucun fichier d'attentes) à partir du brouillon du rapport QA L14 du 11-10 (22 routes, lignes shows/api/never)"
     status: todo
