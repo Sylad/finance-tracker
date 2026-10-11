@@ -7,7 +7,7 @@ import { MonthlyStatement, StatementSummary } from '../../models/monthly-stateme
 import { ScoreHistoryEntry } from '../../models/financial-health-score.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
 import { YearlySummary } from '../../models/yearly-summary.model';
-import { buildYearlySummary } from './yearly-summary.builder';
+import { buildMonthlyCashFlow, buildYearlySummary } from './yearly-summary.builder';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 const FILENAME_REGEX = /^\d{4}-(0[1-9]|1[0-2])\.json$/;
@@ -249,7 +249,7 @@ export class StorageService implements OnModuleInit {
         .filter((f) => YEARLY_REGEX.test(f))
         .map(async (f) => {
           const content = await fs.promises.readFile(path.join(this.yearlyDir, f), 'utf8');
-          return JSON.parse(content) as YearlySummary;
+          return this.withCashFlow(JSON.parse(content) as YearlySummary);
         }),
     );
     return summaries.sort((a, b) => b.year - a.year);
@@ -259,10 +259,17 @@ export class StorageService implements OnModuleInit {
     const filepath = path.join(this.yearlyDir, `${year}.json`);
     try {
       const content = await fs.promises.readFile(filepath, 'utf8');
-      return JSON.parse(content) as YearlySummary;
+      return await this.withCashFlow(JSON.parse(content) as YearlySummary);
     } catch {
       return null;
     }
+  }
+
+  /** Bilans écrits avant L65 : entrées/sorties recalculées depuis l'archive (lecture seule). */
+  private async withCashFlow(summary: YearlySummary): Promise<YearlySummary> {
+    if (summary.monthlyCashFlow) return summary;
+    const statements = await this.readStatementsInDir(path.join(this.archiveDir, String(summary.year)));
+    return { ...summary, monthlyCashFlow: buildMonthlyCashFlow(statements) };
   }
 
   // ── Calendar-year archival ────────────────────────────────────────────────

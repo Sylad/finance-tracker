@@ -1,6 +1,20 @@
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { TransactionCategory } from '../../models/transaction.model';
-import { YearlySummary } from '../../models/yearly-summary.model';
+import { YearlyMonthCashFlow, YearlySummary } from '../../models/yearly-summary.model';
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Entrées / sorties en € de chaque mois (tri par mois). */
+export function buildMonthlyCashFlow(statements: MonthlyStatement[]): YearlyMonthCashFlow[] {
+  return [...statements]
+    .sort((a, b) => a.month - b.month)
+    .map((s) => ({
+      month: s.month,
+      credits: round2(s.totalCredits),
+      debits: round2(s.totalDebits),
+      net: round2(s.totalCredits - s.totalDebits),
+    }));
+}
 
 /** Agrège les relevés d'une année en bilan annuel (null si aucun relevé). */
 export function buildYearlySummary(year: number, statements: MonthlyStatement[]): YearlySummary | null {
@@ -48,6 +62,7 @@ export function buildYearlySummary(year: number, statements: MonthlyStatement[])
     bestMonth: best,
     worstMonth: worst,
     scoreProgression: scores,
+    monthlyCashFlow: buildMonthlyCashFlow(statements),
     topCategories,
     recurringCreditsCount,
   };

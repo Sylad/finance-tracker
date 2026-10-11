@@ -3,6 +3,13 @@ export interface YearlyMonthScore {
   score: number;
 }
 
+export interface YearlyMonthCashFlow {
+  month: number;
+  credits: number;
+  debits: number;
+  net: number;
+}
+
 export interface YearlyCategoryTotal {
   category: string;
   totalAmount: number;
@@ -22,6 +29,8 @@ export interface YearlySummary {
   bestMonth: YearlyMonthScore;
   worstMonth: YearlyMonthScore;
   scoreProgression: YearlyMonthScore[];
+  /** Absent des bilans écrits avant L65 ; le stockage le recalcule à la lecture. */
+  monthlyCashFlow?: YearlyMonthCashFlow[];
   topCategories: YearlyCategoryTotal[];
   recurringCreditsCount: number;
 }
