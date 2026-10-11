@@ -111,6 +111,13 @@ export interface YearlyMonthScore {
   score: number;
 }
 
+export interface YearlyMonthCashFlow {
+  month: number;
+  credits: number;
+  debits: number;
+  net: number;
+}
+
 export interface YearlyCategoryTotal {
   category: string;
   totalAmount: number;
@@ -130,6 +137,7 @@ export interface YearlySummary {
   bestMonth: YearlyMonthScore;
   worstMonth: YearlyMonthScore;
   scoreProgression: YearlyMonthScore[];
+  monthlyCashFlow?: YearlyMonthCashFlow[];
   topCategories: YearlyCategoryTotal[];
   recurringCreditsCount: number;
 }

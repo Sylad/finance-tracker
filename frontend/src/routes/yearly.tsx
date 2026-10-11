@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Trophy, Frown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, AreaChart, Area } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, AreaChart, Area } from 'recharts';
 import { useYearlySummaries, useYearlySummary } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState } from '@/components/loading-state';
 import { ScoreBadge } from '@/components/score-ring';
+import { cashFlowSeries } from '@/lib/yearly-cashflow';
 import { formatEUR, formatMonth, formatMonthShort, cn, chartTooltipProps } from '@/lib/utils';
 
 export function YearlyPage() {
@@ -29,6 +30,7 @@ export function YearlyPage() {
   }
 
   const summary = detail.data;
+  const cashFlow = useMemo(() => (summary ? cashFlowSeries(summary) : []), [summary]);
 
   return (
     <>
@@ -177,19 +179,22 @@ export function YearlyPage() {
 
           <section className="card p-5">
             <div className="stat-label mb-4">Cash flow mensuel</div>
-            <div className="h-44">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={summary.scoreProgression.map((p) => ({
-                  label: formatMonthShort(p.month, summary.year),
-                  score: p.score,
-                }))} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
-                  <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
-                  <Tooltip {...chartTooltipProps} />
-                  <Line type="monotone" dataKey="score" stroke="hsl(217 91% 60%)" strokeWidth={2} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {cashFlow.length === 0 ? (
+              <p className="text-sm text-fg-dim">Pas de flux mensuels disponibles pour cette année.</p>
+            ) : (
+              <div className="h-44">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={cashFlow} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
+                    <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={50} tickFormatter={(v: number) => `${Math.round(v / 100) / 10} k€`} />
+                    <Tooltip {...chartTooltipProps} formatter={(v: number) => formatEUR(v)} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Line type="monotone" name="Entrées" dataKey="credits" stroke="hsl(160 84% 50%)" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" name="Sorties" dataKey="debits" stroke="hsl(0 84% 60%)" strokeWidth={2} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </section>
         </>
       )}
