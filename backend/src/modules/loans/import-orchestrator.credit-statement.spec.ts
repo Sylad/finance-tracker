@@ -23,23 +23,33 @@ describe('ImportOrchestratorService — étapes communes des imports de relevé 
       expect(svc.rejectNonCreditDocument(extracted({}), 'batch')).toBeNull();
     });
 
-    it.each(['single', 'batch'] as const)('refuse un relevé bancaire (%s)', (mode) => {
+    const SINGLE_NON_CREDIT =
+      "Ce PDF n'est pas un relevé de crédit — importe les relevés bancaires depuis la page Import.";
+
+    it('refuse un relevé bancaire avec le message propre à chaque mode', () => {
       const { svc } = build();
-      expect(svc.rejectNonCreditDocument(extracted({ documentType: 'bank_statement' }), mode)).toMatch(
-        /relevé bancaire|pas un relevé de crédit/,
+      const bank = extracted({ documentType: 'bank_statement' });
+      expect(svc.rejectNonCreditDocument(bank, 'single')).toBe(SINGLE_NON_CREDIT);
+      expect(svc.rejectNonCreditDocument(bank, 'batch')).toBe(
+        'Ce PDF est un relevé bancaire — importe-le depuis la page Import (relevés bancaires).',
       );
     });
 
-    it('refuse un document « other » dans les deux modes', () => {
+    it('refuse un document « other » avec le message propre à chaque mode', () => {
       const { svc } = build();
-      expect(svc.rejectNonCreditDocument(extracted({ documentType: 'other' }), 'single')).toBeTruthy();
-      expect(svc.rejectNonCreditDocument(extracted({ documentType: 'other' }), 'batch')).toBeTruthy();
+      const other = extracted({ documentType: 'other' });
+      expect(svc.rejectNonCreditDocument(other, 'single')).toBe(SINGLE_NON_CREDIT);
+      expect(svc.rejectNonCreditDocument(other, 'batch')).toBe(
+        "Ce PDF ne ressemble ni à un relevé de crédit, ni à un plan d'amortissement.",
+      );
     });
 
     it("refuse un plan d'amortissement en single, l'accepte en batch (routé ailleurs)", () => {
       const { svc } = build();
       const plan = extracted({ documentType: 'amortization_plan' });
-      expect(svc.rejectNonCreditDocument(plan, 'single')).toMatch(/plan d'amortissement/);
+      expect(svc.rejectNonCreditDocument(plan, 'single')).toBe(
+        "Ce PDF est un plan d'amortissement — utilise le bouton « Importer PDF crédits » (il le route automatiquement).",
+      );
       expect(svc.rejectNonCreditDocument(plan, 'batch')).toBeNull();
     });
   });
