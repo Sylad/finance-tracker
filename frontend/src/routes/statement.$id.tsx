@@ -30,7 +30,7 @@ import {
 } from '@/types/api';
 import { formatEUR, formatMonth, formatDate, cn, chartTooltipProps, prevMonthId } from '@/lib/utils';
 import { recognizeMerchant } from '@/lib/merchants';
-import { categoryLabelFr } from '@/lib/category-label';
+import { categoryLabelFr, transactionMatchesSearch } from '@/lib/category-label';
 
 const CATEGORY_COLOR: Record<TransactionCategory, string> = {
   income: 'hsl(160 84% 50%)',
@@ -89,9 +89,7 @@ export function StatementDetailPage() {
       if (filter === 'debit' && t.amount > 0) return false;
       if (activeCat && t.category !== activeCat) return false;
       if (search.trim()) {
-        const q = search.toLowerCase();
-        return t.description.toLowerCase().includes(q) ||
-          t.subcategory.toLowerCase().includes(q);
+        return transactionMatchesSearch(t, search);
       }
       return true;
     });

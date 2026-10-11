@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { categoryLabelFr } from './category-label';
+import { categoryLabelFr, transactionMatchesSearch } from './category-label';
 
 describe('categoryLabelFr', () => {
   it('traduit les catégories de transaction', () => {
@@ -40,5 +40,23 @@ describe('categoryLabelFr', () => {
     expect(categoryLabelFr('bonus')).toBe('Prime');
     expect(categoryLabelFr('travel')).toBe('Voyage');
     expect(categoryLabelFr('reimbursement')).toBe('Remboursement');
+  });
+});
+
+describe('transactionMatchesSearch', () => {
+  const tx = { description: 'PRLV FLOA', category: 'loans', subcategory: 'LOAN' };
+
+  it('retrouve une ligne par le libellé français affiché', () => {
+    expect(transactionMatchesSearch(tx, 'crédit')).toBe(true);
+    expect(transactionMatchesSearch({ ...tx, subcategory: 'mortgage' }, 'prêt immobilier')).toBe(true);
+  });
+
+  it("ne trouve plus un mot anglais que l'écran n'affiche pas", () => {
+    expect(transactionMatchesSearch({ ...tx, subcategory: 'mortgage' }, 'mortgage')).toBe(false);
+  });
+
+  it('cherche aussi dans la description et se rabat sur la catégorie sans sous-catégorie', () => {
+    expect(transactionMatchesSearch(tx, 'floa')).toBe(true);
+    expect(transactionMatchesSearch({ ...tx, category: 'housing', subcategory: '' }, 'logement')).toBe(true);
   });
 });

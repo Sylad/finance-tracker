@@ -48,3 +48,14 @@ const KNOWN: Record<string, string> = {
 export function categoryLabelFr(value: string): string {
   return KNOWN[value.trim().toLowerCase()] ?? value;
 }
+
+/** Recherche du détail de relevé : description ou libellé affiché de la catégorie. */
+export function transactionMatchesSearch(
+  t: { description: string; category: string; subcategory: string },
+  query: string,
+): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const shown = categoryLabelFr(t.subcategory || categoryLabelFr(t.category));
+  return t.description.toLowerCase().includes(q) || shown.toLowerCase().includes(q);
+}
