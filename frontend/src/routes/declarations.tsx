@@ -135,7 +135,7 @@ function toInput(d: Declaration): DeclarationInput {
   return rest;
 }
 
-function DeclarationForm({
+export function DeclarationForm({
   init,
   onSave,
   onCancel,
@@ -189,11 +189,17 @@ function DeclarationForm({
                 onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
               />
             </Field>
-            <Field label="Catégorie">
-              <input className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-              {frenchHint(form.category) && (
-                <span className="text-xs text-fg-muted">Affichée : {frenchHint(form.category)}</span>
-              )}
+            <Field
+              label="Catégorie"
+              hint={frenchHint(form.category) ? `Affichée : ${frenchHint(form.category)}` : undefined}
+              hintId="declaration-category-hint"
+            >
+              <input
+                className="input"
+                aria-describedby={frenchHint(form.category) ? 'declaration-category-hint' : undefined}
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              />
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -220,11 +226,24 @@ function DeclarationForm({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+  hint,
+  hintId,
+}: {
+  label: string;
+  children: React.ReactNode;
+  hint?: string;
+  hintId?: string;
+}) {
   return (
-    <label className="block">
-      <span className="stat-label block mb-1.5">{label}</span>
-      {children}
-    </label>
+    <div>
+      <label className="block">
+        <span className="stat-label block mb-1.5">{label}</span>
+        {children}
+      </label>
+      {hint && <span id={hintId} className="block text-xs text-fg-muted mt-1">{hint}</span>}
+    </div>
   );
 }

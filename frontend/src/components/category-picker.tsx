@@ -153,15 +153,17 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
           </div>
 
           <div>
-            <label className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Sous-catégorie (optionnel)</label>
+            <label htmlFor="picker-subcategory" className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Sous-catégorie (optionnel)</label>
             <input
+              id="picker-subcategory"
+              aria-describedby={frenchHint(subcategory) ? 'picker-subcategory-hint' : undefined}
               className="input text-sm mt-2 w-full"
               placeholder="ex: salaire, courses, abonnement…"
               value={subcategory}
               onChange={(e) => setSubcategory(e.target.value)}
             />
             {frenchHint(subcategory) && (
-              <div className="text-xs text-fg-muted mt-1">Affichée : {frenchHint(subcategory)}</div>
+              <div id="picker-subcategory-hint" className="text-xs text-fg-muted mt-1">Affichée : {frenchHint(subcategory)}</div>
             )}
           </div>
 
