@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
 import { atomicWriteJsonSync } from '../../common/atomic-write';
+import { MonthlyStatement } from '../../models/monthly-statement.model';
+import { buildYearlySummary } from '../storage/yearly-summary.builder';
 import { RequestDataDirService } from './request-data-dir.service';
 
 @Injectable()
@@ -32,6 +34,18 @@ export class DemoSeedService {
     const f = this.loadFixtures();
     for (const stmt of f.statements as { id: string }[]) {
       atomicWriteJsonSync(path.join(demoDir, 'statements', `${stmt.id}.json`), stmt);
+    }
+    atomicWriteJsonSync(path.join(demoDir, 'import-logs.json'), f['import-logs']);
+    // Bilans des années révolues, comme l'archivage de StorageService : sans
+    // eux /yearly restait vide jusqu'au prochain import.
+    const statements = f.statements as MonthlyStatement[];
+    const lastYear = Math.max(...statements.map((s) => s.year));
+    for (const year of new Set(statements.map((s) => s.year).filter((y) => y < lastYear))) {
+      const summary = buildYearlySummary(
+        year,
+        statements.filter((s) => s.year === year).sort((a, b) => a.month - b.month),
+      );
+      if (summary) atomicWriteJsonSync(path.join(demoDir, 'yearly', `${year}.json`), summary);
     }
     atomicWriteJsonSync(path.join(demoDir, 'savings-accounts.json'), f['savings-accounts']);
     atomicWriteJsonSync(path.join(demoDir, 'loans.json'), f.loans);

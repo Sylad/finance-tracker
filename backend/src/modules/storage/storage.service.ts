@@ -7,7 +7,7 @@ import { MonthlyStatement, StatementSummary } from '../../models/monthly-stateme
 import { ScoreHistoryEntry } from '../../models/financial-health-score.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
 import { YearlySummary } from '../../models/yearly-summary.model';
-import { TransactionCategory } from '../../models/transaction.model';
+import { buildYearlySummary } from './yearly-summary.builder';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 
 const FILENAME_REGEX = /^\d{4}-(0[1-9]|1[0-2])\.json$/;
@@ -326,53 +326,9 @@ export class StorageService implements OnModuleInit {
   }
 
   private async generateOrUpdateYearlySummary(year: number, statements: MonthlyStatement[]): Promise<void> {
-    if (statements.length === 0) return;
-
-    const currency = statements[0].currency;
-    const totalCredits = statements.reduce((s, m) => s + m.totalCredits, 0);
-    const totalDebits = statements.reduce((s, m) => s + m.totalDebits, 0);
-    const scores = statements.map((s) => ({ month: s.month, score: s.healthScore.total }));
-    const avgScore = Math.round(scores.reduce((s, e) => s + e.score, 0) / scores.length);
-    const best = scores.reduce((a, b) => (b.score > a.score ? b : a));
-    const worst = scores.reduce((a, b) => (b.score < a.score ? b : a));
-
-    // Aggregate spending by category
-    const categoryTotals = new Map<string, number>();
-    for (const s of statements) {
-      for (const t of s.transactions) {
-        if (t.amount < 0) {
-          const cat = t.category as TransactionCategory;
-          categoryTotals.set(cat, (categoryTotals.get(cat) ?? 0) + Math.abs(t.amount));
-        }
-      }
-    }
-    const topCategories = [...categoryTotals.entries()]
-      .map(([category, totalAmount]) => ({ category, totalAmount: Math.round(totalAmount * 100) / 100 }))
-      .sort((a, b) => b.totalAmount - a.totalAmount)
-      .slice(0, 6);
-
-    const recurringCreditsCount = new Set(
-      statements.flatMap((s) => s.recurringCredits.map((r) => r.normalizedDescription.toLowerCase())),
-    ).size;
-
+    const summary = buildYearlySummary(year, statements);
+    if (!summary) return;
     const n = statements.length;
-    const summary: YearlySummary = {
-      year,
-      generatedAt: new Date().toISOString(),
-      monthsCovered: statements.map((s) => s.month).sort((a, b) => a - b),
-      currency,
-      totalCredits: Math.round(totalCredits * 100) / 100,
-      totalDebits: Math.round(totalDebits * 100) / 100,
-      netSavings: Math.round((totalCredits - totalDebits) * 100) / 100,
-      averageMonthlyCredits: Math.round((totalCredits / n) * 100) / 100,
-      averageMonthlyDebits: Math.round((totalDebits / n) * 100) / 100,
-      averageHealthScore: avgScore,
-      bestMonth: best,
-      worstMonth: worst,
-      scoreProgression: scores,
-      topCategories,
-      recurringCreditsCount,
-    };
 
     const filepath = path.join(this.yearlyDir, `${year}.json`);
     await atomicWriteJson(filepath, summary);
