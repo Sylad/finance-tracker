@@ -87,14 +87,25 @@ describe('DemoSeedService — import-logs et bilan annuel (L62)', () => {
       expect(fs.existsSync(demoDir)).toBe(false);
     });
 
+    it("complète le bilan 2025 d'une démo amorcée avant L65 (sans monthlyCashFlow)", async () => {
+      const old = JSON.parse(fs.readFileSync(yearlyFile(), 'utf8'));
+      delete old.monthlyCashFlow;
+      fs.writeFileSync(yearlyFile(), JSON.stringify(old));
+
+      service.onApplicationBootstrap();
+
+      const y = JSON.parse(fs.readFileSync(yearlyFile(), 'utf8')) as YearlySummary;
+      expect(y.monthlyCashFlow.length).toBeGreaterThan(0);
+    });
+
     it('ne réécrit pas des fichiers déjà présents', async () => {
       fs.writeFileSync(logsFile(), '[]');
-      fs.writeFileSync(yearlyFile(), '{"year":2025,"custom":true}');
+      fs.writeFileSync(yearlyFile(), '{"year":2025,"custom":true,"monthlyCashFlow":[]}');
 
       await service.seed();
 
       expect(fs.readFileSync(logsFile(), 'utf8')).toBe('[]');
-      expect(fs.readFileSync(yearlyFile(), 'utf8')).toBe('{"year":2025,"custom":true}');
+      expect(fs.readFileSync(yearlyFile(), 'utf8')).toBe('{"year":2025,"custom":true,"monthlyCashFlow":[]}');
     });
   });
 });

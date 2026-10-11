@@ -116,6 +116,18 @@ export class DemoSeedService implements OnApplicationBootstrap {
     const write = (file: string, data: unknown) => {
       if (overwrite || !fs.existsSync(file)) atomicWriteJsonSync(file, data);
     };
+    // Un bilan écrit avant L65 n'a pas monthlyCashFlow, et la démo n'a pas
+    // d'archive d'où le recalculer (StorageService.withCashFlow) : on le réécrit.
+    const writeYearly = (file: string, data: unknown) => {
+      const stale = () => {
+        try {
+          return !('monthlyCashFlow' in JSON.parse(fs.readFileSync(file, 'utf8')));
+        } catch {
+          return true;
+        }
+      };
+      if (overwrite || !fs.existsSync(file) || stale()) atomicWriteJsonSync(file, data);
+    };
     fs.mkdirSync(path.join(demoDir, 'yearly'), { recursive: true });
     write(path.join(demoDir, 'import-logs.json'), f['import-logs']);
     const statements = f.statements as MonthlyStatement[];
@@ -130,7 +142,7 @@ export class DemoSeedService implements OnApplicationBootstrap {
         year,
         past.filter((s) => s.year === year).sort((a, b) => a.month - b.month),
       );
-      if (summary) write(path.join(demoDir, 'yearly', `${year}.json`), summary);
+      if (summary) writeYearly(path.join(demoDir, 'yearly', `${year}.json`), summary);
     }
   }
 
