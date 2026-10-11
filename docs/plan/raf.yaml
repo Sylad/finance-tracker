@@ -567,3 +567,4 @@ lots:
     notes:
       - { date: 2026-10-11, text: "Brouillon du qa-reviewer : ~/projects/developpeur/tmp/qa-finance-l14/expectations-brouillon.md (hors dépôt) — à reprendre et corriger ; les lignes de /income, /forecast, /yearly, /upload et de la santé des crédits dépendent de L61 L62 L63 (faire L64 après eux)." }
     started: 2026-10-11
+    review: { date: 2026-10-11, verdict: "conforme, 4 notes mineures — orchestré (vague 2026-10-11-1640, 2 passe(s) de correction)", commit: c81859dde61755e6b0495386ebb76fa0474b0e11 }
