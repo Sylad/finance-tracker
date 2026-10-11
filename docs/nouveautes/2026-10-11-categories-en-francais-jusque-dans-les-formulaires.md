@@ -3,7 +3,9 @@ title: Catégories en français jusque dans les formulaires
 date: 2026-10-11
 created: 2026-10-11T18:10+02:00
 lots: [L68]
-nocapture: l'instance de démonstration n'était pas lancée pendant la session ; les changements sont des libellés et une recherche, sans écran nouveau
+captures:
+  - { file: captures/2026-10-11-declarations-edition.png, alt: "Formulaire de modification d'une déclaration : la catégorie saisie « utilities » est suivie de « Affichée : Énergie / eau »" }
+  - { file: captures/2026-10-11-selecteur-categorie.png, alt: "Fenêtre de changement de catégorie d'une transaction : la sous-catégorie saisie est suivie de son libellé français" }
 # une capture peut dire ce qu'elle montre : captures: [{ file: captures/x.png, alt: "texte alternatif" }]
 # nocapture: raison, quand une capture n'a pas de sens
 ---
