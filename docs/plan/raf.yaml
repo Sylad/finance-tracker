@@ -160,7 +160,7 @@ lots:
     finished: 2026-10-10
   - id: L14
     title: "Dédoublonner les controllers : replayAll, triggerDetection, boucle d'import crédit"
-    status: doing
+    status: done
     estimate: 2
     after: [ L4 ]
     created: 2026-09-28
@@ -172,6 +172,7 @@ lots:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #17 #18 #19 — après le mutex L4, qui touche triggerDetection" }
     started: 2026-10-11
     review: { date: 2026-10-11, verdict: "compliant — orchestré (vague 2026-10-11-1605, 1 passe(s) de correction + passe des mineurs)", commit: 4c9f970e266449f9dc1eb6ad1c5813f534530ad5 }
+    finished: 2026-10-11
   - id: L15
     title: "Helpers communs : money, slugify, month-key, clustering, paires neutres"
     status: todo
