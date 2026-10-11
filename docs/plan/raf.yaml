@@ -607,9 +607,10 @@ lots:
   - id: L68
     title: "Libellés français, suites de L66 : le formulaire d'édition de /declarations montre la catégorie brute (« utilities ») alors que la liste dit « Énergie / eau » (declarations.tsx:193) ; le sélecteur de catégorie affiche la sous-catégorie brute (category-picker.tsx:159) ; le filtre du relevé ne tolère pas l'absence d'accents (« pret », « energie ») ; CATEGORY_LABEL d'income.tsx duplique category-label.ts — revue L66 11-10"
     public: Catégories en français jusque dans les formulaires
-    status: todo
+    status: doing
     estimate: 0.5
     visible: true
     created: 2026-10-11
     notes:
       - { date: 2026-10-11, text: "QA prod L65/L66 11-10 (03cc542) — à inclure : le filtre du détail de relevé ignore le libellé de la catégorie principale (transactionMatchesSearch, category-label.ts, ne compare que categoryLabelFr(subcategory || …)) : « logement », « virements », « transport » → 0/24 alors que l'étiquette est affichée ; comparer catégorie ET sous-catégorie. Et expectations.md : la règle never « Erreur » de ## * prend « par erreur » dans le texte des Nouveautés — écrire les formes réelles ou exclure /nouveautes." }
+    started: 2026-10-11
