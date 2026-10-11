@@ -95,7 +95,7 @@ describe('DemoSeedService — import-logs et bilan annuel (L62)', () => {
       service.onApplicationBootstrap();
 
       const y = JSON.parse(fs.readFileSync(yearlyFile(), 'utf8')) as YearlySummary;
-      expect(y.monthlyCashFlow.length).toBeGreaterThan(0);
+      expect(y.monthlyCashFlow!.length).toBeGreaterThan(0);
     });
 
     it('ne réécrit pas des fichiers déjà présents', async () => {
