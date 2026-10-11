@@ -8,7 +8,7 @@ Repris du brouillon du rapport QA L14 du 11-10 (22 routes), corrigé pour L61 (s
 
 - `shows:` ce qui est visible à l'écran ; plusieurs éléments séparés par des virgules.
 - `api:` appels `/api/…` qui doivent répondre 2xx pendant la visite de la route.
-- `never:` texte qui ne doit apparaître nulle part sur la route.
+- `never:` texte qui ne doit apparaître nulle part sur la route. Le reviewer compare sans casse : un mot court comme « nan » se trouverait dans « fiNANcière » ; on écrit donc les formes réelles du défaut (« NaN € », « NaN % ») et non le mot seul.
 - `may be empty when …:` une réponse vide ou un état vide est normal dans ce cas.
 
 ## Règle de lecture des dates (L63)
@@ -17,7 +17,7 @@ Les fixtures s'arrêtent en mars 2026 mais sont décalées de mois entiers à ch
 
 ## *
 
-never: Erreur, Impossible de charger, undefined, NaN
+never: Erreur, Impossible de charger, undefined, « NaN € », « NaN % », « NaN/100 »
 
 ## /
 
