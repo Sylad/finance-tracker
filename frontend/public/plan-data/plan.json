@@ -105,6 +105,11 @@
       "title": "Catégories affichées en français partout",
       "status": "doing",
       "started": "2026-10-11"
+    },
+    {
+      "id": "L68",
+      "title": "Catégories en français jusque dans les formulaires",
+      "status": "todo"
     }
   ]
 }

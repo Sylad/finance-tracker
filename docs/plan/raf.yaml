@@ -592,8 +592,16 @@ lots:
     review: { date: 2026-10-11, verdict: "conforme (4 notes mineures, dont 1 sous-tâche proposée : recherche insensible aux accents) — orchestré (vague 2026-10-11-1725, 2 passe(s) de correction)", commit: f2ebf42189581184e8443b6696781a51b2f299a0 }
   - id: L67
     title: "expectations.md : « Vue d'ensemble basée sur N relevés » en 1440 only (le tableau de bord téléphone l'omet) ; api: de /heatmap (/api/statements et /api/statements/<mois>) et /api/statements/yearly/<année> ; /api/health-check/advice may be empty — QA prod 11-10"
-    status: doing
+    status: done
     estimate: 0.25
     created: 2026-10-11
     started: 2026-10-11
     review: { date: 2026-10-11, verdict: "conforme : les quatre points du lot sont couverts et chaque ligne ajoutée correspond au code ; aucun défaut à signaler — orchestré (vague 2026-10-11-1725, 0 passe(s) de correction)", commit: null }
+    finished: 2026-10-11
+  - id: L68
+    title: "Libellés français, suites de L66 : le formulaire d'édition de /declarations montre la catégorie brute (« utilities ») alors que la liste dit « Énergie / eau » (declarations.tsx:193) ; le sélecteur de catégorie affiche la sous-catégorie brute (category-picker.tsx:159) ; le filtre du relevé ne tolère pas l'absence d'accents (« pret », « energie ») ; CATEGORY_LABEL d'income.tsx duplique category-label.ts — revue L66 11-10"
+    public: Catégories en français jusque dans les formulaires
+    status: todo
+    estimate: 0.5
+    visible: true
+    created: 2026-10-11
