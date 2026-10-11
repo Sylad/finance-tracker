@@ -17,6 +17,7 @@ export function YearlyPage() {
   const [year, setYear] = useState<number | null>(null);
   const activeYear = year ?? years[0] ?? null;
   const detail = useYearlySummary(activeYear ?? undefined);
+  const cashFlow = useMemo(() => (detail.data ? cashFlowSeries(detail.data) : []), [detail.data]);
 
   if (list.isLoading) return <LoadingState />;
 
@@ -30,7 +31,6 @@ export function YearlyPage() {
   }
 
   const summary = detail.data;
-  const cashFlow = useMemo(() => (summary ? cashFlowSeries(summary) : []), [summary]);
 
   return (
     <>

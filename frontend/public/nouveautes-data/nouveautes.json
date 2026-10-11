@@ -1,7 +1,22 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-02 16:28",
+  "generated": "2026-10-11 17:18",
   "entries": [
+    {
+      "slug": "2026-10-11-bilan-annuel-le-graphique-de-tresorerie-montre-enfin-des-eur",
+      "title": "Bilan annuel : le graphique de trésorerie montre enfin des euros",
+      "date": "2026-10-11",
+      "lots": [
+        "L65"
+      ],
+      "captures": [
+        "captures/2026-10-11-bilan-annuel-tresorerie.png"
+      ],
+      "alts": [
+        "Bilan annuel : le graphique Cash flow mensuel trace les entrées en vert et les sorties en rouge, en euros"
+      ],
+      "html": "<p>Sur la page Bilan annuel, le graphique « Cash flow mensuel » affichait par erreur la même courbe de score (de 0 à 100) que « Progression du score ». Il montre maintenant, mois par mois, vos entrées d'argent (en vert) et vos sorties (en rouge), en euros. Au survol d'un mois, les deux montants s'affichent.</p>\n<p>Pour un bilan sans détail mensuel, le graphique indique simplement que les flux ne sont pas disponibles.</p>"
+    },
     {
       "slug": "2026-10-02-un-plan-de-travail-plus-clair-et-des-liens-toujours-visibles",
       "title": "Un Plan de travail plus clair, et des liens toujours visibles dans le menu",
