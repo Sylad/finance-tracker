@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { DemoSeedService } from './demo-seed.service';
 import { RequestDataDirService } from './request-data-dir.service';
 import { ImportLog } from '../../models/import-log.model';
+import { LoansService } from '../loans/loans.service';
+import { Loan } from '../../models/loan.model';
 import { YearlySummary } from '../../models/yearly-summary.model';
 
 /**
@@ -12,6 +14,10 @@ import { YearlySummary } from '../../models/yearly-summary.model';
  * « Bilan annuel » (/yearly) : le seed n'écrivait ni import-logs.json ni bilan.
  */
 describe('DemoSeedService — import-logs et bilan annuel (L62)', () => {
+  // Les fixtures s'arrêtent en mars 2026 : au 15 avril, aucun recalage (L63).
+  beforeAll(() => jest.useFakeTimers({ now: new Date('2026-04-15T10:00:00Z'), doNotFake: ['nextTick', 'setImmediate', 'setTimeout'] }));
+  afterAll(() => jest.useRealTimers());
+
   let base: string;
   let demoDir: string;
   let service: DemoSeedService;
@@ -90,5 +96,90 @@ describe('DemoSeedService — import-logs et bilan annuel (L62)', () => {
       expect(fs.readFileSync(logsFile(), 'utf8')).toBe('[]');
       expect(fs.readFileSync(yearlyFile(), 'utf8')).toBe('{"year":2025,"custom":true}');
     });
+  });
+});
+
+/** L63 — la démo est recalée sur la date du jour (dernier relevé = mois précédent). */
+describe('DemoSeedService — recalage des dates (L63)', () => {
+  let base: string;
+  let demoDir: string;
+  let service: DemoSeedService;
+  const setNow = (iso: string) =>
+    jest.useFakeTimers({ now: new Date(iso), doNotFake: ['nextTick', 'setImmediate', 'setTimeout'] });
+  const read = <T>(...p: string[]) => JSON.parse(fs.readFileSync(path.join(demoDir, ...p), 'utf8')) as T;
+  const stmtIds = () => fs.readdirSync(path.join(demoDir, 'statements')).filter((f) => f.endsWith('.json')).sort();
+
+  beforeEach(() => {
+    base = fs.mkdtempSync(path.join(os.tmpdir(), 'demo-seed-shift-'));
+    demoDir = path.join(base, 'demo');
+    const config = { get: (k: string) => (k === 'dataDir' ? base : undefined) } as unknown as ConfigService;
+    service = new DemoSeedService(config, {} as RequestDataDirService);
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
+  it('au 11 octobre 2026, le dernier relevé est septembre 2026', async () => {
+    setNow('2026-10-11T10:00:00Z');
+    await service.seed();
+    expect(stmtIds()).toEqual(['2026-04.json', '2026-05.json', '2026-06.json', '2026-07.json', '2026-08.json', '2026-09.json']);
+    const loans = read<{ occurrencesDetected?: { statementId: string; date: string }[] }[]>('loans.json');
+    const dates = loans.flatMap((l) => l.occurrencesDetected ?? []).map((o) => o.date).sort();
+    expect(dates[dates.length - 1].slice(0, 7)).toBe('2026-09');
+    expect(read<{ currentBalance: number; lastSyncedStatementId: string }[]>('savings-accounts.json')[0].lastSyncedStatementId).toBe('2026-09');
+  });
+
+  it('aucun crédit actif de la démo recalée n’est en « Trou » ni arrivé à terme', async () => {
+    setNow('2026-10-11T10:00:00Z');
+    await service.seed();
+    const active = read<Loan[]>('loans.json').filter((l) => l.isActive);
+    expect(active.length).toBeGreaterThan(0);
+    for (const l of active) {
+      expect([l.id, LoansService.getLoanHealth(l, '2026-10-11')]).not.toEqual([l.id, 'gap']);
+      if (l.endDate) expect(l.endDate > '2026-10-11').toBe(true);
+    }
+  });
+
+  it("garde un bilan de l'année révolue quand tous les relevés tiennent dans l'année", async () => {
+    setNow('2026-10-11T10:00:00Z');
+    await service.seed();
+    const y = read<YearlySummary>('yearly', '2025.json');
+    expect(y.monthsCovered).toEqual([4, 5, 6, 7, 8, 9]);
+    expect(fs.existsSync(path.join(demoDir, 'yearly', '2026.json'))).toBe(false);
+  });
+
+  it('à cheval sur deux années, le bilan vient des relevés révolus', async () => {
+    setNow('2027-02-05T10:00:00Z');
+    await service.seed();
+    expect(stmtIds()[0]).toBe('2026-08.json');
+    expect(read<YearlySummary>('yearly', '2026.json').monthsCovered).toEqual([8, 9, 10, 11, 12]);
+    expect(fs.existsSync(path.join(demoDir, 'yearly', '2025.json'))).toBe(false);
+  });
+
+  it("recale au démarrage une démo amorcée un mois plus tôt, sans relevé orphelin", async () => {
+    setNow('2026-10-11T10:00:00Z');
+    await service.seed();
+    setNow('2026-11-02T10:00:00Z');
+    service.onApplicationBootstrap();
+    expect(stmtIds()).toEqual(['2026-05.json', '2026-06.json', '2026-07.json', '2026-08.json', '2026-09.json', '2026-10.json']);
+  });
+
+  it('recale une démo amorcée avant L63 (pas de fichier .shift)', async () => {
+    setNow('2026-04-15T10:00:00Z');
+    await service.seed();
+    fs.rmSync(path.join(demoDir, '.shift'));
+    setNow('2026-10-11T10:00:00Z');
+    service.onApplicationBootstrap();
+    expect(stmtIds()[5]).toBe('2026-09.json');
+  });
+
+  it("ne réécrit rien tant que le décalage est inchangé", async () => {
+    setNow('2026-10-11T10:00:00Z');
+    await service.seed();
+    fs.writeFileSync(path.join(demoDir, 'budgets.json'), '{"custom":1}');
+    setNow('2026-10-30T10:00:00Z');
+    service.onApplicationBootstrap();
+    expect(fs.readFileSync(path.join(demoDir, 'budgets.json'), 'utf8')).toBe('{"custom":1}');
   });
 });

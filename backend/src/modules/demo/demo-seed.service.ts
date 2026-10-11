@@ -5,6 +5,7 @@ import * as path from 'path';
 import { atomicWriteJsonSync } from '../../common/atomic-write';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { buildYearlySummary } from '../storage/yearly-summary.builder';
+import { monthsToShift, shiftDemoFixtures } from './demo-date-shift';
 import { RequestDataDirService } from './request-data-dir.service';
 
 @Injectable()
@@ -16,20 +17,38 @@ export class DemoSeedService implements OnApplicationBootstrap {
     private readonly dataDir: RequestDataDirService,
   ) {}
 
-  private loadFixtures(): Record<string, unknown> {
+  /**
+   * Fixtures recalées (L63) : leur dernier relevé devient le mois précédant la
+   * date du jour. Le décalage retenu est renvoyé pour être mémorisé (`.shift`).
+   */
+  private loadFixtures(): { fixtures: Record<string, unknown>; shift: number } {
     const fixturePath = path.join(__dirname, 'demo-fixtures.json');
-    return JSON.parse(fs.readFileSync(fixturePath, 'utf-8')) as Record<string, unknown>;
+    const raw = JSON.parse(fs.readFileSync(fixturePath, 'utf-8')) as Record<string, unknown>;
+    const last = (raw.statements as MonthlyStatement[]).reduce((a, s) =>
+      s.year * 12 + s.month > a.year * 12 + a.month ? s : a,
+    );
+    const shift = monthsToShift(last.year, last.month, new Date());
+    return { fixtures: shiftDemoFixtures(raw, shift), shift };
+  }
+
+  private readShift(demoDir: string): number | null {
+    try {
+      return Number(fs.readFileSync(path.join(demoDir, '.shift'), 'utf-8'));
+    } catch {
+      return null;
+    }
   }
 
   /**
    * Aucun client n'appelle `POST /demo/seed` sur une démo déjà amorcée : le
-   * rattrapage L62 se joue donc au démarrage du backend.
+   * rattrapage L62 et le recalage des dates (L63) se jouent donc au démarrage
+   * du backend.
    */
   onApplicationBootstrap(): void {
     const demoDir = path.join(this.config.get<string>('dataDir')!, 'demo');
     if (!fs.existsSync(path.join(demoDir, '.seeded'))) return;
     try {
-      this.writeHistory(demoDir, this.loadFixtures(), false);
+      this.refreshSeeded(demoDir);
     } catch (e) {
       this.logger.warn(`Rattrapage de la démo impossible : ${(e as Error).message}`);
     }
@@ -39,15 +58,38 @@ export class DemoSeedService implements OnApplicationBootstrap {
     const demoDir = path.join(this.config.get<string>('dataDir')!, 'demo');
     const sentinel = path.join(demoDir, '.seeded');
     if (!force && fs.existsSync(sentinel)) {
-      // Démo amorcée avant L62 (PVC de prod) : rattrape les seuls fichiers absents.
-      this.writeHistory(demoDir, this.loadFixtures(), false);
+      this.refreshSeeded(demoDir);
       return { seeded: false, reason: 'already-seeded' };
     }
     fs.mkdirSync(path.join(demoDir, 'statements', 'archive'), { recursive: true });
     fs.mkdirSync(path.join(demoDir, 'yearly'), { recursive: true });
     fs.mkdirSync(path.join(demoDir, 'uploads'), { recursive: true });
 
-    const f = this.loadFixtures();
+    this.writeAll(demoDir, this.loadFixtures());
+    this.logger.log(`Demo seeded at ${demoDir}`);
+    return { seeded: true };
+  }
+
+  /**
+   * Démo déjà amorcée : si le décalage des dates n'est plus celui du jour
+   * (mois écoulé, ou démo antérieure à L63), les données synthétiques sont
+   * réécrites ; sinon seuls les fichiers absents sont rattrapés (L62).
+   */
+  private refreshSeeded(demoDir: string): void {
+    const loaded = this.loadFixtures();
+    if (this.readShift(demoDir) === loaded.shift) {
+      this.writeHistory(demoDir, loaded.fixtures, false);
+      return;
+    }
+    for (const f of fs.readdirSync(path.join(demoDir, 'statements'))) {
+      if (f.endsWith('.json')) fs.rmSync(path.join(demoDir, 'statements', f));
+    }
+    this.writeAll(demoDir, loaded);
+    this.logger.log(`Demo dates recalées de ${loaded.shift} mois à ${demoDir}`);
+  }
+
+  private writeAll(demoDir: string, loaded: { fixtures: Record<string, unknown>; shift: number }): void {
+    const f = loaded.fixtures;
     for (const stmt of f.statements as { id: string }[]) {
       atomicWriteJsonSync(path.join(demoDir, 'statements', `${stmt.id}.json`), stmt);
     }
@@ -57,9 +99,8 @@ export class DemoSeedService implements OnApplicationBootstrap {
     atomicWriteJsonSync(path.join(demoDir, 'loan-suggestions.json'), f['loan-suggestions']);
     atomicWriteJsonSync(path.join(demoDir, 'declarations.json'), f.declarations);
     atomicWriteJsonSync(path.join(demoDir, 'budgets.json'), f.budgets);
-    fs.writeFileSync(sentinel, new Date().toISOString());
-    this.logger.log(`Demo seeded at ${demoDir}`);
-    return { seeded: true };
+    fs.writeFileSync(path.join(demoDir, '.shift'), String(loaded.shift));
+    fs.writeFileSync(path.join(demoDir, '.seeded'), new Date().toISOString());
   }
 
   /**
@@ -75,10 +116,15 @@ export class DemoSeedService implements OnApplicationBootstrap {
     write(path.join(demoDir, 'import-logs.json'), f['import-logs']);
     const statements = f.statements as MonthlyStatement[];
     const lastYear = Math.max(...statements.map((s) => s.year));
-    for (const year of new Set(statements.map((s) => s.year).filter((y) => y < lastYear))) {
+    // Recalée, la démo peut tenir toute dans l'année en cours : le bilan de
+    // l'année révolue est alors celui des mêmes relevés un an plus tôt.
+    const past = statements.some((s) => s.year < lastYear)
+      ? statements
+      : (shiftDemoFixtures({ statements }, -12).statements as MonthlyStatement[]);
+    for (const year of new Set(past.map((s) => s.year).filter((y) => y < lastYear))) {
       const summary = buildYearlySummary(
         year,
-        statements.filter((s) => s.year === year).sort((a, b) => a.month - b.month),
+        past.filter((s) => s.year === year).sort((a, b) => a.month - b.month),
       );
       if (summary) write(path.join(demoDir, 'yearly', `${year}.json`), summary);
     }
