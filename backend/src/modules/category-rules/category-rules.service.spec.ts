@@ -30,10 +30,18 @@ function tx(over: Partial<Transaction>): Transaction {
 describe('CategoryRulesService', () => {
   let dir: string;
   let svc: CategoryRulesService;
+  let saved: string[];
+  let statements: any[];
 
   beforeEach(async () => {
     dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'cat-rules-'));
-    svc = new CategoryRulesService(new FakeDataDir(dir) as any, new FakeBus() as any);
+    saved = [];
+    statements = [];
+    const storage = {
+      getAllStatements: jest.fn(async () => statements),
+      saveStatement: jest.fn(async (s: any) => { saved.push(s.id); }),
+    };
+    svc = new CategoryRulesService(new FakeDataDir(dir) as any, new FakeBus() as any, storage as any);
   });
 
   afterEach(async () => {
@@ -109,5 +117,29 @@ describe('CategoryRulesService', () => {
 
   it('delete throws on unknown id', async () => {
     await expect(svc.delete('nope')).rejects.toThrow(/introuvable/);
+  });
+
+  describe('replayAll', () => {
+    it('ne sauvegarde que les relevés dont une catégorie change', async () => {
+      await svc.create({ pattern: 'NETFLIX', category: 'subscriptions' });
+      statements = [
+        { id: 'a', transactions: [tx({ id: '1', normalizedDescription: 'netflix' })] },
+        { id: 'b', transactions: [tx({ id: '2', normalizedDescription: 'lidl' })] },
+      ];
+      const r = await svc.replayAll();
+      expect(r).toEqual({ processed: 2, updated: 1 });
+      expect(saved).toEqual(['a']);
+    });
+
+    it('saute le relevé déjà sauvegardé quand skipStatementId est donné', async () => {
+      await svc.create({ pattern: 'NETFLIX', category: 'subscriptions' });
+      statements = [
+        { id: 'a', transactions: [tx({ id: '1', normalizedDescription: 'netflix' })] },
+        { id: 'b', transactions: [tx({ id: '2', normalizedDescription: 'netflix' })] },
+      ];
+      const r = await svc.replayAll({ skipStatementId: 'a' });
+      expect(r).toEqual({ processed: 1, updated: 1 });
+      expect(saved).toEqual(['b']);
+    });
   });
 });

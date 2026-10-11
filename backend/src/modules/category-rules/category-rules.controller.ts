@@ -1,13 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { CategoryRulesService } from './category-rules.service';
-import { StorageService } from '../storage/storage.service';
 import { validateCategoryRuleInput, validateUserCategoryName } from './dto/category-rule.dto';
 
 @Controller('category-rules')
 export class CategoryRulesController {
   constructor(
     private readonly rules: CategoryRulesService,
-    private readonly storage: StorageService,
   ) {}
 
   @Get()
@@ -49,17 +47,6 @@ export class CategoryRulesController {
 
   @Post('replay-all')
   async replayAll() {
-    const all = await this.storage.getAllStatements();
-    let updated = 0;
-    for (const stmt of all) {
-      const before = stmt.transactions.map((t) => `${t.id}:${t.category}:${t.subcategory}`).join('|');
-      stmt.transactions = await this.rules.apply(stmt.transactions);
-      const after = stmt.transactions.map((t) => `${t.id}:${t.category}:${t.subcategory}`).join('|');
-      if (before !== after) {
-        await this.storage.saveStatement(stmt);
-        updated++;
-      }
-    }
-    return { processed: all.length, updated };
+    return this.rules.replayAll();
   }
 }

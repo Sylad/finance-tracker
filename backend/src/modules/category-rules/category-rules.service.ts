@@ -7,6 +7,7 @@ import { CategoryRule, CategoryRuleInput, UserCategory } from '../../models/cate
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { EventBusService } from '../events/event-bus.service';
+import { StorageService } from '../storage/storage.service';
 
 const RULES_FILE = 'category-rules.json';
 const USER_CATS_FILE = 'user-categories.json';
@@ -23,6 +24,7 @@ export class CategoryRulesService {
   constructor(
     private readonly dataDir: RequestDataDirService,
     private readonly bus: EventBusService,
+    private readonly storage: StorageService,
   ) {}
 
   private get rulesPath(): string {
@@ -85,6 +87,33 @@ export class CategoryRulesService {
     const next = all.filter((r) => r.id !== id);
     if (next.length === all.length) throw new NotFoundException(`Règle ${id} introuvable`);
     await this.persistRules(next);
+  }
+
+  /**
+   * Rejoue les règles sur tous les relevés stockés et ne sauvegarde que ceux
+   * dont une catégorie ou sous-catégorie change. Point d'entrée UNIQUE du
+   * replay (route replay-all, « créer une règle + rejouer », auto-catégorisation
+   * par lot) : un seul balayage par demande. `skipStatementId` écarte un relevé
+   * que l'appelant vient déjà de sauvegarder.
+   */
+  async replayAll(
+    opts: { skipStatementId?: string } = {},
+  ): Promise<{ processed: number; updated: number }> {
+    const all = (await this.storage.getAllStatements()).filter(
+      (s) => s.id !== opts.skipStatementId,
+    );
+    const signature = (txs: Transaction[]) =>
+      JSON.stringify(txs.map((t) => [t.id, t.category, t.subcategory]));
+    let updated = 0;
+    for (const stmt of all) {
+      const before = signature(stmt.transactions);
+      stmt.transactions = await this.apply(stmt.transactions);
+      if (before !== signature(stmt.transactions)) {
+        await this.storage.saveStatement(stmt);
+        updated++;
+      }
+    }
+    return { processed: all.length, updated };
   }
 
   /**

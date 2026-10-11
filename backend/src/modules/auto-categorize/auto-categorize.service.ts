@@ -202,20 +202,10 @@ export class AutoCategorizeService {
 
     await this.storage.saveStatement(statement);
 
-    let replayed = 0;
-    if (wantReplayAll && createdRules.length > 0) {
-      const all = await this.storage.getAllStatements();
-      for (const s of all) {
-        if (s.id === statement.id) continue; // already saved
-        const before = s.transactions.map((t) => `${t.id}:${t.category}`).join('|');
-        s.transactions = await this.categoryRules.apply(s.transactions);
-        const after = s.transactions.map((t) => `${t.id}:${t.category}`).join('|');
-        if (before !== after) {
-          await this.storage.saveStatement(s);
-          replayed++;
-        }
-      }
-    }
+    const replayed =
+      wantReplayAll && createdRules.length > 0
+        ? (await this.categoryRules.replayAll({ skipStatementId: statement.id })).updated
+        : 0;
 
     return {
       statementId,

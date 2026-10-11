@@ -96,6 +96,7 @@ function makeService(opts: {
       return rule;
     }),
     apply: jest.fn(async (txs: Transaction[]) => txs),
+    replayAll: jest.fn(async (_o?: unknown) => ({ processed: 2, updated: 1 })),
   };
 
   const fakeDataDir = { isDemoMode: () => !!opts.isDemo, getDataDir: () => '/tmp', isForced: () => false, runWith: (_: any, fn: any) => fn() };
@@ -224,6 +225,23 @@ describe('AutoCategorizeService — apply()', () => {
     const saved = (fakeStorage.saveStatement as jest.Mock).mock.calls[0][0] as MonthlyStatement;
     expect(saved.transactions.find((t) => t.id === 't1')?.category).toBe('food');
     expect(saved.transactions.find((t) => t.id === 't2')?.category).toBe('subscriptions');
+  });
+
+  it('rejoue les règles UNE fois pour tout le lot, via CategoryRulesService.replayAll', async () => {
+    const txs = [
+      tx({ id: 't1', description: 'CARREFOUR', normalizedDescription: 'CARREFOUR' }),
+      tx({ id: 't2', description: 'NETFLIX', normalizedDescription: 'NETFLIX' }),
+    ];
+    const { svc, fakeRules } = makeService({ stmt: statement(txs), toolInputs: [] });
+
+    const result = await svc.apply('2026-03', [
+      { transactionId: 't1', category: 'food', rulePattern: 'CARREFOUR', replayAll: true },
+      { transactionId: 't2', category: 'subscriptions', rulePattern: 'NETFLIX', replayAll: true },
+    ]);
+
+    expect(fakeRules.replayAll).toHaveBeenCalledTimes(1);
+    expect(fakeRules.replayAll).toHaveBeenCalledWith({ skipStatementId: expect.any(String) });
+    expect(result.replayed).toBe(1);
   });
 
   it('skips a rule whose regex does not match the transaction', async () => {

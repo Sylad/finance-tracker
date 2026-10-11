@@ -261,23 +261,12 @@ export class StatementsController {
       });
     }
 
-    let replayed = 0;
-    if (body.createRule && body.replayAll) {
-      const all = await this.storage.getAllStatements();
-      for (const s of all) {
-        const before = JSON.stringify(
-          s.transactions.map((t) => [t.id, t.category, t.subcategory]),
-        );
-        s.transactions = await this.categoryRules.apply(s.transactions);
-        const after = JSON.stringify(
-          s.transactions.map((t) => [t.id, t.category, t.subcategory]),
-        );
-        if (before !== after) {
-          await this.storage.saveStatement(s);
-          replayed++;
-        }
-      }
-    }
+    // Le relevé courant est rejoué aussi : ses autres transactions peuvent
+    // correspondre à la nouvelle règle.
+    const replayed =
+      body.createRule && body.replayAll
+        ? (await this.categoryRules.replayAll()).updated
+        : 0;
 
     return { transaction: tx, createdRule, replayed };
   }

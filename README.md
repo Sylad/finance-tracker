@@ -65,6 +65,7 @@ Curieux de savoir qui (toi / Claude / le backend) décide de quoi dans le pipeli
 | Déploiement | Instance de démo : images sur GHCR (CI GitHub), chart Helm sur k3s via ArgoCD (GitOps), tunnel Cloudflare · données réelles : en local uniquement |
 | Cache HTTP | nginx : `index.html` et fichiers sans empreinte en `no-cache` (revalidés à chaque visite), `/assets/` à empreinte un an `immutable`, actif absent = 404 — testé par `scripts/test-nginx-cache.sh`, vérifié à chaque livraison par `scripts/verify-cache.sh` |
 | Crédits (perf) | `LoansService.getAll()` est mis en cache (validé par mtime/taille/inode de `loans.json`, copie à chaque appel) ; un scan de détection lit les crédits une seule fois et les passe aux gardes du validateur ; `syncInstallmentLoan` écrit occurrences et échéances payées en un seul read-modify-write (`recordInstallmentPayments`) |
+| Règles de catégorie | `CategoryRulesService.replayAll()` est le seul rejeu des règles sur les relevés stockés (route `POST /api/category-rules/replay-all`, option « rejouer » à la création d'une règle, application par lot de l'auto-catégorisation : un seul balayage par lot accepté, jamais un par transaction) |
 
 ## Setup local
 
