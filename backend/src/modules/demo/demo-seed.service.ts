@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -8,7 +8,7 @@ import { buildYearlySummary } from '../storage/yearly-summary.builder';
 import { RequestDataDirService } from './request-data-dir.service';
 
 @Injectable()
-export class DemoSeedService {
+export class DemoSeedService implements OnApplicationBootstrap {
   private readonly logger = new Logger(DemoSeedService.name);
 
   constructor(
@@ -19,6 +19,20 @@ export class DemoSeedService {
   private loadFixtures(): Record<string, unknown> {
     const fixturePath = path.join(__dirname, 'demo-fixtures.json');
     return JSON.parse(fs.readFileSync(fixturePath, 'utf-8')) as Record<string, unknown>;
+  }
+
+  /**
+   * Aucun client n'appelle `POST /demo/seed` sur une démo déjà amorcée : le
+   * rattrapage L62 se joue donc au démarrage du backend.
+   */
+  onApplicationBootstrap(): void {
+    const demoDir = path.join(this.config.get<string>('dataDir')!, 'demo');
+    if (!fs.existsSync(path.join(demoDir, '.seeded'))) return;
+    try {
+      this.writeHistory(demoDir, this.loadFixtures(), false);
+    } catch (e) {
+      this.logger.warn(`Rattrapage de la démo impossible : ${(e as Error).message}`);
+    }
   }
 
   async seed(force = false): Promise<{ seeded: boolean; reason?: string }> {

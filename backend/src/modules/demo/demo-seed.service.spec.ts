@@ -63,6 +63,24 @@ describe('DemoSeedService — import-logs et bilan annuel (L62)', () => {
       expect((JSON.parse(fs.readFileSync(yearlyFile(), 'utf8')) as YearlySummary).year).toBe(2025);
     });
 
+    it('rattrape au démarrage du module, sans appel à seed()', () => {
+      fs.rmSync(logsFile());
+      fs.rmSync(yearlyFile());
+
+      service.onApplicationBootstrap();
+
+      expect(JSON.parse(fs.readFileSync(logsFile(), 'utf8'))).toHaveLength(4);
+      expect(fs.existsSync(yearlyFile())).toBe(true);
+    });
+
+    it("ne crée rien au démarrage si la démo n'a jamais été amorcée", () => {
+      fs.rmSync(demoDir, { recursive: true, force: true });
+
+      service.onApplicationBootstrap();
+
+      expect(fs.existsSync(demoDir)).toBe(false);
+    });
+
     it('ne réécrit pas des fichiers déjà présents', async () => {
       fs.writeFileSync(logsFile(), '[]');
       fs.writeFileSync(yearlyFile(), '{"year":2025,"custom":true}');
