@@ -46,7 +46,7 @@ Le rôle de Claude : poser le code, expliquer, itérer.
 - **Détection des crédits récurrents** (salaire, loyers, pensions) avec date de fin estimée
 - **Budgets par catégorie** — progression visuelle au fil du mois
 - **Déclarations** d'engagements (revenus, crédits, abonnements) → moteur de **prévisions** mensuel
-- **Bilan annuel** auto-archivé le 1er janvier (top catégories, meilleur/pire mois, score moyen), graphique « Cash flow mensuel » des entrées et sorties en € de chaque mois
+- **Bilan annuel** auto-archivé le 1er janvier (top catégories (libellés français, comme dans les Déclarations et le détail d'un relevé), meilleur/pire mois, score moyen), graphique « Cash flow mensuel » des entrées et sorties en € de chaque mois
 - PIN guard simple en Bearer token
 
 ## Comment ça marche sous le capot

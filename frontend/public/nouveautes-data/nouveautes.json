@@ -1,7 +1,22 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-11 17:33",
+  "generated": "2026-10-11 17:43",
   "entries": [
+    {
+      "slug": "2026-10-11-categories-affichees-en-francais-partout",
+      "title": "Catégories affichées en français partout",
+      "date": "2026-10-11",
+      "lots": [
+        "L66"
+      ],
+      "captures": [
+        "captures/2026-10-11-categories-en-francais.png"
+      ],
+      "alts": [
+        "Bilan annuel : le top des catégories de dépense affiche Logement, Virements, Transport, Alimentation, Épargne et Loisirs"
+      ],
+      "html": "<p>Certaines catégories s'affichaient encore en anglais. Elles sont maintenant en français partout : dans le « Top catégories de dépense » du Bilan annuel (« Logement » au lieu de « housing »), dans la liste des Déclarations (« Énergie / eau », « Assurance »…) et sur les étiquettes des transactions du détail d'un relevé (« Salaire », « Crédit », « Prêt immobilier »…).</p>\n<p>Un libellé que vous avez saisi vous-même et qui n'a pas d'équivalent connu reste tel que vous l'avez écrit.</p>"
+    },
     {
       "slug": "2026-10-11-bilan-annuel-le-graphique-de-tresorerie-montre-enfin-des-eur",
       "title": "Bilan annuel : le graphique de trésorerie montre enfin des euros",
