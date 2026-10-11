@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { categoryLabelFr, transactionMatchesSearch } from './category-label';
+import { categoryLabelFr, normalizeForSearch, transactionMatchesSearch } from './category-label';
 
 describe('categoryLabelFr', () => {
   it('traduit les catégories de transaction', () => {
@@ -58,5 +58,24 @@ describe('transactionMatchesSearch', () => {
   it('cherche aussi dans la description et se rabat sur la catégorie sans sous-catégorie', () => {
     expect(transactionMatchesSearch(tx, 'floa')).toBe(true);
     expect(transactionMatchesSearch({ ...tx, category: 'housing', subcategory: '' }, 'logement')).toBe(true);
+  });
+
+  it("tolère l'absence d'accents et la casse", () => {
+    expect(transactionMatchesSearch({ ...tx, subcategory: 'mortgage' }, 'pret immobilier')).toBe(true);
+    expect(transactionMatchesSearch({ ...tx, subcategory: 'utilities' }, 'ENERGIE')).toBe(true);
+    expect(transactionMatchesSearch({ ...tx, description: 'Prélèvement EDF' }, 'prelevement')).toBe(true);
+  });
+
+  it('compare la catégorie principale ET la sous-catégorie', () => {
+    const t = { description: 'LOYER', category: 'housing', subcategory: 'rent' };
+    expect(transactionMatchesSearch(t, 'logement')).toBe(true);
+    expect(transactionMatchesSearch(t, 'loyer')).toBe(true);
+    expect(transactionMatchesSearch({ ...t, category: 'transfers', subcategory: 'x' }, 'virements')).toBe(true);
+  });
+});
+
+describe('normalizeForSearch', () => {
+  it('retire accents et casse', () => {
+    expect(normalizeForSearch('Énergie / Prêt')).toBe('energie / pret');
   });
 });

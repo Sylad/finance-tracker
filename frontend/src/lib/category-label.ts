@@ -49,13 +49,18 @@ export function categoryLabelFr(value: string): string {
   return KNOWN[value.trim().toLowerCase()] ?? value;
 }
 
-/** Recherche du détail de relevé : description ou libellé affiché de la catégorie. */
+/** Minuscules sans accents, pour qu'une recherche « pret » trouve « Prêt ». */
+export function normalizeForSearch(value: string): string {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+/** Recherche du détail de relevé : description, catégorie ou sous-catégorie telles qu'affichées. */
 export function transactionMatchesSearch(
   t: { description: string; category: string; subcategory: string },
   query: string,
 ): boolean {
-  const q = query.trim().toLowerCase();
+  const q = normalizeForSearch(query.trim());
   if (!q) return true;
-  const shown = categoryLabelFr(t.subcategory || categoryLabelFr(t.category));
-  return t.description.toLowerCase().includes(q) || shown.toLowerCase().includes(q);
+  return [t.description, categoryLabelFr(t.category), t.subcategory ? categoryLabelFr(t.subcategory) : '']
+    .some((text) => normalizeForSearch(text).includes(q));
 }
