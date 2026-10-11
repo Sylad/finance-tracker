@@ -7,12 +7,14 @@ import { CreditDetectionService } from './credit-detection.service';
 import { CreditDetectionController } from './credit-detection.controller';
 import { LoansModule } from '../loans/loans.module';
 import { LoanSuggestionsModule } from '../loan-suggestions/loan-suggestions.module';
+import { ImportLogsModule } from '../import-logs/import-logs.module';
 import { StorageModule } from '../storage/storage.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [
     ConfigModule,
+    ImportLogsModule,
     LoansModule,
     LoanSuggestionsModule,
     StorageModule,

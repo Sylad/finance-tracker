@@ -130,6 +130,7 @@ describe('CreditDetectionService', () => {
       storage as unknown as StorageService,
       loansService as unknown as LoansService,
       subscriptionsService as unknown as SubscriptionsService,
+      { log: jest.fn() } as never,
     );
   });
 

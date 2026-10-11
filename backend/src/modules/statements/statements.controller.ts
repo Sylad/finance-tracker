@@ -27,7 +27,6 @@ import { CategoryRulesService } from '../category-rules/category-rules.service';
 import { ScoreCalculatorService } from '../score/score-calculator.service';
 import { CreditDetectionService } from '../credit-detection/credit-detection.service';
 import { TransactionCategory } from '../../models/transaction.model';
-import { MonthlyStatement } from '../../models/monthly-statement.model';
 
 @Controller('statements')
 export class StatementsController {
@@ -43,53 +42,6 @@ export class StatementsController {
     private readonly scoreCalc: ScoreCalculatorService,
     private readonly creditDetection: CreditDetectionService,
   ) {}
-
-  /**
-   * Fire-and-forget : lance la détection IA crédits/abonnements sur le
-   * relevé fraîchement importé/re-analysé. Ne DOIT jamais faire échouer ni
-   * ralentir l'import — erreurs capturées et journalisées à part.
-   */
-  private triggerDetection(statement: MonthlyStatement): void {
-    void this.creditDetection
-      .scanStatement(statement)
-      .then(async (r) => {
-        await this.importLogs.log({
-          filename: `Détection IA — ${statement.id}`,
-          uploadedAt: new Date().toISOString(),
-          durationMs: 0,
-          status: 'success',
-          note: r.skipped
-            ? 'détection IA sautée : un scan est déjà en cours, un scan complet suivra à sa fin'
-            : `détection IA : ${r.suggestionsCreated} suggestions, ${r.errors.length} erreurs`,
-        });
-        // L4 : le scan de rattrapage promis par la note ci-dessus inscrit
-        // lui aussi son résultat (ou son échec) dans l'import-log.
-        if (r.catchUp) {
-          const c = await r.catchUp;
-          await this.importLogs.log({
-            filename: `Détection IA — ${statement.id}`,
-            uploadedAt: new Date().toISOString(),
-            durationMs: 0,
-            status: 'success',
-            note: `détection IA (rattrapage) : ${c.suggestionsCreated} suggestions, ${c.errors.length} erreurs`,
-          });
-        }
-      })
-      .catch((e) =>
-        this.importLogs.log({
-          filename: `Détection IA — ${statement.id}`,
-          uploadedAt: new Date().toISOString(),
-          durationMs: 0,
-          status: 'error',
-          error: `détection IA échouée: ${(e as Error).message ?? 'Unknown error'}`,
-        }),
-      )
-      .catch((e) => {
-        this.logger.error(
-          `Journalisation détection IA échouée pour ${statement.id}: ${(e as Error).message ?? e}`,
-        );
-      });
-  }
 
   /**
    * Rejoue la règle « revenu exceptionnel » sur un relevé déjà stocké (sans
@@ -318,7 +270,7 @@ export class StatementsController {
         statementYear: result.statement.year,
         replaced: result.replaced,
       });
-      this.triggerDetection(result.statement);
+      this.creditDetection.scanInBackground(result.statement);
       return result;
     } catch (e) {
       await this.importLogs.update(pendingLog.id, {

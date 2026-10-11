@@ -20,7 +20,6 @@ import { AnalysisResponse } from '../../models/monthly-statement.model';
 import { StorageService } from '../storage/storage.service';
 import { ImportLogsService } from '../import-logs/import-logs.service';
 import { CreditDetectionService } from '../credit-detection/credit-detection.service';
-import { MonthlyStatement } from '../../models/monthly-statement.model';
 
 // Detects only the unambiguous YYYY-MM pattern (real period).
 // YYYYMMDD/YYYYMM patterns were removed: bank PDFs (e.g. La Banque Postale) are named by
@@ -46,53 +45,6 @@ export class AnalysisController {
     private readonly importLogs: ImportLogsService,
     private readonly creditDetection: CreditDetectionService,
   ) {}
-
-  /**
-   * Fire-and-forget : lance la détection IA crédits/abonnements sur le
-   * relevé fraîchement importé. Ne DOIT jamais faire échouer ni ralentir
-   * l'import — erreurs capturées et journalisées à part.
-   */
-  private triggerDetection(statement: MonthlyStatement): void {
-    void this.creditDetection
-      .scanStatement(statement)
-      .then(async (r) => {
-        await this.importLogs.log({
-          filename: `Détection IA — ${statement.id}`,
-          uploadedAt: new Date().toISOString(),
-          durationMs: 0,
-          status: 'success',
-          note: r.skipped
-            ? 'détection IA sautée : un scan est déjà en cours, un scan complet suivra à sa fin'
-            : `détection IA : ${r.suggestionsCreated} suggestions, ${r.errors.length} erreurs`,
-        });
-        // L4 : le scan de rattrapage promis par la note ci-dessus inscrit
-        // lui aussi son résultat (ou son échec) dans l'import-log.
-        if (r.catchUp) {
-          const c = await r.catchUp;
-          await this.importLogs.log({
-            filename: `Détection IA — ${statement.id}`,
-            uploadedAt: new Date().toISOString(),
-            durationMs: 0,
-            status: 'success',
-            note: `détection IA (rattrapage) : ${c.suggestionsCreated} suggestions, ${c.errors.length} erreurs`,
-          });
-        }
-      })
-      .catch((e) =>
-        this.importLogs.log({
-          filename: `Détection IA — ${statement.id}`,
-          uploadedAt: new Date().toISOString(),
-          durationMs: 0,
-          status: 'error',
-          error: `détection IA échouée: ${(e as Error).message ?? 'Unknown error'}`,
-        }),
-      )
-      .catch((e) => {
-        this.logger.error(
-          `Journalisation détection IA échouée pour ${statement.id}: ${(e as Error).message ?? e}`,
-        );
-      });
-  }
 
   @Post('upload')
   @UseInterceptors(
@@ -181,7 +133,7 @@ export class AnalysisController {
           replaced: response.replaced,
         });
         results.push({ filename: file.originalname, response });
-        this.triggerDetection(response.statement);
+        this.creditDetection.scanInBackground(response.statement);
         this.logger.log(
           `Processed ${file.originalname} → ${response.statement.id} (replaced=${response.replaced})`,
         );

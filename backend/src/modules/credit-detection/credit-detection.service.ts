@@ -6,6 +6,7 @@ import { triageCluster } from './deterministic-triage';
 import { StorageService } from '../storage/storage.service';
 import { LoansService } from '../loans/loans.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { ImportLogsService } from '../import-logs/import-logs.service';
 import {
   CandidateCluster,
   DetectionScanResult,
@@ -49,6 +50,7 @@ export class CreditDetectionService {
     private readonly storage: StorageService,
     private readonly loansService: LoansService,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly importLogs: ImportLogsService,
   ) {}
 
   async scanAll(): Promise<DetectionScanResult> {
@@ -102,6 +104,51 @@ export class CreditDetectionService {
     const latestStatementDate =
       CreditDetectionService.computeLatestTransactionDate(statements);
     return this.runScan(clusters, latestStatementDate, loans);
+  }
+
+  /**
+   * Fire-and-forget : lance la détection IA crédits/abonnements sur un relevé
+   * fraîchement importé/re-analysé. Ne DOIT jamais faire échouer ni ralentir
+   * l'import — erreurs capturées et journalisées à part dans l'import-log.
+   */
+  scanInBackground(statement: MonthlyStatement): void {
+    const filename = `Détection IA — ${statement.id}`;
+    const log = (entry: { status: 'success' | 'error'; note?: string; error?: string }) =>
+      this.importLogs.log({
+        filename,
+        uploadedAt: new Date().toISOString(),
+        durationMs: 0,
+        ...entry,
+      });
+    void this.scanStatement(statement)
+      .then(async (r) => {
+        await log({
+          status: 'success',
+          note: r.skipped
+            ? 'détection IA sautée : un scan est déjà en cours, un scan complet suivra à sa fin'
+            : `détection IA : ${r.suggestionsCreated} suggestions, ${r.errors.length} erreurs`,
+        });
+        // L4 : le scan de rattrapage promis par la note ci-dessus inscrit
+        // lui aussi son résultat (ou son échec) dans l'import-log.
+        if (r.catchUp) {
+          const c = await r.catchUp;
+          await log({
+            status: 'success',
+            note: `détection IA (rattrapage) : ${c.suggestionsCreated} suggestions, ${c.errors.length} erreurs`,
+          });
+        }
+      })
+      .catch((e) =>
+        log({
+          status: 'error',
+          error: `détection IA échouée: ${(e as Error).message ?? 'Unknown error'}`,
+        }),
+      )
+      .catch((e) => {
+        this.logger.error(
+          `Journalisation détection IA échouée pour ${statement.id}: ${(e as Error).message ?? e}`,
+        );
+      });
   }
 
   /**

@@ -1,35 +1,36 @@
-import { AnalysisController } from './analysis.controller';
+import { CreditDetectionService } from './credit-detection.service';
+import type { MonthlyStatement } from '../../models/monthly-statement.model';
 
-describe('AnalysisController — note du hook de détection post-import (L4)', () => {
-  const statement = { id: '2026-02' } as never;
+describe('CreditDetectionService.scanInBackground — hook de détection post-import (L4, L14)', () => {
+  const statement = { id: '2026-02' } as MonthlyStatement;
 
-  function build(scanResult: unknown) {
-    const creditDetection = {
-      scanStatement: jest.fn().mockResolvedValue(scanResult),
-    };
+  function build(scan: () => Promise<unknown>) {
     const importLogs = { log: jest.fn().mockResolvedValue({}) };
-    const Ctor = AnalysisController as unknown as new (
+    const Ctor = CreditDetectionService as unknown as new (
       ...args: unknown[]
-    ) => Record<string, unknown>;
-    const ctrl = new Ctor(...Array.from({ length: 12 }, () => ({})));
-    ctrl['creditDetection'] = creditDetection;
-    ctrl['importLogs'] = importLogs;
-    return { ctrl, importLogs };
+    ) => CreditDetectionService;
+    const svc = new Ctor(
+      ...Array.from({ length: 6 }, () => ({})),
+      importLogs,
+    );
+    jest.spyOn(svc, 'scanStatement').mockImplementation(scan as never);
+    return { svc, importLogs };
   }
 
   const flush = () => new Promise((r) => setImmediate(r));
 
   it('note « sautée » quand le scan est sauté', async () => {
-    const { ctrl, importLogs } = build({
+    const { svc, importLogs } = build(async () => ({
       clustersAnalyzed: 0,
       suggestionsCreated: 0,
       errors: [],
       skipped: true,
-    });
-    (ctrl['triggerDetection'] as (s: unknown) => void).call(ctrl, statement);
+    }));
+    svc.scanInBackground(statement);
     await flush();
     expect(importLogs.log).toHaveBeenCalledWith(
       expect.objectContaining({
+        filename: 'Détection IA — 2026-02',
         status: 'success',
         note: expect.stringContaining('sautée'),
       }),
@@ -37,12 +38,12 @@ describe('AnalysisController — note du hook de détection post-import (L4)', (
   });
 
   it('note avec le nombre de suggestions quand le scan a tourné', async () => {
-    const { ctrl, importLogs } = build({
+    const { svc, importLogs } = build(async () => ({
       clustersAnalyzed: 3,
       suggestionsCreated: 2,
       errors: [],
-    });
-    (ctrl['triggerDetection'] as (s: unknown) => void).call(ctrl, statement);
+    }));
+    svc.scanInBackground(statement);
     await flush();
     expect(importLogs.log).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -52,7 +53,7 @@ describe('AnalysisController — note du hook de détection post-import (L4)', (
   });
 
   it('journalise le résultat du scan de rattrapage une fois terminé', async () => {
-    const { ctrl, importLogs } = build({
+    const { svc, importLogs } = build(async () => ({
       clustersAnalyzed: 0,
       suggestionsCreated: 0,
       errors: [],
@@ -62,8 +63,8 @@ describe('AnalysisController — note du hook de détection post-import (L4)', (
         suggestionsCreated: 3,
         errors: [],
       }),
-    });
-    (ctrl['triggerDetection'] as (s: unknown) => void).call(ctrl, statement);
+    }));
+    svc.scanInBackground(statement);
     await flush();
     expect(importLogs.log).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -74,14 +75,14 @@ describe('AnalysisController — note du hook de détection post-import (L4)', (
   });
 
   it("journalise en erreur l'échec du scan de rattrapage", async () => {
-    const { ctrl, importLogs } = build({
+    const { svc, importLogs } = build(async () => ({
       clustersAnalyzed: 0,
       suggestionsCreated: 0,
       errors: [],
       skipped: true,
       catchUp: Promise.reject(new Error('ollama down')),
-    });
-    (ctrl['triggerDetection'] as (s: unknown) => void).call(ctrl, statement);
+    }));
+    svc.scanInBackground(statement);
     await flush();
     expect(importLogs.log).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -89,5 +90,15 @@ describe('AnalysisController — note du hook de détection post-import (L4)', (
         error: expect.stringContaining('ollama down'),
       }),
     );
+  });
+
+  it("n'échoue jamais, même si la journalisation elle-même échoue", async () => {
+    const { svc, importLogs } = build(async () => {
+      throw new Error('boom');
+    });
+    importLogs.log.mockRejectedValue(new Error('disque plein'));
+    expect(() => svc.scanInBackground(statement)).not.toThrow();
+    await flush();
+    expect(importLogs.log).toHaveBeenCalled();
   });
 });
