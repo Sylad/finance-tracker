@@ -583,6 +583,8 @@ lots:
     review: { date: 2026-10-11, verdict: "conforme (2 notes mineures) — orchestré (vague 2026-10-11-1725, 1 passe(s) de correction + passe des mineurs)", commit: c0532e97f025b9d3df8b1d7d9a950ebd9f79babc }
     ux: { date: 2026-10-11, verdict: "Sylvain 11-10 : ok L65 (Cash flow mensuel en €) ; revue UX automatique conforme" }
     finished: 2026-10-11
+    notes:
+      - { date: 2026-10-11, text: "QA prod 11-10 (03cc542) : Cash flow mensuel en € (axe 0–3 200 €, 2 courbes, infobulles en €), distinct du score, aux deux largeurs." }
   - id: L66
     title: "Libellés de catégorie en anglais à l'écran : /yearly top catégories (#1housing…), /declarations (utilities, insurance), étiquettes du détail de relevé (SALARY, LOAN, MORTGAGE…) — passer par le libellé français de la catégorie, test — QA prod 11-10"
     public: Catégories affichées en français partout
@@ -609,3 +611,5 @@ lots:
     estimate: 0.5
     visible: true
     created: 2026-10-11
+    notes:
+      - { date: 2026-10-11, text: "QA prod L65/L66 11-10 (03cc542) — à inclure : le filtre du détail de relevé ignore le libellé de la catégorie principale (transactionMatchesSearch, category-label.ts, ne compare que categoryLabelFr(subcategory || …)) : « logement », « virements », « transport » → 0/24 alors que l'étiquette est affichée ; comparer catégorie ET sous-catégorie. Et expectations.md : la règle never « Erreur » de ## * prend « par erreur » dans le texte des Nouveautés — écrire les formes réelles ou exclure /nouveautes." }
