@@ -596,3 +596,4 @@ lots:
     estimate: 0.25
     created: 2026-10-11
     started: 2026-10-11
+    review: { date: 2026-10-11, verdict: "conforme : les quatre points du lot sont couverts et chaque ligne ajoutée correspond au code ; aucun défaut à signaler — orchestré (vague 2026-10-11-1725, 0 passe(s) de correction)", commit: null }
