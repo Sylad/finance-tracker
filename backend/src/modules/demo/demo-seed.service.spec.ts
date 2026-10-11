@@ -174,6 +174,25 @@ describe('DemoSeedService — recalage des dates (L63)', () => {
     expect(stmtIds()[5]).toBe('2026-09.json');
   });
 
+  it('au recalage, les bilans annuels périmés sont retirés', async () => {
+    setNow('2026-10-11T10:00:00Z');
+    await service.seed();
+    expect(fs.existsSync(path.join(demoDir, 'yearly', '2025.json'))).toBe(true);
+    setNow('2027-02-05T10:00:00Z');
+    service.onApplicationBootstrap();
+    expect(fs.readdirSync(path.join(demoDir, 'yearly')).sort()).toEqual(['2026.json']);
+  });
+
+  it("aucun import n'est daté dans le futur (du 1er au 8 du mois)", async () => {
+    setNow('2026-11-02T10:00:00Z');
+    await service.seed();
+    const now = new Date('2026-11-02T10:00:00Z').getTime();
+    const logs = read<{ uploadedAt: string }[]>('import-logs.json');
+    expect(logs.every((l) => new Date(l.uploadedAt).getTime() <= now)).toBe(true);
+    const stmts = stmtIds().map((f) => read<{ uploadedAt: string }>('statements', f));
+    expect(stmts.every((s) => new Date(s.uploadedAt).getTime() <= now)).toBe(true);
+  });
+
   it("ne réécrit rien tant que le décalage est inchangé", async () => {
     setNow('2026-10-11T10:00:00Z');
     await service.seed();

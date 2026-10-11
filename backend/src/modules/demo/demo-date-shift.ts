@@ -71,3 +71,21 @@ function shiftNode(node: unknown, n: number): unknown {
 export function shiftDemoFixtures<T extends Record<string, unknown>>(fixtures: T, months: number): T {
   return months === 0 ? fixtures : (shiftNode(fixtures, months) as T);
 }
+
+/**
+ * Les imports des fixtures datent du 9 du mois suivant le relevé : recalés, ceux
+ * du 1er au 8 seraient dans le futur. Tout `uploadedAt` postérieur à `now` y est ramené.
+ */
+export function capUploadDates<T>(node: T, now: Date): T {
+  const cap = now.toISOString();
+  const walk = (n: unknown): unknown => {
+    if (Array.isArray(n)) return n.map(walk);
+    if (!n || typeof n !== 'object') return n;
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(n)) {
+      out[k] = k === 'uploadedAt' && typeof v === 'string' && v > cap ? cap : walk(v);
+    }
+    return out;
+  };
+  return walk(node) as T;
+}

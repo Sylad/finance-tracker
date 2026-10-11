@@ -5,7 +5,7 @@ import * as path from 'path';
 import { atomicWriteJsonSync } from '../../common/atomic-write';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { buildYearlySummary } from '../storage/yearly-summary.builder';
-import { monthsToShift, shiftDemoFixtures } from './demo-date-shift';
+import { capUploadDates, monthsToShift, shiftDemoFixtures } from './demo-date-shift';
 import { RequestDataDirService } from './request-data-dir.service';
 
 @Injectable()
@@ -28,7 +28,7 @@ export class DemoSeedService implements OnApplicationBootstrap {
       s.year * 12 + s.month > a.year * 12 + a.month ? s : a,
     );
     const shift = monthsToShift(last.year, last.month, new Date());
-    return { fixtures: shiftDemoFixtures(raw, shift), shift };
+    return { fixtures: capUploadDates(shiftDemoFixtures(raw, shift), new Date()), shift };
   }
 
   private readShift(demoDir: string): number | null {
@@ -83,6 +83,10 @@ export class DemoSeedService implements OnApplicationBootstrap {
     }
     for (const f of fs.readdirSync(path.join(demoDir, 'statements'))) {
       if (f.endsWith('.json')) fs.rmSync(path.join(demoDir, 'statements', f));
+    }
+    // Bilans de l'ancien décalage : writeHistory ne réécrit que ceux du nouveau.
+    for (const f of fs.existsSync(path.join(demoDir, 'yearly')) ? fs.readdirSync(path.join(demoDir, 'yearly')) : []) {
+      if (f.endsWith('.json')) fs.rmSync(path.join(demoDir, 'yearly', f));
     }
     this.writeAll(demoDir, loaded);
     this.logger.log(`Demo dates recalées de ${loaded.shift} mois à ${demoDir}`);
