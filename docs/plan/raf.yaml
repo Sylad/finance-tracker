@@ -592,6 +592,7 @@ lots:
     review: { date: 2026-10-11, verdict: "conforme (4 notes mineures, dont 1 sous-tâche proposée : recherche insensible aux accents) — orchestré (vague 2026-10-11-1725, 2 passe(s) de correction)", commit: f2ebf42189581184e8443b6696781a51b2f299a0 }
   - id: L67
     title: "expectations.md : « Vue d'ensemble basée sur N relevés » en 1440 only (le tableau de bord téléphone l'omet) ; api: de /heatmap (/api/statements et /api/statements/<mois>) et /api/statements/yearly/<année> ; /api/health-check/advice may be empty — QA prod 11-10"
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-10-11
+    started: 2026-10-11
