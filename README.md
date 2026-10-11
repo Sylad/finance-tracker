@@ -67,6 +67,7 @@ Curieux de savoir qui (toi / Claude / le backend) décide de quoi dans le pipeli
 | Crédits (perf) | `LoansService.getAll()` est mis en cache (validé par mtime/taille/inode de `loans.json`, copie à chaque appel) ; un scan de détection lit les crédits une seule fois et les passe aux gardes du validateur ; `syncInstallmentLoan` écrit occurrences et échéances payées en un seul read-modify-write (`recordInstallmentPayments`) |
 | Règles de catégorie | `CategoryRulesService.replayAll()` est le seul rejeu des règles sur les relevés stockés (route `POST /api/category-rules/replay-all`, option « rejouer » à la création d'une règle, application par lot de l'auto-catégorisation : un seul balayage par lot accepté, jamais un par transaction) |
 | Détection après import | `CreditDetectionService.scanInBackground(relevé)` est le seul hook post-import (upload et ré-analyse) : lancé sans attendre, jamais bloquant, son résultat — ou son échec, y compris celui du scan de rattrapage — est inscrit dans l'import-log |
+| Import de relevés crédit | les deux routes (`import-statement` sur un crédit, `import-credit-statements` en lot) partagent `ImportOrchestratorService` : `rejectNonCreditDocument` (garde sur le type de document) et `addStatementOccurrence` (occurrence canonique du mois, source `credit_statement`) |
 
 ## Setup local
 

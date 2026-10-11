@@ -75,6 +75,49 @@ export class ImportOrchestratorService {
   }
 
   /**
+   * Garde de type de document, commune aux deux endpoints d'import crédit.
+   * Retourne le message à montrer à l'utilisateur, ou null si le PDF peut
+   * être traité comme relevé de crédit. `single` (un crédit ciblé) refuse
+   * aussi le plan d'amortissement ; `batch` l'accepte, l'appelant le route.
+   */
+  rejectNonCreditDocument(
+    extracted: CreditStatementAnalysis,
+    mode: 'single' | 'batch',
+  ): string | null {
+    if (extracted.documentType === 'bank_statement') {
+      return mode === 'single'
+        ? "Ce PDF n'est pas un relevé de crédit — importe les relevés bancaires depuis la page Import."
+        : 'Ce PDF est un relevé bancaire — importe-le depuis la page Import (relevés bancaires).';
+    }
+    if (extracted.documentType === 'other') {
+      return mode === 'single'
+        ? "Ce PDF n'est pas un relevé de crédit — importe les relevés bancaires depuis la page Import."
+        : "Ce PDF ne ressemble ni à un relevé de crédit, ni à un plan d'amortissement.";
+    }
+    if (extracted.documentType === 'amortization_plan' && mode === 'single') {
+      return "Ce PDF est un plan d'amortissement — utilise le bouton « Importer PDF crédits » (il le route automatiquement).";
+    }
+    return null;
+  }
+
+  /**
+   * Ajoute l'occurrence canonique du mois (mensualité du relevé crédit,
+   * source 'credit_statement' = priorité supérieure : elle remplace
+   * l'éventuelle occurrence issue d'un relevé bancaire).
+   */
+  async addStatementOccurrence(loanId: string, extracted: CreditStatementAnalysis): Promise<void> {
+    if (!extracted.statementDate || !(extracted.monthlyPayment > 0)) return;
+    await this.loans.addOccurrence(loanId, {
+      statementId: `credit-${loanId}-${extracted.statementDate.slice(0, 7)}`,
+      date: extracted.statementDate,
+      amount: -Math.abs(extracted.monthlyPayment),
+      transactionId: null,
+      description: `Relevé crédit ${extracted.creditor} ${extracted.statementDate}`,
+      source: 'credit_statement',
+    });
+  }
+
+  /**
    * Branche A : contrat pay-in-N (kind='installment').
    */
   private async importInstallmentContract(
