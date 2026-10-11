@@ -561,8 +561,9 @@ lots:
     review: { date: 2026-10-11, verdict: "compliant (1 minor note: README.md:134 still names the year 2025 for the demo's yearly summary) — orchestré (vague 2026-10-11-1640, 0 passe(s) de correction + passe des mineurs)", commit: 7ecb519d764e521b308ea5d837963b6d0295a283 }
   - id: L64
     title: "QA : écrire docs/qa/expectations.md (aucun fichier d'attentes) à partir du brouillon du rapport QA L14 du 11-10 (22 routes, lignes shows/api/never)"
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-10-11
     notes:
       - { date: 2026-10-11, text: "Brouillon du qa-reviewer : ~/projects/developpeur/tmp/qa-finance-l14/expectations-brouillon.md (hors dépôt) — à reprendre et corriger ; les lignes de /income, /forecast, /yearly, /upload et de la santé des crédits dépendent de L61 L62 L63 (faire L64 après eux)." }
+    started: 2026-10-11
