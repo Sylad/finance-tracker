@@ -543,11 +543,12 @@ lots:
     review: { date: 2026-10-11, verdict: "compliant (0 bloquant, 0 majeur ; 2 notes mineures sur le lot) — orchestré (vague 2026-10-11-1640, 0 passe(s) de correction)", commit: fde59a5795f3ec14170bdfe80993d20e16da14fb }
   - id: L62
     title: "Démo finance : demo-seed.service.ts n'écrit pas import-logs.json (4 entrées dans les fixtures) ni de bilan 2025 — Historique des imports (/upload) et Bilan annuel (/yearly) vides — QA prod L14 11-10"
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-10-11
     notes:
       - { date: 2026-10-11, text: "Démo seulement : demo-seed.service.ts écrit import-logs.json et un bilan 2025 depuis les fixtures ; ne jamais lire ni écrire data-local." }
+    started: 2026-10-11
   - id: L63
     title: "Démo finance : données arrêtées en mars 2026 — les 6 crédits en « Trou » (getLoanHealth compte 180 j avant la date du jour), FLOA « 0 mois restants » parmi les actifs ; recaler les dates de la démo au chargement ou calculer la santé par rapport au dernier relevé — QA prod L14 11-10"
     status: todo
