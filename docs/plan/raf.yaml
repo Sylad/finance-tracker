@@ -575,10 +575,11 @@ lots:
   - id: L65
     title: "Bilan annuel (/yearly) : le graphique « Cash flow mensuel » trace le score (axe 0–100, mêmes 6 points que « Progression du score », yearly.tsx ~181 sur scoreProgression) au lieu des entrées/sorties mensuelles en € — QA prod 11-10"
     public: "Bilan annuel : le graphique de trésorerie montre enfin des euros"
-    status: todo
+    status: doing
     estimate: 0.5
     visible: true
     created: 2026-10-11
+    started: 2026-10-11
   - id: L66
     title: "Libellés de catégorie en anglais à l'écran : /yearly top catégories (#1housing…), /declarations (utilities, insurance), étiquettes du détail de relevé (SALARY, LOAN, MORTGAGE…) — passer par le libellé français de la catégorie, test — QA prod 11-10"
     public: Catégories affichées en français partout
