@@ -540,6 +540,7 @@ lots:
     notes:
       - { date: 2026-10-11, text: "Démo seulement : compléter demo-fixtures.json (recurringCredits, déclarations) ; aucun changement de calcul ; ne jamais lire ni écrire data-local." }
     started: 2026-10-11
+    review: { date: 2026-10-11, verdict: "compliant (0 bloquant, 0 majeur ; 2 notes mineures sur le lot) — orchestré (vague 2026-10-11-1640, 0 passe(s) de correction)", commit: fde59a5795f3ec14170bdfe80993d20e16da14fb }
   - id: L62
     title: "Démo finance : demo-seed.service.ts n'écrit pas import-logs.json (4 entrées dans les fixtures) ni de bilan 2025 — Historique des imports (/upload) et Bilan annuel (/yearly) vides — QA prod L14 11-10"
     status: todo
