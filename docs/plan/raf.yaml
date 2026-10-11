@@ -552,11 +552,12 @@ lots:
     review: { date: 2026-10-11, verdict: "conforme — orchestré (vague 2026-10-11-1640, 2 passe(s) de correction)", commit: 2bc6efbb87f5d91075104c01e29a938a468844ae }
   - id: L63
     title: "Démo finance : données arrêtées en mars 2026 — les 6 crédits en « Trou » (getLoanHealth compte 180 j avant la date du jour), FLOA « 0 mois restants » parmi les actifs ; recaler les dates de la démo au chargement ou calculer la santé par rapport au dernier relevé — QA prod L14 11-10"
-    status: todo
+    status: doing
     estimate: 0.5
     created: 2026-10-11
     notes:
       - { date: 2026-10-11, text: "Décision du lead : DÉMO SEULEMENT — recaler les dates des données de démonstration au chargement (dernier relevé = mois précédent la date du jour), sans toucher getLoanHealth ni aucun calcul utilisé par l'instance locale aux vraies données ; ne jamais lire ni écrire data-local." }
+    started: 2026-10-11
   - id: L64
     title: "QA : écrire docs/qa/expectations.md (aucun fichier d'attentes) à partir du brouillon du rapport QA L14 du 11-10 (22 routes, lignes shows/api/never)"
     status: todo
