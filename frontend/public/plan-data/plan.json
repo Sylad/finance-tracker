@@ -111,8 +111,9 @@
     {
       "id": "L68",
       "title": "Catégories en français jusque dans les formulaires",
-      "status": "doing",
-      "started": "2026-10-11"
+      "status": "done",
+      "started": "2026-10-11",
+      "finished": "2026-10-11"
     }
   ]
 }
