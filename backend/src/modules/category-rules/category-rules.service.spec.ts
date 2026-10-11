@@ -131,6 +131,22 @@ describe('CategoryRulesService', () => {
       expect(saved).toEqual(['a']);
     });
 
+    it('sauvegarde un relevé dont seule la sous-catégorie change', async () => {
+      await svc.create({ pattern: 'AMAZON', category: 'food', subcategory: 'fresh' });
+      statements = [
+        {
+          id: 'a',
+          transactions: [
+            tx({ id: '1', normalizedDescription: 'amazon', category: 'food', subcategory: '' }),
+          ],
+        },
+      ];
+      const r = await svc.replayAll();
+      expect(r).toEqual({ processed: 1, updated: 1 });
+      expect(saved).toEqual(['a']);
+      expect(statements[0].transactions[0].subcategory).toBe('fresh');
+    });
+
     it('saute le relevé déjà sauvegardé quand skipStatementId est donné', async () => {
       await svc.create({ pattern: 'NETFLIX', category: 'subscriptions' });
       statements = [
