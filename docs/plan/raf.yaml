@@ -549,6 +549,7 @@ lots:
     notes:
       - { date: 2026-10-11, text: "Démo seulement : demo-seed.service.ts écrit import-logs.json et un bilan 2025 depuis les fixtures ; ne jamais lire ni écrire data-local." }
     started: 2026-10-11
+    review: { date: 2026-10-11, verdict: "conforme — orchestré (vague 2026-10-11-1640, 2 passe(s) de correction)", commit: 2bc6efbb87f5d91075104c01e29a938a468844ae }
   - id: L63
     title: "Démo finance : données arrêtées en mars 2026 — les 6 crédits en « Trou » (getLoanHealth compte 180 j avant la date du jour), FLOA « 0 mois restants » parmi les actifs ; recaler les dates de la démo au chargement ou calculer la santé par rapport au dernier relevé — QA prod L14 11-10"
     status: todo
