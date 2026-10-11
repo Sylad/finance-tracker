@@ -14,12 +14,14 @@ import { YearlySummary } from '../../models/yearly-summary.model';
 describe('DemoSeedService — import-logs et bilan annuel (L62)', () => {
   let base: string;
   let demoDir: string;
+  let service: DemoSeedService;
 
   beforeEach(async () => {
     base = fs.mkdtempSync(path.join(os.tmpdir(), 'demo-seed-spec-'));
     demoDir = path.join(base, 'demo');
     const config = { get: (k: string) => (k === 'dataDir' ? base : undefined) } as unknown as ConfigService;
-    await new DemoSeedService(config, {} as RequestDataDirService).seed();
+    service = new DemoSeedService(config, {} as RequestDataDirService);
+    await service.seed();
   });
 
   afterEach(() => fs.rmSync(base, { recursive: true, force: true }));
@@ -44,5 +46,31 @@ describe('DemoSeedService — import-logs et bilan annuel (L62)', () => {
 
   it("n'écrit pas de bilan pour l'année des relevés encore actifs", () => {
     expect(fs.existsSync(path.join(demoDir, 'yearly', '2026.json'))).toBe(false);
+  });
+
+  describe('démo déjà amorcée (sentinelle présente, PVC de prod)', () => {
+    const logsFile = () => path.join(demoDir, 'import-logs.json');
+    const yearlyFile = () => path.join(demoDir, 'yearly', '2025.json');
+
+    it('rattrape import-logs.json et le bilan 2025 absents', async () => {
+      fs.rmSync(logsFile());
+      fs.rmSync(yearlyFile());
+
+      const res = await service.seed();
+
+      expect(res).toEqual({ seeded: false, reason: 'already-seeded' });
+      expect(JSON.parse(fs.readFileSync(logsFile(), 'utf8'))).toHaveLength(4);
+      expect((JSON.parse(fs.readFileSync(yearlyFile(), 'utf8')) as YearlySummary).year).toBe(2025);
+    });
+
+    it('ne réécrit pas des fichiers déjà présents', async () => {
+      fs.writeFileSync(logsFile(), '[]');
+      fs.writeFileSync(yearlyFile(), '{"year":2025,"custom":true}');
+
+      await service.seed();
+
+      expect(fs.readFileSync(logsFile(), 'utf8')).toBe('[]');
+      expect(fs.readFileSync(yearlyFile(), 'utf8')).toBe('{"year":2025,"custom":true}');
+    });
   });
 });

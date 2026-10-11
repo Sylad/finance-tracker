@@ -25,6 +25,8 @@ export class DemoSeedService {
     const demoDir = path.join(this.config.get<string>('dataDir')!, 'demo');
     const sentinel = path.join(demoDir, '.seeded');
     if (!force && fs.existsSync(sentinel)) {
+      // Démo amorcée avant L62 (PVC de prod) : rattrape les seuls fichiers absents.
+      this.writeHistory(demoDir, this.loadFixtures(), false);
       return { seeded: false, reason: 'already-seeded' };
     }
     fs.mkdirSync(path.join(demoDir, 'statements', 'archive'), { recursive: true });
@@ -35,18 +37,7 @@ export class DemoSeedService {
     for (const stmt of f.statements as { id: string }[]) {
       atomicWriteJsonSync(path.join(demoDir, 'statements', `${stmt.id}.json`), stmt);
     }
-    atomicWriteJsonSync(path.join(demoDir, 'import-logs.json'), f['import-logs']);
-    // Bilans des années révolues, comme l'archivage de StorageService : sans
-    // eux /yearly restait vide jusqu'au prochain import.
-    const statements = f.statements as MonthlyStatement[];
-    const lastYear = Math.max(...statements.map((s) => s.year));
-    for (const year of new Set(statements.map((s) => s.year).filter((y) => y < lastYear))) {
-      const summary = buildYearlySummary(
-        year,
-        statements.filter((s) => s.year === year).sort((a, b) => a.month - b.month),
-      );
-      if (summary) atomicWriteJsonSync(path.join(demoDir, 'yearly', `${year}.json`), summary);
-    }
+    this.writeHistory(demoDir, f, true);
     atomicWriteJsonSync(path.join(demoDir, 'savings-accounts.json'), f['savings-accounts']);
     atomicWriteJsonSync(path.join(demoDir, 'loans.json'), f.loans);
     atomicWriteJsonSync(path.join(demoDir, 'loan-suggestions.json'), f['loan-suggestions']);
@@ -55,6 +46,28 @@ export class DemoSeedService {
     fs.writeFileSync(sentinel, new Date().toISOString());
     this.logger.log(`Demo seeded at ${demoDir}`);
     return { seeded: true };
+  }
+
+  /**
+   * Historique des imports et bilans des années révolues (comme l'archivage de
+   * StorageService : sans eux /upload et /yearly restaient vides). `overwrite`
+   * faux = n'écrit que ce qui manque.
+   */
+  private writeHistory(demoDir: string, f: Record<string, unknown>, overwrite: boolean): void {
+    const write = (file: string, data: unknown) => {
+      if (overwrite || !fs.existsSync(file)) atomicWriteJsonSync(file, data);
+    };
+    fs.mkdirSync(path.join(demoDir, 'yearly'), { recursive: true });
+    write(path.join(demoDir, 'import-logs.json'), f['import-logs']);
+    const statements = f.statements as MonthlyStatement[];
+    const lastYear = Math.max(...statements.map((s) => s.year));
+    for (const year of new Set(statements.map((s) => s.year).filter((y) => y < lastYear))) {
+      const summary = buildYearlySummary(
+        year,
+        statements.filter((s) => s.year === year).sort((a, b) => a.month - b.month),
+      );
+      if (summary) write(path.join(demoDir, 'yearly', `${year}.json`), summary);
+    }
   }
 
   async reset(): Promise<void> {
