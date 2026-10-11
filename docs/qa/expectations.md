@@ -21,7 +21,7 @@ never: Erreur, Impossible de charger, undefined, « NaN € », « NaN % », « 
 
 ## /
 
-shows: « Vue d'ensemble basée sur 6 relevés », PATRIMOINE NET, SANTÉ FINANCIÈRE /100, RELEVÉS RÉCENTS (5 cartes à 1440 px, 3 à 390 px)
+shows: à 1440 px seulement, « Vue d'ensemble basée sur 6 relevés » (l'en-tête de page est masqué sous `md` : le tableau de bord téléphone affiche le mois et la tendance, pas cette phrase) ; aux deux tailles PATRIMOINE NET, SANTÉ FINANCIÈRE /100, RELEVÉS RÉCENTS (5 cartes à 1440 px, 3 à 390 px)
 api: /api/statements, /api/statements/score-history, /api/loans, /api/savings-accounts, /api/budgets, /api/dashboard/net-worth, /api/dashboard/yearly-overview?months=12, /api/health-check/diagnostic, /api/dashboard/alerts
 may be empty when aucune alerte (`/api/dashboard/alerts`)
 
@@ -88,7 +88,7 @@ may be empty when aucun abonnement suivi (`/api/subscriptions`, démo)
 
 shows: au moins un bilan annuel d'une **année révolue** (calculé depuis les relevés de la démo ; l'année dépend du recalage, ne pas attendre 2025)
 never: état vide « aucun bilan »
-api: /api/statements/yearly
+api: /api/statements/yearly, /api/statements/yearly/<année> (détail de l'année affichée)
 
 ## /upload
 
@@ -98,11 +98,13 @@ api: /api/import-logs
 ## /heatmap
 
 shows: « N jours avec débit » avec N > 0
+api: /api/statements, /api/statements/<mois> (un appel par relevé)
 
 ## /health
 
 shows: 4 indicateurs (Reste à vivre, Charge de la dette, Dépendance aux tirages, Trajectoire), verdict rouge/orange/vert
-api: /api/health-check/diagnostic
+api: /api/health-check/diagnostic, /api/health-check/advice
+may be empty when aucun conseil n'a encore été généré (`/api/health-check/advice` répond 204, corps vide)
 
 ## /declarations
 
