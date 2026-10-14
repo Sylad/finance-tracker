@@ -270,6 +270,8 @@ lots:
     status: todo
     estimate: 0.25
     created: 2026-09-28
+    notes:
+      - { date: 2026-10-14, text: "QA L16 14-10 (390 px) : barre Export CSV/Recalculer/recherche déborde à 513 px, champ de recherche coupé — replier ; attendu QA à ajouter : scrollWidth = clientWidth sur /history (capture tmp/qa-finance-l16/overflow-history-390.png)" }
   - id: L24
     title: Revue UX — Budget
     status: todo
@@ -315,6 +317,8 @@ lots:
     status: todo
     estimate: 0.25
     created: 2026-09-28
+    notes:
+      - { date: 2026-10-14, text: "QA L16 14-10 (390 px) : barre d'actions Importer/Détecter/Doublons/Suspects/Reset déborde à 738 px, Suspects et Reset hors écran — replier ou deux lignes ; attendu QA à ajouter : scrollWidth = clientWidth sur /loans (capture tmp/qa-finance-l16/overflow-loans-390.png)" }
   - id: L33
     title: Revue UX — Abonnements
     status: todo
