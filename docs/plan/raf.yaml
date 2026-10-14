@@ -622,3 +622,8 @@ lots:
     review: { date: 2026-10-11, verdict: "conforme — orchestré (vague 2026-10-11-1815, 0 passe(s) de correction + passe des mineurs)", commit: 1ada36049f9051de1983659915e56080821769f6 }
     ux: { date: 2026-10-11, verdict: "Sylvain 11-10 : ok L68 (filtre catégorie + sans accents ; champ brut avec « Affichée : … » dessous) ; revue UX automatique conforme" }
     finished: 2026-10-11
+  - id: L69
+    title: "Détail d'un relevé : favicons marchands via icons.duckduckgo.com en 404 (edf.fr, predica.fr) — 2 erreurs console par visite, repli silencieux ; repli sans requête tierce ou cache local des logos (QA prod 14-10 après L15)"
+    status: todo
+    estimate: 0.25
+    created: 2026-10-14
