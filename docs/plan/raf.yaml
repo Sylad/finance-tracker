@@ -188,7 +188,7 @@ lots:
     finished: 2026-10-14
   - id: L16
     title: "Code mort : findByIdentifiers, chaîne SSE sans consommateur"
-    status: todo
+    status: doing
     estimate: 1
     created: 2026-09-28
     tasks:
@@ -196,6 +196,7 @@ lots:
       - { id: t2, title: "SSE : brancher EventSource → invalidations TanStack, ou supprimer (#22)", status: todo }
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #21 #22" }
+    started: 2026-10-14
   - id: L17
     title: Adopter le plan raf (cadence) et y verser le backlog de la revue du 2026-08-13
     status: done
