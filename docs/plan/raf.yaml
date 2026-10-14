@@ -648,3 +648,8 @@ lots:
     started: 2026-10-14
     review: { date: 2026-10-14, verdict: "conforme (commit ab80f40 : 27 tests live-events et 378 tests frontend verts, tsc propre ; 4 choix d'interprétation relus et justifiés, README à jour) — orchestré (vague 2026-10-14-2015, 0 passe(s) de correction)", commit: ab80f40eec2c08c38bb78a561c9dbe34c1a16710 }
     finished: 2026-10-14
+  - id: L71
+    title: "SSE : deux réponses /api/events text/event-stream ouvertes par onglet à ~80 ms d'intervalle et une en ERR_ABORTED (QA 14-10, 4 pages, démo forcée) — vérifier si c'est le rechargement de demoStore.enable() (QA L16 : première connexion coupée 18 ms après) ou une double ouverture réelle ; attendu QA : une seule réponse text/event-stream par page"
+    status: todo
+    estimate: 0.1
+    created: 2026-10-14
