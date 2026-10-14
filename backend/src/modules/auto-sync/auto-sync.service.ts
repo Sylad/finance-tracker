@@ -21,11 +21,7 @@ import {
 import { escapeRegex } from '../../common/regex.util';
 import { foldAccents } from '../../common/text';
 import { monthKey } from '../../common/month-key';
-
-function normalizeAccountNumber(s: string | null | undefined): string {
-  if (!s) return '';
-  return s.replace(/[^0-9A-Z]/gi, '').toUpperCase();
-}
+import { normalizeAccountNumber } from '../../common/account-number';
 
 /** Identifiant de contrat/RUM comparable : minuscules, sans espaces, points ni tirets. */
 export function normalizeIdentifier(s: string): string {

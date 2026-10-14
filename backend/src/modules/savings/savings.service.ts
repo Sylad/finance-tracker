@@ -40,12 +40,9 @@ const TYPE_LABELS: Record<SavingsAccountType, string> = {
   other: 'Compte épargne',
 };
 
-function normalizeAccountNumber(s: string | null | undefined): string {
-  if (!s) return '';
-  return s.replace(/[^0-9A-Z]/gi, '').toUpperCase();
-}
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
+import { normalizeAccountNumber } from '../../common/account-number';
 
 @Injectable()
 export class SavingsService {
