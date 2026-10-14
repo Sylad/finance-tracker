@@ -5,6 +5,7 @@ import {
   formatMonth,
   formatMonthShort,
   maskAccountNumber,
+  slugify,
   prevMonthId,
 } from './utils';
 
@@ -111,5 +112,11 @@ describe('formatEURCompact (graduations des axes, L21/t5)', () => {
   ])('graduations entières « rondes » de Recharts (allowDecimals=false) : pas de doublon pour %j', (ticks) => {
     const labels = ticks.map(formatEURCompact);
     expect(new Set(labels).size).toBe(ticks.length);
+  });
+});
+
+describe('slugify', () => {
+  it('minuscules sans accents, ponctuation → un espace (miroir du backend common/text)', () => {
+    expect(slugify('Prêt-Été  (CA) ')).toBe('pret ete ca');
   });
 });

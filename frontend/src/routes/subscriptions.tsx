@@ -23,7 +23,7 @@ import {
   SUBSCRIPTION_CATEGORY_LABELS,
   SUBSCRIPTION_FREQUENCY_LABELS,
 } from '@/types/api';
-import { formatEUR, cn } from '@/lib/utils';
+import { formatEUR, cn, slugify } from '@/lib/utils';
 import { SubscriptionForm } from '@/components/subscriptions/subscription-form';
 
 const DEFAULT: SubscriptionInput = {
@@ -89,7 +89,6 @@ export function SubscriptionsPage() {
   // Évite de proposer 50 fois "EDF / Orange Fibre" alors qu'ils sont déjà
   // créés. Filtre purement UI : la suggestion reste pending en base, donc
   // si l'user supprime le sub, elle réapparaît.
-  const slugify = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
   const STOP = new Set(['abonnement', 'abonnements', 'facture', 'factures', 'mensuel', 'mensuelle', 'paiement', 'prelevement', 'sas', 'sa', 'sarl', 'france', 'fr', 'des', 'pour', 'par', 'avec']);
   const sigWords = (s: string) => new Set(slugify(s).split(' ').filter((w) => w.length >= 4 && !STOP.has(w)));
   const isSuggCovered = (sugg: typeof allSugg[number]) => {

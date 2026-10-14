@@ -97,3 +97,13 @@ export function formatEURRounded(amount: number): string {
 export function formatEURCompact(amount: number): string {
   return Math.abs(amount) < 10_000 ? EUR_INT.format(amount) : EUR_COMPACT.format(amount);
 }
+
+/** Miroir de `slugify` du backend (`common/text.ts`) : sans accents, mots séparés par un espace. */
+export function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
