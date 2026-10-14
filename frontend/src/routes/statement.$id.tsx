@@ -451,20 +451,8 @@ function AnomalyRow({ a }: { a: AnomalyDto }) {
   );
 }
 
-function MerchantAvatar({ merchant, fallback }: { merchant: { name: string; faviconUrl: string } | null; fallback: string }) {
-  const [errored, setErrored] = useState(false);
-  if (merchant && !errored) {
-    return (
-      <img
-        src={merchant.faviconUrl}
-        alt={merchant.name}
-        className="h-6 w-6 rounded shrink-0 bg-surface-2 object-contain p-0.5"
-        onError={() => setErrored(true)}
-        loading="lazy"
-      />
-    );
-  }
-  // Fallback: coloured square with the first uppercase letter
+function MerchantAvatar({ merchant, fallback }: { merchant: { name: string } | null; fallback: string }) {
+  // Pas de logo distant (L69) : carré avec l'initiale, aucune requête tierce.
   const initial = (merchant?.name ?? fallback).trim().match(/[A-Za-z0-9]/)?.[0]?.toUpperCase() ?? '?';
   return (
     <div className="h-6 w-6 rounded shrink-0 flex items-center justify-center bg-surface-2 text-fg-muted text-[10px] font-bold">

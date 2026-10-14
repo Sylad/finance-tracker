@@ -2,8 +2,9 @@
  * Merchant recognition for French bank statements.
  *
  * Maps raw bank descriptions (e.g. "PAYL*AMAZON EU 25/03 LUXEMBO") to a
- * clean merchant name + a logo URL (DuckDuckGo's icon CDN, no API key,
- * gracefully falls back to a transparent pixel via 404).
+ * clean merchant name + domain. No logo is fetched: a third-party icon CDN
+ * answered 404 for several domains (console errors) and leaked the merchants
+ * seen to a third party — the UI shows an initial instead (L69).
  *
  * Order matters: more specific patterns must come first (e.g. "AMAZON
  * PRIME" before "AMAZON").
@@ -12,7 +13,6 @@
 export interface MerchantHit {
   name: string;
   domain: string;
-  faviconUrl: string;
 }
 
 interface MerchantPattern {
@@ -133,6 +133,5 @@ export function recognizeMerchant(description: string): MerchantHit | null {
   return {
     name: hit.name,
     domain: hit.domain,
-    faviconUrl: `https://icons.duckduckgo.com/ip3/${hit.domain}.ico`,
   };
 }
