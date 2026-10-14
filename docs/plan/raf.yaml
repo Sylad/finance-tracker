@@ -183,6 +183,7 @@ lots:
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #20 — slugify a 2 comportements : choisir avant de fusionner" }
     started: 2026-10-14
+    review: { date: 2026-10-14, verdict: "conforme (2 constats mineurs notés : arrondis restés en ligne, garde round2 étroite) — orchestré (vague 2026-10-14-l15, 1 passe(s) de correction + passe des mineurs)", commit: f9ee522c40abbce92e510e07bd4e1014bee03b14 }
   - id: L16
     title: "Code mort : findByIdentifiers, chaîne SSE sans consommateur"
     status: todo
