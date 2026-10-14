@@ -114,6 +114,12 @@
       "status": "done",
       "started": "2026-10-11",
       "finished": "2026-10-11"
+    },
+    {
+      "id": "L69",
+      "title": "Relevé détaillé : plus de requête à un service tiers pour les logos",
+      "status": "doing",
+      "started": "2026-10-14"
     }
   ]
 }

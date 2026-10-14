@@ -633,7 +633,9 @@ lots:
   - id: L69
     title: "Détail d'un relevé : favicons marchands via icons.duckduckgo.com en 404 (edf.fr, predica.fr) — 2 erreurs console par visite, repli silencieux ; repli sans requête tierce ou cache local des logos (QA prod 14-10 après L15)"
     status: doing
+    public: "Relevé détaillé : plus de requête à un service tiers pour les logos"
     estimate: 0.25
+    visible: true
     created: 2026-10-14
     started: 2026-10-14
   - id: L70
