@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/query-client';
+import { startLiveEvents } from './lib/live-events';
 import { AppRouter } from './router';
 import './index.css';
 
@@ -15,6 +16,8 @@ createRoot(root).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+
+if (typeof EventSource !== 'undefined') startLiveEvents(queryClient);
 
 // Register the service worker (PWA). Only in production builds — Vite serves
 // static files differently in dev and the SW would aggressively cache HMR chunks.
