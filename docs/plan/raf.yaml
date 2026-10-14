@@ -176,14 +176,16 @@ lots:
     finished: 2026-10-11
   - id: L15
     title: "Helpers communs : money, slugify, month-key, clustering, paires neutres"
-    status: doing
+    status: done
     estimate: 1
     after: [ L6 ]
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #20 — slugify a 2 comportements : choisir avant de fusionner" }
+      - { date: 2026-10-14, text: "mineurs de revue non repris (notes, pas de bug observable) : 34 Math.round(x*100)/100 encore en ligne dans 9 fichiers backend hors common/money ; money-single-source.spec ne garde que 2 fichiers et 2 motifs ; slugify frontend = copie dans lib/utils (pas de paquet partagé)" }
     started: 2026-10-14
     review: { date: 2026-10-14, verdict: "conforme (2 constats mineurs notés : arrondis restés en ligne, garde round2 étroite) — orchestré (vague 2026-10-14-l15, 1 passe(s) de correction + passe des mineurs)", commit: f9ee522c40abbce92e510e07bd4e1014bee03b14 }
+    finished: 2026-10-14
   - id: L16
     title: "Code mort : findByIdentifiers, chaîne SSE sans consommateur"
     status: todo
