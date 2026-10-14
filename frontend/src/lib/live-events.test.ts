@@ -136,6 +136,75 @@ describe('startLiveEvents — reconnexion', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['goals'] });
   });
 
+  const ALL_PREFIXES = [...new Set(Object.values(EVENT_QUERY_KEYS).flat().map((k) => k[0] as string))].sort();
+  const invalidated = (spy: { mock: { calls: unknown[][] } }) =>
+    spy.mock.calls.map((c) => (c[0] as { queryKey: string[] }).queryKey[0]).sort();
+
+  it('à la reconnexion après une erreur, invalide toutes les clés de EVENT_QUERY_KEYS (une seule fois chacune)', () => {
+    vi.useFakeTimers();
+    const qc = new QueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries').mockResolvedValue();
+    const sources: FakeSource[] = [];
+    const open = () => {
+      const s = new FakeSource();
+      sources.push(s);
+      return s as unknown as EventSource;
+    };
+    startLiveEvents(qc, open, { locks: undefined, createChannel: undefined });
+    sources[0].onopen?.();
+    expect(spy).not.toHaveBeenCalled();
+    sources[0].readyState = 2;
+    sources[0].onerror?.();
+    vi.advanceTimersByTime(1000);
+    expect(spy).not.toHaveBeenCalled();
+    sources[1].onopen?.();
+    expect(invalidated(spy)).toEqual(ALL_PREFIXES);
+    spy.mockClear();
+    sources[1].onopen?.();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('reconnexion automatique du navigateur (CONNECTING puis open) : même rattrapage', () => {
+    const qc = new QueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries').mockResolvedValue();
+    const src = new FakeSource();
+    startLiveEvents(qc, () => src as unknown as EventSource, { locks: undefined, createChannel: undefined });
+    src.onopen?.();
+    src.readyState = 0;
+    src.onerror?.();
+    src.readyState = 1;
+    src.onopen?.();
+    expect(invalidated(spy)).toEqual(ALL_PREFIXES);
+  });
+
+  it('relaie le rattrapage aux autres onglets', () => {
+    const channels: Array<{ onmessage: ((e: { data: unknown }) => void) | null }> = [];
+    const createChannel = () => {
+      const ch = {
+        onmessage: null as ((e: { data: unknown }) => void) | null,
+        postMessage(data: unknown) {
+          for (const o of channels) if (o !== ch) o.onmessage?.({ data });
+        },
+        close() {},
+      };
+      channels.push(ch);
+      return ch as unknown as BroadcastChannel;
+    };
+    const qcA = new QueryClient();
+    const qcB = new QueryClient();
+    const spyA = vi.spyOn(qcA, 'invalidateQueries').mockResolvedValue();
+    const spyB = vi.spyOn(qcB, 'invalidateQueries').mockResolvedValue();
+    const src = new FakeSource();
+    startLiveEvents(qcA, () => src as unknown as EventSource, { locks: undefined, createChannel });
+    startLiveEvents(qcB, () => new FakeSource() as unknown as EventSource, { locks: undefined, createChannel });
+    src.onopen?.();
+    src.readyState = 0;
+    src.onerror?.();
+    src.onopen?.();
+    expect(invalidated(spyA)).toEqual(ALL_PREFIXES);
+    expect(invalidated(spyB)).toEqual(ALL_PREFIXES);
+  });
+
   it('laisse EventSource se reconnecter seul tant qu’il est en CONNECTING', () => {
     vi.useFakeTimers();
     const qc = new QueryClient();

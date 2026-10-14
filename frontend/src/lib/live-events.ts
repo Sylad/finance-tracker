@@ -40,6 +40,10 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query';
  *                        subscriptions, loan-suggestions, dashboard, health, forecast,
  *                        expenses-breakdown, goals
  *
+ * Reconnexion (L70) : le flux ne rejoue rien, donc après une erreur, à la
+ * réouverture suivante, TOUTES les clés ci-dessus sont invalidées (une fois
+ * chacune) et le rattrapage est relayé aux autres onglets. Pas à la 1re ouverture.
+ *
  * Écritures de relevés SANS événement (recatégorisation, rejeu des règles,
  * revenu exceptionnel) : aucune invalidation possible ici, rechargement requis.
  */
@@ -58,6 +62,9 @@ export const EVENT_QUERY_KEYS: Record<string, QueryKey[]> = {
     ['dashboard'], ['health'], ['forecast'], ['expenses-breakdown'], ['goals'],
   ],
 };
+
+// Message de canal (hors EVENT_QUERY_KEYS) : rattrapage complet après coupure.
+const RESYNC = 'resync';
 
 const LOCK_NAME = 'finance-live-events';
 const CHANNEL_NAME = 'finance-live-events';
@@ -93,10 +100,26 @@ export function startLiveEvents(
   let source: EventSource | null = null;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let retryMs = RETRY_MIN_MS;
+  // Une erreur a eu lieu depuis la dernière ouverture : des événements ont pu
+  // être perdus pendant la coupure (le flux ne rejoue rien).
+  let hadError = false;
   let release: (() => void) | undefined;
   const abort = new AbortController();
 
+  const invalidateAll = () => {
+    const seen = new Set<string>();
+    for (const keys of Object.values(EVENT_QUERY_KEYS)) {
+      for (const queryKey of keys) {
+        const id = JSON.stringify(queryKey);
+        if (seen.has(id)) continue;
+        seen.add(id);
+        void qc.invalidateQueries({ queryKey });
+      }
+    }
+  };
+
   const apply = (type: unknown) => {
+    if (type === RESYNC) return invalidateAll();
     const keys = typeof type === 'string' ? EVENT_QUERY_KEYS[type] : undefined;
     if (!keys) return;
     for (const queryKey of keys) void qc.invalidateQueries({ queryKey });
@@ -111,6 +134,10 @@ export function startLiveEvents(
     source = s;
     s.onopen = () => {
       retryMs = RETRY_MIN_MS;
+      if (!hadError) return;
+      hadError = false;
+      invalidateAll();
+      channel?.postMessage(RESYNC);
     };
     s.onmessage = (msg) => {
       let type: unknown;
@@ -126,7 +153,9 @@ export function startLiveEvents(
     // reconnexion, ex. 502 pendant un redémarrage) : il abandonne pour de bon,
     // donc on rouvre nous-mêmes avec un délai croissant.
     s.onerror = () => {
-      if (stopped || s.readyState !== 2) return;
+      if (stopped) return;
+      hadError = true;
+      if (s.readyState !== 2) return;
       s.close();
       retryTimer = setTimeout(connect, retryMs);
       retryMs = Math.min(retryMs * 2, RETRY_MAX_MS);
