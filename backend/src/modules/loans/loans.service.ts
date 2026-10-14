@@ -804,29 +804,6 @@ export class LoansService {
   }
 
   /**
-   * @deprecated utiliser findExistingLoan/findByIdentifiers — gardée pour
-   * rétro-compat sur d'éventuels appels externes (tests, scripts).
-   */
-  async findByAccountNumber(accountNumber: string): Promise<Loan | null> {
-    return this.findByIdentifiers({ accountNumber });
-  }
-
-  /**
-   * Wrapper rétro-compat : retourne juste le Loan ou null sans la
-   * confidence ni la raison du match. Délégué à findExistingLoan.
-   */
-  async findByIdentifiers(args: {
-    accountNumber?: string | null;
-    rumNumber?: string | null;
-  }): Promise<Loan | null> {
-    const result = await this.findExistingLoan({
-      contractRef: args.accountNumber,
-      rumNumber: args.rumNumber,
-    });
-    return result?.loan ?? null;
-  }
-
-  /**
    * MATCHER UNIFIÉ — point d'entrée unique pour identifier un Loan
    * existant à partir d'un set de signaux (extrait de relevé crédit,
    * tableau d'amortissement, ou suggestion bank statement Claude).

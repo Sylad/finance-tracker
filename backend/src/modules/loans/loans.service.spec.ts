@@ -165,7 +165,7 @@ describe('LoansService', () => {
     expect(updated.lastManualResetAt).toBeDefined();
   });
 
-  describe('findByIdentifiers (matcher avec RUM fallback)', () => {
+  describe('findExistingLoan (contractRef puis RUM)', () => {
     it('matches by contractRef when accountNumber provided', async () => {
       const loan = await svc.create({
         name: 'Cofidis',
@@ -179,8 +179,8 @@ describe('LoansService', () => {
         maxAmount: 3000,
         usedAmount: 0,
       });
-      const found = await svc.findByIdentifiers({ accountNumber: '51215116521100' });
-      expect(found?.id).toBe(loan.id);
+      const found = await svc.findExistingLoan({ contractRef: '51215116521100' });
+      expect(found?.loan.id).toBe(loan.id);
     });
 
     it('matches by contractRef with formatted variations (spaces, hyphens)', async () => {
@@ -194,9 +194,9 @@ describe('LoansService', () => {
         contractRef: '12345678',
       });
       // PDF version with spaces/hyphens still matches
-      expect((await svc.findByIdentifiers({ accountNumber: '1234 5678' }))?.id).toBe(loan.id);
-      expect((await svc.findByIdentifiers({ accountNumber: '1234-5678' }))?.id).toBe(loan.id);
-      expect((await svc.findByIdentifiers({ accountNumber: '12345678' }))?.id).toBe(loan.id);
+      expect((await svc.findExistingLoan({ contractRef: '1234 5678' }))?.loan.id).toBe(loan.id);
+      expect((await svc.findExistingLoan({ contractRef: '1234-5678' }))?.loan.id).toBe(loan.id);
+      expect((await svc.findExistingLoan({ contractRef: '12345678' }))?.loan.id).toBe(loan.id);
     });
 
     it('falls back to rumRefs when accountNumber misses', async () => {
@@ -214,11 +214,11 @@ describe('LoansService', () => {
         usedAmount: 0,
       });
       // Statement avec RUM mais sans accountNumber (cas Cofidis typique)
-      const found = await svc.findByIdentifiers({
-        accountNumber: null,
+      const found = await svc.findExistingLoan({
+        contractRef: null,
         rumNumber: 'COFI20240315ABC',
       });
-      expect(found?.id).toBe(loan.id);
+      expect(found?.loan.id).toBe(loan.id);
     });
 
     it('falls back to rumRefs with normalized matching', async () => {
@@ -233,8 +233,8 @@ describe('LoansService', () => {
         maxAmount: 3000,
         usedAmount: 0,
       });
-      const found = await svc.findByIdentifiers({ rumNumber: 'COFI20240315ABC' });
-      expect(found?.id).toBe(loan.id);
+      const found = await svc.findExistingLoan({ rumNumber: 'COFI20240315ABC' });
+      expect(found?.loan.id).toBe(loan.id);
     });
 
     it('returns null when neither contractRef nor rumRefs match', async () => {
@@ -248,8 +248,8 @@ describe('LoansService', () => {
         contractRef: '12345678',
         rumRefs: ['SOFI-MAND-001'],
       });
-      const found = await svc.findByIdentifiers({
-        accountNumber: '99999999',
+      const found = await svc.findExistingLoan({
+        contractRef: '99999999',
         rumNumber: 'COMPLETELY-DIFFERENT-RUM',
       });
       expect(found).toBeNull();
@@ -266,7 +266,7 @@ describe('LoansService', () => {
         contractRef: '51215116521100',
         maxAmount: 3000,
       });
-      const found = await svc.findByIdentifiers({ accountNumber: null, rumNumber: null });
+      const found = await svc.findExistingLoan({ contractRef: null, rumNumber: null });
       expect(found).toBeNull();
     });
 
@@ -542,11 +542,11 @@ describe('LoansService', () => {
         maxAmount: 3000,
       });
       // Quand accountNumber identifie A : on prend A même si le RUM est dans les deux
-      const found = await svc.findByIdentifiers({
-        accountNumber: '11111111',
+      const found = await svc.findExistingLoan({
+        contractRef: '11111111',
         rumNumber: 'SHARED-RUM',
       });
-      expect(found?.id).toBe(loanA.id);
+      expect(found?.loan.id).toBe(loanA.id);
     });
   });
 
