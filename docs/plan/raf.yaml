@@ -176,12 +176,13 @@ lots:
     finished: 2026-10-11
   - id: L15
     title: "Helpers communs : money, slugify, month-key, clustering, paires neutres"
-    status: todo
+    status: doing
     estimate: 1
     after: [ L6 ]
     created: 2026-09-28
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #20 — slugify a 2 comportements : choisir avant de fusionner" }
+    started: 2026-10-14
   - id: L16
     title: "Code mort : findByIdentifiers, chaîne SSE sans consommateur"
     status: todo
