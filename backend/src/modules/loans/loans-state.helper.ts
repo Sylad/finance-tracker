@@ -1,4 +1,5 @@
 import type { Loan, AmortizationLine, LoanOccurrence } from '../../models/loan.model';
+import { monthKey } from '../../common/month-key';
 
 /**
  * État calculé d'un Loan à une date donnée. Le suivi du capital restant
@@ -56,7 +57,7 @@ function monthsBetween(aIso: string, bIso: string): number {
 }
 
 function monthOf(iso: string): string {
-  return iso.slice(0, 7); // YYYY-MM
+  return monthKey(iso); // YYYY-MM
 }
 
 /**

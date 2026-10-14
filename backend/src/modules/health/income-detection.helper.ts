@@ -1,6 +1,7 @@
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Loan } from '../../models/loan.model';
 import { effectiveIncome } from '../../models/transaction.model';
+import { monthKey } from '../../common/month-key';
 
 export interface IncomeDetection {
   monthly: number | null;
@@ -94,7 +95,7 @@ export function detectStableIncome(
       if (amount < MIN_AMOUNT || excludedTxIds.has(t.id)) continue;
       const key = clusterKey(t.description);
       if (!key) continue;
-      const month = t.date.slice(0, 7);
+      const month = monthKey(t.date);
       const arr = clusters.get(key);
       if (arr) arr.push({ month, amount });
       else clusters.set(key, [{ month, amount }]);
@@ -145,7 +146,7 @@ export function detectStableIncome(
     const successor = statements.some((st) =>
       st.transactions.some(
         (t) =>
-          t.date.slice(0, 7) === latestMonth &&
+          monthKey(t.date) === latestMonth &&
           t.amount >= main.medianAmount * 0.5 &&
           !excludedTxIds.has(t.id),
       ),

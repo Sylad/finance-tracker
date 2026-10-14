@@ -8,6 +8,7 @@
  * Source : REGAFI ACPR + Association française des Sociétés Financières.
  * Noms en minuscules ; comparés sans accents.
  */
+import { slugify } from '../../common/text';
 export const CREDIT_INSTITUTIONS: ReadonlySet<string> = new Set([
   // Filiales bancaires spécialisées crédit conso
   'cetelem', // BNP Paribas Personal Finance
@@ -107,12 +108,7 @@ const ALMA_WITH_INDICATOR =
 
 /** Minuscules, sans accents, ponctuation → espace. */
 export function normalizeLabel(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
+  return slugify(value);
 }
 
 const NORMALIZED = new Map<string, string>(

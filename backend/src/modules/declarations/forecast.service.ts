@@ -6,6 +6,8 @@ import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
 import { LoansService } from '../loans/loans.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { round2 } from '../../common/money';
+import { monthKey as monthOfDate } from '../../common/month-key';
 
 const PAST_MONTHS = 6;
 const FUTURE_MONTHS = 5;
@@ -65,8 +67,8 @@ export class ForecastService {
       // Active loans add a monthly expense within their start/end window.
       // Try to find a matching transaction in the month's actual statement.
       for (const loan of activeLoans) {
-        if (loan.startDate && monthKey < loan.startDate.slice(0, 7)) continue;
-        if (loan.endDate && monthKey > loan.endDate.slice(0, 7)) continue;
+        if (loan.startDate && monthKey < monthOfDate(loan.startDate)) continue;
+        if (loan.endDate && monthKey > monthOfDate(loan.endDate)) continue;
         const txs = txByMonth.get(monthKey) ?? [];
         const matchedTx = txs.find((t) => {
           if (consumed.has(t.id)) return false;
@@ -89,7 +91,7 @@ export class ForecastService {
 
       // Active subscriptions = monthly expenses within startDate window.
       for (const sub of activeSubs) {
-        if (sub.startDate && monthKey < sub.startDate.slice(0, 7)) continue;
+        if (sub.startDate && monthKey < monthOfDate(sub.startDate)) continue;
         const txs = txByMonth.get(monthKey) ?? [];
         let matchedTx: Transaction | null = null;
         if (sub.matchPattern) {
@@ -118,7 +120,7 @@ export class ForecastService {
 
       // Revenus récurrents détectés par Claude (salaire/pension/rental).
       for (const credit of recurringIncomes) {
-        if (credit.firstSeenDate && monthKey < credit.firstSeenDate.slice(0, 7)) continue;
+        if (credit.firstSeenDate && monthKey < monthOfDate(credit.firstSeenDate)) continue;
         const txs = txByMonth.get(monthKey) ?? [];
         const matchedTx = txs.find((t) => {
           if (consumed.has(t.id)) return false;
@@ -231,6 +233,3 @@ function sumWhere(occs: ForecastOccurrence[], pred: (o: ForecastOccurrence) => b
   return occs.filter(pred).reduce((s, o) => s + o.amountSigned, 0);
 }
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}

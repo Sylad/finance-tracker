@@ -9,6 +9,7 @@ import { LoansService } from '../loans/loans.service';
 import { StorageService } from '../storage/storage.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { EventBusService } from '../events/event-bus.service';
+import { round2 } from '../../common/money';
 
 const FILE = 'goals.json';
 
@@ -165,6 +166,3 @@ function monthDiff(a: Date, b: Date): number {
   return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
 }
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}

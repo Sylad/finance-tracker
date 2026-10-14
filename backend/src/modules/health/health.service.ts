@@ -19,6 +19,7 @@ import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Loan } from '../../models/loan.model';
 import { pairNeutralTransactions } from '../../common/neutral-pairs';
 import { Subscription } from '../../models/subscription.model';
+import { round2 } from '../../common/money';
 
 export interface HealthContext {
   statements: MonthlyStatement[];
@@ -37,9 +38,6 @@ export interface HealthContext {
 
 const RECENT_STATEMENTS_COUNT = 3;
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
 
 function round1(n: number): number {
   return Math.round(n * 10) / 10;

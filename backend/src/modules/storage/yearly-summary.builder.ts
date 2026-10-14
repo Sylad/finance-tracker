@@ -1,8 +1,8 @@
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { TransactionCategory } from '../../models/transaction.model';
 import { YearlyMonthCashFlow, YearlySummary } from '../../models/yearly-summary.model';
+import { round2 } from '../../common/money';
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Entrées / sorties en € de chaque mois (tri par mois). */
 export function buildMonthlyCashFlow(statements: MonthlyStatement[]): YearlyMonthCashFlow[] {

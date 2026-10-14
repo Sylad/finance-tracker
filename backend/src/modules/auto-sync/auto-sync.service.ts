@@ -19,6 +19,8 @@ import {
   mortgageBankMatchPattern,
 } from '../loans/credit-institutions';
 import { escapeRegex } from '../../common/regex.util';
+import { foldAccents } from '../../common/text';
+import { monthKey } from '../../common/month-key';
 
 function normalizeAccountNumber(s: string | null | undefined): string {
   if (!s) return '';
@@ -128,7 +130,7 @@ export class AutoSyncService {
         continue;
       }
       const monthsAlreadySeen = new Set(
-        sub.occurrencesDetected.map((o) => o.date.slice(0, 7)),
+        sub.occurrencesDetected.map((o) => monthKey(o.date)),
       );
       const candidates = statement.transactions.filter((t) => {
         if (t.amount >= 0) return false;
@@ -141,7 +143,7 @@ export class AutoSyncService {
       // est le plus proche du sub.monthlyAmount.
       const candidatesByMonth = new Map<string, typeof candidates>();
       for (const t of candidates) {
-        const m = t.date.slice(0, 7);
+        const m = monthKey(t.date);
         if (monthsAlreadySeen.has(m)) continue;
         const list = candidatesByMonth.get(m) ?? [];
         list.push(t);
@@ -397,7 +399,7 @@ export class AutoSyncService {
     // (vécu : replay du relevé de janvier → +10,38 € d'intérêts sur un PEL
     // ouvert fin mars de la même année).
     const stmtKey = `${statement.year}-${String(statement.month).padStart(2, '0')}`;
-    if (acc.initialBalanceDate && stmtKey < acc.initialBalanceDate.slice(0, 7)) return;
+    if (acc.initialBalanceDate && stmtKey < monthKey(acc.initialBalanceDate)) return;
     const alreadyDone = acc.movements.some((m) => m.source === 'interest' && m.date.startsWith(`${statement.year}-`));
     if (alreadyDone) return;
     // Estimation simple : balance × taux annuel. En rejeu (resync), le solde
@@ -529,7 +531,7 @@ export class AutoSyncService {
   private async syncInstallmentLoan(loan: Loan, statement: MonthlyStatement): Promise<void> {
     const schedule = loan.installmentSchedule;
     if (!schedule || schedule.length === 0) return;
-    const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    const norm = foldAccents;
     const creditorNorm = norm(loan.creditor ?? '');
     const merchantNorm = norm(loan.installmentMerchant ?? '');
     if (!creditorNorm && !merchantNorm) return;
@@ -655,7 +657,7 @@ export class AutoSyncService {
     // plus proche de la mensualité attendue. Les remboursements anticipés
     // (gros virement) échappent à ce plafond : ils coexistent avec la
     // mensualité du mois.
-    const monthOf = (d: string) => d.slice(0, 7);
+    const monthOf = (d: string) => monthKey(d);
     // Mois déjà couverts : occurrences existantes (idempotence au re-run — sans
     // ça, un re-pick no-op consommerait la tx au détriment d'un autre loan)
     // + matches par identifiant de ce run. Les anticipés ne « prennent » pas
@@ -861,7 +863,7 @@ export class AutoSyncService {
       if (!loan.isActive) continue;
       if (new Date(loan.createdAt).getTime() > freshThresholdMs) continue;
       const seenInRecent = loan.occurrencesDetected.some((o) => {
-        const m = o.date.slice(0, 7);
+        const m = monthKey(o.date);
         return recentMonths.has(m);
       });
       if (!seenInRecent) {

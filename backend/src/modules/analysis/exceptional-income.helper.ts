@@ -1,4 +1,5 @@
 import type { MonthlyStatement } from '../../models/monthly-statement.model';
+import { round2 } from '../../common/money';
 
 /** Un salaire au-delà de RATIO × la médiane des salaires précédents est exceptionnel. */
 export const EXCEPTIONAL_INCOME_RATIO = 3;
@@ -12,7 +13,6 @@ export interface ExceptionalIncomeFlag {
   exceptionalAmount: number;
 }
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
 
 function median(values: number[]): number {
   const s = [...values].sort((a, b) => a - b);

@@ -4,6 +4,8 @@ import type { MatchSignals, MatchResult, AmortizationSnapshotInput } from './loa
 import type { CreditStatementAnalysis } from '../analysis/credit-statement.service';
 import { StorageService } from '../storage/storage.service';
 import type { LoanInput, Loan, InstallmentLine } from '../../models/loan.model';
+import { foldAccents } from '../../common/text';
+import { monthKey } from '../../common/month-key';
 
 /**
  * Defaults pour la création d'un Loan quand aucun match n'est trouvé.
@@ -108,7 +110,7 @@ export class ImportOrchestratorService {
   async addStatementOccurrence(loanId: string, extracted: CreditStatementAnalysis): Promise<void> {
     if (!extracted.statementDate || !(extracted.monthlyPayment > 0)) return;
     await this.loans.addOccurrence(loanId, {
-      statementId: `credit-${loanId}-${extracted.statementDate.slice(0, 7)}`,
+      statementId: `credit-${loanId}-${monthKey(extracted.statementDate)}`,
       date: extracted.statementDate,
       amount: -Math.abs(extracted.monthlyPayment),
       transactionId: null,
@@ -182,7 +184,7 @@ export class ImportOrchestratorService {
   private async retroMatchInstallment(loan: Loan): Promise<void> {
     const schedule = loan.installmentSchedule;
     if (!schedule || schedule.length === 0) return;
-    const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    const norm = foldAccents;
     const creditorNorm = norm(loan.creditor ?? '');
     const merchantNorm = norm(loan.installmentMerchant ?? '');
     if (!creditorNorm && !merchantNorm) return;

@@ -8,6 +8,7 @@ import { CandidateClusteringService } from '../credit-detection/candidate-cluste
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
 import { pairNeutralTransactions } from '../../common/neutral-pairs';
+import { monthKey } from '../../common/month-key';
 
 /**
  * ⚠️ PRIVACY — même exception documentée que credit-detection :
@@ -173,7 +174,7 @@ export class ExpensesService {
     const enriched = clusters
       .map((c) => {
         const total = c.occurrences.reduce((s, o) => s + Math.abs(o.amount), 0);
-        const months = new Set(c.occurrences.map((o) => o.date.slice(0, 7)));
+        const months = new Set(c.occurrences.map((o) => monthKey(o.date)));
         return {
           key: c.key,
           label: c.occurrences[c.occurrences.length - 1].description,

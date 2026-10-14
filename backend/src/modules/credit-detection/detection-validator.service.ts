@@ -13,6 +13,7 @@ import {
   SuggestionEvidence,
 } from '../../models/loan-suggestion.model';
 import { escapeRegex } from '../../common/regex.util';
+import { monthKey } from '../../common/month-key';
 
 const MIN_CONFIDENCE = 0.6;
 const AMOUNT_TOLERANCE = 0.05;
@@ -265,7 +266,7 @@ export class DetectionValidatorService {
       return { created: false, reason: 'series_ended' };
     }
 
-    const months = occurrences.map((o) => o.date.slice(0, 7));
+    const months = occurrences.map((o) => monthKey(o.date));
     if (new Set(months).size !== months.length) {
       return { created: false, reason: 'installment_multiple_per_month' };
     }
@@ -576,7 +577,7 @@ export class DetectionValidatorService {
       return { ok: false, reason: 'series_ended' };
     }
 
-    const distinctMonths = new Set(occurrences.map((o) => o.date.slice(0, 7)));
+    const distinctMonths = new Set(occurrences.map((o) => monthKey(o.date)));
     if (distinctMonths.size < MIN_SUBSCRIPTION_DISTINCT_MONTHS) {
       return { ok: false, reason: 'subscription_insufficient_recurrence' };
     }
@@ -885,7 +886,7 @@ export class DetectionValidatorService {
       classification,
     );
 
-    const months = occurrences.map((o) => o.date.slice(0, 7));
+    const months = occurrences.map((o) => monthKey(o.date));
     const distinctMonths = new Set(months);
     if (distinctMonths.size !== months.length) {
       return { created: false, reason: 'loan_multiple_per_month' };

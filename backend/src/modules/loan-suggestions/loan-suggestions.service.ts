@@ -19,6 +19,7 @@ import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { LoansService } from '../loans/loans.service';
 import { escapeRegex } from '../../common/regex.util';
 import { normalizeLabel } from '../loans/credit-institutions';
+import { monthKey } from '../../common/month-key';
 
 /** L44 : tolérance de montant de la dédup des suggestions d'abonnement. */
 const SUBSCRIPTION_AMOUNT_TOLERANCE = 0.05;
@@ -299,7 +300,7 @@ export class LoanSuggestionsService {
       date,
       amount: installment.amounts[i] ?? 0,
       transactionId: installment.occurrenceTxIds[i] ?? null,
-      statementId: date.slice(0, 7),
+      statementId: monthKey(date),
     }));
     const sortedOccurrences = [...zipped].sort((a, b) =>
       a.date.localeCompare(b.date),

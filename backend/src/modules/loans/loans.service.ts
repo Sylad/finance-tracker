@@ -8,6 +8,7 @@ import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { StorageService } from '../storage/storage.service';
 import { PAY_IN_N_PATTERN } from './loans-patterns';
+import { monthKey } from '../../common/month-key';
 
 export interface CreditStatementSnapshotInput {
   creditor: string;
@@ -272,7 +273,7 @@ export class LoansService {
     // Ne s'applique qu'aux DÉBITS (invariant "1 débit/mois") : les tirages
     // (amount > 0) peuvent être multiples dans le mois et ne bloquent pas la
     // mensualité du même mois.
-    const monthOf = (d: string) => d.slice(0, 7); // 'YYYY-MM-DD' → 'YYYY-MM'
+    const monthOf = monthKey;
     const newMonth = monthOf(occ.date);
     if (occ.amount > 0) {
       const newDraw: LoanOccurrence = { id: randomUUID(), ...occ, source };
@@ -506,7 +507,7 @@ export class LoansService {
     //  - For small amounts (< 30€), require ≥ 4 months (else likely subscription)
     const groups = new Map<string, { amount: number; ref: string; occurrences: LoanOccurrence[] }>();
     for (const [k, g] of allGroups.entries()) {
-      const monthsSeen = new Set(g.occurrences.map((o) => o.date.slice(0, 7)));
+      const monthsSeen = new Set(g.occurrences.map((o) => monthKey(o.date)));
       const maxPerMonth = Math.max(...[...monthsSeen].map((m) => g.occurrences.filter((o) => o.date.startsWith(m)).length));
       const minMonths = g.amount < 30 ? 4 : 3;
       if (monthsSeen.size >= minMonths && maxPerMonth <= 1) groups.set(k, g);
@@ -1007,7 +1008,7 @@ export class LoansService {
       if (occCount === 0 || occCount > 4) continue;
 
       // Mois distincts couverts
-      const months = new Set<string>(loan.occurrencesDetected.map((o) => o.date.slice(0, 7)));
+      const months = new Set<string>(loan.occurrencesDetected.map((o) => monthKey(o.date)));
       if (months.size > 4) continue;
 
       // Mois consécutifs ?
@@ -1054,13 +1055,13 @@ export class LoansService {
         if (LoansService.getLoanKind(loan) === 'installment') continue;
         // startDate posterieur au dernier relevé → faux positif (loan trop frais)
         if (loan.startDate) {
-          const startMonth = loan.startDate.slice(0, 7);
+          const startMonth = monthKey(loan.startDate);
           if (startMonth > lastStmtMonth) continue;
         }
         // Le loan a-t-il une occurrence dans le dernier relevé ?
         const seenInLast = loan.occurrencesDetected.some((o) => {
           if (lastStmtIds.has(o.statementId)) return true;
-          return o.date.slice(0, 7) === lastStmtMonth;
+          return monthKey(o.date) === lastStmtMonth;
         });
         if (seenInLast) continue;
         const lastOccDate = LoansService.lastOccurrenceDate(loan);
@@ -1543,8 +1544,8 @@ export class LoansService {
     // Signal (b) : invariant — partage d'au moins un mois d'occurrence.
     // Débits uniquement : les tirages (amount > 0) peuvent légitimement
     // tomber le même mois sur 2 réserves distinctes du même créancier.
-    const monthsA = new Set(a.occurrencesDetected.filter((o) => o.amount < 0).map((o) => o.date.slice(0, 7)));
-    const monthsB = new Set(b.occurrencesDetected.filter((o) => o.amount < 0).map((o) => o.date.slice(0, 7)));
+    const monthsA = new Set(a.occurrencesDetected.filter((o) => o.amount < 0).map((o) => monthKey(o.date)));
+    const monthsB = new Set(b.occurrencesDetected.filter((o) => o.amount < 0).map((o) => monthKey(o.date)));
     const sharesMonth = [...monthsA].some((m) => monthsB.has(m));
 
     return monthlyClose || sharesMonth;
@@ -1569,7 +1570,7 @@ export class LoansService {
     }
     // Invariant : mois d'occurrence partagés
     const monthsByLoan = cluster.map(
-      (l) => new Set(l.occurrencesDetected.map((o) => o.date.slice(0, 7))),
+      (l) => new Set(l.occurrencesDetected.map((o) => monthKey(o.date))),
     );
     const sharedMonths = new Set<string>();
     for (let i = 0; i < monthsByLoan.length; i++) {
@@ -1668,7 +1669,7 @@ export class LoansService {
     const keptByMonth = new Map<string, LoanOccurrence>();
     for (const occ of canonical.occurrencesDetected) {
       if (occ.amount >= 0 || occ.source === 'early_repayment') continue;
-      const month = occ.date.slice(0, 7);
+      const month = monthKey(occ.date);
       const kept = keptByMonth.get(month);
       if (!kept || occurrenceSourcePriority(occ.source) > occurrenceSourcePriority(kept.source)) keptByMonth.set(month, occ);
     }
@@ -1676,7 +1677,7 @@ export class LoansService {
       (o) =>
         o.amount >= 0 ||
         o.source === 'early_repayment' ||
-        keptByMonth.get(o.date.slice(0, 7)) === o,
+        keptByMonth.get(monthKey(o.date)) === o,
     );
     // Re-tri chrono
     canonical.occurrencesDetected.sort((a, b) => a.date.localeCompare(b.date));

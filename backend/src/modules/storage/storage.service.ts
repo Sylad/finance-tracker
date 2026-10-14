@@ -9,6 +9,7 @@ import { RecurringCredit } from '../../models/recurring-credit.model';
 import { YearlySummary } from '../../models/yearly-summary.model';
 import { buildMonthlyCashFlow, buildYearlySummary } from './yearly-summary.builder';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
+import { slugify } from '../../common/text';
 
 const FILENAME_REGEX = /^\d{4}-(0[1-9]|1[0-2])\.json$/;
 const YEARLY_REGEX = /^\d{4}\.json$/;
@@ -198,7 +199,6 @@ export class StorageService implements OnModuleInit {
       'janvier', 'fevrier', 'mars', 'avril', 'juin', 'juillet', 'aout', 'septembre',
       'octobre', 'novembre', 'decembre',
     ]);
-    const slugify = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
     const significantWords = (s: string): string[] =>
       slugify(s).split(' ').filter((w) => w.length >= 4 && !STOP_WORDS.has(w));
 

@@ -11,6 +11,8 @@ import {
 } from '../../models/subscription.model';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
+import { slugify } from '../../common/text';
+import { monthKey } from '../../common/month-key';
 
 @Injectable()
 export class SubscriptionsService {
@@ -154,7 +156,6 @@ export class SubscriptionsService {
   }): Promise<Subscription | null> {
     const all = await this.getAll();
     if (all.length === 0) return null;
-    const slugify = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
     const normPattern = (p: string) => p.toLowerCase().replace(/[\\^$.*+?()[\]{}|]/g, '').replace(/\s+/g, ' ').trim();
 
     if (signals.matchPattern) {
@@ -208,7 +209,6 @@ export class SubscriptionsService {
   }>> {
     const all = await this.getAll();
     if (all.length < 2) return [];
-    const slugify = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
     const slugWords = (s: string) => new Set(slugify(s).split(' ').filter((w) => w.length >= 3));
 
     type Bucket = { subs: Subscription[]; reasons: Set<string> };
@@ -224,8 +224,8 @@ export class SubscriptionsService {
         const wordsA = slugWords(a.name);
         const wordsB = slugWords(b.name);
         const sharedWords = [...wordsA].filter((w) => wordsB.has(w));
-        const monthsA = new Set((a.occurrencesDetected ?? []).map((o) => o.date.slice(0, 7)));
-        const monthsB = new Set((b.occurrencesDetected ?? []).map((o) => o.date.slice(0, 7)));
+        const monthsA = new Set((a.occurrencesDetected ?? []).map((o) => monthKey(o.date)));
+        const monthsB = new Set((b.occurrencesDetected ?? []).map((o) => monthKey(o.date)));
         const sharesMonth = [...monthsA].some((m) => monthsB.has(m));
 
         const reasons: string[] = [];

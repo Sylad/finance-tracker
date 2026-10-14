@@ -33,6 +33,7 @@ import {
 } from '../loans/credit-institutions';
 import { PAY_IN_N_PATTERN } from '../loans/loans-patterns';
 import { DetectionValidatorService } from './detection-validator.service';
+import { monthKey } from '../../common/month-key';
 
 export type TriageDecision =
   | { route: 'rule'; classification: ClusterClassification }
@@ -162,7 +163,7 @@ function isMonthlySeries(occurrences: ClusterOccurrence[]): boolean {
     byDate,
   ];
   return candidates.some((series) => {
-    const months = new Set(series.map((o) => o.date.slice(0, 7)));
+    const months = new Set(series.map((o) => monthKey(o.date)));
     return (
       months.size >= 2 &&
       months.size === series.length &&
