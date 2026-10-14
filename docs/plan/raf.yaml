@@ -188,15 +188,18 @@ lots:
     finished: 2026-10-14
   - id: L16
     title: "Code mort : findByIdentifiers, chaîne SSE sans consommateur"
-    status: doing
+    status: done
     estimate: 1
     created: 2026-09-28
     tasks:
-      - { id: t1, title: "findByIdentifiers : re-cibler les specs sur findExistingLoan puis supprimer (#21)", status: todo }
-      - { id: t2, title: "SSE : brancher EventSource → invalidations TanStack, ou supprimer (#22)", status: todo }
+      - { id: t1, title: "findByIdentifiers : re-cibler les specs sur findExistingLoan puis supprimer (#21)", status: done }
+      - { id: t2, title: "SSE : brancher EventSource → invalidations TanStack, ou supprimer (#22)", status: done }
     notes:
       - { date: 2026-09-28, text: "backlog revue 2026-08-13 #21 #22" }
+      - { date: 2026-10-14, text: "mineurs de revue : (1) écritures sans événement non listées : seuils santé, conseils, catégories personnelles, rescore-all, échec auto-sync après import ; (2) tests de couverture des 10 événements sur liste en dur, un nouveau bus.emit backend passerait inaperçu" }
     started: 2026-10-14
+    review: { date: 2026-10-14, verdict: "conforme (code-reviewer Opus, agent neuf, HEAD 8e1974e) : 3 mineurs notés — liste « sans événement » incomplète dans l'en-tête et le README, test de couverture des événements sur liste en dur, événements perdus pendant une coupure non rattrapés (sous-lot)", commit: 8e1974eae2ff3f187173facc79ead311ec82d8f2 }
+    finished: 2026-10-14
   - id: L17
     title: Adopter le plan raf (cadence) et y verser le backlog de la revue du 2026-08-13
     status: done
@@ -627,4 +630,10 @@ lots:
     title: "Détail d'un relevé : favicons marchands via icons.duckduckgo.com en 404 (edf.fr, predica.fr) — 2 erreurs console par visite, repli silencieux ; repli sans requête tierce ou cache local des logos (QA prod 14-10 après L15)"
     status: todo
     estimate: 0.25
+    created: 2026-10-14
+  - id: L70
+    title: "SSE : à la reconnexion après une erreur, invalider toutes les clés de EVENT_QUERY_KEYS (événements perdus pendant la coupure, l'onglet reste périmé)"
+    status: todo
+    estimate: 0.25
+    quickwin: true
     created: 2026-10-14
