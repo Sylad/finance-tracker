@@ -14,6 +14,7 @@ import {
 } from '../../models/loan-suggestion.model';
 import { escapeRegex } from '../../common/regex.util';
 import { monthKey } from '../../common/month-key';
+import { clusterByAmount } from '../../common/amount-clustering';
 
 const MIN_CONFIDENCE = 0.6;
 const AMOUNT_TOLERANCE = 0.05;
@@ -824,30 +825,14 @@ export class DetectionValidatorService {
    * Regroupe les occurrences en sous-séries par montant : clustering
    * glouton sur les montants triés, deux occurrences dans la même
    * sous-série si leurs montants absolus sont à ±5 % l'un de l'autre
-   * (tolérance mesurée contre la moyenne courante du bucket, comme
-   * `LoansService.splitByAmount`). Chaque bucket est ensuite re-trié par
+   * (tolérance mesurée contre la moyenne courante du bucket, via
+   * `clusterByAmount`, commun avec `LoansService`). Chaque bucket est ensuite re-trié par
    * date croissante (ordre attendu par `checkIntervals`).
    */
   static splitByAmount(
     occurrences: ClusterOccurrence[],
   ): ClusterOccurrence[][] {
-    const sorted = [...occurrences].sort(
-      (a, b) => Math.abs(a.amount) - Math.abs(b.amount),
-    );
-    const buckets: ClusterOccurrence[][] = [];
-    for (const o of sorted) {
-      const amt = Math.abs(o.amount);
-      const last = buckets[buckets.length - 1];
-      const lastAvg = last
-        ? last.reduce((s, x) => s + Math.abs(x.amount), 0) / last.length
-        : 0;
-      const tolerance = lastAvg * AMOUNT_TOLERANCE;
-      if (last && Math.abs(amt - lastAvg) <= tolerance) {
-        last.push(o);
-      } else {
-        buckets.push([o]);
-      }
-    }
+    const buckets = clusterByAmount(occurrences, (o) => o.amount);
     return buckets.map((bucket) =>
       [...bucket].sort((a, b) =>
         a.date < b.date ? -1 : a.date > b.date ? 1 : 0,

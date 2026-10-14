@@ -9,6 +9,7 @@ import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { StorageService } from '../storage/storage.service';
 import { PAY_IN_N_PATTERN } from './loans-patterns';
 import { monthKey } from '../../common/month-key';
+import { clusterByAmount } from '../../common/amount-clustering';
 
 export interface CreditStatementSnapshotInput {
   creditor: string;
@@ -478,21 +479,11 @@ export class LoansService {
 
     const allGroups = new Map<string, Bucket>();
     for (const [ref, occList] of refGroups.entries()) {
-      // Sort by amount asc to cluster adjacent amounts
-      const sortedOcc = [...occList].sort((a, b) => Math.abs(a.amount) - Math.abs(b.amount));
-      const buckets: Bucket[] = [];
-      for (const o of sortedOcc) {
-        const amt = Math.abs(o.amount);
-        const last = buckets[buckets.length - 1];
-        // Same bucket if within ±5 % of the bucket's centre (avg of its amounts).
-        const lastAvg = last ? last.occurrences.reduce((s, x) => s + Math.abs(x.amount), 0) / last.occurrences.length : 0;
-        const tolerance = lastAvg * 0.05;
-        if (last && Math.abs(amt - lastAvg) <= tolerance) {
-          last.occurrences.push(o);
-        } else {
-          buckets.push({ amount: Math.round(amt), ref, occurrences: [o] });
-        }
-      }
+      const buckets: Bucket[] = clusterByAmount(occList, (o) => o.amount).map((occurrences) => ({
+        amount: 0,
+        ref,
+        occurrences,
+      }));
       // Re-key each bucket (use rounded median amount)
       for (const b of buckets) {
         const median = Math.round(b.occurrences.reduce((s, x) => s + Math.abs(x.amount), 0) / b.occurrences.length);
