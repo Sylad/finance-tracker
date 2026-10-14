@@ -632,9 +632,10 @@ lots:
     finished: 2026-10-11
   - id: L69
     title: "Détail d'un relevé : favicons marchands via icons.duckduckgo.com en 404 (edf.fr, predica.fr) — 2 erreurs console par visite, repli silencieux ; repli sans requête tierce ou cache local des logos (QA prod 14-10 après L15)"
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-10-14
+    started: 2026-10-14
   - id: L70
     title: "SSE : à la reconnexion après une erreur, invalider toutes les clés de EVENT_QUERY_KEYS (événements perdus pendant la coupure, l'onglet reste périmé)"
     status: doing
