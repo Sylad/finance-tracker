@@ -41,6 +41,13 @@ describe('startLiveEvents', () => {
     }
   });
 
+  it('échéances et abonnements invalident aussi les écrans qui les lisent (prévisions, santé)', () => {
+    expect(EVENT_QUERY_KEYS['declarations-changed']).toEqual(expect.arrayContaining([['declarations'], ['forecast']]));
+    expect(EVENT_QUERY_KEYS['subscriptions-changed']).toEqual(
+      expect.arrayContaining([['subscriptions'], ['forecast'], ['health']]),
+    );
+  });
+
   it('ignore heartbeat, type inconnu et message illisible', () => {
     const { spy, src } = setup();
     src.push({ type: 'heartbeat', data: { ts: 1 } });
