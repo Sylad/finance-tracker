@@ -7,9 +7,9 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query';
  * Clés par préfixe : `['loans']` couvre aussi `['loans', 'suspicious']`, etc.
  */
 export const EVENT_QUERY_KEYS: Record<string, QueryKey[]> = {
-  'loans-changed': [['loans'], ['dashboard'], ['health'], ['forecast']],
+  'loans-changed': [['loans'], ['dashboard'], ['health'], ['forecast'], ['goals']],
   'loan-suggestions-changed': [['loan-suggestions']],
-  'savings-changed': [['savings'], ['dashboard'], ['health']],
+  'savings-changed': [['savings'], ['dashboard'], ['health'], ['goals']],
   'goals-changed': [['goals']],
   'subscriptions-changed': [['subscriptions'], ['forecast'], ['health']],
   'declarations-changed': [['declarations'], ['forecast']],
@@ -18,7 +18,7 @@ export const EVENT_QUERY_KEYS: Record<string, QueryKey[]> = {
   'import-logs-changed': [['import-logs']],
   'accounts-synced': [
     ['statements'], ['loans'], ['savings'], ['subscriptions'], ['dashboard'],
-    ['health'], ['forecast'], ['expenses-breakdown'],
+    ['health'], ['forecast'], ['expenses-breakdown'], ['goals'],
   ],
 };
 

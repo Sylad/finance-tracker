@@ -48,6 +48,12 @@ describe('startLiveEvents', () => {
     );
   });
 
+  it('épargne, crédits et relevés invalident aussi les objectifs (progression calculée dessus)', () => {
+    for (const t of ['savings-changed', 'loans-changed', 'accounts-synced']) {
+      expect(EVENT_QUERY_KEYS[t], t).toEqual(expect.arrayContaining([['goals']]));
+    }
+  });
+
   it('ignore heartbeat, type inconnu et message illisible', () => {
     const { spy, src } = setup();
     src.push({ type: 'heartbeat', data: { ts: 1 } });
