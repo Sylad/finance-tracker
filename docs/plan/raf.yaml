@@ -642,3 +642,4 @@ lots:
     quickwin: true
     created: 2026-10-14
     started: 2026-10-14
+    review: { date: 2026-10-14, verdict: "conforme (commit ab80f40 : 27 tests live-events et 378 tests frontend verts, tsc propre ; 4 choix d'interprétation relus et justifiés, README à jour) — orchestré (vague 2026-10-14-2015, 0 passe(s) de correction)", commit: ab80f40eec2c08c38bb78a561c9dbe34c1a16710 }
