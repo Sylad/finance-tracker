@@ -641,9 +641,10 @@ lots:
     review: { date: 2026-10-14, verdict: "conforme (2 notes mineures : champ `domain` sans lecteur en production, composant d'avatar sans test d'écran) — commits 4fa2da6 et b76a8e6, 381 tests Vitest verts, tsc propre, plan publié à jour — orchestré (vague 2026-10-14-2015, 1 passe(s) de correction)", commit: 4fa2da631d3b38eaa6a2e8fef6d67b509abeefeb }
   - id: L70
     title: "SSE : à la reconnexion après une erreur, invalider toutes les clés de EVENT_QUERY_KEYS (événements perdus pendant la coupure, l'onglet reste périmé)"
-    status: doing
+    status: done
     estimate: 0.25
     quickwin: true
     created: 2026-10-14
     started: 2026-10-14
     review: { date: 2026-10-14, verdict: "conforme (commit ab80f40 : 27 tests live-events et 378 tests frontend verts, tsc propre ; 4 choix d'interprétation relus et justifiés, README à jour) — orchestré (vague 2026-10-14-2015, 0 passe(s) de correction)", commit: ab80f40eec2c08c38bb78a561c9dbe34c1a16710 }
+    finished: 2026-10-14
