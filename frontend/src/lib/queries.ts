@@ -230,8 +230,10 @@ export function useUploadStatements() {
       qc.invalidateQueries({ queryKey: qk.scoreHistory() });
       qc.invalidateQueries({ queryKey: qkImportLogs.all() });
       // L'import déclenche l'auto-sync : crédits, épargne, abonnements,
-      // suggestions, net worth et santé changent aussi — sans SSE consommé
-      // côté UI, ces invalidations sont la seule fraîcheur (review 2026-08-13).
+      // suggestions, net worth et santé changent aussi. Le flux SSE
+      // (live-events.ts, depuis dd0f777) les rafraîchit dans tous les onglets ;
+      // ces invalidations locales restent le chemin immédiat de l'onglet qui
+      // a importé, sans attendre l'événement (review 2026-08-13).
       qc.invalidateQueries({ queryKey: ['loans'] });
       qc.invalidateQueries({ queryKey: ['savings'] });
       qc.invalidateQueries({ queryKey: ['subscriptions'] });

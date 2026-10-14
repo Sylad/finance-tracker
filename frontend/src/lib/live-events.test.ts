@@ -54,6 +54,50 @@ describe('startLiveEvents', () => {
     }
   });
 
+  // Table de référence (cf. en-tête de live-events.ts) : pour chaque événement, la
+  // liste COMPLÈTE des clés dont une source lue côté backend est modifiée.
+  const EXPECTED: Record<string, string[]> = {
+    'loans-changed': ['loans', 'dashboard', 'health', 'forecast', 'goals', 'expenses-breakdown'],
+    'loan-suggestions-changed': ['loan-suggestions'],
+    'savings-changed': ['savings', 'dashboard', 'health', 'goals', 'expenses-breakdown'],
+    'goals-changed': ['goals'],
+    'subscriptions-changed': ['subscriptions', 'forecast', 'health', 'expenses-breakdown'],
+    'declarations-changed': ['declarations', 'forecast'],
+    'category-rules-changed': ['category-rules'],
+    'category-rule-suggestions-changed': ['category-rule-suggestions'],
+    'import-logs-changed': ['import-logs'],
+    'accounts-synced': [
+      'statements', 'statement', 'loans', 'savings', 'subscriptions', 'loan-suggestions',
+      'dashboard', 'health', 'forecast', 'expenses-breakdown', 'goals',
+    ],
+  };
+
+  it('la table attendue couvre exactement les 10 événements du backend', () => {
+    expect(Object.keys(EXPECTED).sort()).toEqual(Object.keys(EVENT_QUERY_KEYS).sort());
+    expect(Object.keys(EXPECTED)).toHaveLength(10);
+  });
+
+  for (const [type, prefixes] of Object.entries(EXPECTED)) {
+    it(`${type} invalide exactement ${prefixes.length} clé(s) : ${prefixes.join(', ')}`, () => {
+      const { spy, src } = setup();
+      src.push({ type, data: null });
+      const called = spy.mock.calls.map((c) => (c[0] as { queryKey: string[] }).queryKey).sort();
+      expect(called).toEqual(prefixes.map((p) => [p]).sort());
+    });
+  }
+
+  it('dépenses : crédits, épargne et abonnements invalident le détail des dépenses (collectAllocatedTxIds)', () => {
+    for (const t of ['loans-changed', 'savings-changed', 'subscriptions-changed', 'accounts-synced']) {
+      expect(EVENT_QUERY_KEYS[t], t).toEqual(expect.arrayContaining([['expenses-breakdown']]));
+    }
+  });
+
+  it('accounts-synced invalide aussi le préfixe singulier [statement] (anomalies d’un relevé)', () => {
+    expect(EVENT_QUERY_KEYS['accounts-synced']).toEqual(
+      expect.arrayContaining([['statements'], ['statement']]),
+    );
+  });
+
   it('ignore heartbeat, type inconnu et message illisible', () => {
     const { spy, src } = setup();
     src.push({ type: 'heartbeat', data: { ts: 1 } });
