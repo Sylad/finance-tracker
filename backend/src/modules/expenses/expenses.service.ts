@@ -9,6 +9,7 @@ import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { Transaction } from '../../models/transaction.model';
 import { pairNeutralTransactions } from '../../common/neutral-pairs';
 import { monthKey } from '../../common/month-key';
+import { round2 } from '../../common/money';
 
 /**
  * ⚠️ PRIVACY — même exception documentée que credit-detection :
@@ -133,21 +134,20 @@ export class ExpensesService {
       byCategory.set(t.category, entry);
     }
 
-    const round = (n: number) => Math.round(n * 100) / 100;
     for (const b of Object.values(buckets)) {
-      b.total = round(b.total);
+      b.total = round2(b.total);
       b.transactions.sort((a, b2) => a.amount - b2.amount);
     }
     const categories = [...byCategory.entries()]
       .map(([category, v]) => ({
         category,
-        total: round(v.total),
+        total: round2(v.total),
         count: v.transactions.length,
         transactions: v.transactions.sort((a, b2) => a.amount - b2.amount),
       }))
       .sort((a, b2) => b2.total - a.total);
 
-    return { monthId: statement.id, totalDebits: round(totalDebits), buckets, categories };
+    return { monthId: statement.id, totalDebits: round2(totalDebits), buckets, categories };
   }
 
   // ------------------------------------------------------------ cut proposals

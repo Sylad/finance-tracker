@@ -15,6 +15,7 @@ import {
 import { escapeRegex } from '../../common/regex.util';
 import { monthKey } from '../../common/month-key';
 import { clusterByAmount } from '../../common/amount-clustering';
+import { round2 } from '../../common/money';
 
 const MIN_CONFIDENCE = 0.6;
 const AMOUNT_TOLERANCE = 0.05;
@@ -278,7 +279,7 @@ export class DetectionValidatorService {
     }
 
     const amountsAbs = occurrences.map((o) => Math.abs(o.amount));
-    const medianAmount = DetectionValidatorService.round2(
+    const medianAmount = round2(
       DetectionValidatorService.median(amountsAbs),
     );
 
@@ -586,7 +587,7 @@ export class DetectionValidatorService {
       return { ok: false, reason: 'subscription_interval_out_of_range' };
     }
 
-    const medianAmount = DetectionValidatorService.round2(
+    const medianAmount = round2(
       DetectionValidatorService.median(
         occurrences.map((o) => Math.abs(o.amount)),
       ),
@@ -891,7 +892,7 @@ export class DetectionValidatorService {
     }
 
     const amountsAbs = occurrences.map((o) => Math.abs(o.amount));
-    const medianAmount = DetectionValidatorService.round2(
+    const medianAmount = round2(
       DetectionValidatorService.median(amountsAbs),
     );
 
@@ -924,7 +925,7 @@ export class DetectionValidatorService {
   ): Promise<ValidationResult> {
     const occurrences = cluster.occurrences;
     const amountsAbs = occurrences.map((o) => Math.abs(o.amount));
-    const medianAmount = DetectionValidatorService.round2(
+    const medianAmount = round2(
       DetectionValidatorService.median(amountsAbs),
     );
 
@@ -1035,10 +1036,6 @@ export class DetectionValidatorService {
     const mid = Math.floor(sorted.length / 2);
     if (sorted.length % 2 === 0) return (sorted[mid - 1] + sorted[mid]) / 2;
     return sorted[mid];
-  }
-
-  private static round2(value: number): number {
-    return Math.round(value * 100) / 100;
   }
 
   /**
