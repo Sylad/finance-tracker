@@ -690,6 +690,12 @@ lots:
     spec: true
     created: 2026-10-15
     started: 2026-10-15
+    notes:
+      - { date: 2026-10-15, text: "Revue de la fiche — mineur : docs/specs/dictionnaire-marchands/fiche.yaml:34 — C1 : le dictionnaire remplace la catégorie mais pas la sous-catégorie (le code de apply() garde tx.subcategory). Une sous-catégorie de Claude pour « transport » peut donc rester sur une transaction passée en « food ». Aucune règle ne la traite." }
+      - { date: 2026-10-15, text: 'Revue de la fiche — mineur : docs/specs/dictionnaire-marchands/fiche.yaml:232 — R16 dit que « non booléen vrai » garde le comportement inchangé, mais aucun test ne le vérifie (par exemple memorizeMerchant: "true").' }
+      - { date: 2026-10-15, text: "Revue de la fiche — mineur : docs/specs/dictionnaire-marchands/fiche.yaml:195 — R12 cite auto-categorize.service.ts:67-69 (ce sont des lignes de commentaire) et 80-84. assertNotDemo est appelé à la ligne 76 et défini à la ligne 221. Les lignes citées ont dérivé ; la source existe, mais le repère est faux." }
+      - { date: 2026-10-15, text: "Revue de la fiche — mineur : docs/specs/dictionnaire-marchands/fiche.yaml:172 — R10/C2 : l'aperçu appelle askClaudeForBatch via Promise.allSettled et relance toute HttpException de quota ou d'authentification (auto-categorize.service.ts:~108-112). Si Claude échoue sur les transactions restantes, les suggestions du dictionnaire déjà calculées sont perdues. La fiche ne dit pas si c'est voulu, alors que le gain annoncé est « immédiat et sûr »." }
+      - { date: 2026-10-15, text: "Revue de la fiche — mineur : docs/specs/dictionnaire-marchands/fiche.yaml:106 — R3 : « TotalEnergies → transport » ne couvre ni « TOTAL » seul ni « TOTAL ENERGIES » (deux mots), qui sont courants sur les libellés de carburant. Aucun test ne documente ce choix." }
   - id: L76
     title: "Analyse des relevés : passer de claude-sonnet-4-5 à claude-sonnet-5-5 (extraction et catégorisation), vérifié sur un relevé réel en local avant livraison (Sylvain 15-10)"
     status: doing
