@@ -131,6 +131,16 @@
       "id": "L73",
       "title": "Démo : chiffres cohérents entre patrimoine, crédits et score du mois",
       "status": "todo"
+    },
+    {
+      "id": "L74",
+      "title": "Relevés : part des transactions sans catégorie et marchands à classer",
+      "status": "todo"
+    },
+    {
+      "id": "L75",
+      "title": "Catégories stables d'un mois à l'autre et apprises de vos corrections",
+      "status": "todo"
     }
   ]
 }
