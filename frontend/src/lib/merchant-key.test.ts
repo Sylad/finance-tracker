@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { merchantKey } from './merchant-key';
+import { merchantKey, merchantRule, merchantRuleWords } from './merchant-key';
 
 describe('merchantKey (miroir du backend, L75)', () => {
   it('R1 — « PAIEMENT CB 1203 CARREFOUR MARKET 75015 12/03 » donne la clé « CARREFOUR MARKET »', () => {
@@ -15,5 +15,25 @@ describe('merchantKey (miroir du backend, L75)', () => {
   it('R18 — accents retirés et tout caractère hors A-Z/0-9 sépare les mots', () => {
     expect(merchantKey('CB AMAZON.FR')).toBe('AMAZON FR');
     expect(merchantKey('CARREFOUR CITÉ')).toBe('CARREFOUR CITE');
+  });
+});
+
+describe('motif mémorisé, miroir du backend (L75, R15)', () => {
+  it('R15 — enseigne reconnue : ses mots, bornés, même quand elle n\'est pas en tête', () => {
+    expect(merchantRuleWords('RETRAIT DAB 12/03 CARREFOUR')).toEqual(['CARREFOUR']);
+    expect(merchantRule('RETRAIT DAB 12/03 CARREFOUR').pattern).toBe('\\bCARREFOUR\\b');
+    expect(merchantRule('CB STATION E.LECLERC').pattern).toBe('\\bLECLERC\\b');
+  });
+
+  it('R15 — marchand inconnu : la clé entière, chaque mot borné', () => {
+    expect(merchantRuleWords('PAIEMENT CB RESTAURANT LE RECAMIER')).toEqual(['RESTAURANT', 'LE', 'RECAMIER']);
+    expect(merchantRule('PAIEMENT CB RESTAURANT LE RECAMIER').pattern).toBe(
+      '\\bRESTAURANT[^A-Za-z0-9]+LE[^A-Za-z0-9]+RECAMIER\\b',
+    );
+  });
+
+  it('R15 — un seul mot de moins de 4 lettres : pattern-too-short ; clé vide : merchant-key-empty', () => {
+    expect(merchantRule('CB IKE 1234')).toEqual({ words: ['IKE'], pattern: null, skipped: 'pattern-too-short' });
+    expect(merchantRule('CB 1234').skipped).toBe('merchant-key-empty');
   });
 });

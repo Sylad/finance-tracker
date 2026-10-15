@@ -62,9 +62,35 @@ describe('choix de règle du sélecteur (L75, R16)', () => {
     expect(body.createRule).toBe(false);
   });
 
-  it('R15 — le choix nomme la clé du marchand (CB AMAZON.FR → « AMAZON FR »)', () => {
+  it('R15 — le choix nomme les mots du motif (CB AMAZON.FR → « AMAZON FR »)', () => {
     setup({ description: 'CB AMAZON.FR', normalizedDescription: 'CB AMAZON.FR' });
     expect(screen.getByRole('radio', { name: /Mémoriser pour « AMAZON FR »/ })).toBeTruthy();
+  });
+
+  it('R15 — un libellé de plus de deux mots est nommé en entier, comme le motif créé (RESTAURANT LE RECAMIER)', () => {
+    setup({ description: 'PAIEMENT CB RESTAURANT LE RECAMIER', normalizedDescription: 'PAIEMENT CB RESTAURANT LE RECAMIER' });
+    expect(screen.getByRole('radio', { name: /Mémoriser pour « RESTAURANT LE RECAMIER »/ })).toBeTruthy();
+    expect(screen.getByText(/ces mots entiers, dans cet ordre/)).toBeTruthy();
+  });
+
+  it('R15 — enseigne reconnue hors de tête de libellé : seuls ses mots sont nommés (RETRAIT DAB 12/03 CARREFOUR → « CARREFOUR »)', () => {
+    setup({ description: 'RETRAIT DAB 12/03 CARREFOUR', normalizedDescription: 'RETRAIT DAB 12/03 CARREFOUR' });
+    expect(screen.getByRole('radio', { name: /Mémoriser pour « CARREFOUR »/ })).toBeTruthy();
+  });
+
+  it('R15 — motif d\'un seul mot de moins de 4 lettres : mémorisation désactivée avec la raison, aucune règle envoyée', async () => {
+    setup({ description: 'CB IKE 1234', normalizedDescription: 'CB IKE 1234' });
+    expect((screen.getByRole('radio', { name: /Mémoriser pour/ }) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByText(/« IKE » est trop court/)).toBeTruthy();
+    await save();
+    await waitFor(() => expect(patch).toHaveBeenCalled());
+    expect(patch.mock.calls[0][1].memorizeMerchant).toBe(false);
+  });
+
+  it('R15 — mots du motif absents tels quels du libellé brut (accent) : mémorisation désactivée', () => {
+    setup({ description: 'BOULANGERIE CITÉ', normalizedDescription: 'BOULANGERIE CITÉ' });
+    expect((screen.getByRole('radio', { name: /Mémoriser pour/ }) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByText(/ne se retrouve pas tel quel dans le libellé/)).toBeTruthy();
   });
 
   it('R14 — clé vide : mémorisation désactivée avec la raison, aucune règle envoyée', async () => {

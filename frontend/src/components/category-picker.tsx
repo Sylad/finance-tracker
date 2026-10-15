@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { CATEGORY_LABELS, type Transaction, type TransactionCategory } from '@/types/api';
 import { cn } from '@/lib/utils';
 import { frenchHint } from '@/lib/category-label';
-import { merchantKey } from '@/lib/merchant-key';
+import { merchantRule } from '@/lib/merchant-key';
 
 interface CategoryRulesPayload {
   rules: Array<{ id: string; pattern: string; category: string; subcategory: string; priority: number }>;
@@ -30,9 +30,13 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
   const [newCatName, setNewCatName] = useState('');
   const [creatingCat, setCreatingCat] = useState(false);
   // L75 : un seul choix de règle (createRule l'emporterait seul côté API, R16) ;
-  // par défaut la mémorisation par marchand, sauf clé vide (R14).
-  const key = merchantKey(tx.normalizedDescription || tx.description || '');
-  const [ruleMode, setRuleMode] = useState<'none' | 'memorize' | 'pattern'>(key ? 'memorize' : 'none');
+  // par défaut la mémorisation par marchand, sauf si le backend ne créerait pas
+  // de règle (R14 clé vide, R15 motif trop court ou qui ne reconnaît pas le libellé).
+  const rawLabel = tx.normalizedDescription || tx.description || '';
+  const rule = merchantRule(rawLabel);
+  const memorizable = !!rule.pattern && new RegExp(rule.pattern, 'i').test(rawLabel);
+  const merchantName = rule.words.join(' ');
+  const [ruleMode, setRuleMode] = useState<'none' | 'memorize' | 'pattern'>(memorizable ? 'memorize' : 'none');
   const memorize = ruleMode === 'memorize';
   const createRule = ruleMode === 'pattern';
   const [replayAll, setReplayAll] = useState(false);
@@ -190,21 +194,25 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
 
           <fieldset className="border-t border-border pt-4 space-y-3">
             <legend className="sr-only">Règle de catégorisation</legend>
-            <label className={cn('flex items-start gap-2', key ? 'cursor-pointer' : 'opacity-60')}>
+            <label className={cn('flex items-start gap-2', memorizable ? 'cursor-pointer' : 'opacity-60')}>
               <input
                 type="radio"
                 name="picker-rule"
                 checked={memorize}
-                disabled={!key}
+                disabled={!memorizable}
                 onChange={() => setRuleMode('memorize')}
                 className="mt-0.5"
               />
               <div className="text-sm">
-                <div className="text-fg">{key ? `Mémoriser pour « ${key} »` : 'Mémoriser pour ce marchand'}</div>
+                <div className="text-fg">{memorizable ? `Mémoriser pour « ${merchantName} »` : 'Mémoriser pour ce marchand'}</div>
                 <div className="text-xs text-fg-muted mt-0.5">
-                  {key
-                    ? 'Crée la règle à partir de ce nom, sans motif à saisir : elle reconnaîtra les libellés qui le contiennent.'
-                    : 'Aucun nom de marchand reconnu dans ce libellé.'}
+                  {memorizable
+                    ? 'Crée la règle sans motif à saisir : elle reconnaîtra les libellés qui contiennent ces mots entiers, dans cet ordre.'
+                    : rule.skipped === 'merchant-key-empty'
+                      ? 'Aucun nom de marchand reconnu dans ce libellé.'
+                      : rule.skipped === 'pattern-too-short'
+                        ? `« ${merchantName} » est trop court (moins de 4 lettres) pour une règle fiable.`
+                        : `« ${merchantName} » ne se retrouve pas tel quel dans le libellé (accents ou chiffres) : aucune règle ne serait créée.`}
                 </div>
               </div>
             </label>
