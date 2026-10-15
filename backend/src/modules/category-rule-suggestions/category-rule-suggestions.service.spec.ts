@@ -8,6 +8,7 @@ import { CategoryRulesService } from '../category-rules/category-rules.service';
 import { StorageService } from '../storage/storage.service';
 import { EventBusService } from '../events/event-bus.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
+import { expectAutoStrictCall } from '../analysis/forced-tool-spec';
 
 /**
  * Tests CRUD + transitions sans toucher l'appel Claude.
@@ -191,5 +192,43 @@ describe('CategoryRuleSuggestionsService', () => {
     expect(messagesCreate).not.toHaveBeenCalled();
 
     fetchMock.mockRestore();
+  });
+});
+
+describe('CategoryRuleSuggestionsService — appel Claude : tool_choice auto + outil strict (L76)', () => {
+  const SUGGESTION = {
+    pattern: 'NETFLIX', category: 'entertainment', subcategory: 'Streaming',
+    exampleDescriptions: ['NETFLIX 10/05', 'NETFLIX 10/04'], occurrenceCount: 2, rationale: 'Streaming.',
+  };
+
+  function setup(responses: unknown[]) {
+    const service = new CategoryRuleSuggestionsService(
+      { get: () => 'sk-test' } as any, {} as any, {} as any, {} as any, {} as any,
+    );
+    const create = jest.fn();
+    for (const r of responses) create.mockResolvedValueOnce(r);
+    (service as any).client = { messages: { create } };
+    return { service, create, ask: () => (service as any).requestClaudeRuleSuggestions(['food', 'entertainment', 'other'], '2× NETFLIX') };
+  }
+  const toolMsg = (name: string) => ({ stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 't', name, input: { suggestions: [SUGGESTION] } }] });
+  const textMsg = () => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({ suggestions: [SUGGESTION] }) }] });
+
+  it('requête conforme (auto, strict, consigne, pas de temperature)', async () => {
+    const { create, ask } = setup([toolMsg('suggest_category_rules')]);
+    await expect(ask()).resolves.toEqual([SUGGESTION]);
+    expect(create).toHaveBeenCalledTimes(1);
+    expectAutoStrictCall(create.mock.calls[0][0], 'suggest_category_rules');
+  });
+
+  it('aucun tool_use → un nouvel essai, puis erreur explicite (texte libre jamais parsé)', async () => {
+    const { create, ask } = setup([textMsg(), textMsg()]);
+    await expect(ask()).rejects.toThrow(/n'a pas appelé l'outil suggest_category_rules/);
+    expect(create).toHaveBeenCalledTimes(2);
+  });
+
+  it('texte libre au 1er essai, tool_use au 2e → suggestions', async () => {
+    const { create, ask } = setup([textMsg(), toolMsg('suggest_category_rules')]);
+    await expect(ask()).resolves.toEqual([SUGGESTION]);
+    expect(create).toHaveBeenCalledTimes(2);
   });
 });

@@ -10,6 +10,7 @@ import {
   IncomingCategorySuggestion,
 } from '../../models/category-rule-suggestion.model';
 import { CLAUDE_MODEL } from '../analysis/claude-model';
+import { AUTO_TOOL_CHOICE, onlyToolInstruction, requireToolUse, runWithToolRetry } from '../analysis/forced-tool.helper';
 import { Transaction } from '../../models/transaction.model';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { EventBusService } from '../events/event-bus.service';
@@ -29,6 +30,7 @@ type RuleSuggestionProvider = 'claude' | 'ollama';
  */
 const SUGGEST_RULES_TOOL: Anthropic.Tool = {
   name: 'suggest_category_rules',
+  strict: true,
   description:
     "Propose des règles de catégorisation pour les transactions actuellement classées 'other'. Chaque règle = un pattern regex + une catégorie cible.",
   input_schema: {
@@ -71,11 +73,13 @@ const SUGGEST_RULES_TOOL: Anthropic.Tool = {
                 "Justification courte (1 phrase) du choix de catégorie. Ex: 'Service de streaming vidéo = entertainment.'",
             },
           },
-          required: ['pattern', 'category', 'exampleDescriptions', 'occurrenceCount'],
+          required: ['pattern', 'category', 'subcategory', 'exampleDescriptions', 'occurrenceCount', 'rationale'],
+          additionalProperties: false,
         },
       },
     },
     required: ['suggestions'],
+    additionalProperties: false,
   },
 };
 
@@ -338,23 +342,21 @@ export class CategoryRuleSuggestionsService {
     availableCats: string[],
     txSummary: string,
   ): Promise<IncomingCategorySuggestion[]> {
-    const message = await this.getClaudeClient().messages.create({
+    const message = await runWithToolRetry(() => this.getClaudeClient().messages.create({
       model: CLAUDE_MODEL,
       max_tokens: 4096,
-      temperature: 0,
-      system: this.buildRuleSuggestionSystemPrompt(availableCats),
+      system: this.buildRuleSuggestionSystemPrompt(availableCats) + '\n\n' + onlyToolInstruction('suggest_category_rules'),
       tools: [SUGGEST_RULES_TOOL],
-      tool_choice: { type: 'tool', name: 'suggest_category_rules' },
+      tool_choice: AUTO_TOOL_CHOICE,
       messages: [{
         role: 'user',
         content: this.buildRuleSuggestionUserPrompt(txSummary),
       }],
+    }), 'suggest_category_rules', () => {
+      this.logger.warn('rule-suggestions: aucun tool_use suggest_category_rules, un nouvel essai');
     });
 
-    const block = message.content.find((b) => b.type === 'tool_use');
-    if (!block || block.type !== 'tool_use') {
-      throw new Error('Claude renvoyé sans tool_use block');
-    }
+    const block = requireToolUse(message, 'suggest_category_rules');
     const input = block.input as { suggestions?: IncomingCategorySuggestion[] };
     return Array.isArray(input.suggestions) ? input.suggestions : [];
   }
