@@ -84,6 +84,16 @@ describe('lookupMerchant (R3, R4, R5, R18)', () => {
     expect(MERCHANT_DICTIONARY_VERSION).toBe(1);
   });
 
+  it.each([
+    'PRLV SEPA CARREFOUR BANQUE 0123456',
+    'CARREFOUR BANQUE ECHEANCE',
+    'PRELEVEMENT ORANGE BANK',
+    'VIR SEPA LIVRET ORANGE BANK',
+    'DUTY FREE CDG',
+  ])('R4 — « %s » (organisme de crédit ou d\'épargne, homonyme) n\'est pas reconnu', (label) => {
+    expect(lookupMerchant(label)).toBeNull();
+  });
+
   it('R4 — « FREEDOM SPORT » n\'est pas reconnu comme Free', () => {
     expect(lookupMerchant('FREEDOM SPORT')).toBeNull();
   });

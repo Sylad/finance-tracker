@@ -150,6 +150,21 @@ describe('AutoCategorizeService — preview()', () => {
     expect(result.processed).toBe(2);
   });
 
+  it('R11 — une suggestion issue de Claude porte source claude et les champs d\'origine inchangés', async () => {
+    const { svc } = makeService({
+      stmt: statement([tx({ id: 't1', description: 'BOULANGERIE PARIS', normalizedDescription: 'BOULANGERIE PARIS' })]),
+      toolInputs: [
+        { suggestions: [{ transactionId: 't1', suggestedCategory: 'food', confidence: 0.9, reasoning: 'Boulangerie', proposedRulePattern: 'BOULANGERIE' }] },
+      ],
+    });
+    const [s] = (await svc.preview('2026-03')).suggestions;
+    expect(s.source).toBe('claude');
+    expect(s).toMatchObject({
+      transactionId: 't1', suggestedCategory: 'food', confidence: 0.9,
+      reasoning: 'Boulangerie', proposedRulePattern: 'BOULANGERIE',
+    });
+  });
+
   it('drops invalid regex patterns and emits a warning', async () => {
     const txs = [tx({ id: 't1', description: 'NESPRESSO PARIS' })];
     const { svc } = makeService({

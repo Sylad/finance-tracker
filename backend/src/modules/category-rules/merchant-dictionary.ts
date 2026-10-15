@@ -14,10 +14,15 @@ export interface MerchantEntry {
   /** Mots (R18) qui doivent former une suite de mots entiers de la clé. */
   words: string[];
   category: TransactionCategory;
+  /** Mots qui, présents n'importe où dans la clé, écartent l'entrée (homonymes). */
+  unless?: string[];
 }
 
+/** Organismes de crédit/épargne et homonymes : jamais une dépense de l'enseigne. */
+const FINANCE_WORDS = ['BANQUE', 'BANK', 'FINANCE', 'FINANCEMENT', 'LIVRET', 'CREDIT', 'ASSURANCE', 'PRET'];
+
 export const MERCHANT_DICTIONARY: readonly MerchantEntry[] = [
-  { label: 'Carrefour', words: ['CARREFOUR'], category: 'food' },
+  { label: 'Carrefour', words: ['CARREFOUR'], category: 'food', unless: FINANCE_WORDS },
   { label: 'Leclerc', words: ['LECLERC'], category: 'food' },
   { label: 'Lidl', words: ['LIDL'], category: 'food' },
   { label: 'Uber Eats', words: ['UBER', 'EATS'], category: 'food' },
@@ -26,8 +31,8 @@ export const MERCHANT_DICTIONARY: readonly MerchantEntry[] = [
   { label: 'Vinci', words: ['VINCI'], category: 'transport' },
   { label: 'Uber', words: ['UBER'], category: 'transport' },
   { label: 'Netflix', words: ['NETFLIX'], category: 'subscriptions' },
-  { label: 'Free', words: ['FREE'], category: 'subscriptions' },
-  { label: 'Orange', words: ['ORANGE'], category: 'subscriptions' },
+  { label: 'Free', words: ['FREE'], category: 'subscriptions', unless: ['DUTY'] },
+  { label: 'Orange', words: ['ORANGE'], category: 'subscriptions', unless: FINANCE_WORDS },
 ];
 
 /** Préfixes bancaires retirés en tête de libellé (R2). */
@@ -73,6 +78,7 @@ export function lookupMerchant(label: string): MerchantEntry | null {
   let best: MerchantEntry | null = null;
   for (const entry of MERCHANT_DICTIONARY) {
     if (best && entry.words.length <= best.words.length) continue;
+    if (entry.unless?.some((w) => key.includes(w))) continue;
     const n = entry.words.length;
     for (let start = 0; start + n <= key.length; start++) {
       if (entry.words.every((w, k) => key[start + k] === w)) {
