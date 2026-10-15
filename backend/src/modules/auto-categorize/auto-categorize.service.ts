@@ -346,7 +346,7 @@ export function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-/** Motif de marchand (R15) ; null s'il ne reconnaît pas le libellé brut (accents…). */
+/** Motif de marchand (R15, mots de l'enseigne) ; null s'il est trop court ou ne reconnaît pas le libellé brut. */
 function dictionaryRulePattern(tx: Transaction): string | null {
   const pattern = merchantPattern(rawLabel(tx));
   return pattern && new RegExp(pattern, 'i').test(rawLabel(tx)) ? pattern : null;

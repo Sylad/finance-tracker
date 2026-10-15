@@ -258,13 +258,26 @@ describe('AutoCategorizeService — preview() et dictionnaire de marchands (L75)
       confidence: 1,
       source: 'dictionary',
       reasoning: 'Marchand reconnu : Carrefour',
-      proposedRulePattern: 'CARREFOUR[^A-Za-z0-9]+MARKET',
+      proposedRulePattern: '\\bCARREFOUR\\b',
       currentCategory: 'other',
     });
   });
 
-  it('R10 — un motif qui ne reconnaît pas le libellé brut (accent) donne proposedRulePattern null', async () => {
-    const txs = [tx({ id: 't1', description: 'CARREFOUR CITÉ', normalizedDescription: 'CARREFOUR CITÉ' })];
+  it('R10 — le motif proposé est celui des mots de l\'enseigne, même quand elle n\'est pas en tête de la clé', async () => {
+    const txs = [
+      tx({ id: 't1', description: 'RETRAIT DAB 12/03 CARREFOUR', normalizedDescription: 'RETRAIT DAB 12/03 CARREFOUR' }),
+      tx({ id: 't2', description: 'CB STATION E.LECLERC', normalizedDescription: 'CB STATION E.LECLERC' }),
+    ];
+    const { svc } = makeService({ stmt: statement(txs), toolInputs: [] });
+    const out = (await svc.preview('2026-03')).suggestions;
+    const byId = Object.fromEntries(out.map((s) => [s.transactionId, s.proposedRulePattern]));
+    expect(byId).toEqual({ t1: '\\bCARREFOUR\\b', t2: '\\bLECLERC\\b' });
+    expect(new RegExp(byId.t1 as string, 'i').test('RETRAIT DAB 03/04 BNP PARIBAS')).toBe(false);
+    expect(new RegExp(byId.t2 as string, 'i').test('CB STATION ESSO')).toBe(false);
+  });
+
+  it('R10 — un motif qui ne reconnaît pas le libellé brut (mot à chiffre intercalé) donne proposedRulePattern null', async () => {
+    const txs = [tx({ id: 't1', description: 'UBER 12 EATS', normalizedDescription: 'UBER 12 EATS' })];
     const { svc } = makeService({ stmt: statement(txs), toolInputs: [] });
     const [s] = (await svc.preview('2026-03')).suggestions;
     expect(s.source).toBe('dictionary');

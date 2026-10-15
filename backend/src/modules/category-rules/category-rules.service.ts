@@ -8,7 +8,7 @@ import { Transaction, TransactionCategory } from '../../models/transaction.model
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { EventBusService } from '../events/event-bus.service';
 import { StorageService } from '../storage/storage.service';
-import { merchantPattern, rawLabel } from './merchant-dictionary';
+import { merchantRule, rawLabel, type MerchantRuleSkipped } from './merchant-dictionary';
 
 const RULES_FILE = 'category-rules.json';
 const USER_CATS_FILE = 'user-categories.json';
@@ -178,10 +178,10 @@ export class CategoryRulesService {
     tx: Pick<Transaction, 'normalizedDescription' | 'description'>,
     category: string,
     subcategory?: string,
-  ): Promise<{ rule: CategoryRule | null; skipped?: 'merchant-key-empty' | 'pattern-no-match' }> {
+  ): Promise<{ rule: CategoryRule | null; skipped?: MerchantRuleSkipped }> {
     const haystack = rawLabel(tx);
-    const pattern = merchantPattern(haystack);
-    if (!pattern) return { rule: null, skipped: 'merchant-key-empty' };
+    const { pattern, skipped } = merchantRule(haystack);
+    if (!pattern) return { rule: null, skipped };
     if (!new RegExp(pattern, 'i').test(haystack)) return { rule: null, skipped: 'pattern-no-match' };
 
     const wantedSub = subcategory ?? '';

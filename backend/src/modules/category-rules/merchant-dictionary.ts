@@ -66,10 +66,45 @@ export function merchantKey(label: string): string {
   return words.slice(i).join(' ');
 }
 
-/** R15 : motif littéral des deux premiers mots de la clé ; null si la clé est vide. */
+/** Raisons pour lesquelles « Mémoriser pour ce marchand » ne crée pas de règle (R14, R15). */
+export type MerchantRuleSkipped = 'merchant-key-empty' | 'pattern-too-short' | 'pattern-no-match';
+
+export interface MerchantRule {
+  /** Les mots qui formeront le motif, exactement ceux que le panneau affiche. */
+  words: string[];
+  /** Motif regex (flag i) ; null si `skipped`. */
+  pattern: string | null;
+  skipped?: Exclude<MerchantRuleSkipped, 'pattern-no-match'>;
+}
+
+/** Longueur minimale (lettres) d'un motif réduit à un seul mot (R15). */
+export const MIN_SINGLE_WORD_PATTERN_LENGTH = 4;
+
+/**
+ * R15 : mots du motif mémorisé — ceux de l'enseigne reconnue par le dictionnaire
+ * (R4) si le libellé en contient une, sinon la clé de marchand entière (R1).
+ */
+export function merchantRuleWords(label: string): string[] {
+  const entry = lookupMerchant(label);
+  return entry ? [...entry.words] : merchantKey(label).split(' ').filter(Boolean);
+}
+
+/**
+ * R15 : règle mémorisée pour un libellé — chaque mot borné (\b), mots séparés par
+ * [^A-Za-z0-9]+. Un motif d'un seul mot de moins de 4 lettres est refusé.
+ */
+export function merchantRule(label: string): MerchantRule {
+  const words = merchantRuleWords(label);
+  if (words.length === 0) return { words, pattern: null, skipped: 'merchant-key-empty' };
+  if (words.length === 1 && words[0].length < MIN_SINGLE_WORD_PATTERN_LENGTH) {
+    return { words, pattern: null, skipped: 'pattern-too-short' };
+  }
+  return { words, pattern: `\\b${words.join('[^A-Za-z0-9]+')}\\b` };
+}
+
+/** R15 : motif de la règle mémorisée ; null si la clé est vide ou le motif trop court. */
 export function merchantPattern(label: string): string | null {
-  const words = merchantKey(label).split(' ').filter(Boolean).slice(0, 2);
-  return words.length > 0 ? words.join('[^A-Za-z0-9]+') : null;
+  return merchantRule(label).pattern;
 }
 
 /** R4 : entrée dont les mots forment une suite contiguë de la clé ; la plus longue gagne. */

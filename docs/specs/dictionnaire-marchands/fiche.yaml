@@ -66,7 +66,7 @@ cas:
       - le corps porte une catégorie valide et memorizeMerchant à true
     nominal:
       - Le service applique la catégorie à la transaction et sauvegarde le relevé.
-      - Il calcule la clé de marchand du libellé (libellé normalisé, deux premiers mots).
+      - Il détermine les mots du motif (R15) : ceux de l'enseigne que le dictionnaire reconnaît dans le libellé, sinon la clé de marchand entière.
       - Il crée une règle utilisateur (priorité 100, ou supérieure à celle des règles qui reconnaissent déjà le libellé, R13) dont le motif cible cette clé ; aucune règle existante n'est modifiée.
       - Si replayAll est vrai, la règle est rejouée sur tous les relevés stockés.
       - La réponse renvoie la transaction, la règle créée et le nombre de relevés rejoués.
@@ -75,6 +75,7 @@ cas:
       - { si: createRule est aussi vrai, alors: le chemin createRule existant gagne, regles: [R16] }
       - { si: le libellé ne laisse aucun mot après normalisation, alors: la catégorie est appliquée mais aucune règle n'est créée, regles: [R14] }
       - { si: le motif du marchand ne correspond pas au libellé brut de la transaction, alors: la catégorie est appliquée mais aucune règle n'est créée, regles: [R15] }
+      - { si: le motif se réduit à un seul mot de moins de 4 lettres, alors: la catégorie est appliquée mais aucune règle n'est créée (pattern-too-short), regles: [R15] }
       - { si: la règle qui gagne déjà sur ce libellé donne la catégorie et la sous-catégorie choisies, alors: elle est réutilisée, rien n'est écrit, regles: [R13] }
       - { si: une règle existante reconnaît le libellé avec un autre résultat, alors: une nouvelle règle de priorité supérieure est créée, l'ancienne reste intacte, regles: [R13] }
       - { si: la catégorie est invalide, ou le relevé ou la transaction est introuvable, alors: erreur existante, rien n'est écrit, regles: [R17] }
@@ -177,7 +178,7 @@ regles:
     cas: [C2]
     enonce: >-
       L'aperçu d'auto-catégorisation applique le dictionnaire avant Claude : les transactions other reconnues deviennent des
-      suggestions (confidence 1, source dictionary, reasoning « Marchand reconnu : <enseigne> », proposedRulePattern = motif du marchand) et ne sont
+      suggestions (confidence 1, source dictionary, reasoning « Marchand reconnu : <enseigne> », proposedRulePattern = motif de R15, donc fait des mots de l'enseigne reconnue) et ne sont
       pas envoyées à Claude ; si toutes le sont, Claude n'est pas appelé. totalOther et processed restent le nombre de transactions other du relevé.
     statut: sourcee
     source: "demande du lot : « appliqué en local avant Claude » ; flux actuel auto-categorize.service.ts:80-115 (toutes les other partent à Claude)"
@@ -185,6 +186,7 @@ regles:
       - "R10 — avec une transaction CARREFOUR et une inconnue, Claude ne reçoit que l'inconnue"
       - "R10 — avec uniquement des enseignes connues, le client Claude n'est jamais appelé"
       - "R10 — la suggestion du dictionnaire porte confidence 1 et source dictionary"
+      - "R10 — le motif proposé est celui des mots de l'enseigne, même quand elle n'est pas en tête de la clé (RETRAIT DAB 12/03 CARREFOUR → CARREFOUR, CB STATION E.LECLERC → LECLERC)"
   - id: R11
     cas: [C2]
     enonce: Le champ source (dictionary ou claude) est un ajout facultatif des suggestions ; une suggestion issue de Claude porte source claude et reste identique sinon.
@@ -225,17 +227,32 @@ regles:
     tests:
       - "R14 — libellé « CB 1234 » : catégorie appliquée, aucune règle, ruleSkipped merchant-key-empty"
   - id: R15
-    cas: [C3]
+    cas: [C2, C3]
     enonce: >-
-      Le motif de marchand est un littéral échappé des deux premiers mots de la clé (R18), séparés par [^A-Za-z0-9]+, insensible à la casse. Il doit
-      reconnaître le libellé brut (normalizedDescription, sinon description) de la transaction ; sinon (accents ou graphies différentes) aucune règle n'est créée,
-      createdRule est null et ruleSkipped vaut « pattern-no-match ». Les règles existantes continuent de s'appliquer sur normalizedDescription brut.
+      Motif de la règle mémorisée (amendé le 15-10 par le lead : l'ancien motif « deux premiers mots de la clé » attrapait des
+      libellés sans rapport, p. ex. RETRAIT DAB 12/03 CARREFOUR donnait RETRAIT DAB). Les mots du motif sont (a) les mots de l'enseigne
+      reconnue (l'entrée du dictionnaire qui a matché, R4), si le dictionnaire reconnaît le libellé ; (b) sinon tous les mots de la
+      clé normalisée (R1). Chaque mot est littéral et borné (\b), les mots sont séparés par [^A-Za-z0-9]+, insensible à la casse :
+      CARREFOUR donne \bCARREFOUR\b, RESTAURANT LE RECAMIER donne \bRESTAURANT[^A-Za-z0-9]+LE[^A-Za-z0-9]+RECAMIER\b. Un motif réduit
+      à un seul mot de moins de 4 lettres n'est pas mémorisé : catégorie appliquée, createdRule null, ruleSkipped « pattern-too-short ».
+      Le motif doit reconnaître le libellé brut (normalizedDescription, sinon description) de la transaction ; sinon (accents,
+      chiffres intercalés) aucune règle n'est créée, createdRule est null et ruleSkipped vaut « pattern-no-match ». Les règles
+      existantes continuent de s'appliquer sur normalizedDescription brut. L'aperçu d'auto-catégorisation (R10) propose le même motif
+      pour une suggestion du dictionnaire. Le panneau Catégoriser du frontend affiche exactement les mots du motif, calculés par un
+      miroir de la même fonction (frontend/src/lib/merchant-key.ts, parité testée) ; il ne promet rien d'autre. Le motif n'est pas
+      conditionné au signe du montant (le dictionnaire, lui, ne s'applique qu'aux débits, R8).
     statut: sourcee
-    source: "règles appliquées sur normalizedDescription brut : category-rules.service.ts:140 ; même garde « le motif doit correspondre à la transaction » : auto-categorize.service.ts:186-190 et sanitizeRulePattern"
+    source: "décision du lead du 15-10 (amende R15 après la troisième revue du lot) ; règles appliquées sur normalizedDescription brut : category-rules.service.ts:140 ; même garde « le motif doit correspondre à la transaction » : auto-categorize.service.ts:186-190 et sanitizeRulePattern"
     tests:
-      - "R15 — « PAIEMENT CB 1203 CARREFOUR MARKET 75015 » crée le motif CARREFOUR[^A-Za-z0-9]+MARKET"
+      - "R15 — enseigne reconnue : le motif est fait des mots de l'enseigne, pas des deux premiers mots de la clé"
+      - "R15 — le motif d'une enseigne ne reconnaît pas un autre retrait au DAB"
+      - "R15 — « PAIEMENT CB 1203 CARREFOUR MARKET 75015 » crée le motif des mots de l'enseigne, \\bCARREFOUR\\b"
+      - "R15 — « RETRAIT DAB 12/03 CARREFOUR » crée CARREFOUR, qui ne reconnaît pas « RETRAIT DAB 03/04 BNP PARIBAS »"
+      - "R15 — marchand inconnu : la clé entière, bornée ; « RESTAURANT LES PHILOSOPHES » n'est pas touché"
+      - "R15 — le motif de « RESTAURANT LE RECAMIER » ne reconnaît ni « RESTAURANT LES PHILOSOPHES » ni « RESTAURANT LE COMPTOIR DU RELAIS »"
+      - "R15 — « VIR SEPA M DUPONT LOYER » ne crée plus le motif SEPA M"
+      - "R15 — un motif d'un seul mot de moins de 4 lettres n'est pas mémorisé (pattern-too-short)"
       - "R15 — un libellé dont le motif ne reconnaît pas le brut ne crée aucune règle (pattern-no-match)"
-      - "R15 — deux mots au plus sont retenus dans le motif"
   - id: R16
     cas: [C3]
     enonce: >-
@@ -292,14 +309,14 @@ contrats:
   - id: A1
     appel: PATCH /api/statements/:id/transactions/:txId/category
     entree: "corps { category, subcategory?, createRule?, rulePattern?, replayAll?, memorizeMerchant? } — memorizeMerchant est le seul ajout, facultatif"
-    sortie: "HTTP 200 { transaction, createdRule, replayed } ; ajout facultatif ruleSkipped (« merchant-key-empty » ou « pattern-no-match ») présent seulement quand memorizeMerchant n'a pas créé de règle"
+    sortie: "HTTP 200 { transaction, createdRule, replayed } ; ajout facultatif ruleSkipped (« merchant-key-empty », « pattern-too-short » ou « pattern-no-match ») présent seulement quand memorizeMerchant n'a pas créé de règle"
     erreurs:
       - { code: HTTP 400, message: "category requis" }
       - { code: HTTP 400, message: "Catégorie invalide : <category>" }
       - { code: HTTP 404, message: "Relevé <id> introuvable" }
       - { code: HTTP 404, message: "Transaction <txId> introuvable" }
       - { code: log warn, message: "Merchant rule not created for transaction <txId>: <ruleSkipped>" }
-    regles: [R1, R2, R13, R14, R15, R16, R17, R18]
+    regles: [R1, R2, R4, R13, R14, R15, R16, R17, R18]
   - id: A2
     appel: POST /api/auto-categorize/:statementId/preview
     entree: "identifiant du relevé dans le chemin ; aucun corps"
@@ -307,7 +324,7 @@ contrats:
     erreurs:
       - { code: HTTP 403, message: "L'auto-catégorisation Claude n'est pas disponible en mode démo (consomme des tokens API)." }
       - { code: HTTP 404, message: "Relevé <statementId> introuvable" }
-    regles: [R1, R3, R4, R5, R8, R10, R11, R12, R18]
+    regles: [R1, R3, R4, R5, R8, R10, R11, R12, R15, R18]
   - id: A3
     appel: POST /api/statements/upload
     entree: "PDF(s) inchangés ; POST /api/statements/:id/reanalyze suit le même passage dictionnaire"

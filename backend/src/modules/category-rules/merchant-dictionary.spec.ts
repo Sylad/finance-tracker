@@ -5,6 +5,8 @@ import {
   lookupMerchant,
   merchantKey,
   merchantPattern,
+  merchantRule,
+  merchantRuleWords,
   merchantWords,
 } from './merchant-dictionary';
 import { BUILTIN_CATEGORIES } from './category-rules.service';
@@ -129,21 +131,57 @@ describe('lookupMerchant (R3, R4, R5, R18)', () => {
   });
 });
 
-describe('merchantPattern (R15, R18)', () => {
-  it('R15 — « PAIEMENT CB 1203 CARREFOUR MARKET 75015 » crée le motif CARREFOUR[^A-Za-z0-9]+MARKET', () => {
-    expect(merchantPattern('PAIEMENT CB 1203 CARREFOUR MARKET 75015')).toBe('CARREFOUR[^A-Za-z0-9]+MARKET');
+describe('motif de marchand (R15, R18)', () => {
+  it('R15 — enseigne reconnue : le motif est fait des mots de l\'enseigne, pas des deux premiers mots de la clé', () => {
+    expect(merchantRuleWords('RETRAIT DAB 12/03 CARREFOUR')).toEqual(['CARREFOUR']);
+    expect(merchantPattern('RETRAIT DAB 12/03 CARREFOUR')).toBe('\\bCARREFOUR\\b');
+    expect(merchantPattern('CB STATION E.LECLERC')).toBe('\\bLECLERC\\b');
+    expect(merchantPattern('PAIEMENT CB 1203 CARREFOUR MARKET 75015')).toBe('\\bCARREFOUR\\b');
+    expect(merchantPattern('UBER EATS PARIS')).toBe('\\bUBER[^A-Za-z0-9]+EATS\\b');
   });
 
-  it('R15 — deux mots au plus sont retenus dans le motif', () => {
-    expect(merchantPattern('BOULANGERIE DUPONT PARIS CENTRE')).toBe('BOULANGERIE[^A-Za-z0-9]+DUPONT');
+  it('R15 — le motif d\'une enseigne ne reconnaît pas un autre retrait au DAB', () => {
+    const re = new RegExp(merchantPattern('RETRAIT DAB 12/03 CARREFOUR') as string, 'i');
+    expect(re.test('RETRAIT DAB 12/03 CARREFOUR')).toBe(true);
+    expect(re.test('RETRAIT DAB 03/04 BNP PARIBAS')).toBe(false);
+    const leclerc = new RegExp(merchantPattern('CB STATION E.LECLERC') as string, 'i');
+    expect(leclerc.test('CB STATION ESSO')).toBe(false);
   });
 
-  it('R15 — un seul mot donne un motif littéral', () => {
-    expect(merchantPattern('CB NETFLIX 1234')).toBe('NETFLIX');
+  it('R15 — marchand inconnu : la clé normalisée entière, chaque mot borné', () => {
+    expect(merchantRuleWords('PAIEMENT CB RESTAURANT LE RECAMIER')).toEqual(['RESTAURANT', 'LE', 'RECAMIER']);
+    expect(merchantPattern('PAIEMENT CB RESTAURANT LE RECAMIER')).toBe(
+      '\\bRESTAURANT[^A-Za-z0-9]+LE[^A-Za-z0-9]+RECAMIER\\b',
+    );
   });
 
-  it('R14 — une clé vide donne un motif null', () => {
+  it('R15 — le motif de « RESTAURANT LE RECAMIER » ne reconnaît ni « RESTAURANT LES PHILOSOPHES » ni « RESTAURANT LE COMPTOIR DU RELAIS »', () => {
+    const re = new RegExp(merchantPattern('PAIEMENT CB RESTAURANT LE RECAMIER') as string, 'i');
+    expect(re.test('PAIEMENT CB 1203 RESTAURANT LE RECAMIER 75007')).toBe(true);
+    expect(re.test('PAIEMENT CB RESTAURANT LES PHILOSOPHES')).toBe(false);
+    expect(re.test('PAIEMENT CB RESTAURANT LE COMPTOIR DU RELAIS')).toBe(false);
+  });
+
+  it('R15 — « VIR SEPA M DUPONT LOYER » ne donne plus le motif SEPA M : la clé entière, bornée', () => {
+    expect(merchantPattern('VIR SEPA M DUPONT LOYER')).toBe(
+      '\\bSEPA[^A-Za-z0-9]+M[^A-Za-z0-9]+DUPONT[^A-Za-z0-9]+LOYER\\b',
+    );
+  });
+
+  it('R15 — un seul mot suffit s\'il fait au moins 4 lettres', () => {
+    expect(merchantPattern('CB AMAZON 1234')).toBe('\\bAMAZON\\b');
+  });
+
+  it('R15 — un motif d\'un seul mot de moins de 4 lettres n\'est pas mémorisé (pattern-too-short)', () => {
+    expect(merchantRule('CB IKE 1234')).toEqual({ words: ['IKE'], pattern: null, skipped: 'pattern-too-short' });
+    expect(merchantPattern('CB IKE 1234')).toBeNull();
+    // deux mots courts : accepté, le motif n'est pas un mot isolé
+    expect(merchantPattern('CB LE PO')).toBe('\\bLE[^A-Za-z0-9]+PO\\b');
+  });
+
+  it('R14 — une clé vide donne un motif null (merchant-key-empty)', () => {
     expect(merchantPattern('CB 1234')).toBeNull();
+    expect(merchantRule('CB 1234').skipped).toBe('merchant-key-empty');
   });
 });
 

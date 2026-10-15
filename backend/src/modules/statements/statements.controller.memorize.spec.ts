@@ -53,13 +53,52 @@ describe('StatementsController.patchTransactionCategory — memorizeMerchant (L7
 
   const patch = (body: any, txId = 'a', id = '2026-03') => ctrl.patchTransactionCategory(id, txId, body);
 
-  it('R15 — « PAIEMENT CB 1203 CARREFOUR MARKET 75015 » crée le motif CARREFOUR[^A-Za-z0-9]+MARKET', async () => {
+  it('R15 — « PAIEMENT CB 1203 CARREFOUR MARKET 75015 » crée le motif des mots de l\'enseigne, \\bCARREFOUR\\b', async () => {
     const res: any = await patch({ category: 'food', memorizeMerchant: true });
-    expect(res.createdRule.pattern).toBe('CARREFOUR[^A-Za-z0-9]+MARKET');
+    expect(res.createdRule.pattern).toBe('\\bCARREFOUR\\b');
     expect(res.createdRule).toMatchObject({ flags: 'i', category: 'food', subcategory: '', priority: 100 });
     expect(res.transaction.category).toBe('food');
     expect(res.replayed).toBe(0);
     expect(res.ruleSkipped).toBeUndefined();
+  });
+
+  it('R15 — « RETRAIT DAB 12/03 CARREFOUR » crée CARREFOUR, qui ne reconnaît pas « RETRAIT DAB 03/04 BNP PARIBAS »', async () => {
+    statements[0].transactions[0] = tx({ id: 'a', description: 'RETRAIT DAB 12/03 CARREFOUR', normalizedDescription: 'RETRAIT DAB 12/03 CARREFOUR' });
+    statements[1].transactions[0] = tx({ id: 'z', description: 'RETRAIT DAB 03/04 BNP PARIBAS', normalizedDescription: 'RETRAIT DAB 03/04 BNP PARIBAS' });
+    const res: any = await patch({ category: 'food', memorizeMerchant: true });
+    expect(res.createdRule.pattern).toBe('\\bCARREFOUR\\b');
+    const out = await rules.apply([statements[1].transactions[0]]);
+    expect(out[0].category).toBe('other');
+  });
+
+  it('R15 — marchand inconnu : la clé entière, bornée ; « RESTAURANT LES PHILOSOPHES » n\'est pas touché', async () => {
+    statements[0].transactions[0] = tx({ id: 'a', description: 'PAIEMENT CB RESTAURANT LE RECAMIER', normalizedDescription: 'PAIEMENT CB RESTAURANT LE RECAMIER' });
+    statements[1].transactions = [
+      tx({ id: 'p', description: 'PAIEMENT CB RESTAURANT LES PHILOSOPHES', normalizedDescription: 'PAIEMENT CB RESTAURANT LES PHILOSOPHES' }),
+      tx({ id: 'c', description: 'PAIEMENT CB RESTAURANT LE COMPTOIR DU RELAIS', normalizedDescription: 'PAIEMENT CB RESTAURANT LE COMPTOIR DU RELAIS' }),
+      tx({ id: 'r', description: 'PAIEMENT CB 0304 RESTAURANT LE RECAMIER 75007', normalizedDescription: 'PAIEMENT CB 0304 RESTAURANT LE RECAMIER 75007' }),
+    ];
+    const res: any = await patch({ category: 'food', memorizeMerchant: true });
+    expect(res.createdRule.pattern).toBe('\\bRESTAURANT[^A-Za-z0-9]+LE[^A-Za-z0-9]+RECAMIER\\b');
+    const out = await rules.apply(statements[1].transactions);
+    expect(out.map((t) => t.category)).toEqual(['other', 'other', 'food']);
+  });
+
+  it('R15 — « VIR SEPA M DUPONT LOYER » ne crée plus le motif SEPA M', async () => {
+    statements[0].transactions[0] = tx({ id: 'a', description: 'VIR SEPA M DUPONT LOYER', normalizedDescription: 'VIR SEPA M DUPONT LOYER' });
+    const res: any = await patch({ category: 'housing', memorizeMerchant: true });
+    expect(res.createdRule.pattern).toBe('\\bSEPA[^A-Za-z0-9]+M[^A-Za-z0-9]+DUPONT[^A-Za-z0-9]+LOYER\\b');
+    expect(res.createdRule.pattern).not.toMatch(/^SEPA/);
+  });
+
+  it('R15 — un motif d\'un seul mot de moins de 4 lettres n\'est pas mémorisé (pattern-too-short)', async () => {
+    statements[0].transactions[0] = tx({ id: 'a', description: 'CB IKE 1234', normalizedDescription: 'CB IKE 1234' });
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const res: any = await patch({ category: 'housing', memorizeMerchant: true });
+    expect(res.transaction.category).toBe('housing');
+    expect(res.createdRule).toBeNull();
+    expect(res.ruleSkipped).toBe('pattern-too-short');
+    expect(await rules.getAll()).toEqual([]);
   });
 
   it('R15 — la règle créée reconnaît ensuite le libellé brut et les autres relevés', async () => {
@@ -124,7 +163,7 @@ describe('StatementsController.patchTransactionCategory — memorizeMerchant (L7
   });
 
   it('R15 — un libellé dont le motif ne reconnaît pas le brut ne crée aucune règle (pattern-no-match)', async () => {
-    statements[0].transactions[0] = tx({ id: 'a', description: 'CARREFOUR CITÉ', normalizedDescription: 'CARREFOUR CITÉ' });
+    statements[0].transactions[0] = tx({ id: 'a', description: 'BOULANGERIE CITÉ', normalizedDescription: 'BOULANGERIE CITÉ' });
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     const res: any = await patch({ category: 'food', memorizeMerchant: true });
     expect(res.transaction.category).toBe('food');

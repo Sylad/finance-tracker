@@ -24,6 +24,7 @@ import { AnalysisService } from '../analysis/analysis.service';
 import { AutoSyncService } from '../auto-sync/auto-sync.service';
 import { ImportLogsService } from '../import-logs/import-logs.service';
 import { CategoryRulesService } from '../category-rules/category-rules.service';
+import type { MerchantRuleSkipped } from '../category-rules/merchant-dictionary';
 import { ScoreCalculatorService } from '../score/score-calculator.service';
 import { CreditDetectionService } from '../credit-detection/credit-detection.service';
 import { TransactionCategory } from '../../models/transaction.model';
@@ -201,7 +202,7 @@ export class StatementsController {
     await this.storage.saveStatement(stmt);
 
     let createdRule = null;
-    let ruleSkipped: 'merchant-key-empty' | 'pattern-no-match' | undefined;
+    let ruleSkipped: MerchantRuleSkipped | undefined;
     if (body.createRule) {
       const pattern =
         (body.rulePattern && body.rulePattern.trim()) ||
