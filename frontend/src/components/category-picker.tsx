@@ -28,7 +28,10 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
   const [subcategory, setSubcategory] = useState<string>(tx.subcategory);
   const [newCatName, setNewCatName] = useState('');
   const [creatingCat, setCreatingCat] = useState(false);
-  const [createRule, setCreateRule] = useState(true);
+  // L75 : par défaut, la mémorisation par marchand ; createRule l'emporterait
+  // seul côté API (R16), les deux cases s'excluent donc.
+  const [memorize, setMemorize] = useState(true);
+  const [createRule, setCreateRule] = useState(false);
   const [replayAll, setReplayAll] = useState(false);
   const [pattern, setPattern] = useState(escapeRegex(tx.normalizedDescription || tx.description));
 
@@ -47,8 +50,9 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
       category,
       subcategory,
       createRule,
+      memorizeMerchant: memorize,
       rulePattern: createRule ? pattern : undefined,
-      replayAll: createRule && replayAll,
+      replayAll: (createRule || memorize) && replayAll,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['statement'] });
@@ -171,8 +175,23 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
             <label className="flex items-start gap-2 cursor-pointer">
               <input
                 type="checkbox"
+                checked={memorize}
+                onChange={(e) => { setMemorize(e.target.checked); if (e.target.checked) setCreateRule(false); }}
+                className="mt-0.5"
+              />
+              <div className="text-sm">
+                <div className="text-fg">Mémoriser pour ce marchand</div>
+                <div className="text-xs text-fg-muted mt-0.5">
+                  Crée la règle à partir du nom du marchand, sans motif à saisir.
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
                 checked={createRule}
-                onChange={(e) => setCreateRule(e.target.checked)}
+                onChange={(e) => { setCreateRule(e.target.checked); if (e.target.checked) setMemorize(false); }}
                 className="mt-0.5"
               />
               <div className="text-sm">
@@ -183,9 +202,9 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
               </div>
             </label>
 
-            {createRule && (
+            {(createRule || memorize) && (
               <>
-                <div>
+                {createRule && <div>
                   <label className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Motif (regex)</label>
                   <input
                     className="input text-xs mt-1.5 w-full font-mono"
@@ -195,7 +214,7 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
                   <div className="text-[10px] text-fg-dim mt-1">
                     Sensible à la casse désactivée (flag i). Ajusté à la description normalisée par défaut.
                   </div>
-                </div>
+                </div>}
                 <label className="flex items-start gap-2 cursor-pointer">
                   <input
                     type="checkbox"
