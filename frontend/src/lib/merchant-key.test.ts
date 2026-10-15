@@ -36,6 +36,19 @@ describe('motif mémorisé, miroir du backend (L75, R15)', () => {
     );
   });
 
+  it('R15 — catégorie choisie contraire au dictionnaire : la clé entière (VINCI IMMOBILIER → Logement, BOULANGERIE ORANGE → Alimentation)', () => {
+    expect(merchantRuleWords('PRLV VINCI IMMOBILIER LOYER', 'housing')).toEqual(['VINCI', 'IMMOBILIER', 'LOYER']);
+    expect(merchantRule('PRLV VINCI IMMOBILIER LOYER', 'housing').pattern).toBe(
+      '\\bVINCI[^A-Za-z0-9]+IMMOBILIER[^A-Za-z0-9]+LOYER\\b',
+    );
+    expect(merchantRuleWords('CB BOULANGERIE ORANGE', 'food')).toEqual(['BOULANGERIE', 'ORANGE']);
+  });
+
+  it('R15 — catégorie choisie = celle du dictionnaire : les mots de l\'enseigne', () => {
+    expect(merchantRuleWords('PRLV VINCI IMMOBILIER LOYER', 'transport')).toEqual(['VINCI']);
+    expect(merchantRuleWords('CB BOULANGERIE ORANGE', 'subscriptions')).toEqual(['ORANGE']);
+  });
+
   it('R15 — un seul mot de moins de 4 lettres : pattern-too-short ; clé vide : merchant-key-empty', () => {
     expect(merchantRule('CB IKE 1234')).toEqual({ words: ['IKE'], pattern: null, skipped: 'pattern-too-short' });
     expect(merchantRule('CB 1234').skipped).toBe('merchant-key-empty');

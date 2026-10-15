@@ -180,7 +180,7 @@ export class CategoryRulesService {
     subcategory?: string,
   ): Promise<{ rule: CategoryRule | null; skipped?: MerchantRuleSkipped }> {
     const haystack = rawLabel(tx);
-    const { pattern, skipped } = merchantRule(haystack);
+    const { pattern, skipped } = merchantRule(haystack, category);
     if (!pattern) return { rule: null, skipped };
     if (!new RegExp(pattern, 'i').test(haystack)) return { rule: null, skipped: 'pattern-no-match' };
 

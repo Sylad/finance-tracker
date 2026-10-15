@@ -32,11 +32,16 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
   // L75 : un seul choix de règle (createRule l'emporterait seul côté API, R16) ;
   // par défaut la mémorisation par marchand, sauf si le backend ne créerait pas
   // de règle (R14 clé vide, R15 motif trop court ou qui ne reconnaît pas le libellé).
+  // Les mots du motif dépendent de la catégorie choisie (R15 c : une catégorie qui
+  // contredit le dictionnaire donne la clé entière) : ils suivent donc `category`.
   const rawLabel = tx.normalizedDescription || tx.description || '';
-  const rule = merchantRule(rawLabel);
+  const rule = merchantRule(rawLabel, category);
   const memorizable = !!rule.pattern && new RegExp(rule.pattern, 'i').test(rawLabel);
   const merchantName = rule.words.join(' ');
-  const [ruleMode, setRuleMode] = useState<'none' | 'memorize' | 'pattern'>(memorizable ? 'memorize' : 'none');
+  const [ruleChoice, setRuleChoice] = useState<'none' | 'memorize' | 'pattern'>('memorize');
+  // La mémorisation grisée (changement de catégorie compris) retombe sur « Aucune règle ».
+  const ruleMode = ruleChoice === 'memorize' && !memorizable ? 'none' : ruleChoice;
+  const setRuleMode = setRuleChoice;
   const memorize = ruleMode === 'memorize';
   const createRule = ruleMode === 'pattern';
   const [replayAll, setReplayAll] = useState(false);

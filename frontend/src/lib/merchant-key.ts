@@ -17,22 +17,24 @@ const FINANCE_WORDS = ['BANQUE', 'BANK', 'FINANCE', 'FINANCEMENT', 'LIVRET', 'CR
 
 interface MirrorEntry {
   words: string[];
+  /** Catégorie du dictionnaire : sert à la clause R15 (c), pas à l'affichage. */
+  category: string;
   unless?: string[];
 }
 
-/** Miroir des seuls mots et exclusions du dictionnaire (la catégorie n'y sert à rien). */
+/** Miroir des mots, catégories et exclusions du dictionnaire. */
 export const MERCHANT_WORDS_MIRROR: readonly MirrorEntry[] = [
-  { words: ['CARREFOUR'], unless: FINANCE_WORDS },
-  { words: ['LECLERC'] },
-  { words: ['LIDL'] },
-  { words: ['UBER', 'EATS'] },
-  { words: ['SNCF'] },
-  { words: ['TOTALENERGIES'] },
-  { words: ['VINCI'] },
-  { words: ['UBER'] },
-  { words: ['NETFLIX'] },
-  { words: ['FREE'], unless: ['DUTY'] },
-  { words: ['ORANGE'], unless: FINANCE_WORDS },
+  { words: ['CARREFOUR'], category: 'food', unless: FINANCE_WORDS },
+  { words: ['LECLERC'], category: 'food' },
+  { words: ['LIDL'], category: 'food' },
+  { words: ['UBER', 'EATS'], category: 'food' },
+  { words: ['SNCF'], category: 'transport' },
+  { words: ['TOTALENERGIES'], category: 'transport' },
+  { words: ['VINCI'], category: 'transport' },
+  { words: ['UBER'], category: 'transport' },
+  { words: ['NETFLIX'], category: 'subscriptions' },
+  { words: ['FREE'], category: 'subscriptions', unless: ['DUTY'] },
+  { words: ['ORANGE'], category: 'subscriptions', unless: FINANCE_WORDS },
 ];
 
 /** Longueur minimale (lettres) d'un motif réduit à un seul mot (R15). */
@@ -68,7 +70,7 @@ function isExcluded(key: string[], unless: readonly string[] | undefined): boole
   return !!last && last.length >= MIN_TRUNCATED_WORD_LENGTH && unless.some((w) => w.startsWith(last));
 }
 
-function lookupMerchantWords(label: string): string[] | null {
+function lookupMerchantEntry(label: string): MirrorEntry | null {
   const key = merchantKey(label).split(' ').filter(Boolean);
   let best: MirrorEntry | null = null;
   for (const entry of MERCHANT_WORDS_MIRROR) {
@@ -82,12 +84,17 @@ function lookupMerchantWords(label: string): string[] | null {
       }
     }
   }
-  return best ? [...best.words] : null;
+  return best;
 }
 
-/** Mots du motif : ceux de l'enseigne reconnue, sinon la clé entière (R15). */
-export function merchantRuleWords(label: string): string[] {
-  return lookupMerchantWords(label) ?? merchantKey(label).split(' ').filter(Boolean);
+/**
+ * Mots du motif (R15) : (a) ceux de l'enseigne reconnue ; (b) sinon la clé entière ;
+ * (c) la clé entière aussi quand la catégorie CHOISIE contredit celle du dictionnaire.
+ */
+export function merchantRuleWords(label: string, chosenCategory?: string): string[] {
+  const entry = lookupMerchantEntry(label);
+  if (entry && (chosenCategory === undefined || chosenCategory === entry.category)) return [...entry.words];
+  return merchantKey(label).split(' ').filter(Boolean);
 }
 
 export interface MerchantRule {
@@ -96,8 +103,8 @@ export interface MerchantRule {
   skipped?: 'merchant-key-empty' | 'pattern-too-short';
 }
 
-export function merchantRule(label: string): MerchantRule {
-  const words = merchantRuleWords(label);
+export function merchantRule(label: string, chosenCategory?: string): MerchantRule {
+  const words = merchantRuleWords(label, chosenCategory);
   if (words.length === 0) return { words, pattern: null, skipped: 'merchant-key-empty' };
   if (words.length === 1 && words[0].length < MIN_SINGLE_WORD_PATTERN_LENGTH) {
     return { words, pattern: null, skipped: 'pattern-too-short' };

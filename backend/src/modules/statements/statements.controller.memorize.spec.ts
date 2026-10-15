@@ -91,6 +91,30 @@ describe('StatementsController.patchTransactionCategory — memorizeMerchant (L7
     expect(res.createdRule.pattern).not.toMatch(/^SEPA/);
   });
 
+  it('R15 — « PRLV VINCI IMMOBILIER LOYER » remis en Logement crée la clé entière et ne détourne pas les péages Vinci', async () => {
+    statements[0].transactions[0] = tx({ id: 'a', description: 'PRLV VINCI IMMOBILIER LOYER', normalizedDescription: 'PRLV VINCI IMMOBILIER LOYER' });
+    statements[1].transactions = [
+      tx({ id: 'p', description: 'PAIEMENT CB VINCI AUTOROUTES PEAGE', normalizedDescription: 'PAIEMENT CB VINCI AUTOROUTES PEAGE' }),
+      tx({ id: 'l', description: 'PRLV VINCI IMMOBILIER LOYER 04', normalizedDescription: 'PRLV VINCI IMMOBILIER LOYER 04' }),
+    ];
+    const res: any = await patch({ category: 'housing', memorizeMerchant: true });
+    expect(res.createdRule.pattern).toBe('\\bVINCI[^A-Za-z0-9]+IMMOBILIER[^A-Za-z0-9]+LOYER\\b');
+    const out = await rules.apply(statements[1].transactions);
+    expect(out.map((t) => t.category)).toEqual(['other', 'housing']);
+  });
+
+  it('R15 — « PRLV VINCI IMMOBILIER LOYER » gardé en Transport (catégorie du dictionnaire) : les mots de l\'enseigne, \\bVINCI\\b', async () => {
+    statements[0].transactions[0] = tx({ id: 'a', description: 'PRLV VINCI IMMOBILIER LOYER', normalizedDescription: 'PRLV VINCI IMMOBILIER LOYER' });
+    const res: any = await patch({ category: 'transport', memorizeMerchant: true });
+    expect(res.createdRule.pattern).toBe('\\bVINCI\\b');
+  });
+
+  it('R15 — « CB BOULANGERIE ORANGE » remis en Alimentation crée la clé entière, pas \\bORANGE\\b', async () => {
+    statements[0].transactions[0] = tx({ id: 'a', description: 'CB BOULANGERIE ORANGE', normalizedDescription: 'CB BOULANGERIE ORANGE' });
+    const res: any = await patch({ category: 'food', memorizeMerchant: true });
+    expect(res.createdRule.pattern).toBe('\\bBOULANGERIE[^A-Za-z0-9]+ORANGE\\b');
+  });
+
   it('R15 — un motif d\'un seul mot de moins de 4 lettres n\'est pas mémorisé (pattern-too-short)', async () => {
     statements[0].transactions[0] = tx({ id: 'a', description: 'CB IKE 1234', normalizedDescription: 'CB IKE 1234' });
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);

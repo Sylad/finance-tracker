@@ -203,6 +203,39 @@ describe('motif de marchand (R15, R18)', () => {
     expect(merchantPattern('CB LE PO')).toBe('\\bLE[^A-Za-z0-9]+PO\\b');
   });
 
+  it('R15 — « PRLV VINCI IMMOBILIER LOYER » remis en Logement : la clé entière, pas les péages Vinci (clause c)', () => {
+    expect(lookupMerchant('PRLV VINCI IMMOBILIER LOYER')?.category).toBe('transport');
+    expect(merchantRuleWords('PRLV VINCI IMMOBILIER LOYER', 'housing')).toEqual(['VINCI', 'IMMOBILIER', 'LOYER']);
+    const pattern = merchantPattern('PRLV VINCI IMMOBILIER LOYER', 'housing') as string;
+    expect(pattern).toBe('\\bVINCI[^A-Za-z0-9]+IMMOBILIER[^A-Za-z0-9]+LOYER\\b');
+    const re = new RegExp(pattern, 'i');
+    expect(re.test('PRLV VINCI IMMOBILIER LOYER')).toBe(true);
+    expect(re.test('PAIEMENT CB VINCI AUTOROUTES PEAGE')).toBe(false);
+  });
+
+  it('R15 — « CB BOULANGERIE ORANGE » remis en Alimentation : la clé entière, pas toutes les factures Orange (clause c)', () => {
+    expect(lookupMerchant('CB BOULANGERIE ORANGE')?.category).toBe('subscriptions');
+    expect(merchantRuleWords('CB BOULANGERIE ORANGE', 'food')).toEqual(['BOULANGERIE', 'ORANGE']);
+    const re = new RegExp(merchantPattern('CB BOULANGERIE ORANGE', 'food') as string, 'i');
+    expect(re.test('CB BOULANGERIE ORANGE')).toBe(true);
+    expect(re.test('PRLV ORANGE SA FACTURE')).toBe(false);
+  });
+
+  it('R15 — catégorie choisie = celle du dictionnaire, ou aucune catégorie : les mots de l\'enseigne (clause a)', () => {
+    expect(merchantRuleWords('PRLV VINCI IMMOBILIER LOYER', 'transport')).toEqual(['VINCI']);
+    expect(merchantRuleWords('CB BOULANGERIE ORANGE', 'subscriptions')).toEqual(['ORANGE']);
+    expect(merchantRuleWords('PRLV VINCI IMMOBILIER LOYER')).toEqual(['VINCI']);
+  });
+
+  it('R15 — le dictionnaire ne reconnaît rien : la clé entière quelle que soit la catégorie choisie (clause b)', () => {
+    expect(merchantRuleWords('PAIEMENT CB RESTAURANT LE RECAMIER', 'food')).toEqual(['RESTAURANT', 'LE', 'RECAMIER']);
+    expect(merchantRuleWords('PAIEMENT CB RESTAURANT LE RECAMIER', 'housing')).toEqual(['RESTAURANT', 'LE', 'RECAMIER']);
+  });
+
+  it('R15 — une catégorie personnalisée contredit le dictionnaire : la clé entière', () => {
+    expect(merchantRuleWords('RETRAIT DAB 12/03 CARREFOUR', 'Cadeaux')).toEqual(['RETRAIT', 'DAB', 'CARREFOUR']);
+  });
+
   it('R14 — une clé vide donne un motif null (merchant-key-empty)', () => {
     expect(merchantPattern('CB 1234')).toBeNull();
     expect(merchantRule('CB 1234').skipped).toBe('merchant-key-empty');

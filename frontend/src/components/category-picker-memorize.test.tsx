@@ -75,7 +75,35 @@ describe('choix de règle du sélecteur (L75, R16)', () => {
 
   it('R15 — enseigne reconnue hors de tête de libellé : seuls ses mots sont nommés (RETRAIT DAB 12/03 CARREFOUR → « CARREFOUR »)', () => {
     setup({ description: 'RETRAIT DAB 12/03 CARREFOUR', normalizedDescription: 'RETRAIT DAB 12/03 CARREFOUR' });
+    fireEvent.click(screen.getByRole('button', { name: 'Alimentation' }));
     expect(screen.getByRole('radio', { name: /Mémoriser pour « CARREFOUR »/ })).toBeTruthy();
+  });
+
+  it('R15 — VINCI IMMOBILIER remis en Logement : le choix nomme la clé entière, « VINCI IMMOBILIER LOYER » ; en Transport, « VINCI »', () => {
+    setup({ description: 'PRLV VINCI IMMOBILIER LOYER', normalizedDescription: 'PRLV VINCI IMMOBILIER LOYER' });
+    fireEvent.click(screen.getByRole('button', { name: 'Logement' }));
+    expect(screen.getByRole('radio', { name: /Mémoriser pour « VINCI IMMOBILIER LOYER »/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Transport' }));
+    expect(screen.getByRole('radio', { name: /Mémoriser pour « VINCI »/ })).toBeTruthy();
+  });
+
+  it('R15 — CB BOULANGERIE ORANGE remis en Alimentation : le choix nomme « BOULANGERIE ORANGE », pas « ORANGE »', () => {
+    setup({ description: 'CB BOULANGERIE ORANGE', normalizedDescription: 'CB BOULANGERIE ORANGE' });
+    fireEvent.click(screen.getByRole('button', { name: 'Alimentation' }));
+    expect(screen.getByRole('radio', { name: /Mémoriser pour « BOULANGERIE ORANGE »/ })).toBeTruthy();
+  });
+
+  it('R15 — la mémorisation grisée par un changement de catégorie ne part pas : aucune règle envoyée', async () => {
+    // « CARREFOUR CITÉ » : enseigne reconnue (mot CARREFOUR, trouvé tel quel) en Alimentation ; la clé
+    // entière « CARREFOUR CITE » (accent retiré) ne se retrouve pas dans le libellé brut en Logement.
+    setup({ description: 'CARREFOUR CITÉ', normalizedDescription: 'CARREFOUR CITÉ' });
+    fireEvent.click(screen.getByRole('button', { name: 'Alimentation' }));
+    expect((screen.getByRole('radio', { name: /Mémoriser pour/ }) as HTMLInputElement).disabled).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Logement' }));
+    expect((screen.getByRole('radio', { name: /Mémoriser pour/ }) as HTMLInputElement).disabled).toBe(true);
+    await save();
+    await waitFor(() => expect(patch).toHaveBeenCalled());
+    expect(patch.mock.calls[0][1].memorizeMerchant).toBe(false);
   });
 
   it('R15 — motif d\'un seul mot de moins de 4 lettres : mémorisation désactivée avec la raison, aucune règle envoyée', async () => {

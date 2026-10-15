@@ -81,20 +81,26 @@ export interface MerchantRule {
 export const MIN_SINGLE_WORD_PATTERN_LENGTH = 4;
 
 /**
- * R15 : mots du motif mémorisé — ceux de l'enseigne reconnue par le dictionnaire
- * (R4) si le libellé en contient une, sinon la clé de marchand entière (R1).
+ * R15 : mots du motif mémorisé. (a) Ceux de l'enseigne reconnue par le dictionnaire
+ * (R4) si le libellé en contient une ; (b) sinon la clé de marchand entière (R1) ;
+ * (c) la clé entière aussi quand `chosenCategory` (la catégorie choisie par
+ * l'utilisateur) CONTREDIT celle du dictionnaire : « PRLV VINCI IMMOBILIER LOYER »
+ * remis en Logement ne doit pas détourner tous les péages Vinci. Sans catégorie
+ * choisie (aperçu d'auto-catégorisation : la suggestion porte celle du
+ * dictionnaire), la clause (c) ne joue pas.
  */
-export function merchantRuleWords(label: string): string[] {
+export function merchantRuleWords(label: string, chosenCategory?: string): string[] {
   const entry = lookupMerchant(label);
-  return entry ? [...entry.words] : merchantKey(label).split(' ').filter(Boolean);
+  if (entry && (chosenCategory === undefined || chosenCategory === entry.category)) return [...entry.words];
+  return merchantKey(label).split(' ').filter(Boolean);
 }
 
 /**
  * R15 : règle mémorisée pour un libellé — chaque mot borné (\b), mots séparés par
  * [^A-Za-z0-9]+. Un motif d'un seul mot de moins de 4 lettres est refusé.
  */
-export function merchantRule(label: string): MerchantRule {
-  const words = merchantRuleWords(label);
+export function merchantRule(label: string, chosenCategory?: string): MerchantRule {
+  const words = merchantRuleWords(label, chosenCategory);
   if (words.length === 0) return { words, pattern: null, skipped: 'merchant-key-empty' };
   if (words.length === 1 && words[0].length < MIN_SINGLE_WORD_PATTERN_LENGTH) {
     return { words, pattern: null, skipped: 'pattern-too-short' };
@@ -103,8 +109,8 @@ export function merchantRule(label: string): MerchantRule {
 }
 
 /** R15 : motif de la règle mémorisée ; null si la clé est vide ou le motif trop court. */
-export function merchantPattern(label: string): string | null {
-  return merchantRule(label).pattern;
+export function merchantPattern(label: string, chosenCategory?: string): string | null {
+  return merchantRule(label, chosenCategory).pattern;
 }
 
 /** Longueur minimale (lettres) d'un dernier mot tronqué pour compter comme mot d'exclusion (R4). */

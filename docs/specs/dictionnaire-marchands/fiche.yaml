@@ -66,7 +66,7 @@ cas:
       - le corps porte une catégorie valide et memorizeMerchant à true
     nominal:
       - Le service applique la catégorie à la transaction et sauvegarde le relevé.
-      - Il détermine les mots du motif (R15) : ceux de l'enseigne que le dictionnaire reconnaît dans le libellé, sinon la clé de marchand entière.
+      - Il détermine les mots du motif (R15) : ceux de l'enseigne que le dictionnaire reconnaît dans le libellé, sinon la clé de marchand entière ; la clé entière aussi quand la catégorie choisie contredit celle du dictionnaire.
       - Il crée une règle utilisateur (priorité 100, ou supérieure à celle des règles qui reconnaissent déjà le libellé, R13) dont le motif cible cette clé ; aucune règle existante n'est modifiée.
       - Si replayAll est vrai, la règle est rejouée sur tous les relevés stockés.
       - La réponse renvoie la transaction, la règle créée et le nombre de relevés rejoués.
@@ -236,17 +236,23 @@ regles:
       Motif de la règle mémorisée (amendé le 15-10 par le lead : l'ancien motif « deux premiers mots de la clé » attrapait des
       libellés sans rapport, p. ex. RETRAIT DAB 12/03 CARREFOUR donnait RETRAIT DAB). Les mots du motif sont (a) les mots de l'enseigne
       reconnue (l'entrée du dictionnaire qui a matché, R4), si le dictionnaire reconnaît le libellé ; (b) sinon tous les mots de la
-      clé normalisée (R1). Chaque mot est littéral et borné (\b), les mots sont séparés par [^A-Za-z0-9]+, insensible à la casse :
+      clé normalisée (R1) ; (c) la clé normalisée entière (comme en b) quand la catégorie CHOISIE par l'utilisateur contredit la
+      catégorie que le dictionnaire donne pour ce libellé : « PRLV VINCI IMMOBILIER LOYER » est reconnu Vinci (transport), mais remis
+      en Logement il mémorise VINCI IMMOBILIER LOYER, pas VINCI, pour ne pas détourner tous les péages Vinci vers Logement ; « CB
+      BOULANGERIE ORANGE » remis en Alimentation mémorise BOULANGERIE ORANGE, pas ORANGE. Si la catégorie choisie est celle du
+      dictionnaire, ou si le dictionnaire ne reconnaît rien, (a) et (b) s'appliquent. L'aperçu d'auto-catégorisation (R10), dont la
+      suggestion porte la catégorie du dictionnaire, reste en (a). Chaque mot est littéral et borné (\b), les mots sont séparés par [^A-Za-z0-9]+, insensible à la casse :
       CARREFOUR donne \bCARREFOUR\b, RESTAURANT LE RECAMIER donne \bRESTAURANT[^A-Za-z0-9]+LE[^A-Za-z0-9]+RECAMIER\b. Un motif réduit
       à un seul mot de moins de 4 lettres n'est pas mémorisé : catégorie appliquée, createdRule null, ruleSkipped « pattern-too-short ».
       Le motif doit reconnaître le libellé brut (normalizedDescription, sinon description) de la transaction ; sinon (accents,
       chiffres intercalés) aucune règle n'est créée, createdRule est null et ruleSkipped vaut « pattern-no-match ». Les règles
       existantes continuent de s'appliquer sur normalizedDescription brut. L'aperçu d'auto-catégorisation (R10) propose le même motif
       pour une suggestion du dictionnaire. Le panneau Catégoriser du frontend affiche exactement les mots du motif, calculés par un
-      miroir de la même fonction (frontend/src/lib/merchant-key.ts, parité testée) ; il ne promet rien d'autre. Le motif n'est pas
+      miroir de la même fonction (frontend/src/lib/merchant-key.ts, parité testée, catégories du dictionnaire comprises) en
+      fonction de la catégorie sélectionnée au moment où l'utilisateur la change ; il ne promet rien d'autre. Le motif n'est pas
       conditionné au signe du montant (le dictionnaire, lui, ne s'applique qu'aux débits, R8).
     statut: sourcee
-    source: "décision du lead du 15-10 (amende R15 après la troisième revue du lot) ; règles appliquées sur normalizedDescription brut : category-rules.service.ts:140 ; même garde « le motif doit correspondre à la transaction » : auto-categorize.service.ts:186-190 et sanitizeRulePattern"
+    source: "décision du lead du 15-10 (amende R15 après la troisième revue du lot ; clause (c) ajoutée le même jour : décision du lead 15-10) ; règles appliquées sur normalizedDescription brut : category-rules.service.ts:140 ; même garde « le motif doit correspondre à la transaction » : auto-categorize.service.ts:186-190 et sanitizeRulePattern"
     tests:
       - "R15 — enseigne reconnue : le motif est fait des mots de l'enseigne, pas des deux premiers mots de la clé"
       - "R15 — le motif d'une enseigne ne reconnaît pas un autre retrait au DAB"
@@ -262,7 +268,18 @@ regles:
       - "R15 — enseigne reconnue hors de tête de libellé : seuls ses mots sont nommés (RETRAIT DAB 12/03 CARREFOUR → « CARREFOUR »)"
       - "R15 — motif d'un seul mot de moins de 4 lettres : mémorisation désactivée avec la raison, aucune règle envoyée"
       - "R15 — mots du motif absents tels quels du libellé brut (accent) : mémorisation désactivée"
-      - "R15 — le motif et ses mots sont identiques côté backend et côté miroir frontend sur le même jeu de libellés (parité)"
+      - "R15 — « PRLV VINCI IMMOBILIER LOYER » remis en Logement : la clé entière, pas les péages Vinci (clause c)"
+      - "R15 — « CB BOULANGERIE ORANGE » remis en Alimentation : la clé entière, pas toutes les factures Orange (clause c)"
+      - "R15 — catégorie choisie = celle du dictionnaire, ou aucune catégorie : les mots de l'enseigne (clause a)"
+      - "R15 — le dictionnaire ne reconnaît rien : la clé entière quelle que soit la catégorie choisie (clause b)"
+      - "R15 — une catégorie personnalisée contredit le dictionnaire : la clé entière"
+      - "R15 — « PRLV VINCI IMMOBILIER LOYER » remis en Logement crée la clé entière et ne détourne pas les péages Vinci"
+      - "R15 — « PRLV VINCI IMMOBILIER LOYER » gardé en Transport (catégorie du dictionnaire) : les mots de l'enseigne, \\bVINCI\\b"
+      - "R15 — « CB BOULANGERIE ORANGE » remis en Alimentation crée la clé entière, pas \\bORANGE\\b"
+      - "R15 — VINCI IMMOBILIER remis en Logement : le choix nomme la clé entière, « VINCI IMMOBILIER LOYER » ; en Transport, « VINCI »"
+      - "R15 — CB BOULANGERIE ORANGE remis en Alimentation : le choix nomme « BOULANGERIE ORANGE », pas « ORANGE »"
+      - "R15 — la mémorisation grisée par un changement de catégorie ne part pas : aucune règle envoyée"
+      - "R15 — le motif et ses mots sont identiques côté backend et côté miroir frontend sur le même jeu de libellés et chaque catégorie choisie (parité)"
   - id: R16
     cas: [C3]
     enonce: >-

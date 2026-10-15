@@ -91,9 +91,22 @@ describe('parité merchantKey / motif : backend et miroir frontend (L75)', () =>
     expect(mirror.merchantRule(label)).toEqual(merchantRule(label));
   });
 
-  it('R4 — le dictionnaire du miroir porte les mêmes mots et exclusions que celui du backend, dans le même ordre', () => {
-    expect(mirror.MERCHANT_WORDS_MIRROR.map((e) => ({ words: e.words, unless: e.unless ?? [] }))).toEqual(
-      MERCHANT_DICTIONARY.map((e) => ({ words: e.words, unless: e.unless ?? [] })),
+  // R15 (c) : la catégorie choisie fait varier le motif — mêmes mots des deux côtés pour chaque catégorie.
+  const CHOSEN = ['food', 'transport', 'subscriptions', 'housing', 'other', 'Cadeaux'];
+  const PAIRS = LABELS.flatMap((label) => CHOSEN.map((category) => [label, category] as const));
+  it.each(PAIRS)('R15 — « %s » choisi en « %s » donne les mêmes mots, le même motif et la même raison de refus', (label, category) => {
+    expect(mirror.merchantRuleWords(label, category)).toEqual(merchantRuleWords(label, category));
+    expect(mirror.merchantRule(label, category)).toEqual(merchantRule(label, category));
+  });
+
+  it('R15 — « PRLV VINCI IMMOBILIER LOYER » : la clé entière en Logement, VINCI seul en Transport, des deux côtés', () => {
+    expect(mirror.merchantRuleWords('PRLV VINCI IMMOBILIER LOYER', 'housing')).toEqual(['VINCI', 'IMMOBILIER', 'LOYER']);
+    expect(mirror.merchantRuleWords('PRLV VINCI IMMOBILIER LOYER', 'transport')).toEqual(['VINCI']);
+  });
+
+  it('R4 — le dictionnaire du miroir porte les mêmes mots, catégories et exclusions que celui du backend, dans le même ordre', () => {
+    expect(mirror.MERCHANT_WORDS_MIRROR.map((e) => ({ words: e.words, category: e.category, unless: e.unless ?? [] }))).toEqual(
+      MERCHANT_DICTIONARY.map((e) => ({ words: e.words, category: e.category, unless: e.unless ?? [] })),
     );
   });
 
