@@ -658,13 +658,15 @@ lots:
   - id: L72
     title: "Historique des relevés à 390 px : la barre Export CSV / Recalculer les scores / champ de recherche (w-64) déborde — scrollWidth 513 pour 390 ; attendu : aucun défilement horizontal (QA prod 15-10 après L69)"
     public: "Historique des relevés : plus de débordement au téléphone"
-    status: doing
+    status: done
     estimate: 0.25
     quickwin: true
     visible: true
     created: 2026-10-15
     started: 2026-10-15
     review: { date: 2026-10-15, verdict: "compliant — orchestré (vague 2026-10-15-1935, 0 passe(s) de correction)", commit: a611d787e125b896811feaaed78c4244cd4152b9 }
+    ux: { date: 2026-10-15, verdict: "conforme — capture 390 px regardée par le lead (vague 2026-10-15-1935) : barre Export CSV / Recalculer sur une ligne, recherche pleine largeur, aucun débordement horizontal" }
+    finished: 2026-10-15
   - id: L73
     title: "Démo cohérente : le jeu de données porte un prêt immobilier de 250 k€ sans actif en face (patrimoine net −255 k€ pour 20 k€ d'épargne) et 1 975 €/mois de crédits pour 2 800 € de revenus (70 % d'endettement, verdict santé rouge) alors que le score du mois affiche 75/100 — recaler les fixtures (endettement ~30 %, actif immobilier compté ou prêt retiré) et libeller le patrimoine net « hors immobilier » ou compter le bien (remarque de Sylvain 15-10, basse priorité)"
     public: "Démo : chiffres cohérents entre patrimoine, crédits et score du mois"

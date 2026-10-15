@@ -125,8 +125,9 @@
     {
       "id": "L72",
       "title": "Historique des relevés : plus de débordement au téléphone",
-      "status": "doing",
-      "started": "2026-10-15"
+      "status": "done",
+      "started": "2026-10-15",
+      "finished": "2026-10-15"
     },
     {
       "id": "L73",
