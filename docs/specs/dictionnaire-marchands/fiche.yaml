@@ -29,8 +29,8 @@ cas:
       - le dictionnaire de marchands livré avec le code est chargé
     nominal:
       - Le service construit le relevé depuis la réponse de Claude.
-      - Les règles utilisateur sont appliquées comme aujourd'hui (CategoryRulesService.apply).
-      - Pour chaque débit qu'aucune règle utilisateur n'a touché, le libellé est normalisé puis comparé au dictionnaire.
+      - Les règles utilisateur sont appliquées comme aujourd'hui, avec en plus la liste des transactions reconnues par une règle (CategoryRulesService.applyWithHits, R19).
+      - Pour chaque débit qu'aucune règle utilisateur n'a reconnu (suivi par applyWithHits, R19), le libellé est normalisé puis comparé au dictionnaire.
       - Si une enseigne est reconnue, la catégorie du dictionnaire remplace celle de Claude.
       - Le service écrit un log avec la version du dictionnaire et le nombre de transactions recatégorisées, puis poursuit (revenu exceptionnel, sauvegarde, auto-sync).
     alternatives:
@@ -67,15 +67,16 @@ cas:
     nominal:
       - Le service applique la catégorie à la transaction et sauvegarde le relevé.
       - Il calcule la clé de marchand du libellé (libellé normalisé, deux premiers mots).
-      - Il crée une règle utilisateur de priorité 100 dont le motif cible cette clé.
+      - Il crée une règle utilisateur (priorité 100, ou supérieure à celle des règles qui reconnaissent déjà le libellé, R13) dont le motif cible cette clé ; aucune règle existante n'est modifiée.
       - Si replayAll est vrai, la règle est rejouée sur tous les relevés stockés.
       - La réponse renvoie la transaction, la règle créée et le nombre de relevés rejoués.
     alternatives:
-      - { si: memorizeMerchant est absent ou faux, alors: comportement actuel inchangé (createRule, rulePattern, replayAll), regles: [R16] }
+      - { si: memorizeMerchant est absent ou différent du booléen true, alors: comportement actuel inchangé (createRule, rulePattern, replayAll), regles: [R16] }
       - { si: createRule est aussi vrai, alors: le chemin createRule existant gagne, regles: [R16] }
       - { si: le libellé ne laisse aucun mot après normalisation, alors: la catégorie est appliquée mais aucune règle n'est créée, regles: [R14] }
       - { si: le motif du marchand ne correspond pas au libellé brut de la transaction, alors: la catégorie est appliquée mais aucune règle n'est créée, regles: [R15] }
-      - { si: une règle de même motif existe déjà, alors: elle est réutilisée, sa catégorie alignée sur le dernier choix, regles: [R13] }
+      - { si: la règle qui gagne déjà sur ce libellé donne la catégorie et la sous-catégorie choisies, alors: elle est réutilisée, rien n'est écrit, regles: [R13] }
+      - { si: une règle existante reconnaît le libellé avec un autre résultat, alors: une nouvelle règle de priorité supérieure est créée, l'ancienne reste intacte, regles: [R13] }
       - { si: la catégorie est invalide, ou le relevé ou la transaction est introuvable, alors: erreur existante, rien n'est écrit, regles: [R17] }
     resultat: La catégorie est corrigée et mémorisée pour les prochains relevés en un seul appel.
 
@@ -145,8 +146,8 @@ regles:
   - id: R7
     cas: [C1]
     enonce: >-
-      Priorité : règle utilisateur > dictionnaire > catégorie de Claude. Une transaction touchée par une règle utilisateur
-      ne passe pas par le dictionnaire.
+      Priorité : règle utilisateur > dictionnaire > catégorie de Claude. Une transaction reconnue par une règle utilisateur
+      (matchedIds, R19) ne passe pas par le dictionnaire.
     statut: sourcee
     source: "règles utilisateur appliquées par priorité, première gagnante : category-rules.service.ts:119-149 ; demande du lot : dictionnaire « appliqué en local avant Claude »"
     tests:
@@ -192,20 +193,25 @@ regles:
     cas: [C2]
     enonce: En mode démo, l'aperçu reste refusé (403) avant tout passage dans le dictionnaire.
     statut: sourcee
-    source: "auto-categorize.service.ts:67-69 (assertNotDemo) et 80-84"
+    source: "auto-categorize.service.ts:76 (appel de assertNotDemo) et :221 (définition)"
     tests:
       - "R12 — en mode démo, l'aperçu répond 403 avec le message existant"
   - id: R13
     cas: [C3]
     enonce: >-
-      Mémoriser un marchand est idempotent : si une règle de même motif existe déjà (comparaison sans casse), elle est réutilisée et sa
-      catégorie et sous-catégorie sont alignées sur le choix courant (pas de doublon) ; sinon une règle de priorité 100, flags i, est créée. Dans les deux
-      cas elle est renvoyée dans createdRule.
+      Mémoriser un marchand n'écrase jamais une règle existante (CategoryRulesService.update n'est pas appelée ; sa sous-catégorie
+      ni sa priorité ne sont touchées). Le service teste le libellé brut contre les règles existantes (même ordre que apply) :
+      (a) si la règle qui gagne déjà donne la catégorie et la sous-catégorie choisies (sous-catégorie absente = vide), elle est
+      réutilisée et rien n'est écrit ; (b) sinon une règle est créée (flags i, sous-catégorie du corps ou vide) de priorité
+      max(100, 1 + plus haute priorité des règles qui reconnaissent le libellé brut), pour que ce dernier choix l'emporte. Dans
+      les deux cas la règle est renvoyée dans createdRule.
     statut: hypothese
-    si_faux: Si chaque coche doit créer une règle distincte (comme createRule aujourd'hui), des doublons s'accumulent, sans perte de données ; si une règle existante ne doit jamais être modifiée, le second choix serait ignoré.
+    si_faux: Si chaque coche doit créer une règle distincte au prix 100 (comme createRule), le choix mémorisé pourrait être masqué par une règle de priorité supérieure ; si l'on préfère modifier la règle existante, la sous-catégorie et la priorité de l'utilisateur seraient réécrites (décision du lead). Dans l'hypothèse retenue, aucune donnée existante n'est modifiée.
     tests:
-      - "R13 — deux mémorisations du même marchand ne laissent qu'une règle"
-      - "R13 — la seconde mémorisation avec une autre catégorie met à jour la règle existante"
+      - "R13 — deux mémorisations identiques du même marchand ne laissent qu'une règle"
+      - "R13 — une seconde mémorisation avec une autre catégorie crée une règle de priorité supérieure et laisse la première intacte"
+      - "R13 — une règle utilisateur existante de priorité 200 sur le même libellé est dépassée (priorité 201) et reste inchangée, sous-catégorie comprise"
+      - "R13 — la règle créée porte la sous-catégorie du corps, vide si absente"
   - id: R14
     cas: [C3]
     enonce: >-
@@ -218,13 +224,13 @@ regles:
   - id: R15
     cas: [C3]
     enonce: >-
-      Le motif de marchand est un littéral échappé des deux premiers mots de la clé, séparés par \s+, insensible à la casse. Il doit
+      Le motif de marchand est un littéral échappé des deux premiers mots de la clé (R18), séparés par [^A-Za-z0-9]+, insensible à la casse. Il doit
       reconnaître le libellé brut (normalizedDescription, sinon description) de la transaction ; sinon (accents ou graphies différentes) aucune règle n'est créée,
       createdRule est null et ruleSkipped vaut « pattern-no-match ». Les règles existantes continuent de s'appliquer sur normalizedDescription brut.
     statut: sourcee
     source: "règles appliquées sur normalizedDescription brut : category-rules.service.ts:140 ; même garde « le motif doit correspondre à la transaction » : auto-categorize.service.ts:186-190 et sanitizeRulePattern"
     tests:
-      - "R15 — « PAIEMENT CB 1203 CARREFOUR MARKET 75015 » crée le motif CARREFOUR\\s+MARKET"
+      - "R15 — « PAIEMENT CB 1203 CARREFOUR MARKET 75015 » crée le motif CARREFOUR[^A-Za-z0-9]+MARKET"
       - "R15 — un libellé dont le motif ne reconnaît pas le brut ne crée aucune règle (pattern-no-match)"
       - "R15 — deux mots au plus sont retenus dans le motif"
   - id: R16
@@ -237,6 +243,7 @@ regles:
     source: "contrat existant statements.controller.ts:174-226 (createRule, rulePattern, replayAll, réponse { transaction, createdRule, replayed })"
     tests:
       - "R16 — sans memorizeMerchant, la réponse et la règle créée sont identiques à l'existant"
+      - "R16 — memorizeMerchant: \"true\" (chaîne) est traité comme absent : réponse existante, aucune règle"
       - "R16 — memorizeMerchant et createRule ensemble : une seule règle, celle de createRule"
       - "R16 — memorizeMerchant avec replayAll rejoue la règle sur les autres relevés"
   - id: R17
@@ -249,6 +256,34 @@ regles:
     tests:
       - "R17 — catégorie invalide avec memorizeMerchant : 400 et aucune règle créée"
       - "R17 — transaction introuvable avec memorizeMerchant : 404 et aucune règle créée"
+  - id: R18
+    cas: [C1, C2, C3]
+    enonce: >-
+      Découpage en mots : après mise en majuscules et retrait des accents, tout caractère hors A-Z et 0-9 est un séparateur
+      (espace, « . », « * », « - », « ' », « / »…) ; les mots sont les suites non vides de lettres et chiffres. « E.LECLERC »
+      donne E, LECLERC ; « UBER *TRIP » et « UBER*TRIP » donnent UBER, TRIP ; « PAYPAL *NETFLIX » donne PAYPAL, NETFLIX. La
+      reconnaissance d'une enseigne (R4), les préfixes (R2) et le motif de marchand (R15) reposent tous sur ce même découpage.
+    statut: hypothese
+    si_faux: Si « E.LECLERC » ou « UBER*TRIP » devaient rester un seul mot, ces libellés courants ne seraient pas reconnus ; seul le découpage change, aucune donnée en jeu.
+    tests:
+      - "R18 — « E.LECLERC PARIS » est reconnu comme Leclerc (food)"
+      - "R18 — « UBER *TRIP » et « UBER*TRIP » sont reconnus comme Uber (transport)"
+      - "R18 — « PAYPAL *NETFLIX » est reconnu comme Netflix (subscriptions)"
+      - "R18 — un libellé accentué « CARREFOUR CITÉ » est découpé sans l'accent"
+  - id: R19
+    cas: [C1]
+    enonce: >-
+      CategoryRulesService reçoit une méthode applyWithHits(transactions) qui renvoie { transactions, matchedIds } : matchedIds
+      contient l'id de chaque transaction reconnue par au moins une règle, même si la catégorie obtenue est identique à
+      l'ancienne ou vaut other. apply() garde sa signature et son résultat à l'identique (elle délègue à applyWithHits) ;
+      sans règle, matchedIds est vide. Le dictionnaire ne s'applique pas aux transactions de matchedIds.
+    statut: hypothese
+    si_faux: Si la signature de apply() devait changer, ses autres appelants (replayAll, import) seraient à adapter ; avec une méthode ajoutée, rien d'existant ne bouge et aucune donnée n'est en jeu.
+    tests:
+      - "R19 — une règle qui donne la catégorie déjà portée par Claude marque quand même la transaction dans matchedIds"
+      - "R19 — une règle vers other marque la transaction dans matchedIds"
+      - "R19 — sans aucune règle, matchedIds est vide et les transactions sont inchangées"
+      - "R19 — apply() renvoie le même résultat qu'avant pour les mêmes entrées"
 
 contrats:
   - id: A1
@@ -261,7 +296,7 @@ contrats:
       - { code: HTTP 404, message: "Relevé <id> introuvable" }
       - { code: HTTP 404, message: "Transaction <txId> introuvable" }
       - { code: log warn, message: "Merchant rule not created for transaction <txId>: <ruleSkipped>" }
-    regles: [R1, R2, R13, R14, R15, R16, R17]
+    regles: [R1, R2, R13, R14, R15, R16, R17, R18]
   - id: A2
     appel: POST /api/auto-categorize/:statementId/preview
     entree: "identifiant du relevé dans le chemin ; aucun corps"
@@ -269,16 +304,16 @@ contrats:
     erreurs:
       - { code: HTTP 403, message: "L'auto-catégorisation Claude n'est pas disponible en mode démo (consomme des tokens API)." }
       - { code: HTTP 404, message: "Relevé <statementId> introuvable" }
-    regles: [R1, R3, R4, R5, R8, R10, R11, R12]
+    regles: [R1, R3, R4, R5, R8, R10, R11, R12, R18]
   - id: A3
     appel: POST /api/statements/upload
     entree: "PDF(s) inchangés ; POST /api/statements/:id/reanalyze suit le même passage dictionnaire"
     sortie: "réponse inchangée ; seules les catégories des transactions reconnues diffèrent, plus un log de version"
     erreurs: []
     sans_erreur: "le passage dictionnaire est une fonction pure sans source externe ni entrée utilisateur ; il n'ajoute aucun code d'erreur, les erreurs de l'upload et de Claude restent celles de l'existant (la notion d'échec du dictionnaire n'existe pas)"
-    regles: [R1, R3, R4, R5, R6, R7, R8, R9]
+    regles: [R1, R3, R4, R5, R6, R7, R8, R9, R18, R19]
 
 donnees:
   - { id: D1, objet: "dictionnaire de marchands (constante du code + numéro de version, backend/src/modules/category-rules)", existant: false, modification: aucune, note: "nouveau, livré avec le code, aucun stockage ni migration" }
-  - { id: D2, objet: "data/category-rules.json (liste de CategoryRule)", existant: true, modification: aucune, note: "format inchangé ; les règles « marchand » sont des CategoryRule ordinaires créées par create(), motif et priorité 100" }
+  - { id: D2, objet: "data/category-rules.json (liste de CategoryRule)", existant: true, modification: aucune, note: "format inchangé ; les règles « marchand » sont des CategoryRule ordinaires ajoutées par create() ; aucune règle existante n'est modifiée ni supprimée (R13)" }
   - { id: D3, objet: "data/statements/*.json (transactions)", existant: true, modification: aucune, note: "seules les valeurs de category des transactions reconnues changent ; description, normalizedDescription et schéma inchangés, aucune version stockée (R6)" }
