@@ -8,7 +8,7 @@ captures:
 # une capture peut dire ce qu'elle montre : captures: [{ file: captures/x.png, alt: "texte alternatif" }]
 # nocapture: raison, quand une capture n'a pas de sens
 ---
-Chaque relevé indique maintenant la part de ses transactions restées dans la catégorie « Autres », avec le nombre exact (par exemple « 8 % — 2 transactions sur 24 »). Le pourcentage est vert sous 15 %, orange sous 30 %, rouge au-delà.
+Chaque relevé indique maintenant la part de ses transactions restées dans la catégorie « Autre », avec le nombre exact (par exemple « 8 % — 2 transactions sur 24 »). Le pourcentage est vert sous 15 %, orange sous 30 %, rouge au-delà.
 
 Juste dessous, la liste des marchands non classés les plus fréquents (cinq au plus, débits seulement) donne le nombre de passages et le total dépensé : c'est là qu'il y a le plus à gagner en recatégorisant.
 

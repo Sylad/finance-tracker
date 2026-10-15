@@ -1,6 +1,6 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-15 17:13",
+  "generated": "2026-10-15 17:54",
   "entries": [
     {
       "slug": "2026-10-15-categories-stables-d-un-mois-a-l-autre-et-apprises-de-vos-co",
@@ -25,7 +25,7 @@
       "alts": [
         "Tableau de bord avec la tuile « Transactions sans catégorie » : 8 %, 2 transactions sur 24, marchand à classer Amazon"
       ],
-      "html": "<p>Chaque relevé indique maintenant la part de ses transactions restées dans la catégorie « Autres », avec le nombre exact (par exemple « 8 % — 2 transactions sur 24 »). Le pourcentage est vert sous 15 %, orange sous 30 %, rouge au-delà.</p>\n<p>Juste dessous, la liste des marchands non classés les plus fréquents (cinq au plus, débits seulement) donne le nombre de passages et le total dépensé : c'est là qu'il y a le plus à gagner en recatégorisant.</p>\n<p>La même mesure apparaît en tuile sur le tableau de bord, pour le dernier relevé ; un clic ouvre le relevé. Rien n'est recatégorisé automatiquement : c'est un indicateur.</p>"
+      "html": "<p>Chaque relevé indique maintenant la part de ses transactions restées dans la catégorie « Autre », avec le nombre exact (par exemple « 8 % — 2 transactions sur 24 »). Le pourcentage est vert sous 15 %, orange sous 30 %, rouge au-delà.</p>\n<p>Juste dessous, la liste des marchands non classés les plus fréquents (cinq au plus, débits seulement) donne le nombre de passages et le total dépensé : c'est là qu'il y a le plus à gagner en recatégorisant.</p>\n<p>La même mesure apparaît en tuile sur le tableau de bord, pour le dernier relevé ; un clic ouvre le relevé. Rien n'est recatégorisé automatiquement : c'est un indicateur.</p>"
     },
     {
       "slug": "2026-10-15-releve-detaille-plus-de-requete-a-un-service-tiers-pour-les",
