@@ -679,6 +679,7 @@ lots:
     screen: component
     created: 2026-10-15
     started: 2026-10-15
+    review: { date: 2026-10-15, verdict: "conforme, 2 notes mineures (README et Nouveauté disent « Autres » alors que l'écran dit « Autre » ; la pose de la carte sur la page du relevé n'a pas de test) — orchestré (vague 2026-10-15-1606, 1 passe(s) de correction + passe des mineurs)", commit: ebea912c704d09cd44eac792062fb941d0978be2 }
   - id: L75
     title: "Dictionnaire de marchands versionné (enseigne → catégorie : Carrefour/Leclerc/Lidl → Alimentation, SNCF/TotalEnergies/Vinci/Uber → Transport, Netflix/Free/Orange → Abonnements…) appliqué en local avant Claude, avec normalisation des libellés LBP (CB, PRELEVEMENT, numéros, dates) et case « mémoriser pour ce marchand » à la recatégorisation manuelle qui crée la règle en un clic (Sylvain 15-10)"
     public: Catégories stables d'un mois à l'autre et apprises de vos corrections
