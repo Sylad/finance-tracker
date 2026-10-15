@@ -6,6 +6,7 @@ import { isAuthError, isQuotaError } from '../../common/claude-errors';
 import { AmortizationOutputSchema } from './amortization.schemas';
 import { runWithMaxTokensRetry } from './max-tokens-retry.helper';
 import type { AmortizationOutput } from './amortization.schemas';
+import { CLAUDE_MODEL } from './claude-model';
 
 export class AmortizationParseError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
@@ -176,7 +177,7 @@ export class AmortizationService {
   private runExtraction(base64Pdf: string, maxTokens: number): Promise<Anthropic.Message> {
     // Streaming : requis par le SDK quand max_tokens est élevé (64k).
     const stream = this.client.messages.stream({
-      model: 'claude-sonnet-4-5',
+      model: CLAUDE_MODEL,
       max_tokens: maxTokens,
       temperature: 0,
       system:

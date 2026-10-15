@@ -9,6 +9,7 @@ import { parseExternal } from '../../common/zod-validation.pipe';
 import { AutoCategorizeOutputSchema } from './auto-categorize.schemas';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { CategoryRule } from '../../models/category-rule.model';
+import { CLAUDE_MODEL } from '../analysis/claude-model';
 
 export interface CategorizationSuggestion {
   transactionId: string;
@@ -237,7 +238,7 @@ export class AutoCategorizeService {
 
     try {
       const message = await this.client.messages.create({
-        model: 'claude-sonnet-4-5',
+        model: CLAUDE_MODEL,
         max_tokens: 2048,
         temperature: 0,
         system:

@@ -5,6 +5,7 @@ import { parseExternal } from '../../common/zod-validation.pipe';
 import { isAuthError, isQuotaError } from '../../common/claude-errors';
 import { CreditStatementOutputSchema } from './credit-statement.schemas';
 import type { CreditStatementOutput } from './credit-statement.schemas';
+import { CLAUDE_MODEL } from './claude-model';
 
 export class CreditStatementParseError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
@@ -165,7 +166,7 @@ export class CreditStatementService {
 
     try {
       const stream = this.client.messages.stream({
-        model: 'claude-sonnet-4-5',
+        model: CLAUDE_MODEL,
         max_tokens: 8192,
         temperature: 0,
         system:

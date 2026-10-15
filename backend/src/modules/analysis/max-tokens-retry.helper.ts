@@ -1,6 +1,6 @@
 import type Anthropic from '@anthropic-ai/sdk';
 
-/** Plafond de tokens de sortie de claude-sonnet-4-5 (64k). */
+/** Plafond de tokens de sortie de claude-sonnet-5-5 (64k). */
 export const MAX_OUTPUT_TOKENS = 64000;
 
 /**

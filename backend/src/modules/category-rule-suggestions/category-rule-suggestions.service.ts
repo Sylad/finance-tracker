@@ -9,6 +9,7 @@ import {
   CategoryRuleSuggestion,
   IncomingCategorySuggestion,
 } from '../../models/category-rule-suggestion.model';
+import { CLAUDE_MODEL } from '../analysis/claude-model';
 import { Transaction } from '../../models/transaction.model';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { EventBusService } from '../events/event-bus.service';
@@ -338,7 +339,7 @@ export class CategoryRuleSuggestionsService {
     txSummary: string,
   ): Promise<IncomingCategorySuggestion[]> {
     const message = await this.getClaudeClient().messages.create({
-      model: 'claude-sonnet-4-5',
+      model: CLAUDE_MODEL,
       max_tokens: 4096,
       temperature: 0,
       system: this.buildRuleSuggestionSystemPrompt(availableCats),

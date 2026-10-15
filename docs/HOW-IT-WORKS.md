@@ -104,5 +104,5 @@ Recette détaillée dans le code : [`backend/src/modules/demo/demo-mode.middlewa
 
 - **Backend** : NestJS 11, modules `analysis/`, `category-rules/`, `score/`, `loans/`, `savings/`, `auto-sync/`, `storage/` (JSON local).
 - **Frontend** : React 18 + TanStack Router/Query, Tailwind, Recharts.
-- **AI** : Anthropic SDK, modèle `claude-sonnet-4-5`, two-phase tool-use.
+- **AI** : Anthropic SDK, modèle `claude-sonnet-5-5`, two-phase tool-use.
 - **Déploiement** : Docker compose multi-stage, testé sur Synology NAS DSM.

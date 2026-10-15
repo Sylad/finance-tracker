@@ -10,7 +10,7 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
 | Frontend | React 18 + Vite + TanStack Router/Query sur port `4200` (nginx) |
 | Stockage | JSON local dans `data/` (statements/, yearly/, uploads/, snapshots/) |
 | Auth | PIN guard global (Bearer token) — toutes routes sauf `/health` et `/events` |
-| AI | Anthropic SDK — modèle `claude-sonnet-4-5`, two-phase tool-use (extract_transactions → analyze_finances) |
+| AI | Anthropic SDK — modèle `claude-sonnet-5-5`, two-phase tool-use (extract_transactions → analyze_finances) |
 | Live | Server-Sent Events sur `/api/events` (loans-changed, savings-changed, etc.) |
 
 ## Sessions et livraison (cadence)

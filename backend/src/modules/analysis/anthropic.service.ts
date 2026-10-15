@@ -5,6 +5,7 @@ import { parseExternal } from '../../common/zod-validation.pipe';
 import { isAuthError, isQuotaError, isRateLimitError } from '../../common/claude-errors';
 import { runWithMaxTokensRetry } from './max-tokens-retry.helper';
 import { Phase1OutputSchema, Phase2OutputSchema, Phase1Output, Phase2Output } from './anthropic.schemas';
+import { CLAUDE_MODEL } from './claude-model';
 
 export class AnthropicParseError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
@@ -196,7 +197,7 @@ export class AnthropicService {
     // Phase 1: extract transactions from PDF
     // Phase 1 — extraction avec budget output adapté.
     // On part à 32k (4 × ancien défaut) ; si le relevé est volumineux et qu'on hit
-    // max_tokens, on retente une fois avec 64k (max supporté par Sonnet 4.5).
+    // max_tokens, on retente une fois avec 64k (max supporté par Sonnet 5.5).
     const phase1 = await runWithMaxTokensRetry(
       (maxTokens) => this.runPhase1(base64Pdf, maxTokens),
       32768,
@@ -260,7 +261,7 @@ export class AnthropicService {
       .join('\n');
 
     const phase2 = await this.client.messages.create({
-      model: 'claude-sonnet-4-5',
+      model: CLAUDE_MODEL,
       max_tokens: 4096,
       temperature: 0,
       system: "Tu es un analyste financier. Analyse les transactions fournies et appelle l'outil analyze_finances. IMPORTANT : tous les champs textuels que tu produis (analysisNarrative, claudeHealthComment, libellés des suggestions) doivent être rédigés en français. N'utilise jamais l'anglais.\n\nDÉFINITIONS STRICTES de suggestedType — ne te trompe PAS :\n\n• `loan` = remboursement d'un crédit / d'un emprunt à un organisme PRÊTEUR (mensualité fixe d'un crédit conso, immo, auto, revolving). Exemples valides : 'PRELEVT COFIDIS', 'CETELEM ECHEANCE', 'CA CONSUMER FINANCE', 'CARREFOUR BANQUE', 'FLOA', 'SOFINCO', 'BPCE FINANCEMENT', 'BANQUE POSTALE CONSUMER FINANCE', 'KLARNA', 'ALMA', 'YOUNITED', 'FRANFINANCE', 'ONEY', 'MONABANQ'.\nNE PAS classer en `loan` : EDF, Orange, Free, Bouygues, SFR, Canal+, Netflix, Spotify, Amazon Prime, Nespresso, Navigo, Ratp, abonnements télésurveillance, assurances (BPCE Assurances IARD, Predica, MAIF, Maaf, Macif…), impôts, taxe foncière, charges de copropriété. Ce sont des `subscription` ou `utility`.\n\n• `subscription` = abonnement à un service ponctuel (streaming, télécoms, presse, transport, télésurveillance, assurance, café/livraison régulière).\n\n• `utility` = facture variable d'un service essentiel (électricité, gaz, eau, internet/fibre).\n\nPour chaque suggestion de type 'loan', tu DOIS identifier l'organisme prêteur (creditor) en MAJUSCULES, parmi : COFIDIS, SOFINCO, CETELEM, FLOA, CARREFOUR BANQUE, CA CONSUMER FINANCE, BPCE FINANCEMENT, KLARNA, ALMA, BANQUE POSTALE CONSUMER FINANCE, YOUNITED, FRANFINANCE, ONEY, MONABANQ. Si tu vois 'BPCE ASSURANCES' ou 'BPCE IARD' c'est une assurance, PAS un crédit (creditor vide, type=subscription).",
@@ -398,7 +399,7 @@ export class AnthropicService {
     // that the non-streaming timeout (10 min default) might be exceeded.
     // finalMessage() returns the same shape as messages.create() once done.
     const stream = this.client.messages.stream({
-      model: 'claude-sonnet-4-5',
+      model: CLAUDE_MODEL,
       max_tokens: maxTokens,
       temperature: 0,
       system: "Tu es un spécialiste de l'extraction de données bancaires françaises. AVANT TOUT, identifie documentType : si le PDF n'est PAS un relevé de compte bancaire (ex : relevé de crédit Sofinco/Cofidis/FLOA/Carrefour/CA Consumer Finance, plan d'amortissement, facture), renseigne documentType en conséquence et laisse transactions vide — n'invente pas de relevé bancaire. Sinon (documentType='bank_statement') : extrais toutes les transactions du PDF de relevé bancaire en appelant l'outil extract_transactions. Sois exhaustif — inclus chaque transaction. Utilise des libellés courts (60 caractères max).\n\nFORMAT DES DATES — règle critique :\nLes dates dans les relevés bancaires français sont au format JOUR/MOIS/ANNÉE (DD/MM/YYYY ou DD/MM/YY). Tu dois ABSOLUMENT respecter cet ordre. NE JAMAIS interpréter à l'américaine (MM/DD).\n  - 10/02/2026 = 10 février 2026 → 2026-02-10 (PAS 2026-10-02 ni 2026-03-10)\n  - 09/03/26 = 9 mars 2026 → 2026-03-09\n  - 01/12/2025 = 1er décembre 2025 → 2025-12-01\nSi tu vois deux colonnes 'Date opération' et 'Date valeur', utilise toujours la 'Date opération' (la première).\nSi tu vois une date écrite en lettres ('15 janvier 2026'), convertis-la pareil (2026-01-15).\nEn cas de doute, vérifie que la date que tu produis est cohérente avec la période globale du relevé (un relevé édité le 9 mars couvre principalement février).\n\nSi le PDF contient une section 'Vos autres comptes' (ou équivalent listant les soldes d'autres comptes du client : Livret A, PEL, etc.), remplis externalAccountBalances.\n\nPour chaque virement (libellé débutant par 'VIREMENT POUR' ou similaire), si le libellé mentionne un numéro de compte destinataire, capture-le dans targetAccountNumber.",
