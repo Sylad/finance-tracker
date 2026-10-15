@@ -13,6 +13,10 @@ describe('merchantLabel (L74)', () => {
     expect(merchantLabel('PAIEMENT CB 1209 BOULANGERIE DUPONT 12/09 PARIS')).toBe('BOULANGERIE DUPONT PARIS');
     expect(merchantLabel('PRLV SEPA MUTUELLE XYZ 0001234567')).toBe('MUTUELLE XYZ');
   });
+  it('retire le préfixe PRELEVT de La Banque Postale et le « N° » devant le numéro', () => {
+    expect(merchantLabel('PRELEVT BPCE ASSURANCES IARD')).toBe('BPCE ASSURANCES IARD');
+    expect(merchantLabel('PRELEVT X PLV N° 51215116521100')).toBe('X PLV');
+  });
   it('utilise le nom du marchand reconnu quand il existe', () => {
     expect(merchantLabel('PAYL*AMAZON EU 25/03 LUXEMBO')).toBe('Amazon');
   });

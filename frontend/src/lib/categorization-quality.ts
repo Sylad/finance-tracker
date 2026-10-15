@@ -15,8 +15,9 @@ export interface CategorizationQuality {
   topMerchants: UncategorizedMerchant[];
 }
 
-const BANK_PREFIX = /^(PAIEMENT CB|ACHAT CB|PRLV SEPA|PRLV|PRELEVEMENT SEPA|PRELEVEMENT|VIR SEPA|VIR INST|VIR|CB)\s+/i;
+const BANK_PREFIX = /^(PAIEMENT CB|ACHAT CB|PRLV SEPA|PRLV|PRELEVT|PRELEVEMENT SEPA|PRELEVEMENT|VIR SEPA|VIR INST|VIR|CB)\s+/i;
 const DATE = /\b\d{1,2}\/\d{1,2}(\/\d{2,4})?\b/g;
+const NUMBER_SIGN = /\bN°\s*(?=\d{3,})/gi;
 const NUMBER = /\b\d{3,}\b/g;
 
 /** Libellé de marchand lisible : nom reconnu, sinon libellé bancaire débarrassé de son bruit. */
@@ -26,6 +27,7 @@ export function merchantLabel(description: string): string {
   const cleaned = description
     .replace(BANK_PREFIX, '')
     .replace(DATE, ' ')
+    .replace(NUMBER_SIGN, '')
     .replace(NUMBER, ' ')
     .replace(/\s+/g, ' ')
     .trim();
