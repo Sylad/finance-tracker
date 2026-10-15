@@ -126,6 +126,11 @@
       "id": "L72",
       "title": "Historique des relevés : plus de débordement au téléphone",
       "status": "todo"
+    },
+    {
+      "id": "L73",
+      "title": "Démo : chiffres cohérents entre patrimoine, crédits et score du mois",
+      "status": "todo"
     }
   ]
 }
