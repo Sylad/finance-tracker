@@ -664,6 +664,7 @@ lots:
     visible: true
     created: 2026-10-15
     started: 2026-10-15
+    review: { date: 2026-10-15, verdict: "compliant — orchestré (vague 2026-10-15-1935, 0 passe(s) de correction)", commit: a611d787e125b896811feaaed78c4244cd4152b9 }
   - id: L73
     title: "Démo cohérente : le jeu de données porte un prêt immobilier de 250 k€ sans actif en face (patrimoine net −255 k€ pour 20 k€ d'épargne) et 1 975 €/mois de crédits pour 2 800 € de revenus (70 % d'endettement, verdict santé rouge) alors que le score du mois affiche 75/100 — recaler les fixtures (endettement ~30 %, actif immobilier compté ou prêt retiré) et libeller le patrimoine net « hors immobilier » ou compter le bien (remarque de Sylvain 15-10, basse priorité)"
     public: "Démo : chiffres cohérents entre patrimoine, crédits et score du mois"
