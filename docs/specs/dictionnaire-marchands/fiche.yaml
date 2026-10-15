@@ -97,13 +97,14 @@ regles:
   - id: R2
     cas: [C1, C2, C3]
     enonce: >-
-      Liste des préfixes retirés : CB, PAIEMENT CB, ACHAT CB, CARTE, CARTE X + chiffres, PRELEVEMENT, PRELEVT, PRLV,
+      Liste des préfixes retirés : CB, PAIEMENT CB, ACHAT CB, PAIEMENT et ACHAT seuls (« ACHAT VENTE AUTO » donne la clé « VENTE AUTO »), CARTE, CARTE X + chiffres, PRELEVEMENT, PRELEVT, PRLV,
       VIR, VIREMENT. Un libellé réduit à ces seuls mots a une clé vide.
     statut: hypothese
     si_faux: Si LBP emploie d'autres préfixes (exemples réels non disponibles dans le dépôt, aucune vraie transaction versionnée), la clé garde ce mot en tête ; il suffit d'allonger la liste, aucune donnée en jeu.
     tests:
       - "R2 — chaque préfixe de la liste est retiré en tête de libellé"
       - "R2 — « CB 1234 » donne une clé vide"
+      - "R2 — PAIEMENT et ACHAT seuls en tête sont retirés (« ACHAT VENTE AUTO » donne « VENTE AUTO »)"
   - id: R3
     cas: [C1, C2]
     enonce: >-

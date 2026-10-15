@@ -5,6 +5,10 @@ describe('merchantKey (miroir du backend, L75)', () => {
   it('R1 — « PAIEMENT CB 1203 CARREFOUR MARKET 75015 12/03 » donne la clé « CARREFOUR MARKET »', () => {
     expect(merchantKey('PAIEMENT CB 1203 CARREFOUR MARKET 75015 12/03')).toBe('CARREFOUR MARKET');
   });
+  it('R2 — PAIEMENT et ACHAT seuls en tête sont retirés (« ACHAT VENTE AUTO » donne « VENTE AUTO »)', () => {
+    expect(merchantKey('ACHAT VENTE AUTO')).toBe('VENTE AUTO');
+  });
+
   it('R2 — « CB 1234 » donne une clé vide', () => {
     expect(merchantKey('CB 1234')).toBe('');
   });

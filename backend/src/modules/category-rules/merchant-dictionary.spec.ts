@@ -42,6 +42,12 @@ describe('merchantKey (R1, R2, R18)', () => {
     expect(merchantKey('CB 1234')).toBe('');
   });
 
+  it('R2 — PAIEMENT et ACHAT seuls en tête sont retirés (« ACHAT VENTE AUTO » donne « VENTE AUTO »)', () => {
+    expect(merchantKey('ACHAT VENTE AUTO')).toBe('VENTE AUTO');
+    expect(merchantKey('PAIEMENT PSC BOULANGERIE')).toBe('PSC BOULANGERIE');
+    expect(merchantKey('PAIEMENT')).toBe('');
+  });
+
   it('R2 — des préfixes enchaînés sont tous retirés, un préfixe en rang 3+ est conservé', () => {
     expect(merchantKey('PRLV VIR NETFLIX')).toBe('NETFLIX');
     expect(merchantKey('NETFLIX CB')).toBe('NETFLIX CB');
