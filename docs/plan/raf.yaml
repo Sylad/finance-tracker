@@ -720,12 +720,13 @@ lots:
     finished: 2026-10-15
   - id: L76
     title: "Analyse des relevés : passer de claude-sonnet-4-5 à claude-sonnet-5-5 (extraction et catégorisation), vérifié sur un relevé réel en local avant livraison (Sylvain 15-10)"
-    status: doing
+    status: done
     estimate: 0.25
     quickwin: true
     created: 2026-10-15
     started: 2026-10-15
-    review: { date: 2026-10-15, verdict: "conforme, 2 notes mineures (CLAUDE.md parent non aligné, page À propos modifiée sans lot visible), et la vérification sur un relevé réel reste à consigner avant raf done — orchestré (vague 2026-10-15-1606, 1 passe(s) de correction)", commit: bd1e6b20303f9ad20cb8b8216a7cf1d617a86762 }
+    review: { date: 2026-10-15, verdict: "Revue Opus de vague conforme (modèle), puis vérification réelle du lead en 400 (tool_choice forcé refusé par Sonnet 5.5) → 2 corrections Sonnet (tool_choice auto + strict + instruction, temperature retirée ; effort low explicite, budgets 16000/8192, stop_reason max_tokens et refus contrôlés), revue Opus conforme après 1 correction puis revue courte conforme ; appel réel rejoué par le lead : aperçu auto-catégorisation 201, 12 suggestions, 0 avertissement, 8,4 s ; suggestions de règles 201 ; backend 1212 tests, typecheck et nest build OK — conforme", commit: 3fc898a155e10f252c1d05d9f87e96d5f456882d }
+    finished: 2026-10-15
   - id: L77
     title: "Modal d'auto-catégorisation : changer la catégorie d'une suggestion du dictionnaire (select) ne recalcule pas le motif proposé — \\bVINCI\\b → Logement partirait avec « Créer la règle » pré-cochée et détournerait les péages ; recalculer ou décocher la règle quand la catégorie contredit le dictionnaire (revue L75, 15-10)"
     public: "Auto-catégorisation : la règle proposée suit la catégorie que vous choisissez"
