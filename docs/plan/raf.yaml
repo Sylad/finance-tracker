@@ -741,6 +741,7 @@ lots:
     created: 2026-10-15
   - id: L78
     title: "Relevé détaillé à 390 px : lignes de transaction tronquées à droite — date « 02/09/20 », libellé, « · récurrent » et le signe € des montants hors de l'écran (10 spans mesurés right 397–525 pour 390, ligne en overflow:hidden, statement.$id.tsx:522) ; faire passer le montant sur toute sa largeur ou la ligne sur deux rangées (QA prod L72 15-10, à rapprocher de L23)"
+    public: "Relevé détaillé : lignes de transaction lisibles au téléphone"
     status: todo
     estimate: 0.5
     visible: true

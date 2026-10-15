@@ -152,6 +152,11 @@
       "id": "L77",
       "title": "Auto-catégorisation : la règle proposée suit la catégorie que vous choisissez",
       "status": "todo"
+    },
+    {
+      "id": "L78",
+      "title": "Relevé détaillé : lignes de transaction lisibles au téléphone",
+      "status": "todo"
     }
   ]
 }
