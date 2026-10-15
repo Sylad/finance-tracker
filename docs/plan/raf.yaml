@@ -673,17 +673,19 @@ lots:
   - id: L74
     title: Taux d'« Autres » par relevé et marchands non catégorisés les plus fréquents, affichés sur le relevé et en tuile du tableau de bord — mesure de la qualité de catégorisation avant toute amélioration (Sylvain 15-10)
     public: "Relevés : part des transactions sans catégorie et marchands à classer"
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     screen: component
     created: 2026-10-15
     started: 2026-10-15
     review: { date: 2026-10-15, verdict: "Revue courte Opus 15-10 (vague 2026-10-15-1606) : conforme après 2 corrections ; commit c489d4a postérieur (docs : « Autre » comme à l'écran) relu par le lead — conforme", commit: c489d4acae53e0bef67f0fca3894446dcecb49a5 }
+    ux: { date: 2026-10-15, verdict: "Verdict de Sylvain 15-10 sur captures (relevé 1440/390, tuile tableau de bord) : accepté" }
+    finished: 2026-10-15
   - id: L75
     title: "Dictionnaire de marchands versionné (enseigne → catégorie : Carrefour/Leclerc/Lidl → Alimentation, SNCF/TotalEnergies/Vinci/Uber → Transport, Netflix/Free/Orange → Abonnements…) appliqué en local avant Claude, avec normalisation des libellés LBP (CB, PRELEVEMENT, numéros, dates) et case « mémoriser pour ce marchand » à la recatégorisation manuelle qui crée la règle en un clic (Sylvain 15-10)"
     public: Catégories stables d'un mois à l'autre et apprises de vos corrections
-    status: doing
+    status: done
     estimate: 1
     visible: true
     screen: component
@@ -710,9 +712,12 @@ lots:
       - { date: 2026-10-15, text: "Hypothèses (fiche dictionnaire-marchands) — R14 : Si la clé de marchand est vide, la catégorie de la transaction est appliquée, aucune règle n'est créée, la réponse porte createdRule null et ruleSkipped « merc… ; si faux : Si une erreur 400 est préférée, la catégorie ne serait pas appliquée ; seul le statut change" }
       - { date: 2026-10-15, text: "Hypothèses (fiche dictionnaire-marchands) — R18 : Découpage en mots : après mise en majuscules et retrait des accents, tout caractère hors A-Z et 0-9 est un séparateur (espace, «  ; si faux : Si « E.LECLERC » ou « UBER*TRIP » devaient rester un seul mot, ces libellés courants ne seraient pas reconnus ; seul le découpage change, aucune donnée en jeu" }
       - { date: 2026-10-15, text: "Hypothèses (fiche dictionnaire-marchands) — R19 : CategoryRulesService reçoit une méthode applyWithHits(transactions) qui renvoie { transactions, matchedIds } : matchedIds contient l'id de chaque transaction r… ; si faux : Si la signature de apply() devait changer, ses autres appelants (replayAll, import) seraient à adapter ; avec une méthode ajoutée, rien d'existant ne bouge et…" }
+      - { date: 2026-10-15, text: "[L75/t1] abandonné : repris en lot autonome pour clore L75" }
     review: { date: 2026-10-15, verdict: "Revues Opus 15-10 : 3 dans la vague 2026-10-15-1606 (non conforme, rendu sur passes), puis reprise à la main — correction Sonnet (R15 amendée par le lead : motif = mots de l'enseigne, sinon clé entière, bornés ; clause c : catégorie contredisant le dictionnaire = clé entière), revue Opus conforme après 1 correction (README), revue courte conforme après 1 correction (capture Nouveautés) ; commit d88c22f (docs, captures) relu par le lead ; backend 1172 tests, frontend 420, typecheck et build de prod OK — conforme", commit: d88c22fd790ba55de8e2d6adda2f7971a635505d }
     tasks:
-      - { id: t1, title: "Modal d'auto-catégorisation : changer la catégorie d'une suggestion du dictionnaire (select) ne recalcule pas le motif proposé — \\bVINCI\\b → Logement partirait avec « Créer la règle » pré-cochée et détournerait les péages ; recalculer ou décocher la règle quand la catégorie contredit le dictionnaire (revue L75, 15-10)", status: todo }
+      - { id: t1, title: "Modal d'auto-catégorisation : changer la catégorie d'une suggestion du dictionnaire (select) ne recalcule pas le motif proposé — \\bVINCI\\b → Logement partirait avec « Créer la règle » pré-cochée et détournerait les péages ; recalculer ou décocher la règle quand la catégorie contredit le dictionnaire (revue L75, 15-10)", status: dropped }
+    ux: { date: 2026-10-15, verdict: "Verdict de Sylvain 15-10 sur captures (panneau Catégoriser, trois choix de règle, 1440/390) : accepté ; revue UX de conformité de la vague conforme après 4 corrections" }
+    finished: 2026-10-15
   - id: L76
     title: "Analyse des relevés : passer de claude-sonnet-4-5 à claude-sonnet-5-5 (extraction et catégorisation), vérifié sur un relevé réel en local avant livraison (Sylvain 15-10)"
     status: doing
@@ -721,3 +726,11 @@ lots:
     created: 2026-10-15
     started: 2026-10-15
     review: { date: 2026-10-15, verdict: "conforme, 2 notes mineures (CLAUDE.md parent non aligné, page À propos modifiée sans lot visible), et la vérification sur un relevé réel reste à consigner avant raf done — orchestré (vague 2026-10-15-1606, 1 passe(s) de correction)", commit: bd1e6b20303f9ad20cb8b8216a7cf1d617a86762 }
+  - id: L77
+    title: "Modal d'auto-catégorisation : changer la catégorie d'une suggestion du dictionnaire (select) ne recalcule pas le motif proposé — \\bVINCI\\b → Logement partirait avec « Créer la règle » pré-cochée et détournerait les péages ; recalculer ou décocher la règle quand la catégorie contredit le dictionnaire (revue L75, 15-10)"
+    public: "Auto-catégorisation : la règle proposée suit la catégorie que vous choisissez"
+    status: todo
+    estimate: 0.25
+    visible: true
+    screen: component
+    created: 2026-10-15

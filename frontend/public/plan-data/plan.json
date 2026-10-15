@@ -135,19 +135,21 @@
     {
       "id": "L74",
       "title": "Relevés : part des transactions sans catégorie et marchands à classer",
-      "status": "doing",
-      "started": "2026-10-15"
+      "status": "done",
+      "started": "2026-10-15",
+      "finished": "2026-10-15"
     },
     {
       "id": "L75",
       "title": "Catégories stables d'un mois à l'autre et apprises de vos corrections",
-      "status": "doing",
+      "status": "done",
       "started": "2026-10-15",
-      "tasks": [
-        {
-          "status": "todo"
-        }
-      ]
+      "finished": "2026-10-15"
+    },
+    {
+      "id": "L77",
+      "title": "Auto-catégorisation : la règle proposée suit la catégorie que vous choisissez",
+      "status": "todo"
     }
   ]
 }
