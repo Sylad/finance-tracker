@@ -1,4 +1,5 @@
 import {
+  LEADING_PREFIXES,
   MERCHANT_DICTIONARY,
   MIN_TRUNCATED_WORD_LENGTH,
   merchantKey,
@@ -45,6 +46,8 @@ const LABELS = [
   'CARTE X1234 LIDL',
   'CARTE X 1234 LIDL',
   'PRLV VIR NETFLIX',
+  'PRELEVT NETFLIX',
+  'VIREMENT LOYER APPARTEMENT',
   'PRLV SEPA CARREFOUR BANQUE 0123456',
   'PRLV CARREFOUR BANQU',
   'PRLV CARREFOUR BAN',
@@ -92,6 +95,10 @@ describe('parité merchantKey / motif : backend et miroir frontend (L75)', () =>
     expect(mirror.MERCHANT_WORDS_MIRROR.map((e) => ({ words: e.words, unless: e.unless ?? [] }))).toEqual(
       MERCHANT_DICTIONARY.map((e) => ({ words: e.words, unless: e.unless ?? [] })),
     );
+  });
+
+  it('R2 — la liste des préfixes bancaires retirés est la même, dans le même ordre', () => {
+    expect([...mirror.LEADING_PREFIXES]).toEqual([...LEADING_PREFIXES]);
   });
 
   it('R4 — la longueur minimale d\'un mot d\'exclusion tronqué est la même', () => {

@@ -7,7 +7,8 @@
  * référence ; un test de parité (backend, merchant-key-parity.spec.ts) exécute
  * les deux sur un même jeu de libellés et compare aussi les deux dictionnaires.
  */
-const LEADING_PREFIXES = new Set([
+/** Préfixes bancaires retirés en tête de libellé (miroir de LEADING_PREFIXES, R2). */
+export const LEADING_PREFIXES: ReadonlySet<string> = new Set([
   'CB', 'PAIEMENT', 'ACHAT', 'CARTE', 'PRELEVEMENT', 'PRELEVT', 'PRLV', 'VIR', 'VIREMENT',
 ]);
 

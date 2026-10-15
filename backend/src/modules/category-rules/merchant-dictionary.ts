@@ -36,7 +36,7 @@ export const MERCHANT_DICTIONARY: readonly MerchantEntry[] = [
 ];
 
 /** Préfixes bancaires retirés en tête de libellé (R2). */
-const LEADING_PREFIXES = new Set([
+export const LEADING_PREFIXES: ReadonlySet<string> = new Set([
   'CB', 'PAIEMENT', 'ACHAT', 'CARTE', 'PRELEVEMENT', 'PRELEVT', 'PRLV', 'VIR', 'VIREMENT',
 ]);
 
