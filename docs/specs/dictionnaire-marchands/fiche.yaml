@@ -31,7 +31,7 @@ cas:
       - Le service construit le relevé depuis la réponse de Claude.
       - Les règles utilisateur sont appliquées comme aujourd'hui, avec en plus la liste des transactions reconnues par une règle (CategoryRulesService.applyWithHits, R19).
       - Pour chaque débit qu'aucune règle utilisateur n'a reconnu (suivi par applyWithHits, R19), le libellé est normalisé puis comparé au dictionnaire.
-      - Si une enseigne est reconnue, la catégorie du dictionnaire remplace celle de Claude.
+      - Si une enseigne est reconnue, la catégorie du dictionnaire remplace celle de Claude et la sous-catégorie est vidée si la catégorie change (R20).
       - Le service écrit un log avec la version du dictionnaire et le nombre de transactions recatégorisées, puis poursuit (revenu exceptionnel, sauvegarde, auto-sync).
     alternatives:
       - { si: une règle utilisateur correspond au libellé, alors: la règle gagne et le dictionnaire n'est pas consulté pour cette transaction, regles: [R7] }
@@ -315,6 +315,20 @@ regles:
       - "R19 — sans aucune règle, matchedIds est vide et les transactions sont inchangées"
       - "R19 — apply() renvoie le même résultat qu'avant pour les mêmes entrées"
 
+  - id: R20
+    cas: [C1]
+    enonce: >-
+      Quand le dictionnaire change la catégorie d'une transaction, sa sous-catégorie est vidée : celle de Claude décrivait l'ancienne
+      catégorie (une transaction passée de transport à food ne garde pas « carburant »). Si la catégorie du dictionnaire est celle que
+      Claude avait déjà donnée, la transaction n'est pas touchée et garde sa sous-catégorie. Une transaction reconnue par une règle
+      utilisateur ou non reconnue garde la sienne.
+    statut: hypothese
+    si_faux: Si la sous-catégorie de Claude doit survivre au changement de catégorie, une sous-catégorie incohérente avec la catégorie réapparaît ; seul le champ subcategory de la transaction recatégorisée change, aucune autre donnée en jeu.
+    tests:
+      - "R20 — une sous-catégorie de Claude est vidée quand le dictionnaire change la catégorie (transport → food)"
+      - "R20 — la sous-catégorie est gardée quand la catégorie du dictionnaire est celle de Claude"
+      - "R20 — une transaction non reconnue ou reconnue par une règle garde sa sous-catégorie"
+
 contrats:
   - id: A1
     appel: PATCH /api/statements/:id/transactions/:txId/category
@@ -341,9 +355,9 @@ contrats:
     sortie: "réponse inchangée ; seules les catégories des transactions reconnues diffèrent, plus un log de version"
     erreurs: []
     sans_erreur: "le passage dictionnaire est une fonction pure sans source externe ni entrée utilisateur ; il n'ajoute aucun code d'erreur, les erreurs de l'upload et de Claude restent celles de l'existant (la notion d'échec du dictionnaire n'existe pas)"
-    regles: [R1, R3, R4, R5, R6, R7, R8, R9, R18, R19]
+    regles: [R1, R3, R4, R5, R6, R7, R8, R9, R18, R19, R20]
 
 donnees:
   - { id: D1, objet: "dictionnaire de marchands (constante du code + numéro de version, backend/src/modules/category-rules)", existant: false, modification: aucune, note: "nouveau, livré avec le code, aucun stockage ni migration" }
   - { id: D2, objet: "data/category-rules.json (liste de CategoryRule)", existant: true, modification: aucune, note: "format inchangé ; les règles « marchand » sont des CategoryRule ordinaires ajoutées par create() ; aucune règle existante n'est modifiée ni supprimée (R13)" }
-  - { id: D3, objet: "data/statements/*.json (transactions)", existant: true, modification: aucune, note: "seules les valeurs de category des transactions reconnues changent ; description, normalizedDescription et schéma inchangés, aucune version stockée (R6)" }
+  - { id: D3, objet: "data/statements/*.json (transactions)", existant: true, modification: aucune, note: "seules les valeurs de category des transactions reconnues changent (et leur subcategory, vidée, R20) ; description, normalizedDescription et schéma inchangés, aucune version stockée (R6)" }

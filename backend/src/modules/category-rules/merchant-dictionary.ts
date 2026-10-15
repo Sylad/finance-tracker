@@ -148,7 +148,7 @@ export function rawLabel(tx: Pick<Transaction, 'normalizedDescription' | 'descri
 /**
  * R7/R8 : recatégorise les seuls débits que `skipIds` (règles utilisateur,
  * R19) n'a pas reconnus. Renvoie un nouveau tableau et le nombre de catégories
- * réellement changées. La sous-catégorie n'est pas touchée.
+ * réellement changées ; la sous-catégorie est vidée quand la catégorie change (R20).
  */
 export function applyMerchantDictionary(
   transactions: Transaction[],
@@ -160,7 +160,8 @@ export function applyMerchantDictionary(
     const hit = lookupMerchant(rawLabel(tx));
     if (!hit || hit.category === tx.category) return tx;
     recategorized++;
-    return { ...tx, category: hit.category };
+    // R20 : la sous-catégorie de Claude décrivait l'ancienne catégorie, on la vide.
+    return { ...tx, category: hit.category, subcategory: '' };
   });
   return { transactions: out, recategorized };
 }

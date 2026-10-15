@@ -254,6 +254,33 @@ describe('applyMerchantDictionary (R1, R7, R8)', () => {
     expect(recategorized).toBe(0);
   });
 
+  it('R20 — une sous-catégorie de Claude est vidée quand le dictionnaire change la catégorie (transport → food)', () => {
+    const { transactions } = applyMerchantDictionary(
+      [tx({ id: 'a', description: 'LIDL', normalizedDescription: 'LIDL', category: 'transport', subcategory: 'carburant' })],
+      new Set(),
+    );
+    expect(transactions[0]).toMatchObject({ category: 'food', subcategory: '' });
+  });
+
+  it('R20 — la sous-catégorie est gardée quand la catégorie du dictionnaire est celle de Claude', () => {
+    const { transactions } = applyMerchantDictionary(
+      [tx({ id: 'a', description: 'LIDL', normalizedDescription: 'LIDL', category: 'food', subcategory: 'courses' })],
+      new Set(),
+    );
+    expect(transactions[0]).toMatchObject({ category: 'food', subcategory: 'courses' });
+  });
+
+  it('R20 — une transaction non reconnue ou reconnue par une règle garde sa sous-catégorie', () => {
+    const { transactions } = applyMerchantDictionary(
+      [
+        tx({ id: 'a', description: 'BOULANGERIE', normalizedDescription: 'BOULANGERIE', category: 'transport', subcategory: 'taxi' }),
+        tx({ id: 'b', description: 'LIDL', normalizedDescription: 'LIDL', category: 'transport', subcategory: 'taxi' }),
+      ],
+      new Set(['b']),
+    );
+    expect(transactions.map((t) => t.subcategory)).toEqual(['taxi', 'taxi']);
+  });
+
   it('R6 — le compte ne compte que les catégories réellement changées', () => {
     const { recategorized } = applyMerchantDictionary(
       [
