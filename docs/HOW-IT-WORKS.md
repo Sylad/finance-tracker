@@ -11,13 +11,13 @@ Tu glisses un PDF de relevé bancaire. Claude lit le PDF, en extrait la liste st
 ```
                 ┌──────────────────────────┐
    PDF.pdf  ──► │  Phase 1 (Claude)        │  extract_transactions tool
-                │  temperature: 0          │  → tx[], soldes, comptes externes
+                │  outil strict, auto      │  → tx[], soldes, comptes externes
                 └──────────────┬───────────┘
                                │
                                ▼
                 ┌──────────────────────────┐
                 │  Phase 2 (Claude)        │  analyze_finances tool
-                │  temperature: 0          │  → recurringCredits, narrative,
+                │  outil strict, auto      │  → recurringCredits, narrative,
                 │                          │     claudeHealthComment, suggestions
                 └──────────────┬───────────┘
                                │
@@ -74,7 +74,7 @@ Si tu veux changer une formule (par ex. relâcher `debtBurden` à 75 % au lieu d
 C'est le résultat de plusieurs itérations :
 
 1. **V1** : Claude faisait tout, score compris. Trop variable (16↔40 sur le même PDF), pas reproductible, et chaque rescore coûtait un appel API.
-2. **V2 — `temperature: 0`** : ramène la variance à ±2-3 points. Mieux mais pas suffisant pour un chiffre qu'on présente comme "ta note".
+2. **V2 — `temperature: 0`** : ramène la variance à ±2-3 points. Mieux mais pas suffisant pour un chiffre qu'on présente comme "ta note". (Depuis le passage à `claude-sonnet-5-5`, L76, le paramètre n'est plus envoyé : le modèle le refuse. La stabilité du score repose sur la V3.)
 3. **V3 — `ScoreCalculator`** : le score devient une formule pure. Stable à vie tant qu'on ne touche pas au code.
 
 La règle qu'on essaie de suivre :

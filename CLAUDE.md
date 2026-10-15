@@ -270,7 +270,14 @@ Doc complète dans `.claude/output/apex/04-loans-synchro-robust/` et `.claude/ou
 
 ### Two-phase tool-use Claude
 - Phase 1 = `extract_transactions`, Phase 2 = `analyze_finances`. **Toujours vérifier que phase 1 a retourné > 0 transactions** avant de lancer phase 2 — sinon plantage.
-- `tool_choice: { type: 'tool' }` strict, donc `ANALYZE_TOOL.description` peut rester en EN (pas de risque pratique).
+- **Pas de `tool_choice` forcé** (L76) : `claude-sonnet-5-5` refuse `{ type: 'tool' }` et `{ type: 'any' }` (400 `tool_choice: type "tool" and "any" are not supported for this model`). Tous les appels qui n'attendent qu'un outil (`extract_transactions`, `analyze_finances`, `extract_credit_statement`, `extract_amortization_schedule`, `categorize_transactions`, `suggest_category_rules`) suivent la même forme, en helpers dans `backend/src/modules/analysis/forced-tool.helper.ts` :
+  1. `tool_choice: AUTO_TOOL_CHOICE` (`{ type: 'auto' }`) ;
+  2. l'outil porte `strict: true`, avec `additionalProperties: false` sur chaque objet du schéma et un `required` complet (une valeur absente se dit `null` ou chaîne vide, d'où les `type: ['string', 'null']`) ; seules quelques propriétés de masse restent optionnelles (`targetAccountNumber` par transaction, `label`/`asOfDate` des comptes externes) pour ne pas gonfler la sortie ;
+  3. le system prompt se termine par `onlyToolInstruction('<outil>')` : « Tu dois répondre en appelant l'outil <outil>, et uniquement lui. » ;
+  4. `auto` ne GARANTIT pas l'appel : `runWithToolRetry` relance UNE fois si la réponse n'a aucun `tool_use` du bon nom (hors `max_tokens`, géré par `runWithMaxTokensRetry`), puis `requireToolUse` lève une erreur explicite (`ToolUseMissingError`, ou la classe métier du service). Jamais de parse d'un texte libre.
+  - Pas non plus de `temperature` / `top_p` / `top_k` (valeur non par défaut refusée sur ce modèle) ni de prefill assistant ; pas de `thinking` (adaptatif par défaut).
+  - Un nouvel appel à outil unique réutilise ces helpers ; `expectAutoStrictCall` (`forced-tool-spec.ts`) vérifie la forme dans les tests de chaque service.
+  - `ANALYZE_TOOL.description` peut rester en EN (pas de risque pratique).
 
 ### Cache JSON après schema change
 - Si un module backend ajoute un champ, le cache JSON existant ne contient pas ce champ → re-fetch peut renvoyer des objets incomplets. **Buster le cache** (suppression du fichier ou bump version) avant rebuild backend.
