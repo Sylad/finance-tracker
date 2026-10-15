@@ -102,6 +102,24 @@ describe('lookupMerchant (R3, R4, R5, R18)', () => {
     expect(lookupMerchant(label)).toBeNull();
   });
 
+  it.each([
+    'PRLV CARREFOUR BANQU',
+    'PRLV CARREFOUR BANQ',
+    'CARREFOUR FINANC',
+    'CARREFOUR FINANCEM',
+    'ORANGE LIVR',
+    'CB ORANGE CRED',
+  ])('R4 — « %s » (libellé tronqué d\'un organisme de crédit ou d\'épargne) n\'est pas reconnu', (label) => {
+    expect(lookupMerchant(label)).toBeNull();
+  });
+
+  it('R4 — un dernier mot de moins de 4 lettres, ou qui n\'est pas au bout du libellé, n\'est pas lu comme une troncature', () => {
+    expect(lookupMerchant('PRLV CARREFOUR BAN')?.category).toBe('food');
+    expect(lookupMerchant('CARREFOUR PRE')?.category).toBe('food');
+    expect(lookupMerchant('CARREFOUR BANQU MARKET')?.category).toBe('food');
+    expect(lookupMerchant('CARREFOUR DRIVE')?.category).toBe('food');
+  });
+
   it('R4 — « FREEDOM SPORT » n\'est pas reconnu comme Free', () => {
     expect(lookupMerchant('FREEDOM SPORT')).toBeNull();
   });
@@ -225,6 +243,15 @@ describe('applyMerchantDictionary (R1, R7, R8)', () => {
       new Set(),
     );
     expect(transactions[0].category).toBe('health');
+  });
+
+  it('R4 — un prélèvement « PRLV CARREFOUR BANQU » (libellé tronqué) garde la catégorie de Claude à l\'analyse', () => {
+    const { transactions, recategorized } = applyMerchantDictionary(
+      [tx({ id: 'a', description: 'PRLV CARREFOUR BANQU', normalizedDescription: 'PRLV CARREFOUR BANQU', category: 'transfers' })],
+      new Set(),
+    );
+    expect(transactions[0].category).toBe('transfers');
+    expect(recategorized).toBe(0);
   });
 
   it('R6 — le compte ne compte que les catégories réellement changées', () => {

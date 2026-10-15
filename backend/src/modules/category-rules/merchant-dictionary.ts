@@ -107,13 +107,28 @@ export function merchantPattern(label: string): string | null {
   return merchantRule(label).pattern;
 }
 
+/** Longueur minimale (lettres) d'un dernier mot tronqué pour compter comme mot d'exclusion (R4). */
+export const MIN_TRUNCATED_WORD_LENGTH = 4;
+
+/**
+ * R4 : la clé contient un mot d'exclusion — en mot entier n'importe où, ou en
+ * début de mot pour son DERNIER mot (libellé LBP tronqué : « BANQU » pour BANQUE),
+ * à partir de 4 lettres.
+ */
+function isExcluded(key: string[], unless: readonly string[] | undefined): boolean {
+  if (!unless) return false;
+  if (unless.some((w) => key.includes(w))) return true;
+  const last = key[key.length - 1];
+  return !!last && last.length >= MIN_TRUNCATED_WORD_LENGTH && unless.some((w) => w.startsWith(last));
+}
+
 /** R4 : entrée dont les mots forment une suite contiguë de la clé ; la plus longue gagne. */
 export function lookupMerchant(label: string): MerchantEntry | null {
   const key = merchantKey(label).split(' ').filter(Boolean);
   let best: MerchantEntry | null = null;
   for (const entry of MERCHANT_DICTIONARY) {
     if (best && entry.words.length <= best.words.length) continue;
-    if (entry.unless?.some((w) => key.includes(w))) continue;
+    if (isExcluded(key, entry.unless)) continue;
     const n = entry.words.length;
     for (let start = 0; start + n <= key.length; start++) {
       if (entry.words.every((w, k) => key[start + k] === w)) {

@@ -1,5 +1,6 @@
 import {
   MERCHANT_DICTIONARY,
+  MIN_TRUNCATED_WORD_LENGTH,
   merchantKey,
   merchantRule,
   merchantRuleWords,
@@ -46,6 +47,9 @@ const LABELS = [
   'PRLV VIR NETFLIX',
   'PRLV SEPA CARREFOUR BANQUE 0123456',
   'PRLV CARREFOUR BANQU',
+  'PRLV CARREFOUR BAN',
+  'ORANGE LIVR',
+  'CARREFOUR BANQU MARKET',
   'ACHAT VENTE AUTO',
   'PAIEMENT PSC BOULANGERIE',
   'CARREFOUR CITÉ',
@@ -88,6 +92,10 @@ describe('parité merchantKey / motif : backend et miroir frontend (L75)', () =>
     expect(mirror.MERCHANT_WORDS_MIRROR.map((e) => ({ words: e.words, unless: e.unless ?? [] }))).toEqual(
       MERCHANT_DICTIONARY.map((e) => ({ words: e.words, unless: e.unless ?? [] })),
     );
+  });
+
+  it('R4 — la longueur minimale d\'un mot d\'exclusion tronqué est la même', () => {
+    expect(mirror.MIN_TRUNCATED_WORD_LENGTH).toBe(MIN_TRUNCATED_WORD_LENGTH);
   });
 
   it('R15 — la longueur minimale d\'un motif d\'un seul mot est la même', () => {

@@ -124,12 +124,14 @@ regles:
       précise (UBER EATS) l'emporte sur UBER. Exception livrée (commit ce2d6c4) : une entrée peut porter des mots d'exclusion
       (champ unless du code) qui, présents n'importe où dans la clé, l'écartent : un organisme de crédit ou d'épargne homonyme
       n'est pas une dépense de l'enseigne. Carrefour et Orange sont écartés par BANQUE, BANK, FINANCE, FINANCEMENT, LIVRET, CREDIT,
-      ASSURANCE, PRET (« CARREFOUR BANQUE » reste un crédit) ; Free l'est par DUTY (« DUTY FREE »).
+      ASSURANCE, PRET (« CARREFOUR BANQUE » reste un crédit) ; Free l'est par DUTY (« DUTY FREE »). Un libellé LBP tronqué est écarté de la même façon : le DERNIER mot de la clé, s'il compte au moins 4 lettres et commence un mot d'exclusion, vaut ce mot (« PRLV CARREFOUR BANQU » = CARREFOUR BANQUE, donc écarté ; « CARREFOUR BANQU MARKET » ne l'est pas, BANQU n'étant pas au bout). Les retraits au DAB d'une enseigne (« RETRAIT DAB 12/03 CARREFOUR ») restent reconnus : la fiche ne les exclut pas.
     statut: hypothese
     si_faux: Si la correspondance doit être « contient » plutôt que mots entiers, des libellés voisins seraient classés à tort (FREE dans un nom de commerçant) ; seul le comparateur change.
     tests:
       - "R4 — « FREEDOM SPORT » n'est pas reconnu comme Free"
       - "R4 — « UBER EATS PARIS » est reconnu par l'entrée UBER EATS, pas par UBER"
+      - "R4 — « PRLV CARREFOUR BANQU » (libellé tronqué d'un organisme de crédit) n'est pas reconnu, et garde la catégorie de Claude à l'analyse"
+      - "R4 — un dernier mot de moins de 4 lettres, ou qui n'est pas au bout du libellé, n'est pas lu comme une troncature"
       - "R4 — une enseigne inconnue laisse la catégorie de Claude intacte"
   - id: R5
     cas: [C1, C2]
