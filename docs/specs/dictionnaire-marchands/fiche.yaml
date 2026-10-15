@@ -118,7 +118,10 @@ regles:
     enonce: >-
       Une enseigne est reconnue quand ses mots forment une suite de mots entiers de la clé, quelle que soit la position ;
       en cas de plusieurs entrées possibles, la plus longue gagne. « FREE » ne reconnaît donc pas « FREEDOM », et une entrée plus
-      précise (UBER EATS) l'emporte sur UBER.
+      précise (UBER EATS) l'emporte sur UBER. Exception livrée (commit ce2d6c4) : une entrée peut porter des mots d'exclusion
+      (champ unless du code) qui, présents n'importe où dans la clé, l'écartent : un organisme de crédit ou d'épargne homonyme
+      n'est pas une dépense de l'enseigne. Carrefour et Orange sont écartés par BANQUE, BANK, FINANCE, FINANCEMENT, LIVRET, CREDIT,
+      ASSURANCE, PRET (« CARREFOUR BANQUE » reste un crédit) ; Free l'est par DUTY (« DUTY FREE »).
     statut: hypothese
     si_faux: Si la correspondance doit être « contient » plutôt que mots entiers, des libellés voisins seraient classés à tort (FREE dans un nom de commerçant) ; seul le comparateur change.
     tests:
