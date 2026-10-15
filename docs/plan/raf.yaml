@@ -683,12 +683,13 @@ lots:
   - id: L75
     title: "Dictionnaire de marchands versionné (enseigne → catégorie : Carrefour/Leclerc/Lidl → Alimentation, SNCF/TotalEnergies/Vinci/Uber → Transport, Netflix/Free/Orange → Abonnements…) appliqué en local avant Claude, avec normalisation des libellés LBP (CB, PRELEVEMENT, numéros, dates) et case « mémoriser pour ce marchand » à la recatégorisation manuelle qui crée la règle en un clic (Sylvain 15-10)"
     public: Catégories stables d'un mois à l'autre et apprises de vos corrections
-    status: todo
+    status: doing
     estimate: 1
     visible: true
     screen: component
     spec: true
     created: 2026-10-15
+    started: 2026-10-15
   - id: L76
     title: "Analyse des relevés : passer de claude-sonnet-4-5 à claude-sonnet-5-5 (extraction et catégorisation), vérifié sur un relevé réel en local avant livraison (Sylvain 15-10)"
     status: doing
