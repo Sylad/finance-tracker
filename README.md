@@ -43,6 +43,7 @@ Le rôle de Claude : poser le code, expliquer, itérer.
 - **Détection LLM locale des crédits et paiements en N fois** (Klarna, PayPal 4×…) — le LLM propose, un validateur déterministe vérifie (1 débit/mois, jour stable, fraîcheur), l'humain accepte
 - **Score de santé financière** sur 100 (5 dimensions : épargne, contrôle, dette, cash flow, irrégularité)
 - **Catégorisation auto** des transactions (logement, alimentation, etc.) avec sous-catégorie + niveau de confiance ; libellés français partout, y compris sous les champs de saisie brute (déclarations, changement de catégorie) ; la recherche du détail d'un relevé couvre catégorie et sous-catégorie, sans tenir compte des accents
+- **Qualité de catégorisation** (L74) — sur chaque relevé et en tuile du tableau de bord (dernier relevé) : part des transactions restées en « Autres » (vert < 15 %, orange < 30 %, rouge au-delà) et marchands non classés les plus fréquents (5 au plus, débits seulement, libellés débarrassés du bruit bancaire). Calcul côté navigateur depuis les transactions déjà chargées (`frontend/src/lib/categorization-quality.ts`) ; c'est une mesure, rien n'est recatégorisé
 - **Détection des crédits récurrents** (salaire, loyers, pensions) avec date de fin estimée
 - **Budgets par catégorie** — progression visuelle au fil du mois
 - **Déclarations** d'engagements (revenus, crédits, abonnements) → moteur de **prévisions** mensuel

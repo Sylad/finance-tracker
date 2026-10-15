@@ -1,7 +1,22 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-15 13:28",
+  "generated": "2026-10-15 16:16",
   "entries": [
+    {
+      "slug": "2026-10-15-releves-part-des-transactions-sans-categorie-et-marchands-a",
+      "title": "Relevés : part des transactions sans catégorie et marchands à classer",
+      "date": "2026-10-15",
+      "lots": [
+        "L74"
+      ],
+      "captures": [
+        "captures/2026-10-15-sans-categorie-tableau-de-bord.png"
+      ],
+      "alts": [
+        "Tableau de bord avec la tuile « Transactions sans catégorie » : 8 %, 2 transactions sur 24, marchand à classer Amazon"
+      ],
+      "html": "<p>Chaque relevé indique maintenant la part de ses transactions restées dans la catégorie « Autres », avec le nombre exact (par exemple « 8 % — 2 transactions sur 24 »). Le pourcentage est vert sous 15 %, orange sous 30 %, rouge au-delà.</p>\n<p>Juste dessous, la liste des marchands non classés les plus fréquents (cinq au plus, débits seulement) donne le nombre de passages et le total dépensé : c'est là qu'il y a le plus à gagner en recatégorisant.</p>\n<p>La même mesure apparaît en tuile sur le tableau de bord, pour le dernier relevé ; un clic ouvre le relevé. Rien n'est recatégorisé automatiquement : c'est un indicateur.</p>"
+    },
     {
       "slug": "2026-10-15-releve-detaille-plus-de-requete-a-un-service-tiers-pour-les",
       "title": "Relevé détaillé : plus de requête à un service tiers pour les logos",

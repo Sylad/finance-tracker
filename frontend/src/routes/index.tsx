@@ -36,6 +36,7 @@ import { ScoreTrendChart } from '@/components/dashboard/score-trend-chart';
 import { BalanceTrendChart } from '@/components/dashboard/balance-trend-chart';
 import { RecentStatements } from '@/components/dashboard/recent-statements';
 import { YearlyCharts } from '@/components/dashboard/yearly-charts';
+import { CategorizationQualityCard } from '@/components/categorization-quality-card';
 import { HealthTile } from '@/components/dashboard/health-tile';
 import { MonthSummaryCard, HealthScoreCompact, PhoneMoreLinks } from '@/components/dashboard/phone-cards';
 
@@ -215,6 +216,7 @@ export function DashboardPage() {
         />
         <HealthScoreCompact score={current.healthScore} comment={comment} />
         <HealthTile diagnostic={health.data} />
+        <CategorizationQualityCard transactions={currentDetail.data?.transactions} statementId={current.id} />
       </div>
 
       <section className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -265,6 +267,11 @@ export function DashboardPage() {
           tone="negative"
         />
         <HealthTile diagnostic={health.data} className="md:col-span-2" />
+        <CategorizationQualityCard
+          transactions={currentDetail.data?.transactions}
+          statementId={current.id}
+          className="md:col-span-2 lg:col-span-3"
+        />
       </section>
 
       <section className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">

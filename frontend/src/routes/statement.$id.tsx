@@ -23,6 +23,7 @@ import { LoadingState } from '@/components/loading-state';
 import { ScoreRing } from '@/components/score-ring';
 import { CategoryPicker } from '@/components/category-picker';
 import { AutoCategorizeModal } from '@/components/auto-categorize-modal';
+import { CategorizationQualityCard } from '@/components/categorization-quality-card';
 import {
   CATEGORY_LABELS,
   type Transaction,
@@ -245,6 +246,8 @@ export function StatementDetailPage() {
           )}
         </div>
       </section>
+
+      <CategorizationQualityCard transactions={transactions} className="mb-6" />
 
       {anomalies.length > 0 && (
         <section className="card p-5 mb-6">
