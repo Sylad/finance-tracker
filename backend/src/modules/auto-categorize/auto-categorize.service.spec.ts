@@ -123,7 +123,7 @@ function makeService(opts: {
 describe('AutoCategorizeService — preview()', () => {
   it('returns parsed Claude tool_use as suggestions, sorted by confidence', async () => {
     const txs = [
-      tx({ id: 't1', description: 'CARREFOUR PARIS', normalizedDescription: 'CARREFOUR PARIS' }),
+      tx({ id: 't1', description: 'BOULANGERIE PARIS', normalizedDescription: 'BOULANGERIE PARIS' }),
       tx({ id: 't2', description: 'PRELEVT COFIDIS 12345', normalizedDescription: 'PRELEVT COFIDIS' }),
     ];
     const { svc } = makeService({
@@ -131,7 +131,7 @@ describe('AutoCategorizeService — preview()', () => {
       toolInputs: [
         {
           suggestions: [
-            { transactionId: 't1', suggestedCategory: 'food', confidence: 0.9, reasoning: 'Supermarché', proposedRulePattern: 'CARREFOUR' },
+            { transactionId: 't1', suggestedCategory: 'food', confidence: 0.9, reasoning: 'Boulangerie', proposedRulePattern: 'BOULANGERIE' },
             { transactionId: 't2', suggestedCategory: 'other', confidence: 0.6, reasoning: 'Crédit conso', proposedRulePattern: 'PRELEVT.*COFIDIS' },
           ],
         },
@@ -144,7 +144,8 @@ describe('AutoCategorizeService — preview()', () => {
     expect(result.suggestions).toHaveLength(1);
     expect(result.suggestions[0].transactionId).toBe('t1');
     expect(result.suggestions[0].suggestedCategory).toBe('food');
-    expect(result.suggestions[0].proposedRulePattern).toBe('CARREFOUR');
+    expect(result.suggestions[0].proposedRulePattern).toBe('BOULANGERIE');
+    expect(result.suggestions[0].source).toBe('claude');
     expect(result.totalOther).toBe(2);
     expect(result.processed).toBe(2);
   });
@@ -200,6 +201,85 @@ describe('AutoCategorizeService — preview()', () => {
     });
     await svc.preview('2026-03');
     expect(fakeAnthropic.messages.create).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('AutoCategorizeService — preview() et dictionnaire de marchands (L75)', () => {
+  const claudeSays = (id: string) => ({
+    suggestions: [{ transactionId: id, suggestedCategory: 'health', confidence: 0.8, reasoning: 'Pharmacie', proposedRulePattern: 'PHARMACIE' }],
+  });
+
+  it('R10 — avec une transaction CARREFOUR et une inconnue, Claude ne reçoit que l\'inconnue', async () => {
+    const txs = [
+      tx({ id: 't1', description: 'PAIEMENT CB 1203 CARREFOUR MARKET 12/03', normalizedDescription: 'PAIEMENT CB 1203 CARREFOUR MARKET 12/03' }),
+      tx({ id: 't2', description: 'PHARMACIE DU CENTRE', normalizedDescription: 'PHARMACIE DU CENTRE' }),
+    ];
+    const { svc, fakeAnthropic } = makeService({ stmt: statement(txs), toolInputs: [claudeSays('t2')] });
+    const result = await svc.preview('2026-03');
+    expect(fakeAnthropic.messages.create).toHaveBeenCalledTimes(1);
+    const prompt = JSON.stringify((fakeAnthropic.messages.create.mock.calls[0] as any[])[0].messages);
+    expect(prompt).toContain('t2');
+    expect(prompt).not.toContain('t1');
+    expect(result.suggestions.map((s) => s.transactionId).sort()).toEqual(['t1', 't2']);
+    expect(result.totalOther).toBe(2);
+    expect(result.processed).toBe(2);
+  });
+
+  it('R10 — avec uniquement des enseignes connues, le client Claude n\'est jamais appelé', async () => {
+    const txs = [tx({ id: 't1', description: 'LIDL 1234', normalizedDescription: 'LIDL 1234' })];
+    const { svc, fakeAnthropic } = makeService({ stmt: statement(txs), toolInputs: [] });
+    const result = await svc.preview('2026-03');
+    expect(fakeAnthropic.messages.create).not.toHaveBeenCalled();
+    expect(result.suggestions).toHaveLength(1);
+  });
+
+  it('R10 — la suggestion du dictionnaire porte confidence 1 et source dictionary', async () => {
+    const txs = [tx({ id: 't1', description: 'PAIEMENT CB 1203 CARREFOUR MARKET 12/03', normalizedDescription: 'PAIEMENT CB 1203 CARREFOUR MARKET 12/03' })];
+    const { svc } = makeService({ stmt: statement(txs), toolInputs: [] });
+    const [s] = (await svc.preview('2026-03')).suggestions;
+    expect(s).toMatchObject({
+      transactionId: 't1',
+      suggestedCategory: 'food',
+      confidence: 1,
+      source: 'dictionary',
+      reasoning: 'Marchand reconnu : Carrefour',
+      proposedRulePattern: 'CARREFOUR[^A-Za-z0-9]+MARKET',
+      currentCategory: 'other',
+    });
+  });
+
+  it('R10 — un motif qui ne reconnaît pas le libellé brut (accent) donne proposedRulePattern null', async () => {
+    const txs = [tx({ id: 't1', description: 'CARREFOUR CITÉ', normalizedDescription: 'CARREFOUR CITÉ' })];
+    const { svc } = makeService({ stmt: statement(txs), toolInputs: [] });
+    const [s] = (await svc.preview('2026-03')).suggestions;
+    expect(s.source).toBe('dictionary');
+    expect(s.proposedRulePattern).toBeNull();
+  });
+
+  it('R8 — un crédit CARREFOUR en other part à Claude, pas au dictionnaire', async () => {
+    const txs = [tx({ id: 't1', description: 'CARREFOUR', normalizedDescription: 'CARREFOUR', amount: 20 })];
+    const { svc, fakeAnthropic } = makeService({ stmt: statement(txs), toolInputs: [{ suggestions: [] }] });
+    const result = await svc.preview('2026-03');
+    expect(fakeAnthropic.messages.create).toHaveBeenCalledTimes(1);
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it('R10 — les suggestions mêlent dictionary et claude, triées par confiance décroissante', async () => {
+    const txs = [
+      tx({ id: 't1', description: 'PHARMACIE', normalizedDescription: 'PHARMACIE' }),
+      tx({ id: 't2', description: 'NETFLIX', normalizedDescription: 'NETFLIX' }),
+    ];
+    const { svc } = makeService({ stmt: statement(txs), toolInputs: [claudeSays('t1')] });
+    const result = await svc.preview('2026-03');
+    expect(result.suggestions.map((s) => [s.transactionId, s.source])).toEqual([['t2', 'dictionary'], ['t1', 'claude']]);
+  });
+
+  it('R12 — en mode démo, l\'aperçu répond 403 avec le message existant', async () => {
+    const txs = [tx({ id: 't1', description: 'CARREFOUR', normalizedDescription: 'CARREFOUR' })];
+    const { svc } = makeService({ stmt: statement(txs), toolInputs: [], isDemo: true });
+    await expect(svc.preview('2026-03')).rejects.toThrow(
+      "L'auto-catégorisation Claude n'est pas disponible en mode démo (consomme des tokens API).",
+    );
   });
 });
 

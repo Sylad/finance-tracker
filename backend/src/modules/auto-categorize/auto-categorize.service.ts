@@ -10,6 +10,7 @@ import { AutoCategorizeOutputSchema } from './auto-categorize.schemas';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { CategoryRule } from '../../models/category-rule.model';
 import { CLAUDE_MODEL } from '../analysis/claude-model';
+import { lookupMerchant, merchantPattern, rawLabel } from '../category-rules/merchant-dictionary';
 
 export interface CategorizationSuggestion {
   transactionId: string;
@@ -21,6 +22,8 @@ export interface CategorizationSuggestion {
   confidence: number;
   reasoning: string;
   proposedRulePattern: string | null;
+  /** Origine de la suggestion (L75) : dictionnaire de marchands local ou Claude. */
+  source?: 'dictionary' | 'claude';
 }
 
 export interface AutoCategorizePreview {
@@ -93,14 +96,37 @@ export class AutoCategorizeService {
     const warnings: string[] = [];
     const allSuggestions: CategorizationSuggestion[] = [];
 
+    // Dictionnaire de marchands d'abord (L75, R10) : les débits reconnus sont
+    // des suggestions sûres et ne partent pas à Claude.
+    const toClaude: Transaction[] = [];
+    for (const tx of others) {
+      const hit = tx.amount < 0 ? lookupMerchant(rawLabel(tx)) : null;
+      if (!hit) {
+        toClaude.push(tx);
+        continue;
+      }
+      allSuggestions.push({
+        transactionId: tx.id,
+        description: tx.description,
+        amount: tx.amount,
+        date: tx.date,
+        currentCategory: tx.category,
+        suggestedCategory: hit.category,
+        confidence: 1,
+        reasoning: `Marchand reconnu : ${hit.label}`,
+        proposedRulePattern: dictionaryRulePattern(tx),
+        source: 'dictionary',
+      });
+    }
+
     // Run batches in parallel — Claude SDK handles concurrency, and at
     // BATCH_SIZE=10 a typical month has 1-3 batches.
-    const batches = chunk(others, BATCH_SIZE);
+    const batches = chunk(toClaude, BATCH_SIZE);
     const results = await Promise.allSettled(
       batches.map((batch) => this.askClaudeForBatch(batch, availableCategories)),
     );
 
-    const byId = new Map(others.map((t) => [t.id, t]));
+    const byId = new Map(toClaude.map((t) => [t.id, t]));
     for (let i = 0; i < results.length; i++) {
       const r = results[i];
       if (r.status === 'rejected') {
@@ -137,6 +163,7 @@ export class AutoCategorizeService {
           confidence: s.confidence,
           reasoning: s.reasoning,
           proposedRulePattern: rulePattern,
+          source: 'claude',
         });
       }
     }
@@ -317,6 +344,12 @@ export function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
+}
+
+/** Motif de marchand (R15) ; null s'il ne reconnaît pas le libellé brut (accents…). */
+function dictionaryRulePattern(tx: Transaction): string | null {
+  const pattern = merchantPattern(rawLabel(tx));
+  return pattern && new RegExp(pattern, 'i').test(rawLabel(tx)) ? pattern : null;
 }
 
 export function sanitizeRulePattern(pattern: string, tx: Transaction): string | null {
