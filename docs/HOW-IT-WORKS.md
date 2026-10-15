@@ -40,6 +40,8 @@ Tu glisses un PDF de relevé bancaire. Claude lit le PDF, en extrait la liste st
                 └──────────────────────────┘
 ```
 
+Les appels Claude (les deux phases, comme les crédits, les amortissements, l'auto-catégorisation et les suggestions de règles) demandent un **effort de réflexion explicite `low`** : sur Sonnet 5.5 la réflexion adaptative est active par défaut à `high` et consomme le budget `max_tokens`, or lire un PDF ou classer des libellés n'a pas besoin d'un long raisonnement. Les budgets de sortie en tiennent compte (phase 1 : 32k puis 64k ; phase 2 : 16 000 ; auto-catégorisation et suggestions de règles : 8 192) et une réponse tronquée donne une erreur explicite, jamais une liste partielle. Un refus de Claude n'est pas relancé : il est signalé tel quel.
+
 ## Qui décide quoi
 
 | Élément | Source | Pourquoi |
