@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
 import { CategorizationQualityCard } from './categorization-quality-card';
 import type { Transaction } from '@/types/api';
 
@@ -32,5 +33,27 @@ describe('<CategorizationQualityCard /> (L74)', () => {
   it('sans transaction : ne rend rien', () => {
     const { container } = render(<CategorizationQualityCard transactions={[]} />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('avec statementId : la tuile est un lien vers /history/<id>', async () => {
+    const rootRoute = createRootRoute();
+    const card = createRoute({
+      getParentRoute: () => rootRoute,
+      path: '/',
+      component: () => <CategorizationQualityCard transactions={[tx('CB TABAC', -5)]} statementId="2026-09" />,
+    });
+    const history = createRoute({ getParentRoute: () => rootRoute, path: '/history/$id', component: () => null });
+    const router = createRouter({
+      routeTree: rootRoute.addChildren([card, history]),
+      history: createMemoryHistory({ initialEntries: ['/'] }),
+    });
+    render(<RouterProvider router={router} />);
+    const link = await screen.findByRole('link', { name: /Transactions sans catégorie/ });
+    expect(link).toHaveAttribute('href', '/history/2026-09');
+  });
+
+  it('sans statementId : pas de lien', () => {
+    render(<CategorizationQualityCard transactions={[tx('CB TABAC', -5)]} />);
+    expect(screen.queryByRole('link')).toBeNull();
   });
 });
