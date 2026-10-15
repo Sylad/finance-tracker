@@ -655,3 +655,11 @@ lots:
     status: todo
     estimate: 0.1
     created: 2026-10-14
+  - id: L72
+    title: "Historique des relevés à 390 px : la barre Export CSV / Recalculer les scores / champ de recherche (w-64) déborde — scrollWidth 513 pour 390 ; attendu : aucun défilement horizontal (QA prod 15-10 après L69)"
+    public: "Historique des relevés : plus de débordement au téléphone"
+    status: todo
+    estimate: 0.25
+    quickwin: true
+    visible: true
+    created: 2026-10-15
