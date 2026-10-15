@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { CATEGORY_LABELS, type Transaction, type TransactionCategory } from '@/types/api';
 import { cn } from '@/lib/utils';
 import { frenchHint } from '@/lib/category-label';
+import { merchantKey } from '@/lib/merchant-key';
 
 interface CategoryRulesPayload {
   rules: Array<{ id: string; pattern: string; category: string; subcategory: string; priority: number }>;
@@ -28,10 +29,12 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
   const [subcategory, setSubcategory] = useState<string>(tx.subcategory);
   const [newCatName, setNewCatName] = useState('');
   const [creatingCat, setCreatingCat] = useState(false);
-  // L75 : par défaut, la mémorisation par marchand ; createRule l'emporterait
-  // seul côté API (R16), les deux cases s'excluent donc.
-  const [memorize, setMemorize] = useState(true);
-  const [createRule, setCreateRule] = useState(false);
+  // L75 : un seul choix de règle (createRule l'emporterait seul côté API, R16) ;
+  // par défaut la mémorisation par marchand, sauf clé vide (R14).
+  const key = merchantKey(tx.normalizedDescription || tx.description || '');
+  const [ruleMode, setRuleMode] = useState<'none' | 'memorize' | 'pattern'>(key ? 'memorize' : 'none');
+  const memorize = ruleMode === 'memorize';
+  const createRule = ruleMode === 'pattern';
   const [replayAll, setReplayAll] = useState(false);
   const [pattern, setPattern] = useState(escapeRegex(tx.normalizedDescription || tx.description));
 
@@ -62,6 +65,13 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
     },
   });
 
+  const firstCategory = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    firstCategory.current?.focus();
+    return () => { if (opener && document.contains(opener)) opener.focus(); };
+  }, []);
+
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onEsc);
@@ -75,14 +85,20 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
   const userCats = data?.userCategories ?? [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="card max-w-lg w-full p-6 relative" onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-3 right-3 text-fg-muted hover:text-fg">
-          <X className="h-5 w-5" />
+    <div className="fixed inset-0 z-50 overflow-y-auto flex items-start sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="picker-title"
+        className="card max-w-lg w-full p-6 relative max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button onClick={onClose} aria-label="Fermer" className="absolute top-3 right-3 text-fg-muted hover:text-fg">
+          <X className="h-5 w-5" aria-hidden="true" />
         </button>
 
         <div className="mb-4">
-          <div className="stat-label">Catégoriser</div>
+          <div id="picker-title" className="stat-label">Catégoriser</div>
           <div className="font-medium text-fg-bright mt-1 truncate">{tx.description}</div>
           <div className="text-xs text-fg-dim mt-0.5">{tx.normalizedDescription}</div>
         </div>
@@ -91,9 +107,10 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
           <div>
             <label className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Catégorie</label>
             <div className="grid grid-cols-3 gap-1.5 mt-2">
-              {builtins.map((c) => (
+              {builtins.map((c, idx) => (
                 <button
                   key={c}
+                  ref={idx === 0 ? firstCategory : undefined}
                   onClick={() => setCategory(c)}
                   className={cn(
                     'px-2.5 py-1.5 rounded text-xs font-medium border transition-colors',
@@ -171,34 +188,54 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
             )}
           </div>
 
-          <div className="border-t border-border pt-4 space-y-3">
-            <label className="flex items-start gap-2 cursor-pointer">
+          <fieldset className="border-t border-border pt-4 space-y-3">
+            <legend className="sr-only">Règle de catégorisation</legend>
+            <label className={cn('flex items-start gap-2', key ? 'cursor-pointer' : 'opacity-60')}>
               <input
-                type="checkbox"
+                type="radio"
+                name="picker-rule"
                 checked={memorize}
-                onChange={(e) => { setMemorize(e.target.checked); if (e.target.checked) setCreateRule(false); }}
+                disabled={!key}
+                onChange={() => setRuleMode('memorize')}
                 className="mt-0.5"
               />
               <div className="text-sm">
-                <div className="text-fg">Mémoriser pour ce marchand</div>
+                <div className="text-fg">{key ? `Mémoriser pour « ${key} »` : 'Mémoriser pour ce marchand'}</div>
                 <div className="text-xs text-fg-muted mt-0.5">
-                  Crée la règle à partir du nom du marchand, sans motif à saisir.
+                  {key
+                    ? 'Crée la règle à partir de ce nom, sans motif à saisir : elle reconnaîtra les libellés qui le contiennent.'
+                    : 'Aucun nom de marchand reconnu dans ce libellé.'}
                 </div>
               </div>
             </label>
 
             <label className="flex items-start gap-2 cursor-pointer">
               <input
-                type="checkbox"
+                type="radio"
+                name="picker-rule"
                 checked={createRule}
-                onChange={(e) => { setCreateRule(e.target.checked); if (e.target.checked) setMemorize(false); }}
+                onChange={() => setRuleMode('pattern')}
                 className="mt-0.5"
               />
               <div className="text-sm">
-                <div className="text-fg">Appliquer aussi aux transactions futures similaires</div>
+                <div className="text-fg">Règle avec un motif à saisir</div>
                 <div className="text-xs text-fg-muted mt-0.5">
-                  Crée une règle qui s'auto-applique à chaque nouvel import.
+                  Vous écrivez le motif (regex) ; la règle s'auto-applique à chaque nouvel import.
                 </div>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="picker-rule"
+                checked={ruleMode === 'none'}
+                onChange={() => setRuleMode('none')}
+                className="mt-0.5"
+              />
+              <div className="text-sm">
+                <div className="text-fg">Aucune règle</div>
+                <div className="text-xs text-fg-muted mt-0.5">Ne change que cette transaction.</div>
               </div>
             </label>
 
@@ -231,10 +268,10 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
                 </label>
               </>
             )}
-          </div>
+          </fieldset>
         </div>
 
-        <div className="flex justify-end gap-2 mt-6">
+        <div className="sticky bottom-0 bg-surface flex justify-end gap-2 mt-6 pt-3 -mb-2">
           <button onClick={onClose} className="btn-ghost text-sm">Annuler</button>
           <button
             onClick={() => patchTx.mutate()}
