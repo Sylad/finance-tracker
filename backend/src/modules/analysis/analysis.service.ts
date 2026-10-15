@@ -9,6 +9,7 @@ import { ScoreCalculatorService } from '../score/score-calculator.service';
 import { MonthlyStatement, AnalysisResponse, ExternalAccountBalance } from '../../models/monthly-statement.model';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
+import { applyMerchantDictionary, MERCHANT_DICTIONARY_VERSION } from '../category-rules/merchant-dictionary';
 import { applyExceptionalIncomeRule, ExceptionalIncomeFlag } from './exceptional-income.helper';
 
 @Injectable()
@@ -36,7 +37,7 @@ export class AnalysisService {
         `Le PDF fourni correspond au relevé ${candidate.id}, pas au relevé ${id} demandé. Re-upload le bon PDF.`,
       );
     }
-    candidate.transactions = await this.categoryRules.apply(candidate.transactions);
+    candidate.transactions = await this.categorize(candidate.transactions);
     await this.applyExceptionalIncome(candidate);
     await this.snapshots.takeSnapshot(`before-reanalyze-${id}`);
     await this.storage.saveStatement(candidate);
@@ -53,6 +54,18 @@ export class AnalysisService {
     }
     this.logger.log(`Re-analyzed statement ${id}`);
     return { statement: candidate, replaced: true };
+  }
+
+  /**
+   * Priorité : règle utilisateur > dictionnaire de marchands > catégorie de
+   * Claude (L75, R7). Le dictionnaire ne passe pas sur les transactions
+   * reconnues par une règle, même si celle-ci ne change rien.
+   */
+  private async categorize(transactions: Transaction[]): Promise<Transaction[]> {
+    const ruled = await this.categoryRules.applyWithHits(transactions);
+    const { transactions: out, recategorized } = applyMerchantDictionary(ruled.transactions, ruled.matchedIds);
+    this.logger.log(`Merchant dictionary v${MERCHANT_DICTIONARY_VERSION}: ${recategorized} transaction(s) recategorized`);
+    return out;
   }
 
   /**
@@ -78,7 +91,7 @@ export class AnalysisService {
     const result = await this.anthropic.analyzeBankStatement(pdfBuffer);
     const statement = this.buildStatement(result);
 
-    statement.transactions = await this.categoryRules.apply(statement.transactions);
+    statement.transactions = await this.categorize(statement.transactions);
     await this.applyExceptionalIncome(statement);
     const existing = await this.storage.getStatement(statement.id);
     const replaced = existing !== null;

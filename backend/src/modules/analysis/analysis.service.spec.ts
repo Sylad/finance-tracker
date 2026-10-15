@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AnalysisService } from './analysis.service';
 import { AnthropicService } from './anthropic.service';
@@ -74,7 +75,7 @@ describe('AnalysisService — resynchro épargne en replay (L5)', () => {
         { provide: StorageService, useValue: storage },
         { provide: SnapshotService, useValue: { takeSnapshot: jest.fn() } },
         { provide: AutoSyncService, useValue: autoSync },
-        { provide: CategoryRulesService, useValue: { apply: jest.fn().mockImplementation(async (t) => t) } },
+        { provide: CategoryRulesService, useValue: { applyWithHits: jest.fn().mockImplementation(async (t) => ({ transactions: t, matchedIds: new Set() })) } },
         { provide: ScoreCalculatorService, useValue: {} },
       ],
     }).compile();
@@ -99,5 +100,97 @@ describe('AnalysisService — resynchro épargne en replay (L5)', () => {
     storage.getStatement.mockResolvedValue(null);
     await svc.analyzeAndPersist(Buffer.from(''));
     expect(autoSync.syncStatement).toHaveBeenCalledWith(stmt, [], { replay: false });
+  });
+});
+
+describe('AnalysisService — dictionnaire de marchands (L75)', () => {
+  let svc: AnalysisService;
+  let storage: { getStatement: jest.Mock; saveStatement: jest.Mock };
+  let rules: { applyWithHits: jest.Mock };
+  let logSpy: jest.SpyInstance;
+
+  const dictStmt = (): MonthlyStatement => {
+    const s = salaryStmt('2026-03', 3000);
+    const base = { currency: 'EUR', subcategory: '', isRecurring: false, confidence: 1, date: '2026-03-05' };
+    s.transactions = [
+      { ...base, id: 'a', description: 'PAIEMENT CB 1203 CARREFOUR MARKET 12/03', normalizedDescription: 'paiement cb carrefour market', amount: -30, category: 'other' },
+      { ...base, id: 'b', description: 'CARREFOUR', normalizedDescription: 'CARREFOUR', amount: -10, category: 'health' },
+      { ...base, id: 'c', description: 'CARREFOUR REMBOURSEMENT', normalizedDescription: 'CARREFOUR REMBOURSEMENT', amount: 20, category: 'income' },
+      { ...base, id: 'd', description: 'BOULANGERIE', normalizedDescription: 'BOULANGERIE', amount: -3, category: 'health' },
+    ];
+    return s;
+  };
+
+  beforeEach(async () => {
+    storage = { getStatement: jest.fn().mockResolvedValue(null), saveStatement: jest.fn() };
+    rules = { applyWithHits: jest.fn().mockImplementation(async (t) => ({ transactions: t, matchedIds: new Set() })) };
+    const mod = await Test.createTestingModule({
+      providers: [
+        AnalysisService,
+        { provide: AnthropicService, useValue: { analyzeBankStatement: jest.fn().mockResolvedValue({ suggestedRecurringExpenses: [] }) } },
+        { provide: StorageService, useValue: storage },
+        { provide: SnapshotService, useValue: { takeSnapshot: jest.fn() } },
+        { provide: AutoSyncService, useValue: { removeForStatement: jest.fn(), syncStatement: jest.fn() } },
+        { provide: CategoryRulesService, useValue: rules },
+        { provide: ScoreCalculatorService, useValue: {} },
+      ],
+    }).compile();
+    svc = mod.get(AnalysisService);
+    jest.spyOn(svc, 'applyExceptionalIncome').mockResolvedValue([]);
+    logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('R7 — sans règle, le dictionnaire l\'emporte sur la catégorie de Claude', async () => {
+    jest.spyOn(svc as any, 'buildStatement').mockReturnValue(dictStmt());
+    const { statement } = await svc.analyzeAndPersist(Buffer.from(''));
+    expect(statement.transactions.map((t) => t.category)).toEqual(['food', 'food', 'income', 'health']);
+  });
+
+  it('R7 — une règle utilisateur sur CARREFOUR vers other l\'emporte sur le dictionnaire', async () => {
+    rules.applyWithHits.mockImplementation(async (txs: any[]) => ({
+      transactions: txs.map((t) => (t.id === 'b' ? { ...t, category: 'other' } : t)),
+      matchedIds: new Set(['b']),
+    }));
+    jest.spyOn(svc as any, 'buildStatement').mockReturnValue(dictStmt());
+    const { statement } = await svc.analyzeAndPersist(Buffer.from(''));
+    expect(statement.transactions.find((t) => t.id === 'b')?.category).toBe('other');
+    expect(statement.transactions.find((t) => t.id === 'a')?.category).toBe('food');
+  });
+
+  it('R8 — un crédit CARREFOUR garde sa catégorie dans l\'analyse', async () => {
+    jest.spyOn(svc as any, 'buildStatement').mockReturnValue(dictStmt());
+    const { statement } = await svc.analyzeAndPersist(Buffer.from(''));
+    expect(statement.transactions.find((t) => t.id === 'c')?.category).toBe('income');
+  });
+
+  it('R6 — le log contient la version et le nombre exact de transactions recatégorisées', async () => {
+    jest.spyOn(svc as any, 'buildStatement').mockReturnValue(dictStmt());
+    await svc.analyzeAndPersist(Buffer.from(''));
+    expect(logSpy).toHaveBeenCalledWith('Merchant dictionary v1: 2 transaction(s) recategorized');
+  });
+
+  it('R6 — la ré-analyse écrit le même log (A3)', async () => {
+    storage.getStatement.mockResolvedValue(dictStmt());
+    jest.spyOn(svc as any, 'buildStatement').mockReturnValue(dictStmt());
+    const { statement } = await svc.reanalyzeStatement('2026-03', Buffer.from(''));
+    expect(logSpy).toHaveBeenCalledWith('Merchant dictionary v1: 2 transaction(s) recategorized');
+    expect(statement.transactions[0].category).toBe('food');
+  });
+
+  it('R6 — le relevé sauvegardé ne contient aucun champ de version', async () => {
+    jest.spyOn(svc as any, 'buildStatement').mockReturnValue(dictStmt());
+    await svc.analyzeAndPersist(Buffer.from(''));
+    const saved = JSON.stringify(storage.saveStatement.mock.calls[0][0]);
+    expect(saved).not.toMatch(/dictionary|version/i);
+  });
+
+  it('R1 — description et normalizedDescription sont conservées dans le relevé sauvegardé', async () => {
+    jest.spyOn(svc as any, 'buildStatement').mockReturnValue(dictStmt());
+    await svc.analyzeAndPersist(Buffer.from(''));
+    const a = storage.saveStatement.mock.calls[0][0].transactions[0];
+    expect(a.description).toBe('PAIEMENT CB 1203 CARREFOUR MARKET 12/03');
+    expect(a.normalizedDescription).toBe('paiement cb carrefour market');
   });
 });
