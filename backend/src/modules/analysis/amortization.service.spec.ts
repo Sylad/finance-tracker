@@ -1,5 +1,6 @@
 import type { ConfigService } from '@nestjs/config';
 import { AmortizationParseError, AmortizationService } from './amortization.service';
+import { expectAutoStrictCall } from './forced-tool-spec';
 
 const TOOL_INPUT = {
   creditor: 'CETELEM',
@@ -54,6 +55,25 @@ describe('AmortizationService — retry à 64k (L11)', () => {
   it('encore tronquée à 64k → AmortizationParseError, pas de 3e essai', async () => {
     const { service, stream } = setup([message('max_tokens', 16384), message('max_tokens', 64000)]);
     await expect(service.analyzeAmortization(Buffer.from('%PDF'))).rejects.toBeInstanceOf(AmortizationParseError);
+    expect(stream).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('AmortizationService — tool_choice auto + outil strict (L76)', () => {
+  it('requête conforme (auto, strict, consigne, pas de temperature)', async () => {
+    const { service, stream } = setup([message('tool_use', 800)]);
+    await service.analyzeAmortization(Buffer.from('%PDF'));
+    expectAutoStrictCall(stream.mock.calls[0][0], 'extract_amortization_schedule');
+  });
+
+  it('aucun tool_use du bon nom → un nouvel essai puis AmortizationParseError explicite', async () => {
+    const noTool = { stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 }, content: [{ type: 'text', text: '{}' }] };
+    const service = new AmortizationService({ get: () => 'sk-test' } as unknown as ConfigService);
+    const stream = jest.fn().mockReturnValue({ finalMessage: () => Promise.resolve(noTool) });
+    (service as unknown as { client: unknown }).client = { messages: { stream } };
+    const err = await service.analyzeAmortization(Buffer.from('%PDF')).catch((e) => e);
+    expect(err).toBeInstanceOf(AmortizationParseError);
+    expect(err.message).toMatch(/n'a pas appelé l'outil extract_amortization_schedule/);
     expect(stream).toHaveBeenCalledTimes(2);
   });
 });

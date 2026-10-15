@@ -6,6 +6,7 @@ import { isAuthError, isQuotaError } from '../../common/claude-errors';
 import { CreditStatementOutputSchema } from './credit-statement.schemas';
 import type { CreditStatementOutput } from './credit-statement.schemas';
 import { CLAUDE_MODEL } from './claude-model';
+import { AUTO_TOOL_CHOICE, onlyToolInstruction, requireToolUse, runWithToolRetry } from './forced-tool.helper';
 
 export class CreditStatementParseError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
@@ -32,6 +33,7 @@ export interface CreditStatementAnalysis {
 
 const EXTRACT_CREDIT_STATEMENT_TOOL: Anthropic.Tool = {
   name: 'extract_credit_statement',
+  strict: true,
   description:
     "Extrait les informations clés d'un relevé de crédit (revolving ou classique).",
   input_schema: {
@@ -62,9 +64,9 @@ const EXTRACT_CREDIT_STATEMENT_TOOL: Anthropic.Tool = {
           "Pour un classic : capital restant dû (positif). Pour un revolving : montant utilisé / dette en cours (positif).",
       },
       maxAmount: {
-        type: 'number',
+        type: ['number', 'null'],
         description:
-          "Plafond accordé. Requis pour un revolving. Optionnel pour un classic (généralement non affiché sur les relevés mensuels).",
+          "Plafond accordé. Requis (nombre) pour un revolving. null pour un classic (généralement non affiché sur les relevés mensuels).",
       },
       monthlyPayment: {
         type: 'number',
@@ -99,39 +101,46 @@ const EXTRACT_CREDIT_STATEMENT_TOOL: Anthropic.Tool = {
           "Référence Unique de Mandat SEPA (RUM) si elle figure sur le relevé. Format typique : suite alphanumérique (ex: 'COFI20240315ABC123', 'FRR0123456789'). Distinct du numéro de contrat. null si absent. Apparaît surtout sur les relevés Cofidis/Sofinco où le contractNumber peut manquer.",
       },
       installmentDetails: {
-        type: ['object', 'null'],
         description:
           "Présent UNIQUEMENT si le PDF est un CONTRAT de paiement échelonné court (titre type 'Contrat de paiement en 4XCB' / '3X' / '4 FOIS' / 'FacilyPay' / 'Pay Later'). Le contrat liste explicitement les N échéances avec dates et montants. NE PAS confondre avec un relevé mensuel revolving classique (qui aussi liste des mensualités, mais comme historique, pas comme contrat futur). null si le PDF est un relevé mensuel ordinaire.",
-        properties: {
-          count: { type: 'number', description: "Nombre d'échéances (N pour NXCB)." },
-          amount: { type: 'number', description: 'Montant uniforme par échéance (si variable, prendre la 1ère ou la moyenne).' },
-          installments: {
-            type: 'array',
-            description: 'Liste des N échéances avec date exacte et montant. Calculer les dates depuis "X jours après envoi" + signatureDate, ou utiliser les dates absolues si affichées.',
-            items: {
-              type: 'object',
-              properties: {
-                date: { type: 'string', description: 'YYYY-MM-DD' },
-                amount: { type: 'number' },
+        anyOf: [
+          {
+            type: 'object',
+            properties: {
+              count: { type: 'number', description: "Nombre d'échéances (N pour NXCB)." },
+              amount: { type: 'number', description: 'Montant uniforme par échéance (si variable, prendre la 1ère ou la moyenne).' },
+              installments: {
+                type: 'array',
+                description: 'Liste des N échéances avec date exacte et montant. Calculer les dates depuis "X jours après envoi" + signatureDate, ou utiliser les dates absolues si affichées.',
+                items: {
+                  type: 'object',
+                  properties: {
+                    date: { type: 'string', description: 'YYYY-MM-DD' },
+                    amount: { type: 'number' },
+                  },
+                  required: ['date', 'amount'],
+                  additionalProperties: false,
+                },
               },
-              required: ['date', 'amount'],
+              merchant: {
+                type: ['string', 'null'],
+                description: "Nom du commerçant chez qui l'achat a été fait (ex: 'AMAZON', 'BACKMARKET', 'FNAC'). Souvent affiché 'Chez : XXX' sur les contrats Cofidis.",
+              },
+              signatureDate: {
+                type: ['string', 'null'],
+                description: "Date de signature du contrat (YYYY-MM-DD). Souvent affiché 'Contrat accepté le ...'.",
+              },
+              totalAmount: { type: 'number', description: 'Montant total à rembourser.' },
+              fees: {
+                type: ['number', 'null'],
+                description: 'Frais (si distincts du capital). null si pas de frais ou inclus.',
+              },
             },
+            required: ['count', 'amount', 'installments', 'totalAmount', 'merchant', 'signatureDate', 'fees'],
+            additionalProperties: false,
           },
-          merchant: {
-            type: ['string', 'null'],
-            description: "Nom du commerçant chez qui l'achat a été fait (ex: 'AMAZON', 'BACKMARKET', 'FNAC'). Souvent affiché 'Chez : XXX' sur les contrats Cofidis.",
-          },
-          signatureDate: {
-            type: ['string', 'null'],
-            description: "Date de signature du contrat (YYYY-MM-DD). Souvent affiché 'Contrat accepté le ...'.",
-          },
-          totalAmount: { type: 'number', description: 'Montant total à rembourser.' },
-          fees: {
-            type: ['number', 'null'],
-            description: 'Frais (si distincts du capital). null si pas de frais ou inclus.',
-          },
-        },
-        required: ['count', 'amount', 'installments', 'totalAmount'],
+          { type: 'null' },
+        ],
       },
     },
     required: [
@@ -139,9 +148,17 @@ const EXTRACT_CREDIT_STATEMENT_TOOL: Anthropic.Tool = {
       'creditor',
       'creditType',
       'currentBalance',
+      'maxAmount',
       'monthlyPayment',
+      'endDate',
+      'taeg',
       'statementDate',
+      'startDate',
+      'accountNumber',
+      'rumNumber',
+      'installmentDetails',
     ],
+    additionalProperties: false,
   },
 };
 
@@ -165,14 +182,13 @@ export class CreditStatementService {
     );
 
     try {
-      const stream = this.client.messages.stream({
+      const message = await runWithToolRetry(() => this.client.messages.stream({
         model: CLAUDE_MODEL,
         max_tokens: 8192,
-        temperature: 0,
         system:
-          "Tu es un spécialiste de l'extraction de données de crédits français (Cofidis, Sofinco, Cetelem, Carrefour Banque, Floa, Younited, Franfinance, Oney…). Lis le relevé de crédit fourni en PDF et appelle l'outil `extract_credit_statement` avec les valeurs trouvées.\n\nAVANT TOUT, identifie documentType : 'credit_statement' pour un relevé mensuel de crédit ou un contrat de paiement en N fois ; 'amortization_plan' pour un TABLEAU D'AMORTISSEMENT (échéancier statique prévu mois par mois — dans ce cas remplis quand même les champs au mieux : currentBalance = capital initial, statementDate = date d'édition ou de 1ère échéance) ; 'bank_statement' pour un relevé de compte bancaire courant ; 'other' sinon.\n\nRÈGLES :\n- creditType = 'revolving' si LE MOINDRE des signaux suivants est présent :\n  • mots/phrases : 'crédit renouvelable', 'réserve d'argent', 'compte permanent', 'crédit utilisé', 'capacité de tirage', 'plafond autorisé', 'limite autorisée', 'autorisation d'utilisation', 'montant utilisable'\n  • produits Cofidis : 'Crédit Pass', 'Cofidis Pass', 'Profit', 'Réserve Confidentielle'\n  • produits Carrefour Banque : 'Carte Pass', 'Pass Crédit', 'Crédit Permanent', 'Réserve permanente'\n  • produits Cetelem/BNP : 'Crédit Spirit', 'Réserve', 'Cetelem Reserve'\n  • produits Sofinco : 'Réserve Sofinco', 'Compte Réserve', 'Crédit Réserve'\n  • TAEG révisable PROGRESSIF PAR TRANCHE de montant (jusqu'à 3000€ / 3000-6000€ / au-delà 6000€…) — un classic n'a qu'UN seul TAEG fixe pour tout le crédit\n  • mention 'Estimation du nombre de mensualités' (mot 'estimation' = nb de mensualités dépend de l'utilisation, donc revolving) ; un classic dit 'reste N échéances' fixe\n  • mensualité affichée avec une part 'frais divers' OU 'assurance' qui varie chaque mois\n- creditType = 'classic' UNIQUEMENT si :\n  • mensualité fixe affichée comme telle (montant constant capital + intérêt)\n  • capital initial unique et capital restant dû qui décroît mensuellement\n  • échéancier prévu sur N mensualités définies à la signature\n  • UN seul TAEG fixe (pas de tranches)\n- currentBalance : pour classic = capital restant dû (POSITIF) ; pour revolving = montant utilisé / utilisation actuelle (POSITIF).\n- maxAmount : plafond autorisé (revolving uniquement, sauf si explicitement affiché sur un classic). Pour Crédit Pass / Carte Pass, lire 'Rappel du montant de votre Crédit Pass' ou équivalent.\n- monthlyPayment : mensualité courante en euros (positive). Si décomposition 'capital + intérêt + assurance', somme des trois.\n- endDate : YYYY-MM-DD si affichée. null pour revolving (le revolving n'a pas de date de fin fixe — l'estimation 'N mensualités restantes' est indicative).\n- taeg : pourcentage avec décimales (19,84 → 19.84). Pour un revolving avec taux par tranche, prendre le TAEG de la tranche correspondant au montant utilisé courant.\n- statementDate : date d'arrêté du relevé, YYYY-MM-DD. Convertis '15 mars 2026' → '2026-03-15' et '15/03/2026' → '2026-03-15' (format français DD/MM/YYYY).\n- creditor : nom court en MAJUSCULES.\n- accountNumber : numéro de contrat tel qu'affiché. null s'il n'apparaît pas explicitement.\n- rumNumber : Référence Unique de Mandat SEPA si elle figure (souvent sur les relevés Cofidis/Sofinco quand le contractNumber est absent). null si pas de mandat SEPA mentionné.\n- statementDate : date d'arrêté du relevé courant (le mois pour lequel le relevé est émis).\n- startDate : date de début du crédit / 1ère échéance, distincte de statementDate. null si revolving ou non-affichée.\n\n**INSTALLMENTDETAILS — règle critique** : si le titre/type du PDF est 'Contrat de paiement en NXCB', '4XCB', '3X', '4 FOIS', 'FacilyPay', 'Pay Later', 'Pay in N', c'est un CONTRAT de paiement échelonné court. Remplir installmentDetails avec les N échéances précises. Dans ce cas, mettre AUSSI creditType='classic', currentBalance=totalAmount, monthlyPayment=installments[0].amount.\n\nSinon (relevé mensuel ordinaire d'un crédit revolving ou amortissable) → installmentDetails: null.\n\nDates des installments : si le PDF dit 'Prélevée X jours après l'envoi de la commande' et donne 'Contrat accepté le YYYY-MM-DD' (signatureDate), calculer chaque date = signatureDate + X jours. Format YYYY-MM-DD.",
+          "Tu es un spécialiste de l'extraction de données de crédits français (Cofidis, Sofinco, Cetelem, Carrefour Banque, Floa, Younited, Franfinance, Oney…). Lis le relevé de crédit fourni en PDF et appelle l'outil `extract_credit_statement` avec les valeurs trouvées.\n\nAVANT TOUT, identifie documentType : 'credit_statement' pour un relevé mensuel de crédit ou un contrat de paiement en N fois ; 'amortization_plan' pour un TABLEAU D'AMORTISSEMENT (échéancier statique prévu mois par mois — dans ce cas remplis quand même les champs au mieux : currentBalance = capital initial, statementDate = date d'édition ou de 1ère échéance) ; 'bank_statement' pour un relevé de compte bancaire courant ; 'other' sinon.\n\nRÈGLES :\n- creditType = 'revolving' si LE MOINDRE des signaux suivants est présent :\n  • mots/phrases : 'crédit renouvelable', 'réserve d'argent', 'compte permanent', 'crédit utilisé', 'capacité de tirage', 'plafond autorisé', 'limite autorisée', 'autorisation d'utilisation', 'montant utilisable'\n  • produits Cofidis : 'Crédit Pass', 'Cofidis Pass', 'Profit', 'Réserve Confidentielle'\n  • produits Carrefour Banque : 'Carte Pass', 'Pass Crédit', 'Crédit Permanent', 'Réserve permanente'\n  • produits Cetelem/BNP : 'Crédit Spirit', 'Réserve', 'Cetelem Reserve'\n  • produits Sofinco : 'Réserve Sofinco', 'Compte Réserve', 'Crédit Réserve'\n  • TAEG révisable PROGRESSIF PAR TRANCHE de montant (jusqu'à 3000€ / 3000-6000€ / au-delà 6000€…) — un classic n'a qu'UN seul TAEG fixe pour tout le crédit\n  • mention 'Estimation du nombre de mensualités' (mot 'estimation' = nb de mensualités dépend de l'utilisation, donc revolving) ; un classic dit 'reste N échéances' fixe\n  • mensualité affichée avec une part 'frais divers' OU 'assurance' qui varie chaque mois\n- creditType = 'classic' UNIQUEMENT si :\n  • mensualité fixe affichée comme telle (montant constant capital + intérêt)\n  • capital initial unique et capital restant dû qui décroît mensuellement\n  • échéancier prévu sur N mensualités définies à la signature\n  • UN seul TAEG fixe (pas de tranches)\n- currentBalance : pour classic = capital restant dû (POSITIF) ; pour revolving = montant utilisé / utilisation actuelle (POSITIF).\n- maxAmount : plafond autorisé (revolving uniquement, sauf si explicitement affiché sur un classic). Pour Crédit Pass / Carte Pass, lire 'Rappel du montant de votre Crédit Pass' ou équivalent.\n- monthlyPayment : mensualité courante en euros (positive). Si décomposition 'capital + intérêt + assurance', somme des trois.\n- endDate : YYYY-MM-DD si affichée. null pour revolving (le revolving n'a pas de date de fin fixe — l'estimation 'N mensualités restantes' est indicative).\n- taeg : pourcentage avec décimales (19,84 → 19.84). Pour un revolving avec taux par tranche, prendre le TAEG de la tranche correspondant au montant utilisé courant.\n- statementDate : date d'arrêté du relevé, YYYY-MM-DD. Convertis '15 mars 2026' → '2026-03-15' et '15/03/2026' → '2026-03-15' (format français DD/MM/YYYY).\n- creditor : nom court en MAJUSCULES.\n- accountNumber : numéro de contrat tel qu'affiché. null s'il n'apparaît pas explicitement.\n- rumNumber : Référence Unique de Mandat SEPA si elle figure (souvent sur les relevés Cofidis/Sofinco quand le contractNumber est absent). null si pas de mandat SEPA mentionné.\n- statementDate : date d'arrêté du relevé courant (le mois pour lequel le relevé est émis).\n- startDate : date de début du crédit / 1ère échéance, distincte de statementDate. null si revolving ou non-affichée.\n\n**INSTALLMENTDETAILS — règle critique** : si le titre/type du PDF est 'Contrat de paiement en NXCB', '4XCB', '3X', '4 FOIS', 'FacilyPay', 'Pay Later', 'Pay in N', c'est un CONTRAT de paiement échelonné court. Remplir installmentDetails avec les N échéances précises. Dans ce cas, mettre AUSSI creditType='classic', currentBalance=totalAmount, monthlyPayment=installments[0].amount.\n\nSinon (relevé mensuel ordinaire d'un crédit revolving ou amortissable) → installmentDetails: null.\n\nDates des installments : si le PDF dit 'Prélevée X jours après l'envoi de la commande' et donne 'Contrat accepté le YYYY-MM-DD' (signatureDate), calculer chaque date = signatureDate + X jours. Format YYYY-MM-DD." + "\n\n" + onlyToolInstruction('extract_credit_statement'),
         tools: [EXTRACT_CREDIT_STATEMENT_TOOL],
-        tool_choice: { type: 'tool', name: 'extract_credit_statement' },
+        tool_choice: AUTO_TOOL_CHOICE,
         messages: [
           {
             role: 'user',
@@ -192,8 +208,9 @@ export class CreditStatementService {
             ],
           },
         ],
+      }).finalMessage(), 'extract_credit_statement', () => {
+        this.logger.warn('credit-statement: aucun tool_use extract_credit_statement, un nouvel essai');
       });
-      const message = await stream.finalMessage();
 
       this.logger.log(`credit-statement: stop_reason=${message.stop_reason}`);
 
@@ -203,10 +220,11 @@ export class CreditStatementService {
         );
       }
 
-      const block = message.content.find((b) => b.type === 'tool_use');
-      if (!block || block.type !== 'tool_use') {
-        throw new CreditStatementParseError('Aucun tool_use renvoyé par Claude');
-      }
+      const block = requireToolUse(
+        message,
+        'extract_credit_statement',
+        (e) => new CreditStatementParseError(e.message, e),
+      );
 
       let parsed: CreditStatementOutput;
       try {
