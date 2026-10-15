@@ -19,6 +19,7 @@ describe('<CategorizationQualityCard /> (L74)', () => {
     );
     expect(screen.getByText('50 %')).toBeInTheDocument();
     expect(screen.getByText(/2 transactions sur 4/)).toBeInTheDocument();
+    expect(screen.getByText(/classées « Autre »/)).toBeInTheDocument();
     expect(screen.getByText('TABAC LA GARE')).toBeInTheDocument();
     expect(screen.getByText(/2 fois/)).toBeInTheDocument();
   });

@@ -36,14 +36,14 @@ export function CategorizationQualityCard({
           {percent} %
         </span>
         <span className="text-xs text-fg-muted">
-          {q.otherCount} transaction{q.otherCount > 1 ? 's' : ''} sur {q.total} classée{q.otherCount > 1 ? 's' : ''} « Autres »
+          {q.otherCount} transaction{q.otherCount > 1 ? 's' : ''} sur {q.total} classée{q.otherCount > 1 ? 's' : ''} « Autre »
         </span>
       </div>
       {q.topMerchants.length === 0 ? (
         <p className="mt-3 text-sm text-fg-muted">
           {q.otherCount === 0
             ? 'Toutes les transactions sont classées.'
-            : 'Aucun débit à classer parmi les « Autres ».'}
+            : 'Aucun débit à classer dans la catégorie « Autre ».'}
         </p>
       ) : (
         <>
