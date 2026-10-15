@@ -3,6 +3,7 @@ import { AutoCategorizeService, chunk, sanitizeRulePattern } from './auto-catego
 import { Transaction } from '../../models/transaction.model';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { CategoryRule } from '../../models/category-rule.model';
+import { expectAutoStrictCall } from '../analysis/forced-tool-spec';
 
 // ─── helpers ───────────────────────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ function statement(transactions: Transaction[]): MonthlyStatement {
   };
 }
 
-interface ToolUseBlock { type: 'tool_use'; input: unknown }
+interface ToolUseBlock { type: 'tool_use'; name: string; input: unknown }
 
 function makeService(opts: {
   toolInputs: unknown[]; // one entry per Claude call
@@ -58,7 +59,7 @@ function makeService(opts: {
         const idx = calls.count++;
         const input = opts.toolInputs[idx] ?? { suggestions: [] };
         return {
-          content: [{ type: 'tool_use', input } as ToolUseBlock],
+          content: [{ type: 'tool_use', name: 'categorize_transactions', input } as ToolUseBlock],
           usage: { input_tokens: 100, output_tokens: 50 },
           stop_reason: 'tool_use',
         };
@@ -308,6 +309,33 @@ describe('AutoCategorizeService — preview() et dictionnaire de marchands (L75)
     await expect(svc.preview('2026-03')).rejects.toThrow(
       "L'auto-catégorisation Claude n'est pas disponible en mode démo (consomme des tokens API).",
     );
+  });
+});
+
+describe('AutoCategorizeService — tool_choice auto + outil strict (L76)', () => {
+  it('requête conforme (auto, strict, consigne, pas de temperature)', async () => {
+    const { svc, fakeAnthropic } = makeService({
+      stmt: statement([tx({ id: 't1', description: 'PHARMACIE DU CENTRE', normalizedDescription: 'PHARMACIE DU CENTRE' })]),
+      toolInputs: [{ suggestions: [] }],
+    });
+    await svc.preview('2026-03');
+    expectAutoStrictCall((fakeAnthropic.messages.create.mock.calls[0] as any[])[0], 'categorize_transactions');
+  });
+
+  it('aucun tool_use → un nouvel essai, puis erreur explicite (lot ignoré avec avertissement, pas de texte libre parsé)', async () => {
+    const { svc, fakeAnthropic } = makeService({
+      stmt: statement([tx({ id: 't1', description: 'PHARMACIE DU CENTRE', normalizedDescription: 'PHARMACIE DU CENTRE' })]),
+      toolInputs: [],
+    });
+    (fakeAnthropic.messages.create as jest.Mock).mockImplementation(async () => ({
+      content: [{ type: 'text', text: '{"suggestions":[{"transactionId":"t1"}]}' }],
+      usage: { input_tokens: 1, output_tokens: 1 },
+      stop_reason: 'end_turn',
+    }));
+    const result = await svc.preview('2026-03');
+    expect(fakeAnthropic.messages.create).toHaveBeenCalledTimes(2);
+    expect(result.suggestions).toEqual([]);
+    expect(result.warnings.join(' ')).toMatch(/n'a pas appelé l'outil categorize_transactions/);
   });
 });
 

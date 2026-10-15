@@ -10,6 +10,7 @@ import { AutoCategorizeOutputSchema } from './auto-categorize.schemas';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { CategoryRule } from '../../models/category-rule.model';
 import { CLAUDE_MODEL } from '../analysis/claude-model';
+import { AUTO_TOOL_CHOICE, onlyToolInstruction, requireToolUse, runWithToolRetry } from '../analysis/forced-tool.helper';
 import { lookupMerchant, merchantPattern, rawLabel } from '../category-rules/merchant-dictionary';
 
 export interface CategorizationSuggestion {
@@ -264,10 +265,9 @@ export class AutoCategorizeService {
       .join('\n');
 
     try {
-      const message = await this.client.messages.create({
+      const message = await runWithToolRetry(() => this.client.messages.create({
         model: CLAUDE_MODEL,
         max_tokens: 2048,
-        temperature: 0,
         system:
           "Tu es un expert de la catégorisation de transactions bancaires françaises. " +
           "Pour chaque transaction fournie (toutes actuellement classées en 'other'), suggère la catégorie la plus pertinente parmi la liste disponible. " +
@@ -278,7 +278,7 @@ export class AutoCategorizeService {
           "- `confidence` ∈ [0, 1] : 1 = certain, 0.6 = plausible, ≤ 0.4 = doute (la suggestion sera filtrée côté UI).\n" +
           "- Si la transaction reste vraiment indéterminée, propose tout de même la meilleure catégorie avec une confidence basse — ne renvoie pas 'other'.\n" +
           "- `reasoning` : 1 phrase courte en français (ex: 'Achat alimentaire en supermarché', 'Mensualité crédit conso CETELEM').\n" +
-          "- `proposedRulePattern` (optionnel, recommandé pour les marchands clairs) : regex insensible à la casse simple ciblant un fragment stable du libellé (ex: 'CARREFOUR', 'PRELEVT.*CETELEM'). Évite les détails volatiles (numéros de carte, dates, montants). Omet le champ si tu n'es pas sûr que la regex matche le libellé.\n\n" +
+          "- `proposedRulePattern` (recommandé pour les marchands clairs) : regex insensible à la casse simple ciblant un fragment stable du libellé (ex: 'CARREFOUR', 'PRELEVT.*CETELEM'). Évite les détails volatiles (numéros de carte, dates, montants). Mets null si tu n'es pas sûr que la regex matche le libellé.\n\n" +
           "CATÉGORIES STANDARD :\n" +
           "- income (entrée d'argent : salaire, virements reçus tiers, remboursements)\n" +
           "- housing (loyer, charges copro, EDF, eau, gaz, assurance habitation)\n" +
@@ -291,9 +291,10 @@ export class AutoCategorizeService {
           "- transfers (virements internes entre comptes du même titulaire)\n" +
           "- taxes (impôts, taxe foncière, prélèvement DGFIP)\n" +
           "- other (uniquement en dernier recours, à éviter)\n" +
-          "Toute catégorie utilisateur supplémentaire fournie est aussi valide.",
+          "Toute catégorie utilisateur supplémentaire fournie est aussi valide.\n\n" +
+          onlyToolInstruction('categorize_transactions'),
         tools: [tool],
-        tool_choice: { type: 'tool', name: 'categorize_transactions' },
+        tool_choice: AUTO_TOOL_CHOICE,
         messages: [
           {
             role: 'user',
@@ -303,12 +304,11 @@ export class AutoCategorizeService {
               `Renvoie une suggestion par transaction.`,
           },
         ],
+      }), 'categorize_transactions', () => {
+        this.logger.warn('auto-categorize: aucun tool_use categorize_transactions, un nouvel essai');
       });
 
-      const block = message.content.find((b) => b.type === 'tool_use');
-      if (!block || block.type !== 'tool_use') {
-        throw new Error('Aucun tool_use renvoyé par Claude');
-      }
+      const block = requireToolUse(message, 'categorize_transactions');
 
       const parsed = parseExternal(AutoCategorizeOutputSchema, block.input, 'Claude auto-categorize');
 
@@ -376,6 +376,7 @@ export { MIN_CONFIDENCE_DEFAULT };
 function buildCategorizeTool(availableCategories: string[]): Anthropic.Tool {
   return {
     name: 'categorize_transactions',
+    strict: true,
     description:
       "Renvoie une catégorie suggérée pour chaque transaction (toutes en 'other'), avec un score de confiance et une justification courte en français. Optionnellement une regex réutilisable.",
     input_schema: {
@@ -399,16 +400,18 @@ function buildCategorizeTool(availableCategories: string[]): Anthropic.Tool {
               },
               reasoning: { type: 'string', description: 'Justification 1 ligne en français' },
               proposedRulePattern: {
-                type: 'string',
+                type: ['string', 'null'],
                 description:
-                  "Regex insensible à la casse réutilisable (ex: 'CARREFOUR', 'PRELEVT.*COFIDIS'). Omet si tu n'es pas sûr.",
+                  "Regex insensible à la casse réutilisable (ex: 'CARREFOUR', 'PRELEVT.*COFIDIS'). null si tu n'es pas sûr.",
               },
             },
-            required: ['transactionId', 'suggestedCategory', 'confidence', 'reasoning'],
+            required: ['transactionId', 'suggestedCategory', 'confidence', 'reasoning', 'proposedRulePattern'],
+            additionalProperties: false,
           },
         },
       },
       required: ['suggestions'],
+      additionalProperties: false,
     },
   };
 }
