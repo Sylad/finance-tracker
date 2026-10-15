@@ -12,7 +12,7 @@ import { StorageService } from '../storage/storage.service';
 const RULES_FILE = 'category-rules.json';
 const USER_CATS_FILE = 'user-categories.json';
 
-const BUILTIN_CATEGORIES: TransactionCategory[] = [
+export const BUILTIN_CATEGORIES: TransactionCategory[] = [
   'income', 'housing', 'transport', 'food', 'health',
   'entertainment', 'subscriptions', 'savings', 'transfers', 'taxes', 'other',
 ];
@@ -122,10 +122,39 @@ export class CategoryRulesService {
    * Returns a NEW array with possibly mutated transactions.
    */
   async apply(transactions: Transaction[]): Promise<Transaction[]> {
+    return (await this.applyWithHits(transactions)).transactions;
+  }
+
+  /**
+   * Comme `apply`, et renvoie aussi l'id de chaque transaction reconnue par au
+   * moins une règle (même si la catégorie obtenue est inchangée ou `other`) :
+   * le dictionnaire de marchands (R7) ne passe pas sur celles-là.
+   */
+  async applyWithHits(
+    transactions: Transaction[],
+  ): Promise<{ transactions: Transaction[]; matchedIds: Set<string> }> {
+    const matchedIds = new Set<string>();
+    const compiled = await this.compiledRules();
+    if (compiled.length === 0) return { transactions, matchedIds };
+
+    const out = transactions.map((tx) => {
+      const haystack = tx.normalizedDescription || tx.description || '';
+      const hit = compiled.find(({ re }) => re.test(haystack));
+      if (!hit) return tx;
+      matchedIds.add(tx.id);
+      return {
+        ...tx,
+        category: hit.rule.category as TransactionCategory,
+        subcategory: hit.rule.subcategory || tx.subcategory,
+      };
+    });
+    return { transactions: out, matchedIds };
+  }
+
+  private async compiledRules(): Promise<Array<{ rule: CategoryRule; re: RegExp }>> {
     const rules = await this.getAll();
-    if (rules.length === 0) return transactions;
     const sorted = [...rules].sort((a, b) => b.priority - a.priority);
-    const compiled = sorted
+    return sorted
       .map((r) => {
         try {
           return { rule: r, re: new RegExp(r.pattern, r.flags) };
@@ -135,17 +164,6 @@ export class CategoryRulesService {
         }
       })
       .filter((x): x is { rule: CategoryRule; re: RegExp } => x !== null);
-
-    return transactions.map((tx) => {
-      const haystack = tx.normalizedDescription || tx.description || '';
-      const hit = compiled.find(({ re }) => re.test(haystack));
-      if (!hit) return tx;
-      return {
-        ...tx,
-        category: hit.rule.category as TransactionCategory,
-        subcategory: hit.rule.subcategory || tx.subcategory,
-      };
-    });
   }
 
   async getUserCategories(): Promise<UserCategory[]> {

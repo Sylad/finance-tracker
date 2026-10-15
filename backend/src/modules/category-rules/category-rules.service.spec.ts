@@ -158,4 +158,46 @@ describe('CategoryRulesService', () => {
       expect(saved).toEqual(['b']);
     });
   });
+
+  describe('applyWithHits (R19)', () => {
+    it('R19 — une règle qui donne la catégorie déjà portée par Claude marque quand même la transaction dans matchedIds', async () => {
+      await svc.create({ pattern: 'CARREFOUR', category: 'food' });
+      const { transactions, matchedIds } = await svc.applyWithHits([
+        tx({ id: '1', normalizedDescription: 'CARREFOUR', category: 'food' }),
+      ]);
+      expect(transactions[0].category).toBe('food');
+      expect(matchedIds.has('1')).toBe(true);
+    });
+
+    it('R19 — une règle vers other marque la transaction dans matchedIds', async () => {
+      await svc.create({ pattern: 'CARREFOUR', category: 'other' });
+      const { transactions, matchedIds } = await svc.applyWithHits([
+        tx({ id: '1', normalizedDescription: 'CARREFOUR', category: 'food' }),
+        tx({ id: '2', normalizedDescription: 'LIDL', category: 'food' }),
+      ]);
+      expect(transactions[0].category).toBe('other');
+      expect([...matchedIds]).toEqual(['1']);
+    });
+
+    it('R19 — sans aucune règle, matchedIds est vide et les transactions sont inchangées', async () => {
+      const txs = [tx({ id: '1', normalizedDescription: 'CARREFOUR' })];
+      const { transactions, matchedIds } = await svc.applyWithHits(txs);
+      expect(transactions).toEqual(txs);
+      expect(matchedIds.size).toBe(0);
+    });
+
+    it('R19 — apply() renvoie le même résultat qu\'avant pour les mêmes entrées', async () => {
+      await svc.create({ pattern: 'NETFLIX', category: 'subscriptions', subcategory: 'streaming' });
+      const txs = [tx({ id: '1', normalizedDescription: 'netflix' }), tx({ id: '2', normalizedDescription: 'lidl' })];
+      expect(await svc.apply(txs)).toEqual((await svc.applyWithHits(txs)).transactions);
+    });
+
+    it('R9 — replayAll laisse une transaction CARREFOUR recatégorisée à la main en other inchangée', async () => {
+      statements.push({ id: '2026-03', transactions: [tx({ id: '1', description: 'CARREFOUR', normalizedDescription: 'CARREFOUR', category: 'other' })] });
+      const res = await svc.replayAll();
+      expect(res.updated).toBe(0);
+      expect(statements[0].transactions[0].category).toBe('other');
+      expect(saved).toEqual([]);
+    });
+  });
 });
