@@ -10,7 +10,7 @@ import { AutoCategorizeOutputSchema } from './auto-categorize.schemas';
 import { Transaction, TransactionCategory } from '../../models/transaction.model';
 import { CategoryRule } from '../../models/category-rule.model';
 import { CLAUDE_MODEL } from '../analysis/claude-model';
-import { AUTO_TOOL_CHOICE, onlyToolInstruction, requireToolUse, runWithToolRetry } from '../analysis/forced-tool.helper';
+import { AUTO_TOOL_CHOICE, EXTRACTION_OUTPUT_CONFIG, onlyToolInstruction, requireToolUse, runWithToolRetry } from '../analysis/forced-tool.helper';
 import { lookupMerchant, merchantPattern, rawLabel } from '../category-rules/merchant-dictionary';
 
 export interface CategorizationSuggestion {
@@ -267,7 +267,9 @@ export class AutoCategorizeService {
     try {
       const message = await runWithToolRetry(() => this.client.messages.create({
         model: CLAUDE_MODEL,
-        max_tokens: 2048,
+        // 8192 : la réflexion adaptative compte dans max_tokens (effort low ci-dessous).
+        max_tokens: 8192,
+        output_config: EXTRACTION_OUTPUT_CONFIG,
         system:
           "Tu es un expert de la catégorisation de transactions bancaires françaises. " +
           "Pour chaque transaction fournie (toutes actuellement classées en 'other'), suggère la catégorie la plus pertinente parmi la liste disponible. " +
@@ -307,6 +309,12 @@ export class AutoCategorizeService {
       }), 'categorize_transactions', () => {
         this.logger.warn('auto-categorize: aucun tool_use categorize_transactions, un nouvel essai');
       });
+
+      // Un tool_use tronqué rendrait une liste partielle en silence : lot ignoré
+      // (avertissement par lot dans preview()), jamais de suggestions incomplètes.
+      if (message.stop_reason === 'max_tokens') {
+        throw new Error('Réponse Claude tronquée (max_tokens) — lot ignoré, relance l\'aperçu ou réduis le nombre de transactions.');
+      }
 
       const block = requireToolUse(message, 'categorize_transactions');
 

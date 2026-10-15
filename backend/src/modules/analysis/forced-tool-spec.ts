@@ -29,6 +29,7 @@ export function strictSchemaViolations(schema: unknown, path = '$', optionalAllo
 interface CreateParams {
   tool_choice?: unknown;
   tools?: Array<{ name: string; strict?: boolean; input_schema: unknown }>;
+  output_config?: unknown;
   system?: unknown;
   messages?: Array<{ role: string }>;
   [k: string]: unknown;
@@ -36,11 +37,13 @@ interface CreateParams {
 
 /**
  * Une requête conforme : `tool_choice: auto`, outil `strict` au schéma complet,
- * consigne « uniquement l'outil », aucun paramètre d'échantillonnage ni
- * préremplissage assistant. `optionalAllowed` : chemins volontairement hors `required`.
+ * consigne « uniquement l'outil », effort de réflexion explicite `low` (la réflexion
+ * adaptative est active par défaut à `high` sur Sonnet 5.5 et compte dans `max_tokens`),
+ * aucun paramètre d'échantillonnage ni préremplissage assistant. `optionalAllowed` : chemins volontairement hors `required`.
  */
 export function expectAutoStrictCall(call: CreateParams, toolName: string, optionalAllowed: string[] = []): void {
   expect(call.tool_choice).toEqual({ type: 'auto' });
+  expect(call.output_config).toEqual({ effort: 'low' });
   const tool = call.tools?.find((t) => t.name === toolName);
   expect(tool).toBeDefined();
   expect(call.tools).toHaveLength(1);

@@ -69,6 +69,31 @@ describe('AnthropicService — tool_choice auto + outil strict (L76)', () => {
     expectAutoStrictCall(create.mock.calls[0][0], 'analyze_finances');
   });
 
+  it('budgets : phase 1 à 32k (relance 64k), phase 2 à 16000 (la réflexion compte dans max_tokens)', async () => {
+    const { service, stream, create } = setup(
+      [toolMsg('extract_transactions', P1_INPUT)],
+      [toolMsg('analyze_finances', P2_INPUT)],
+    );
+    await service.analyzeBankStatement(Buffer.from('%PDF'));
+    expect(stream.mock.calls[0][0].max_tokens).toBe(32768);
+    expect(create.mock.calls[0][0].max_tokens).toBe(16000);
+  });
+
+  it('phase 2 tronquée (max_tokens) → erreur explicite, jamais une analyse partielle', async () => {
+    const truncated = { stop_reason: 'max_tokens', usage: { input_tokens: 1, output_tokens: 16000 }, content: [{ type: 'tool_use', id: 't', name: 'analyze_finances', input: {} }] };
+    const { service, create } = setup([toolMsg('extract_transactions', P1_INPUT)], [truncated]);
+    await expect(service.analyzeBankStatement(Buffer.from('%PDF'))).rejects.toThrow(/Phase 2 tronquée/);
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('phase 1 refusée → pas de relance, erreur explicite de refus', async () => {
+    const refused = { stop_reason: 'refusal', stop_details: { type: 'refusal', category: 'cyber', explanation: null }, usage: { input_tokens: 1, output_tokens: 1 }, content: [] };
+    const { service, stream, create } = setup([refused]);
+    await expect(service.analyzeBankStatement(Buffer.from('%PDF'))).rejects.toThrow(/Phase 1: .*refus.*catégorie cyber/);
+    expect(stream).toHaveBeenCalledTimes(1);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it('phase 1 sans tool_use du bon nom → un nouvel essai, puis erreur explicite', async () => {
     const { service, stream, create } = setup([textMsg(), textMsg()]);
     await expect(service.analyzeBankStatement(Buffer.from('%PDF'))).rejects.toThrow(

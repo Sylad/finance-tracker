@@ -337,6 +337,47 @@ describe('AutoCategorizeService — tool_choice auto + outil strict (L76)', () =
     expect(result.suggestions).toEqual([]);
     expect(result.warnings.join(' ')).toMatch(/n'a pas appelé l'outil categorize_transactions/);
   });
+
+  it('budget de 8192 tokens (la réflexion compte dans max_tokens)', async () => {
+    const { svc, fakeAnthropic } = makeService({
+      stmt: statement([tx({ id: 't1', description: 'PHARMACIE DU CENTRE', normalizedDescription: 'PHARMACIE DU CENTRE' })]),
+      toolInputs: [{ suggestions: [] }],
+    });
+    await svc.preview('2026-03');
+    expect((fakeAnthropic.messages.create.mock.calls[0] as any[])[0].max_tokens).toBe(8192);
+  });
+
+  it('réponse tronquée (max_tokens) → lot ignoré avec avertissement, pas de liste partielle', async () => {
+    const { svc, fakeAnthropic } = makeService({
+      stmt: statement([tx({ id: 't1', description: 'PHARMACIE DU CENTRE', normalizedDescription: 'PHARMACIE DU CENTRE' })]),
+      toolInputs: [],
+    });
+    (fakeAnthropic.messages.create as jest.Mock).mockImplementation(async () => ({
+      content: [{ type: 'tool_use', name: 'categorize_transactions', input: { suggestions: [{ transactionId: 't1', suggestedCategory: 'health', confidence: 0.9, reasoning: 'x', proposedRulePattern: null }] } }],
+      usage: { input_tokens: 1, output_tokens: 8192 },
+      stop_reason: 'max_tokens',
+    }));
+    const result = await svc.preview('2026-03');
+    expect(fakeAnthropic.messages.create).toHaveBeenCalledTimes(1); // pas de relance
+    expect(result.suggestions).toEqual([]);
+    expect(result.warnings.join(' ')).toMatch(/tronquée \(max_tokens\)/);
+  });
+
+  it('refus → lot ignoré avec avertissement nommant le refus, sans relance', async () => {
+    const { svc, fakeAnthropic } = makeService({
+      stmt: statement([tx({ id: 't1', description: 'PHARMACIE DU CENTRE', normalizedDescription: 'PHARMACIE DU CENTRE' })]),
+      toolInputs: [],
+    });
+    (fakeAnthropic.messages.create as jest.Mock).mockImplementation(async () => ({
+      content: [],
+      usage: { input_tokens: 1, output_tokens: 1 },
+      stop_reason: 'refusal',
+      stop_details: { type: 'refusal', category: 'cyber', explanation: null },
+    }));
+    const result = await svc.preview('2026-03');
+    expect(fakeAnthropic.messages.create).toHaveBeenCalledTimes(1);
+    expect(result.warnings.join(' ')).toMatch(/refus.*catégorie cyber/);
+  });
 });
 
 describe('AutoCategorizeService — apply()', () => {

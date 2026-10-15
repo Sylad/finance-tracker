@@ -7,7 +7,7 @@ import { AmortizationOutputSchema } from './amortization.schemas';
 import { runWithMaxTokensRetry } from './max-tokens-retry.helper';
 import type { AmortizationOutput } from './amortization.schemas';
 import { CLAUDE_MODEL } from './claude-model';
-import { AUTO_TOOL_CHOICE, onlyToolInstruction, requireToolUse, runWithToolRetry } from './forced-tool.helper';
+import { AUTO_TOOL_CHOICE, EXTRACTION_OUTPUT_CONFIG, onlyToolInstruction, requireToolUse, runWithToolRetry } from './forced-tool.helper';
 
 export class AmortizationParseError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
@@ -189,6 +189,7 @@ export class AmortizationService {
     const stream = this.client.messages.stream({
       model: CLAUDE_MODEL,
       max_tokens: maxTokens,
+      output_config: EXTRACTION_OUTPUT_CONFIG,
       system:
         "Tu es un spécialiste de l'extraction de tableaux d'amortissement de crédits français (auto, conso, immo). Lis le PDF fourni et appelle l'outil `extract_amortization_schedule` avec les valeurs trouvées.\n\nRÈGLES :\n- creditor : nom court de l'organisme en MAJUSCULES.\n- initialPrincipal : capital total emprunté (positif, euros).\n- monthlyPayment : mensualité fixe en euros (positive). Pour mensualités variables, prendre la valeur dominante.\n- startDate / endDate : 1ère et dernière échéance au format YYYY-MM-DD. Convertis depuis '15/03/2026' (DD/MM/YYYY français) ou '15 mars 2026' → '2026-03-15'.\n- taeg : pourcentage avec décimales (4,85 → 4.85). null si pas affiché.\n- schedule : LISTER TOUTES LES LIGNES du tableau dans l'ordre chronologique. Chaque ligne = { date, capitalRemaining (capital restant dû en FIN de période), capitalPaid (part capital de l'échéance), interestPaid (part intérêts) }. Le capitalRemaining de la dernière ligne doit être ≈ 0." + "\n\n" + onlyToolInstruction('extract_amortization_schedule'),
       tools: [EXTRACT_AMORTIZATION_TOOL],

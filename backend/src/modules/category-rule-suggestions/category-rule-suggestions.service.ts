@@ -10,7 +10,7 @@ import {
   IncomingCategorySuggestion,
 } from '../../models/category-rule-suggestion.model';
 import { CLAUDE_MODEL } from '../analysis/claude-model';
-import { AUTO_TOOL_CHOICE, onlyToolInstruction, requireToolUse, runWithToolRetry } from '../analysis/forced-tool.helper';
+import { AUTO_TOOL_CHOICE, EXTRACTION_OUTPUT_CONFIG, onlyToolInstruction, requireToolUse, runWithToolRetry } from '../analysis/forced-tool.helper';
 import { Transaction } from '../../models/transaction.model';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { EventBusService } from '../events/event-bus.service';
@@ -344,7 +344,9 @@ export class CategoryRuleSuggestionsService {
   ): Promise<IncomingCategorySuggestion[]> {
     const message = await runWithToolRetry(() => this.getClaudeClient().messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 4096,
+      // 8192 : la réflexion adaptative compte dans max_tokens (effort low ci-dessous).
+      max_tokens: 8192,
+      output_config: EXTRACTION_OUTPUT_CONFIG,
       system: this.buildRuleSuggestionSystemPrompt(availableCats) + '\n\n' + onlyToolInstruction('suggest_category_rules'),
       tools: [SUGGEST_RULES_TOOL],
       tool_choice: AUTO_TOOL_CHOICE,
@@ -355,6 +357,11 @@ export class CategoryRuleSuggestionsService {
     }), 'suggest_category_rules', () => {
       this.logger.warn('rule-suggestions: aucun tool_use suggest_category_rules, un nouvel essai');
     });
+
+    // Un tool_use tronqué rendrait une liste de règles partielle en silence.
+    if (message.stop_reason === 'max_tokens') {
+      throw new Error('Réponse Claude tronquée (max_tokens) — suggestions de règles incomplètes, ré-essaie.');
+    }
 
     const block = requireToolUse(message, 'suggest_category_rules');
     const input = block.input as { suggestions?: IncomingCategorySuggestion[] };

@@ -226,6 +226,26 @@ describe('CategoryRuleSuggestionsService — appel Claude : tool_choice auto + o
     expect(create).toHaveBeenCalledTimes(2);
   });
 
+  it('budget de 8192 tokens (la réflexion compte dans max_tokens)', async () => {
+    const { create, ask } = setup([toolMsg('suggest_category_rules')]);
+    await ask();
+    expect(create.mock.calls[0][0].max_tokens).toBe(8192);
+  });
+
+  it('réponse tronquée (max_tokens) → erreur explicite, jamais une liste partielle', async () => {
+    const truncated = { ...toolMsg('suggest_category_rules'), stop_reason: 'max_tokens' };
+    const { create, ask } = setup([truncated]);
+    await expect(ask()).rejects.toThrow(/tronquée \(max_tokens\)/);
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('refus → un seul appel, erreur explicite nommant le refus', async () => {
+    const refused = { stop_reason: 'refusal', stop_details: { type: 'refusal', category: 'bio', explanation: null }, content: [] };
+    const { create, ask } = setup([refused]);
+    await expect(ask()).rejects.toThrow(/refus.*catégorie bio/);
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
   it('texte libre au 1er essai, tool_use au 2e → suggestions', async () => {
     const { create, ask } = setup([textMsg(), toolMsg('suggest_category_rules')]);
     await expect(ask()).resolves.toEqual([SUGGESTION]);

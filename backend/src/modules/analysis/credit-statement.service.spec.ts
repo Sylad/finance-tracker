@@ -51,6 +51,15 @@ describe('CreditStatementService — tool_choice auto + outil strict (L76)', () 
     expect(stream).toHaveBeenCalledTimes(2);
   });
 
+  it('refus (stop_reason refusal) → un seul appel, CreditStatementParseError explicite', async () => {
+    const refused = { stop_reason: 'refusal', stop_details: { type: 'refusal', category: 'bio', explanation: null }, usage: { input_tokens: 1, output_tokens: 1 }, content: [] };
+    const { service, stream } = setup([refused]);
+    const err = await service.analyzeCreditStatement(Buffer.from('%PDF')).catch((e) => e);
+    expect(err).toBeInstanceOf(CreditStatementParseError);
+    expect(err.message).toMatch(/refus.*catégorie bio/);
+    expect(stream).toHaveBeenCalledTimes(1);
+  });
+
   it('texte libre au 1er essai, tool_use au 2e → résultat', async () => {
     const { service, stream } = setup([msg(), msg('extract_credit_statement')]);
     await expect(service.analyzeCreditStatement(Buffer.from('%PDF'))).resolves.toMatchObject({ creditor: 'COFIDIS' });
