@@ -1,7 +1,22 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-15 17:54",
+  "generated": "2026-10-15 19:28",
   "entries": [
+    {
+      "slug": "2026-10-15-historique-des-releves-plus-de-debordement-au-telephone",
+      "title": "Historique des relevés : plus de débordement au téléphone",
+      "date": "2026-10-15",
+      "lots": [
+        "L72"
+      ],
+      "captures": [
+        "captures/2026-10-15-historique-telephone.png"
+      ],
+      "alts": [
+        "Historique des relevés à 390 px : boutons Export CSV et Recalculer les scores, puis champ de recherche pleine largeur, sans défilement horizontal"
+      ],
+      "html": "<p>Sur téléphone, la page Historique ne déborde plus de l'écran : les boutons « Export CSV » et « Recalculer les scores » passent à la ligne si besoin, et le champ de recherche prend toute la largeur. Plus besoin de faire défiler la page sur le côté. Sur grand écran, rien ne change.</p>"
+    },
     {
       "slug": "2026-10-15-categories-stables-d-un-mois-a-l-autre-et-apprises-de-vos-co",
       "title": "Catégories stables d'un mois à l'autre et apprises de vos corrections",

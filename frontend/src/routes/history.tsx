@@ -74,7 +74,7 @@ export function HistoryPage() {
         title="Historique"
         subtitle={`${data?.length ?? 0} relevés analysés. Clique sur un mois pour voir le détail.`}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <button
               onClick={handleExport}
               disabled={!data || data.length === 0}
@@ -93,14 +93,14 @@ export function HistoryPage() {
               {rescore.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               Recalculer les scores
             </button>
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fg-dim" />
               <input
                 type="text"
                 placeholder="Rechercher..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="input pl-9 w-64"
+                className="input pl-9 w-full sm:w-64"
               />
             </div>
           </div>
