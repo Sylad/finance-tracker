@@ -182,6 +182,7 @@ export class StatementsController {
       createRule?: boolean;
       rulePattern?: string;
       replayAll?: boolean;
+      memorizeMerchant?: boolean;
     },
   ) {
     if (!body?.category) throw new BadRequestException('category requis');
@@ -200,6 +201,7 @@ export class StatementsController {
     await this.storage.saveStatement(stmt);
 
     let createdRule = null;
+    let ruleSkipped: 'merchant-key-empty' | 'pattern-no-match' | undefined;
     if (body.createRule) {
       const pattern =
         (body.rulePattern && body.rulePattern.trim()) ||
@@ -211,16 +213,27 @@ export class StatementsController {
         subcategory: body.subcategory,
         priority: 100,
       });
+    } else if (body.memorizeMerchant === true) {
+      // « Mémoriser pour ce marchand » (L75) : seul le booléen true l'active ;
+      // createRule, s'il est vrai, garde la priorité (chemin existant seul).
+      const memo = await this.categoryRules.memorizeMerchant(tx, body.category, body.subcategory);
+      createdRule = memo.rule;
+      ruleSkipped = memo.skipped;
+      if (ruleSkipped) {
+        this.logger.warn(`Merchant rule not created for transaction ${txId}: ${ruleSkipped}`);
+      }
     }
 
     // Le relevé courant est rejoué aussi : ses autres transactions peuvent
     // correspondre à la nouvelle règle.
     const replayed =
-      body.createRule && body.replayAll
+      createdRule && body.replayAll && (body.createRule || body.memorizeMerchant === true)
         ? (await this.categoryRules.replayAll()).updated
         : 0;
 
-    return { transaction: tx, createdRule, replayed };
+    return ruleSkipped
+      ? { transaction: tx, createdRule, replayed, ruleSkipped }
+      : { transaction: tx, createdRule, replayed };
   }
 
   @Delete(':id')

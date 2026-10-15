@@ -8,6 +8,7 @@ import { Transaction, TransactionCategory } from '../../models/transaction.model
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { EventBusService } from '../events/event-bus.service';
 import { StorageService } from '../storage/storage.service';
+import { merchantPattern, rawLabel } from './merchant-dictionary';
 
 const RULES_FILE = 'category-rules.json';
 const USER_CATS_FILE = 'user-categories.json';
@@ -164,6 +165,34 @@ export class CategoryRulesService {
         }
       })
       .filter((x): x is { rule: CategoryRule; re: RegExp } => x !== null);
+  }
+
+  /**
+   * « Mémoriser pour ce marchand » (L75, R13-R15) : crée — sans jamais modifier
+   * une règle existante — la règle qui donne `category`/`subcategory` à ce
+   * marchand. Si la règle qui gagne déjà sur le libellé brut les donne, elle
+   * est réutilisée ; sinon la nouvelle passe au-dessus de toutes celles qui
+   * reconnaissent le libellé.
+   */
+  async memorizeMerchant(
+    tx: Pick<Transaction, 'normalizedDescription' | 'description'>,
+    category: string,
+    subcategory?: string,
+  ): Promise<{ rule: CategoryRule | null; skipped?: 'merchant-key-empty' | 'pattern-no-match' }> {
+    const haystack = rawLabel(tx);
+    const pattern = merchantPattern(haystack);
+    if (!pattern) return { rule: null, skipped: 'merchant-key-empty' };
+    if (!new RegExp(pattern, 'i').test(haystack)) return { rule: null, skipped: 'pattern-no-match' };
+
+    const wantedSub = subcategory ?? '';
+    const matching = (await this.compiledRules()).filter(({ re }) => re.test(haystack));
+    const winner = matching[0]?.rule;
+    if (winner && winner.category === category && (winner.subcategory ?? '') === wantedSub) {
+      return { rule: winner };
+    }
+    const priority = Math.max(100, 1 + Math.max(0, ...matching.map(({ rule }) => rule.priority)));
+    const rule = await this.create({ pattern, flags: 'i', category, subcategory: wantedSub, priority });
+    return { rule };
   }
 
   async getUserCategories(): Promise<UserCategory[]> {
