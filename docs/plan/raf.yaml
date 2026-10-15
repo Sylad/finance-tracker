@@ -694,3 +694,4 @@ lots:
     quickwin: true
     created: 2026-10-15
     started: 2026-10-15
+    review: { date: 2026-10-15, verdict: "conforme, 2 notes mineures (CLAUDE.md parent non aligné, page À propos modifiée sans lot visible), et la vérification sur un relevé réel reste à consigner avant raf done — orchestré (vague 2026-10-15-1606, 1 passe(s) de correction)", commit: bd1e6b20303f9ad20cb8b8216a7cf1d617a86762 }
