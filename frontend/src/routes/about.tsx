@@ -15,7 +15,7 @@ const STACK = [
   { group: 'Backend', icon: Server, items: [
     'NestJS 11 + TypeScript 5',
     'Stockage JSON local (pas de DB)',
-    'Anthropic SDK (claude-sonnet-4-5)',
+    'Anthropic SDK (claude-sonnet-5-5)',
     'Multer (upload PDF)',
     'PDF parsing pipeline two-phase',
     'Server-Sent Events (live updates)',
@@ -114,7 +114,7 @@ export function AboutPage() {
             </p>
             <div className="mt-4 flex items-center gap-1.5 text-xs text-fg-muted">
               <Sparkles className="h-3 w-3 text-accent" />
-              <span>L'analyse des PDFs côté backend utilise aussi Claude (claude-sonnet-4-5) en two-phase tool-use.</span>
+              <span>L'analyse des PDFs côté backend utilise aussi Claude (claude-sonnet-5-5) en two-phase tool-use.</span>
             </div>
           </div>
         </div>
