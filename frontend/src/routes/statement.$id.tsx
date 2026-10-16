@@ -22,6 +22,7 @@ import { PageHeader } from '@/components/page-header';
 import { LoadingState } from '@/components/loading-state';
 import { ScoreRing } from '@/components/score-ring';
 import { CategoryPicker } from '@/components/category-picker';
+import { TxRow, CATEGORY_COLOR } from '@/components/tx-row';
 import { AutoCategorizeModal } from '@/components/auto-categorize-modal';
 import { CategorizationQualityCard } from '@/components/categorization-quality-card';
 import {
@@ -29,23 +30,8 @@ import {
   type Transaction,
   type TransactionCategory,
 } from '@/types/api';
-import { formatEUR, formatMonth, formatDate, cn, chartTooltipProps, prevMonthId } from '@/lib/utils';
-import { recognizeMerchant } from '@/lib/merchants';
-import { categoryLabelFr, transactionMatchesSearch } from '@/lib/category-label';
-
-const CATEGORY_COLOR: Record<TransactionCategory, string> = {
-  income: 'hsl(160 84% 50%)',
-  housing: 'hsl(217 91% 60%)',
-  transport: 'hsl(45 93% 50%)',
-  food: 'hsl(280 85% 65%)',
-  health: 'hsl(0 84% 60%)',
-  entertainment: 'hsl(330 85% 60%)',
-  subscriptions: 'hsl(195 83% 50%)',
-  savings: 'hsl(140 70% 45%)',
-  transfers: 'hsl(220 12% 50%)',
-  taxes: 'hsl(20 90% 55%)',
-  other: 'hsl(220 8% 40%)',
-};
+import { formatEUR, formatMonth, cn, chartTooltipProps, prevMonthId } from '@/lib/utils';
+import { transactionMatchesSearch } from '@/lib/category-label';
 
 interface AnomalyDto {
   type: 'duplicate' | 'bank_fee_spike' | 'large_outlier' | 'new_recurring';
@@ -454,16 +440,6 @@ function AnomalyRow({ a }: { a: AnomalyDto }) {
   );
 }
 
-function MerchantAvatar({ merchant, fallback }: { merchant: { name: string } | null; fallback: string }) {
-  // Pas de logo distant (L69) : carré avec l'initiale, aucune requête tierce.
-  const initial = (merchant?.name ?? fallback).trim().match(/[A-Za-z0-9]/)?.[0]?.toUpperCase() ?? '?';
-  return (
-    <div className="h-6 w-6 rounded shrink-0 flex items-center justify-center bg-surface-2 text-fg-muted text-[10px] font-bold">
-      {initial}
-    </div>
-  );
-}
-
 function categoriesAbsentThisMonth(
   prev: Map<TransactionCategory, number> | null,
   current: { category: TransactionCategory }[],
@@ -503,50 +479,3 @@ function DeltaBadge({ delta, pct, prevMonth, invertColors }: { delta: number; pc
   );
 }
 
-function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (t: Transaction) => void }) {
-  const positive = t.amount > 0;
-  const knownCat = (Object.keys(CATEGORY_LABELS) as TransactionCategory[]).includes(t.category);
-  const color = knownCat ? CATEGORY_COLOR[t.category] : 'hsl(220 12% 50%)';
-  const label = knownCat ? CATEGORY_LABELS[t.category] : t.category;
-  const merchant = recognizeMerchant(t.description);
-  return (
-    <div className="grid grid-cols-12 gap-3 items-center px-2 py-2.5 text-sm">
-      <div className="col-span-2 text-xs text-fg-dim tabular">{formatDate(t.date)}</div>
-      <div className="col-span-5 min-w-0 flex items-center gap-2.5">
-        <MerchantAvatar merchant={merchant} fallback={t.description} />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-fg font-medium">{merchant?.name ?? t.description}</div>
-          <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5 truncate">
-            {merchant ? <span className="normal-case lowercase italic mr-2 text-fg-dim/80">{t.description}</span> : null}
-            {categoryLabelFr(t.subcategory || label)}
-            {t.isRecurring && <span className="ml-2 text-accent-bright">· récurrent</span>}
-          </div>
-        </div>
-      </div>
-      <div className="col-span-2">
-        <button
-          onClick={() => onPickCategory(t)}
-          className="badge text-[10px] cursor-pointer hover:ring-1 hover:ring-accent transition"
-          style={{ background: `${color}20`, color }}
-          title="Modifier la catégorie"
-        >
-          {label}
-        </button>
-      </div>
-      <div className={cn(
-        'col-span-3 text-right tabular font-medium',
-        positive ? 'text-positive' : 'text-fg-bright',
-      )}>
-        {formatEUR(t.amount, positive)}
-        {t.exceptionalAmount != null && t.exceptionalAmount > 0 && (
-          <div
-            className="text-[10px] font-normal text-warning normal-case"
-            title="Solde de tout compte, prime ou rappel : cette part n'entre ni dans le score, ni dans le revenu récurrent, ni dans les prévisions"
-          >
-            dont {formatEUR(t.exceptionalAmount)} exceptionnel
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}

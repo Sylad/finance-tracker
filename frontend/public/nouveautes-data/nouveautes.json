@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-15 19:28",
+  "generated": "2026-10-16 08:37",
   "entries": [
+    {
+      "slug": "2026-10-16-releve-detaille-lignes-de-transaction-lisibles-au-telephone",
+      "title": "Relevé détaillé : lignes de transaction lisibles au téléphone",
+      "date": "2026-10-16",
+      "lots": [
+        "L78"
+      ],
+      "captures": [
+        "captures/releve-detaille-390.png",
+        "captures/releve-detaille-1440.png"
+      ],
+      "alts": [
+        "Détail d'un relevé à 390 px : chaque transaction sur deux rangées, libellé et montant complet avec € en haut, date et catégorie en dessous",
+        "Détail d'un relevé à 1440 px : liste des transactions sur une seule rangée, inchangée"
+      ],
+      "html": "<p>Sur téléphone, le détail d'un relevé n'est plus rogné à droite : chaque transaction tient sur deux rangées. Le libellé et le montant, signe € compris, sont en haut ; la date et la catégorie juste en dessous. La mention « · récurrent » passe à la ligne au lieu d'être coupée. Sur grand écran, rien ne change.</p>"
+    },
     {
       "slug": "2026-10-15-historique-des-releves-plus-de-debordement-au-telephone",
       "title": "Historique des relevés : plus de débordement au téléphone",
