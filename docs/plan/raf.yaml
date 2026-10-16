@@ -747,3 +747,4 @@ lots:
     visible: true
     created: 2026-10-15
     started: 2026-10-16
+    review: { date: 2026-10-16, verdict: "conforme, 2 notes mineures (capture Nouveauté 390 px antérieure aux deux derniers correctifs ; libellé brut sans marchand reconnu toujours tronqué au téléphone) — orchestré (vague 2026-10-16-0831, 2 passe(s) de correction + passe des mineurs)", commit: df2c2126dd8b640bbbd5b7020cce3e5b4810a926 }
