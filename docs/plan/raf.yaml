@@ -750,6 +750,8 @@ lots:
     review: { date: 2026-10-16, verdict: "conforme — revue Opus 16-10 (df2c212) : 0 bloquant, 0 majeur, 2 mineurs en note ; recontrôle Opus du commit de captures 2874908 : conforme ; re-vérifié par le lead (428 tests, typecheck, build vers tmp sans fuite)", commit: 287490879dae1f0607f3b6f2156a8225aef5b660 }
     ux: { date: 2026-10-16, verdict: "conforme — captures 390 px regardées par le lead : transaction sur deux rangées, « · RÉCURRENT » d'un bloc, montants et € entiers, sans bannière ; 2 notes mineures (ellipse « · RÉC… » dès 768 px par md:truncate → lot à part ; libellé brut sans marchand reconnu toujours tronqué au téléphone)" }
     finished: 2026-10-16
+    notes:
+      - { date: 2026-10-16, text: "QA prod 16-10 (livraison 9e5d883) : verte — /history/2026-09 à 390 px : 0/24 ligne débordante, 24/24 montants avec €, « · récurrent » 16/16 d'un seul bloc ; /nouveautes : entrée L78 et ses 2 captures chargées ; /, /history conformes ; 0 erreur console" }
   - id: L79
     title: "Relevé détaillé dès 768 px : « · récurrent » coupé par l'ellipse de la sous-ligne (md:truncate, tx-row.tsx:49) — 11/24 lignes à 768, 15/24 à 1024, 10/24 à 1440 sur le relevé démo 2026-09 (revue L78 16-10) ; et le libellé brut sans marchand reconnu reste tronqué au téléphone (ligne de titre en truncate)"
     public: "Relevé détaillé : la mention récurrent reste lisible sur grand écran"
@@ -758,3 +760,5 @@ lots:
     visible: true
     screen: component
     created: 2026-10-16
+    notes:
+      - { date: 2026-10-16, text: "QA 16-10 : à 1440, 10/24 sous-lignes tronquées par l'ellipse dont 5 scindent « · récurrent » ; à 390, 5/24 titres bruts sans marchand reconnu tronqués. Ajouter dans docs/qa/expectations.md, section /history/<mois> : « shows: à 390 px, chaque ligne de transaction tient dans la largeur (aucun défilement horizontal), montant avec € sur la première rangée, · récurrent sur une seule ligne »" }
