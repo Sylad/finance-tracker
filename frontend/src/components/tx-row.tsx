@@ -47,9 +47,9 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
         <div className="min-w-0 flex-1">
           <div className="truncate text-fg font-medium">{merchant?.name ?? t.description}</div>
           <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5 break-words md:truncate">
-            {merchant ? <span className="normal-case lowercase italic mr-2 text-fg-dim/80">{t.description}</span> : null}
+            {merchant ? <><span className="normal-case lowercase italic text-fg-dim/80">{t.description}</span>{' '}</> : null}
             {categoryLabelFr(t.subcategory || label)}
-            {t.isRecurring && <span className="ml-2 text-accent-bright">·&nbsp;récurrent</span>}
+            {t.isRecurring && <>{' '}<span className="text-accent-bright">·&nbsp;récurrent</span></>}
           </div>
         </div>
       </div>

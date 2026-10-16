@@ -54,10 +54,13 @@ describe('ligne de transaction du relevé à 390 px (L78)', () => {
     expect(sub.className).not.toMatch(/(^|\s)truncate/);
   });
 
-  it("R6 — « · » reste collé à « récurrent » (espace insécable), la coupe ne les sépare pas", () => {
+  it("R6 — la sous-ligne a de vraies espaces ordinaires entre description, catégorie et « · récurrent » (sinon un seul mot, coupé n'importe où) ; « · » reste collé à « récurrent »", () => {
     const { label } = cells();
-    const span = Array.from(label.querySelectorAll('span')).find((e) => /récurrent/.test(e.textContent ?? ''))!;
-    expect(span.textContent).toBe('·\u00a0récurrent');
+    const sub = Array.from(label.querySelectorAll('span')).find((e) => /^·.récurrent$/.test(e.textContent ?? ''))!.parentElement!;
+    const texte = sub.textContent ?? '';
+    expect(texte).toContain(`${tx.description} `);
+    expect(texte).toMatch(/\S \S+( \S+)* ·\u00a0récurrent$/);
+    expect(texte).not.toMatch(/\S·/);
   });
 
   it("R7 — le nowrap ne porte que sur le montant : la note « dont … exceptionnel » ne fixe pas la largeur de la colonne et passe à la ligne", () => {
