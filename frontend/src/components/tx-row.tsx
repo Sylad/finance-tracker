@@ -49,7 +49,7 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
           <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5 break-words md:truncate">
             {merchant ? <span className="normal-case lowercase italic mr-2 text-fg-dim/80">{t.description}</span> : null}
             {categoryLabelFr(t.subcategory || label)}
-            {t.isRecurring && <span className="ml-2 text-accent-bright">· récurrent</span>}
+            {t.isRecurring && <span className="ml-2 text-accent-bright">·&nbsp;récurrent</span>}
           </div>
         </div>
       </div>
@@ -64,13 +64,13 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
         </button>
       </div>
       <div className={cn(
-        'row-start-1 col-start-2 whitespace-nowrap md:whitespace-normal md:row-start-auto md:col-start-auto md:col-span-3 text-right tabular font-medium',
+        'row-start-1 col-start-2 md:row-start-auto md:col-start-auto md:col-span-3 text-right tabular font-medium',
         positive ? 'text-positive' : 'text-fg-bright',
       )}>
-        {formatEUR(t.amount, positive)}
+        <span className="whitespace-nowrap md:whitespace-normal">{formatEUR(t.amount, positive)}</span>
         {t.exceptionalAmount != null && t.exceptionalAmount > 0 && (
           <div
-            className="text-[10px] font-normal text-warning normal-case"
+            className="w-0 min-w-full md:w-auto md:min-w-0 text-[10px] font-normal text-warning normal-case"
             title="Solde de tout compte, prime ou rappel : cette part n'entre ni dans le score, ni dans le revenu récurrent, ni dans les prévisions"
           >
             dont {formatEUR(t.exceptionalAmount)} exceptionnel

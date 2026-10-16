@@ -25,16 +25,9 @@ describe('ligne de transaction du relevé à 390 px (L78)', () => {
     const { root, amount, label } = cells();
     expect(root.className).toMatch(/grid-cols-\[minmax\(0,1fr\)_auto\]/);
     expect(amount.className).toMatch(/\brow-start-1\b/);
-    expect(amount.className).toMatch(/whitespace-nowrap/);
+    expect(amount.querySelector('.whitespace-nowrap')?.textContent).toMatch(/1\s?234,56/);
     expect(label.className).toMatch(/\brow-start-1\b/);
     expect(label.className).toMatch(/\bmin-w-0\b/);
-  });
-
-  it("R3 — dès md le montant et la note « dont … exceptionnel » retrouvent le retour à la ligne (grand écran inchangé)", () => {
-    const { container } = render(<TxRow t={{ ...tx, amount: 37000, exceptionalAmount: 30000 } as unknown as Transaction} onPickCategory={() => {}} />);
-    const note = Array.from(container.querySelectorAll('div')).find((e) => /exceptionnel/.test(e.textContent ?? '') && e.children.length === 0)!;
-    const amount = note.parentElement!;
-    expect(amount.className).toMatch(/\bmd:whitespace-normal\b/);
   });
 
   it("R2 — la date et la catégorie passent sur une 2e rangée", () => {
@@ -54,10 +47,36 @@ describe('ligne de transaction du relevé à 390 px (L78)', () => {
 
   it("R4 — « · récurrent » n'est pas rogné au téléphone : la sous-ligne passe à la ligne, ne tronque que dès md", () => {
     const { label } = cells();
-    expect(label.textContent).toMatch(/· récurrent/);
-    const sub = Array.from(label.querySelectorAll('span')).find((e) => e.textContent === '· récurrent')!.parentElement!;
+    expect(label.textContent).toMatch(/·\srécurrent/);
+    const sub = Array.from(label.querySelectorAll('span')).find((e) => /^·.récurrent$/.test(e.textContent ?? ''))!.parentElement!;
     expect(sub.className).toMatch(/break-words/);
     expect(sub.className).toMatch(/md:truncate/);
     expect(sub.className).not.toMatch(/(^|\s)truncate/);
+  });
+
+  it("R6 — « · » reste collé à « récurrent » (espace insécable), la coupe ne les sépare pas", () => {
+    const { label } = cells();
+    const span = Array.from(label.querySelectorAll('span')).find((e) => /récurrent/.test(e.textContent ?? ''))!;
+    expect(span.textContent).toBe('·\u00a0récurrent');
+  });
+
+  it("R7 — le nowrap ne porte que sur le montant : la note « dont … exceptionnel » ne fixe pas la largeur de la colonne et passe à la ligne", () => {
+    const { container } = render(<TxRow t={{ ...tx, amount: 37000, exceptionalAmount: 30000 } as unknown as Transaction} onPickCategory={() => {}} />);
+    const note = Array.from(container.querySelectorAll('div')).find((e) => /exceptionnel/.test(e.textContent ?? '') && e.children.length === 0)!;
+    const amount = note.parentElement!;
+    expect(amount.className).not.toMatch(/(^|\s)whitespace-nowrap/);
+    expect(note.className).toMatch(/\bw-0\b/);
+    expect(note.className).toMatch(/\bmin-w-full\b/);
+    const figure = Array.from(amount.querySelectorAll('span')).find((e) => /37\s?000/.test(e.textContent ?? ''))!;
+    expect(figure.className).toMatch(/whitespace-nowrap/);
+  });
+
+  it("R5 — dès md le montant et la note « dont … exceptionnel » retrouvent leur largeur et le retour à la ligne (grand écran inchangé)", () => {
+    const { container } = render(<TxRow t={{ ...tx, amount: 37000, exceptionalAmount: 30000 } as unknown as Transaction} onPickCategory={() => {}} />);
+    const note = Array.from(container.querySelectorAll('div')).find((e) => /exceptionnel/.test(e.textContent ?? '') && e.children.length === 0)!;
+    const figure = Array.from(note.parentElement!.querySelectorAll('span')).find((e) => /37\s?000/.test(e.textContent ?? ''))!;
+    expect(figure.className).toMatch(/\bmd:whitespace-normal\b/);
+    expect(note.className).toMatch(/\bmd:w-auto\b/);
+    expect(note.className).toMatch(/\bmd:min-w-0\b/);
   });
 });
