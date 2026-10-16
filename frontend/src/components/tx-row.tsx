@@ -64,7 +64,7 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
         </button>
       </div>
       <div className={cn(
-        'row-start-1 col-start-2 whitespace-nowrap md:row-start-auto md:col-start-auto md:col-span-3 text-right tabular font-medium',
+        'row-start-1 col-start-2 whitespace-nowrap md:whitespace-normal md:row-start-auto md:col-start-auto md:col-span-3 text-right tabular font-medium',
         positive ? 'text-positive' : 'text-fg-bright',
       )}>
         {formatEUR(t.amount, positive)}

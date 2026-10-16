@@ -30,6 +30,13 @@ describe('ligne de transaction du relevé à 390 px (L78)', () => {
     expect(label.className).toMatch(/\bmin-w-0\b/);
   });
 
+  it("R3 — dès md le montant et la note « dont … exceptionnel » retrouvent le retour à la ligne (grand écran inchangé)", () => {
+    const { container } = render(<TxRow t={{ ...tx, amount: 37000, exceptionalAmount: 30000 } as unknown as Transaction} onPickCategory={() => {}} />);
+    const note = Array.from(container.querySelectorAll('div')).find((e) => /exceptionnel/.test(e.textContent ?? '') && e.children.length === 0)!;
+    const amount = note.parentElement!;
+    expect(amount.className).toMatch(/\bmd:whitespace-normal\b/);
+  });
+
   it("R2 — la date et la catégorie passent sur une 2e rangée", () => {
     const { date } = cells();
     expect(date.className).toMatch(/\brow-start-2\b/);
