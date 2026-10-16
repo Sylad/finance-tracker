@@ -742,9 +742,19 @@ lots:
   - id: L78
     title: "Relevé détaillé à 390 px : lignes de transaction tronquées à droite — date « 02/09/20 », libellé, « · récurrent » et le signe € des montants hors de l'écran (10 spans mesurés right 397–525 pour 390, ligne en overflow:hidden, statement.$id.tsx:522) ; faire passer le montant sur toute sa largeur ou la ligne sur deux rangées (QA prod L72 15-10, à rapprocher de L23)"
     public: "Relevé détaillé : lignes de transaction lisibles au téléphone"
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     created: 2026-10-15
     started: 2026-10-16
-    review: { date: 2026-10-16, verdict: "conforme, 2 notes mineures (capture Nouveauté 390 px antérieure aux deux derniers correctifs ; libellé brut sans marchand reconnu toujours tronqué au téléphone) — orchestré (vague 2026-10-16-0831, 2 passe(s) de correction + passe des mineurs)", commit: df2c2126dd8b640bbbd5b7020cce3e5b4810a926 }
+    review: { date: 2026-10-16, verdict: "conforme — revue Opus 16-10 (df2c212) : 0 bloquant, 0 majeur, 2 mineurs en note ; recontrôle Opus du commit de captures 2874908 : conforme ; re-vérifié par le lead (428 tests, typecheck, build vers tmp sans fuite)", commit: 287490879dae1f0607f3b6f2156a8225aef5b660 }
+    ux: { date: 2026-10-16, verdict: "conforme — captures 390 px regardées par le lead : transaction sur deux rangées, « · RÉCURRENT » d'un bloc, montants et € entiers, sans bannière ; 2 notes mineures (ellipse « · RÉC… » dès 768 px par md:truncate → lot à part ; libellé brut sans marchand reconnu toujours tronqué au téléphone)" }
+    finished: 2026-10-16
+  - id: L79
+    title: "Relevé détaillé dès 768 px : « · récurrent » coupé par l'ellipse de la sous-ligne (md:truncate, tx-row.tsx:49) — 11/24 lignes à 768, 15/24 à 1024, 10/24 à 1440 sur le relevé démo 2026-09 (revue L78 16-10) ; et le libellé brut sans marchand reconnu reste tronqué au téléphone (ligne de titre en truncate)"
+    public: "Relevé détaillé : la mention récurrent reste lisible sur grand écran"
+    status: todo
+    estimate: 0.25
+    visible: true
+    screen: component
+    created: 2026-10-16
