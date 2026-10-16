@@ -156,8 +156,14 @@
     {
       "id": "L78",
       "title": "Relevé détaillé : lignes de transaction lisibles au téléphone",
-      "status": "doing",
-      "started": "2026-10-16"
+      "status": "done",
+      "started": "2026-10-16",
+      "finished": "2026-10-16"
+    },
+    {
+      "id": "L79",
+      "title": "Relevé détaillé : la mention récurrent reste lisible sur grand écran",
+      "status": "todo"
     }
   ]
 }
