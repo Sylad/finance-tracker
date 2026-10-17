@@ -51,7 +51,7 @@ Le rôle de Claude : poser le code, expliquer, itérer.
 - **Budgets par catégorie** — progression visuelle au fil du mois
 - **Déclarations** d'engagements (revenus, crédits, abonnements) → moteur de **prévisions** mensuel
 - **Bilan annuel** auto-archivé le 1er janvier (top catégories (libellés français, comme dans les Déclarations et le détail d'un relevé), meilleur/pire mois, score moyen), graphique « Cash flow mensuel » des entrées et sorties en € de chaque mois
-- PIN guard simple en Bearer token
+- PIN guard simple en Bearer token ; écran de connexion accessible : erreur annoncée au lecteur d'écran et reliée au champ, focus rendu au champ après un échec (PIN faux vidé), état « Déverrouillage… » pendant la vérification
 
 ## Comment ça marche sous le capot
 

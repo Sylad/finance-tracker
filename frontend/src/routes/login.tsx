@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Loader2, Lock } from 'lucide-react';
 import { authStore } from '@/lib/auth';
@@ -11,24 +11,34 @@ export function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const submitting = useRef(false);
+  const errorId = useId();
+
+  const fail = (message: string) => {
+    submitting.current = false;
+    setBusy(false);
+    setPin('');
+    setError(message);
+    inputRef.current?.focus();
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pin || busy) return;
+    if (!pin || submitting.current) return;
+    submitting.current = true;
     setBusy(true);
     setError(null);
     try {
       const ok = await verifyPin(pin);
       if (!ok) {
-        setError('PIN invalide');
-        setBusy(false);
+        fail('PIN invalide');
         return;
       }
       authStore.setPin(pin);
       navigate({ to: '/', replace: true });
     } catch {
-      setError('Connexion impossible');
-      setBusy(false);
+      fail('Connexion impossible');
     }
   };
 
@@ -48,30 +58,43 @@ export function LoginPage() {
         <form onSubmit={submit} className="card p-6 space-y-4">
           <label className="block">
             <span className="stat-label flex items-center gap-1.5 mb-2">
-              <Lock className="h-3 w-3" /> PIN
+              <Lock className="h-3 w-3" aria-hidden="true" /> PIN
             </span>
             <input
               type="password"
               inputMode="numeric"
               autoComplete="off"
               autoFocus
+              ref={inputRef}
               value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              className={cn('input text-center tracking-[0.4em] text-lg', error && 'border-negative')}
+              onChange={(e) => {
+                setPin(e.target.value);
+                setError(null);
+              }}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? errorId : undefined}
+              className={cn(
+                'input text-center tracking-[0.4em] text-lg',
+                error && 'border-negative focus:border-negative',
+              )}
               placeholder="••••"
             />
           </label>
 
           {error && (
-            <div className="text-xs text-negative text-center -mt-1">{error}</div>
+            <div id={errorId} role="alert" className="text-xs text-negative text-center -mt-1">
+              {error}
+            </div>
           )}
 
           <button
             type="submit"
-            disabled={!pin || busy}
+            disabled={!pin}
+            aria-busy={busy}
             className="btn-primary w-full"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Déverrouiller'}
+            {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            {busy ? 'Déverrouillage…' : 'Déverrouiller'}
           </button>
         </form>
 
