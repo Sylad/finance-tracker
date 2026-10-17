@@ -1,18 +1,13 @@
 import { Link } from '@tanstack/react-router';
 import { Drama } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useDemoStatus } from '@/lib/queries';
 import { BrandMark } from '../brand-mark';
 import { demoStore } from '@/lib/demo';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 export function TopBar() {
-  const demoStatus = useQuery({
-    queryKey: ['demo', 'status'],
-    queryFn: () => api.get<{ available: boolean; seeded: boolean; forced: boolean }>('/demo/status'),
-    retry: false,
-    staleTime: 60_000,
-  });
+  const demoStatus = useDemoStatus();
   const demoOn = demoStore.isActive();
   const forced = demoStatus.data?.forced === true;
 

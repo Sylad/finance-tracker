@@ -1,21 +1,15 @@
 import type { ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useDemoStatus } from '@/lib/queries';
 import { Sidebar } from './sidebar';
 import { BottomNav } from './bottom-nav';
 import { TopBar } from './top-bar';
 import { CommandPalette } from '../command-palette';
 import { InstallPrompt } from '../install-prompt';
 import { demoStore } from '@/lib/demo';
-import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const status = useQuery({
-    queryKey: ['demo', 'status'],
-    queryFn: () => api.get<{ available: boolean; seeded: boolean; forced: boolean }>('/demo/status'),
-    retry: false,
-    staleTime: 60_000,
-  });
+  const status = useDemoStatus();
   const forced = status.data?.forced === true;
   const showBanner = forced || demoStore.isActive();
   return (
