@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-17 15:48",
+  "generated": "2026-10-17 16:03",
   "entries": [
+    {
+      "slug": "2026-10-17-choix-du-mois-annonce-par-les-lecteurs-d-ecran",
+      "title": "Choix du mois annoncé par les lecteurs d'écran",
+      "date": "2026-10-17",
+      "lots": [
+        "L84"
+      ],
+      "captures": [],
+      "html": "<p>Sur la page Dépenses, le menu déroulant du mois s'appelle maintenant « Mois du relevé » : un lecteur d'écran dit ce qu'il permet de choisir au lieu d'annoncer une simple liste déroulante. De plus, quand on change de mois au clavier, la page reste affichée pendant le chargement et le curseur reste sur le menu, au lieu de retomber en haut de la page.</p>"
+    },
     {
       "slug": "2026-10-17-le-choix-du-mois-sur-la-page-depenses-est-mieux-delimite",
       "title": "Le choix du mois sur la page Dépenses est mieux délimité",
