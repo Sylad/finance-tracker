@@ -301,9 +301,18 @@ lots:
   - id: L24
     title: Revue UX — Budget
     status: doing
-    estimate: 0.25
+    estimate: 0.75
     created: 2026-09-28
     started: 2026-10-17
+    tasks:
+      - { id: t1, title: "Un enregistrement refusé du budget (403 démo, 400, réseau) affiche le message du serveur dans un role=alert et garde les montants saisis ; « Enregistré » est annoncé par un role=status ; en démo verrouillée (/demo/status forced) le bouton est désactivé avec la mention « Enregistrement désactivé en démo » ; plus aucune pageerror non interceptée à l'échec", status: todo }
+      - { id: t2, title: "Chaque champ de plafond du budget a pour nom accessible sa catégorie (label relié, plus « — »), l'unité € lui est associée, et l'arbre d'accessibilité nomme les 8 champs par leur libellé visible", status: todo }
+      - { id: t3, title: Un échec de chargement des budgets affiche ErrorState avec Réessayer et masque le formulaire et Enregistrer (plus de formulaire vide identique à l'état sans budget), status: todo }
+      - { id: t4, title: "Un plafond négatif ou non entier est signalé sur son champ (message relié, aria-invalid) et bloque l'enregistrement ; « 12,5 » n'est plus enregistré comme 125 ; step=10 retiré", status: todo }
+      - { id: t5, title: "Entrée dans un champ du budget enregistre (form onSubmit) et le bouton Enregistrer est aligné sur la carte des champs à 1440 px (écart horizontal ≤ 0 px avec son bord droit, 334 px mesurés)", status: todo }
+      - { id: t6, title: "Le budget signale les modifications non enregistrées, désactive Enregistrer sans modification et demande confirmation avant de quitter la page avec un brouillon modifié", status: todo }
+    notes:
+      - { date: 2026-10-17, text: "Revue UX 17-10 (ux-reviewer, captures regardées par le lead) : 3 bloquants + 4 majeurs → 6 sous-tâches ; bordure des champs .input transversale → lot autonome. Mineurs (note) : LoadingState sans role=status/aria-busy (partagé) ; bouton sans « Enregistrement… » ni aria-busy pendant l'appel ; sous-titre « Le dashboard affichera… » au lieu de « Tableau de bord » ; bandeau démo « Toutes les fonctionnalités sont actives » sur l'hôte verrouillé (app-shell.tsx l.32) ; focus des champs = bordure 1 px (AA ok, AAA non) ; cibles 38/36 px (AA ok, < 44 px tactile)" }
   - id: L25
     title: Revue UX — Revenus
     status: todo
@@ -815,3 +824,11 @@ lots:
     notes:
       - { date: 2026-10-17, text: "Mineurs de revue 17-10 (note) : la ligne source: de docs/qa/expectations.md (/) n'est pas un mot-clé défini par qa-reviewer.md (shows/never/api/may be empty when/1440 only/390 only), et la condition « à 1440 px seulement » de /history/<mois> est en milieu de phrase ; l'agent lit le texte en clair (la QA de L80 a honoré une condition de largeur en milieu de phrase sur /) — à revoir si une QA relève de nouveau Taux d'effort contre /api/dashboard/alerts []" }
     finished: 2026-10-17
+  - id: L82
+    title: "La bordure des champs .input (index.css l.149, partagée par toutes les pages à formulaire) atteint au moins 3:1 contre le fond de carte : 1,31:1 mesuré sur /budget (revue UX L24 17-10, WCAG 1.4.11) ; teinte 222 12 %, L ≥ 43 % ; mesurée sur /budget et une autre page à formulaire, sur --surface et --surface-2"
+    public: Champs de saisie mieux délimités
+    status: todo
+    estimate: 0.25
+    visible: true
+    screen: component
+    created: 2026-10-17
