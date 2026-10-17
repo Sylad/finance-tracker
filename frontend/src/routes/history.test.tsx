@@ -57,6 +57,8 @@ describe('HistoryPage — lisibilité (L23)', () => {
     for (const label of [/^crédits$/, /^débits$/, /^score \/100$/]) {
       expect(within(item).getByText(label)).toBeTruthy();
     }
+    // Colonne de 69 px à 390 : « score /100 » reste sur une ligne, la flèche décorative s'efface sous sm.
+    expect(within(item).getByText(/^score \/100$/).className).toContain('whitespace-nowrap');
     const svgs = Array.from(item.querySelectorAll('svg'));
     expect(svgs.length).toBeGreaterThan(0);
     for (const svg of svgs) expect(svg.getAttribute('aria-hidden')).toBe('true');

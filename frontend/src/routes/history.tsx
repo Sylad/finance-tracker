@@ -164,9 +164,9 @@ export function HistoryPage() {
                       <div className="col-span-3 sm:col-span-2 flex items-center justify-end gap-2">
                         <div className="text-right">
                           <ScoreBadge score={s.healthScore} />
-                          <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5">score /100</div>
+                          <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5 whitespace-nowrap">score /100</div>
                         </div>
-                        <ArrowRight className="h-3.5 w-3.5 text-fg-dim" aria-hidden="true" />
+                        <ArrowRight className="hidden sm:block h-3.5 w-3.5 text-fg-dim" aria-hidden="true" />
                       </div>
                     </Link>
                     </li>
