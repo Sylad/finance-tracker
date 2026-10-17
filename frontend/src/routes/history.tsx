@@ -94,9 +94,10 @@ export function HistoryPage() {
               Recalculer les scores
             </button>
             <div className="relative w-full sm:w-auto">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fg-dim" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-fg-dim" aria-hidden="true" />
               <input
                 type="text"
+                aria-label="Rechercher un relevé"
                 placeholder="Rechercher..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -120,12 +121,12 @@ export function HistoryPage() {
           {grouped.map(([year, items]) => (
             <div key={year}>
               <h2 className="font-display text-lg font-semibold text-fg-bright mb-3">{year}</h2>
-              <div className="card divide-y divide-border">
+              <ul className="card divide-y divide-border">
                 {items.map((s) => {
                   const net = s.totalCredits - s.totalDebits;
                   return (
+                    <li key={s.id}>
                     <Link
-                      key={s.id}
                       to="/history/$id"
                       params={{ id: s.id }}
                       className="grid grid-cols-12 gap-4 items-center px-4 py-3.5 hover:bg-surface-2 transition-colors"
@@ -136,13 +137,19 @@ export function HistoryPage() {
                         </div>
                         <div className="text-xs text-fg-dim">{s.bankName}</div>
                       </div>
-                      <div className="col-span-3 sm:col-span-2 text-positive text-sm tabular flex items-center gap-1">
-                        <ArrowUpRight className="h-3 w-3" />
-                        {formatEUR(s.totalCredits)}
+                      <div className="col-span-3 sm:col-span-2 text-sm tabular">
+                        <div className="text-positive flex items-center gap-1">
+                          <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
+                          {formatEUR(s.totalCredits)}
+                        </div>
+                        <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5">crédits</div>
                       </div>
-                      <div className="col-span-3 sm:col-span-2 text-negative text-sm tabular flex items-center gap-1">
-                        <ArrowDownRight className="h-3 w-3" />
-                        {formatEUR(s.totalDebits)}
+                      <div className="col-span-3 sm:col-span-2 text-sm tabular">
+                        <div className="text-negative flex items-center gap-1">
+                          <ArrowDownRight className="h-3 w-3" aria-hidden="true" />
+                          {formatEUR(s.totalDebits)}
+                        </div>
+                        <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5">débits</div>
                       </div>
                       <div className="hidden sm:block sm:col-span-2 text-sm tabular text-fg">
                         <span className={net >= 0 ? 'text-positive' : 'text-negative'}>
@@ -155,13 +162,17 @@ export function HistoryPage() {
                         <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5">solde</div>
                       </div>
                       <div className="col-span-3 sm:col-span-2 flex items-center justify-end gap-2">
-                        <ScoreBadge score={s.healthScore} />
-                        <ArrowRight className="h-3.5 w-3.5 text-fg-dim" />
+                        <div className="text-right">
+                          <ScoreBadge score={s.healthScore} />
+                          <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5">score /100</div>
+                        </div>
+                        <ArrowRight className="h-3.5 w-3.5 text-fg-dim" aria-hidden="true" />
                       </div>
                     </Link>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             </div>
           ))}
         </div>
