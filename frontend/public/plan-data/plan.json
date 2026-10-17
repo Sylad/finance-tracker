@@ -177,8 +177,9 @@
     {
       "id": "L82",
       "title": "Champs de saisie mieux délimités",
-      "status": "doing",
-      "started": "2026-10-17"
+      "status": "done",
+      "started": "2026-10-17",
+      "finished": "2026-10-17"
     }
   ]
 }
