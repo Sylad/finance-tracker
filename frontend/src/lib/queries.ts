@@ -149,6 +149,13 @@ export function useBudget() {
   });
 }
 
+export function useDemoStatus() {
+  return useQuery({
+    queryKey: ['demo', 'status'],
+    queryFn: () => api.get<{ available: boolean; seeded: boolean; forced: boolean }>('/demo/status'),
+  });
+}
+
 export function useUpdateBudget() {
   const qc = useQueryClient();
   return useMutation({
