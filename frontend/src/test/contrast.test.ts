@@ -109,4 +109,31 @@ describe('contraste des jetons de texte (WCAG 1.4.3)', () => {
     expect(src).toMatch(/bg-accent /);
     expect(src).toMatch(/text-bg['\s]/);
   });
+
+  // L82 (revue UX L24, WCAG 1.4.11) : la bordure des champs .input doit se
+  // distinguer à 3:1 du fond sur lequel le champ est posé. Le champ lui-même est
+  // en --surface-2, posé sur --surface (carte) ou sur --surface-2 (ligne survolée).
+  it('R1 — reproduit la mesure de la revue : ancienne bordure 222 14% 19% sur surface = 1,31:1', () => {
+    expect(contrastRgb(hslToRgb([222, 14, 19]), hslToRgb(token('surface')))).toBeCloseTo(1.31, 2);
+  });
+  for (const bg of ['surface', 'surface-2']) {
+    it(`R2 — bordure de champ (input-border) sur ${bg} ≥ 3:1`, () => {
+      expect(contrast('input-border', bg)).toBeGreaterThanOrEqual(3);
+    });
+  }
+  it('R3 — input-border : teinte 222, saturation 12 %, clarté ≥ 43 %', () => {
+    const [h, s, l] = token('input-border');
+    expect([h, s]).toEqual([222, 12]);
+    expect(l).toBeGreaterThanOrEqual(43);
+  });
+  it('R4 — la classe .input utilise le jeton input-border, relié dans Tailwind', () => {
+    expect(css).toMatch(/\.input\s*\{[^}]*\bborder-input-border\b/);
+    const tw = fs.readFileSync(path.resolve(__dirname, '../../tailwind.config.ts'), 'utf8');
+    expect(tw).toMatch(/'input-border':\s*'hsl\(var\(--input-border\)\)'/);
+  });
+  it('R5 — /budget et /loans (pages à formulaire) emploient la classe .input', () => {
+    for (const f of ['routes/budget.tsx', 'routes/loans.tsx']) {
+      expect(fs.readFileSync(path.resolve(__dirname, '..', f), 'utf8')).toMatch(/['"` ]input[ '"`]/);
+    }
+  });
 });

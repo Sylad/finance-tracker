@@ -22,6 +22,7 @@ export default {
           DEFAULT: 'hsl(var(--border))',
           strong: 'hsl(var(--border-strong))',
         },
+        'input-border': 'hsl(var(--input-border))',
         accent: {
           DEFAULT: 'hsl(var(--accent))',
           bright: 'hsl(var(--accent-bright))',

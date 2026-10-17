@@ -11,6 +11,8 @@
 
     --border: 222 14% 19%;
     --border-strong: 222 12% 26%;
+    /* Bordure des champs .input : 3,2:1 sur --surface-2, 3,4:1 sur --surface (WCAG 1.4.11, L82) */
+    --input-border: 222 12% 45%;
 
     --accent: 160 84% 39%;
     --accent-bright: 160 84% 50%;
@@ -146,7 +148,7 @@
   }
 
   .input {
-    @apply w-full bg-surface-2 border border-border rounded px-3 py-2 text-sm text-fg placeholder:text-fg-dim focus:outline-none focus:border-accent transition-colors;
+    @apply w-full bg-surface-2 border border-input-border rounded px-3 py-2 text-sm text-fg placeholder:text-fg-dim focus:outline-none focus:border-accent transition-colors;
   }
 
   .badge {

@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-17 13:33",
+  "generated": "2026-10-17 15:29",
   "entries": [
+    {
+      "slug": "2026-10-17-champs-de-saisie-mieux-delimites",
+      "title": "Champs de saisie mieux délimités",
+      "date": "2026-10-17",
+      "lots": [
+        "L82"
+      ],
+      "captures": [
+        "captures/budget-champs-1440.png",
+        "captures/budget-champs-390.png"
+      ],
+      "alts": [
+        "Page Budget sur grand écran : les champs de saisie ont un contour gris clair bien visible",
+        "Page Budget sur téléphone : les champs de saisie ont un contour gris clair bien visible"
+      ],
+      "html": "<p>Les champs de saisie (montants du budget, recherche, formulaires de crédits, d'épargne, d'objectifs…) ont maintenant un contour plus clair. On repère mieux où écrire, sur grand écran comme sur téléphone.</p>"
+    },
     {
       "slug": "2026-10-17-detail-d-un-releve-les-puces-de-categorie-retrouvent-leur-fo",
       "title": "Détail d'un relevé : les puces de catégorie retrouvent leur fond teinté",
