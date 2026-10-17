@@ -806,8 +806,11 @@ lots:
     finished: 2026-10-17
   - id: L81
     title: "QA 17-10 : attentes docs/qa/expectations.md — / affiche « POINTS D'ATTENTION · Taux d'effort 70,5 % » alors que /api/dashboard/alerts répond [] : dire quelle source fait foi (diagnostic santé ?) ou faire remonter l'alerte par /api/dashboard/alerts ; /history : 6 li dans un ul, chaque relevé avec CRÉDITS, DÉBITS, SCORE /100, scrollWidth = clientWidth à 390 ; /history/<mois> : [role=status] « N / N transactions », 3 filtres et une ligne par poste de la répartition avec aria-pressed, puces de catégorie ≥ 4,5:1 sur le fond rendu, liste focalisable (tabindex) à 1440 seulement (QA L23)"
-    status: doing
+    status: done
     estimate: 0.1
     created: 2026-10-17
     started: 2026-10-17
     review: { date: 2026-10-17, verdict: "compliant after 2 minor notes (la ligne `source:` n'est pas un mot-clé reconnu du qa-reviewer ; la condition « 1440 px seulement » est écrite en milieu de phrase) — orchestré (vague 2026-10-17-1408, 0 passe(s) de correction)", commit: 15b5d71cc24f9f8d04ef13ed7fe87c115888e6d6 }
+    notes:
+      - { date: 2026-10-17, text: "Mineurs de revue 17-10 (note) : la ligne source: de docs/qa/expectations.md (/) n'est pas un mot-clé défini par qa-reviewer.md (shows/never/api/may be empty when/1440 only/390 only), et la condition « à 1440 px seulement » de /history/<mois> est en milieu de phrase ; l'agent lit le texte en clair (la QA de L80 a honoré une condition de largeur en milieu de phrase sur /) — à revoir si une QA relève de nouveau Taux d'effort contre /api/dashboard/alerts []" }
+    finished: 2026-10-17
