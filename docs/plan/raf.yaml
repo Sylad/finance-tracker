@@ -865,3 +865,4 @@ lots:
     tasks:
       - { id: t1, title: "/expenses : changer de mois au clavier démonte la page (LoadingState à chaque nouveau monthId, expenses.tsx) et renvoie le focus sur body — garder la page affichée pendant le chargement (placeholderData) et le focus sur le select ; mesuré par la QA de L83 le 17-10 (à t=60 ms plus de select, focus BODY)", status: todo }
     started: 2026-10-17
+    review: { date: 2026-10-17, verdict: "compliant (1 note mineure : pas d'indicateur de chargement pendant le changement de mois) — orchestré (vague 2026-10-17-1605, 0 passe(s) de correction)", commit: 10ebc08fbc9a24e9089439680ca9472574166c6d }
