@@ -851,3 +851,4 @@ lots:
     screen: component
     created: 2026-10-17
     started: 2026-10-17
+    review: { date: 2026-10-17, verdict: "compliant (0 bloquant, 0 majeur, 1 note mineure : select du mois sans nom accessible, antérieur au lot) — orchestré (vague 2026-10-17-1600, 0 passe(s) de correction)", commit: 8af88797dbb8161d41de7b6945522fa0e18dd109 }
