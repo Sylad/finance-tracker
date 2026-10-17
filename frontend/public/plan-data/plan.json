@@ -163,8 +163,9 @@
     {
       "id": "L79",
       "title": "Relevé détaillé : la mention récurrent reste lisible sur grand écran",
-      "status": "doing",
-      "started": "2026-10-17"
+      "status": "done",
+      "started": "2026-10-17",
+      "finished": "2026-10-17"
     }
   ]
 }
