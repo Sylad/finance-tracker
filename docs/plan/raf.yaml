@@ -845,8 +845,9 @@ lots:
     finished: 2026-10-17
   - id: L83
     title: "Le menu déroulant du mois de /expenses (routes/expenses.tsx:115, border-border) garde une bordure à 1,31:1 contre la carte (WCAG 1.4.11) : lui donner le jeton --input-border de L82 (≥ 3:1), et repérer les autres contrôles de formulaire hors .input dans le même cas ; mesuré par l'UX de L82 le 17-10"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     screen: component
     created: 2026-10-17
+    started: 2026-10-17
