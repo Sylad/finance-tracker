@@ -175,6 +175,7 @@ export function StatementDetailPage() {
       />
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <h2 className="sr-only">Chiffres du mois</h2>
         <div className="card p-5">
           <div className="stat-label">Crédits</div>
           <div className="font-display text-xl font-semibold tabular text-positive mt-2 flex items-center gap-1.5">
@@ -199,20 +200,22 @@ export function StatementDetailPage() {
             ouverture : {formatEUR(data.openingBalance)}
           </div>
         </div>
-        <div className="card p-5 flex items-start gap-4 relative">
-          <ScoreRing score={data.healthScore.total} size={70} strokeWidth={6} />
-          <div className={cn('flex-1 min-w-0 transition-opacity', reanalyze.isPending && 'opacity-30')}>
-            <div className="stat-label flex items-center gap-2">
-              Score
-              {scoreDelta != null && scoreDelta !== 0 && (
-                <span className={cn('text-[10px] font-semibold tabular', scoreDelta > 0 ? 'text-positive' : 'text-negative')}>
-                  {scoreDelta > 0 ? '↑+' : '↓'}{scoreDelta} pts
-                </span>
-              )}
+        <div className="card p-5 relative">
+          <div className={cn('transition-opacity', reanalyze.isPending && 'opacity-30')}>
+            <div className="flex items-center gap-4">
+              <ScoreRing score={data.healthScore.total} size={70} strokeWidth={6} />
+              <div className="stat-label flex items-center gap-2">
+                Score
+                {scoreDelta != null && scoreDelta !== 0 && (
+                  <span className={cn('text-[10px] font-semibold tabular', scoreDelta > 0 ? 'text-positive' : 'text-negative')}>
+                    {scoreDelta > 0 ? '↑+' : '↓'}{scoreDelta} pts
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="text-xs text-fg-muted mt-1.5 leading-relaxed line-clamp-3">
+            <p className="text-xs text-fg-muted mt-3 leading-relaxed">
               {data.healthScore.claudeComment}
-            </div>
+            </p>
             <button
               onClick={handleReanalyze}
               disabled={reanalyze.isPending}
@@ -233,14 +236,17 @@ export function StatementDetailPage() {
         </div>
       </section>
 
-      <CategorizationQualityCard transactions={transactions} className="mb-6" />
+      <section className="mb-6">
+        <h2 className="sr-only">Qualité de la catégorisation</h2>
+        <CategorizationQualityCard transactions={transactions} />
+      </section>
 
       {anomalies.length > 0 && (
         <section className="card p-5 mb-6">
-          <div className="stat-label mb-3 flex items-center gap-2">
-            <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+          <h2 className="stat-label mb-3 flex items-center gap-2">
+            <AlertTriangle className="h-3.5 w-3.5 text-warning" aria-hidden="true" />
             Anomalies détectées ({anomalies.length})
-          </div>
+          </h2>
           <div className="space-y-2">
             {anomalies.map((a, i) => <AnomalyRow key={i} a={a} />)}
           </div>
@@ -249,7 +255,7 @@ export function StatementDetailPage() {
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <div className="card p-5 lg:col-span-1">
-          <div className="stat-label mb-4">Répartition des dépenses</div>
+          <h2 className="stat-label mb-4">Répartition des dépenses</h2>
           {categoryBreakdown.length > 0 ? (
             <>
               <div className="h-44">
@@ -291,6 +297,7 @@ export function StatementDetailPage() {
                   <button
                     key={b.category}
                     onClick={() => setActiveCat((c) => (c === b.category ? null : b.category))}
+                    aria-pressed={activeCat === b.category}
                     className={cn(
                       'w-full flex items-center justify-between text-xs px-2 py-1.5 rounded transition-colors',
                       activeCat === b.category ? 'bg-surface-2' : 'hover:bg-surface-2/50',
@@ -326,7 +333,8 @@ export function StatementDetailPage() {
 
         <div className="card p-5 lg:col-span-2">
           <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-            <div className="stat-label">
+            <h2 className="sr-only">Transactions</h2>
+            <div className="stat-label" role="status">
               {filtered.length} / {transactions.length} transaction{transactions.length > 1 ? 's' : ''}
               {activeCat && (
                 <button
@@ -338,11 +346,12 @@ export function StatementDetailPage() {
               )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex bg-surface-2 rounded p-0.5 text-xs">
+              <div role="group" aria-label="Sens des transactions" className="flex bg-surface-2 rounded p-0.5 text-xs">
                 {(['all', 'credit', 'debit'] as const).map((f) => (
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
+                    aria-pressed={filter === f}
                     className={cn(
                       'px-2.5 py-1 rounded transition-colors font-medium',
                       filter === f ? 'bg-surface-3 text-fg-bright' : 'text-fg-muted hover:text-fg',
@@ -353,8 +362,9 @@ export function StatementDetailPage() {
                 ))}
               </div>
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-fg-dim" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-fg-dim" aria-hidden="true" />
                 <input
+                  aria-label="Filtrer les transactions"
                   className="input pl-8 py-1.5 text-xs w-44"
                   placeholder="Filtrer..."
                   value={search}
@@ -363,21 +373,25 @@ export function StatementDetailPage() {
               </div>
             </div>
           </div>
-          <div className="divide-y divide-border max-h-[640px] overflow-auto">
+          <ul
+            tabIndex={0}
+            aria-label="Transactions du relevé"
+            className="divide-y divide-border lg:max-h-[min(640px,70vh)] lg:overflow-auto"
+          >
             {filtered.map((t) => <TxRow key={t.id} t={t} onPickCategory={setPickingTx} />)}
             {filtered.length === 0 && (
-              <div className="text-sm text-fg-dim italic py-8 text-center">
+              <li className="text-sm text-fg-dim italic py-8 text-center">
                 Aucune transaction.
-              </div>
+              </li>
             )}
-          </div>
+          </ul>
         </div>
       </section>
 
       {data.analysisNarrative && (
         <section className="card p-5 relative">
           <div className="flex items-center justify-between gap-3 mb-3">
-            <div className="stat-label">Analyse Claude</div>
+            <h2 className="stat-label">Analyse Claude</h2>
             <button
               onClick={handleReanalyze}
               disabled={reanalyze.isPending}

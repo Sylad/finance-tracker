@@ -58,7 +58,7 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
   const label = knownCat ? CATEGORY_LABELS[t.category] : t.category;
   const merchant = recognizeMerchant(t.description);
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-12 gap-x-3 gap-y-1.5 md:gap-3 items-center px-2 py-2.5 text-sm">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-12 gap-x-3 gap-y-1.5 md:gap-3 items-center px-2 py-2.5 text-sm">
       <div className="row-start-2 col-start-1 md:row-start-auto md:col-start-auto md:col-span-2 text-xs text-fg-dim tabular">{formatDate(t.date)}</div>
       <div className="row-start-1 col-start-1 md:row-start-auto md:col-start-auto md:col-span-5 min-w-0 flex items-center gap-2.5">
         <MerchantAvatar merchant={merchant} fallback={t.description} />
@@ -95,6 +95,6 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
           </div>
         )}
       </div>
-    </div>
+    </li>
   );
 }
