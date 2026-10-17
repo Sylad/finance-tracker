@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
-import { TxRow } from './tx-row';
-import type { Transaction } from '@/types/api';
+import { TxRow, CATEGORY_COLOR, CATEGORY_TEXT_COLOR } from './tx-row';
+import type { Transaction, TransactionCategory } from '@/types/api';
 
 const tx = {
   id: 't1', date: '2025-09-02', description: 'PRELEVEMENT EDF CLIENTS PARTICULIERS', normalizedDescription: 'EDF',
@@ -87,5 +87,43 @@ describe('ligne de transaction du relevé à 390 px (L78)', () => {
     expect(figure.className).toMatch(/\bmd:whitespace-normal\b/);
     expect(note.className).toMatch(/\bmd:w-auto\b/);
     expect(note.className).toMatch(/\bmd:min-w-0\b/);
+  });
+});
+
+// Contraste WCAG 1.4.3 de la puce de catégorie sur le fond des lignes (--surface-2 = cas le plus clair).
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  s /= 100; l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return [f(0) * 255, f(8) * 255, f(4) * 255];
+}
+function parseHsl(c: string): [number, number, number] {
+  const m = c.match(/hsl\((\d+) (\d+)% (\d+)%\)/)!;
+  return hslToRgb(+m[1], +m[2], +m[3]);
+}
+function luminance([r, g, b]: number[]) {
+  const lin = (v: number) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+describe('puces de catégorie (L23/t1)', () => {
+  it('R1 — chaque puce atteint 4,5:1 sur le fond des lignes, fond teinté à 12,5 % compris', () => {
+    const bg = parseHsl('hsl(222 17% 13%)');
+    for (const cat of Object.keys(CATEGORY_COLOR) as TransactionCategory[]) {
+      const fg = parseHsl(CATEGORY_TEXT_COLOR[cat]);
+      const base = parseHsl(CATEGORY_COLOR[cat]);
+      const tinted = bg.map((v, i) => v * (1 - 0x20 / 255) + base[i] * (0x20 / 255));
+      const [hi, lo] = [luminance(fg), luminance(tinted)].sort((a, b) => b - a);
+      const ratio = (hi + 0.05) / (lo + 0.05); expect({ cat, ok: ratio >= 4.5 }).toEqual({ cat, ok: true });
+    }
+  });
+
+  it('R2 — la puce rendue utilise la couleur de texte accessible', () => {
+    const { container } = render(<TxRow t={{ ...tx, category: 'other' } as Transaction} onPickCategory={() => {}} />);
+    const btn = container.querySelector('button')!;
+    const probe = (c: string) => { const e = document.createElement('span'); e.style.color = c; return e.style.color; };
+    expect(btn.style.color).toBe(probe(CATEGORY_TEXT_COLOR.other));
+    expect(btn.style.color).not.toBe(probe(CATEGORY_COLOR.other));
   });
 });

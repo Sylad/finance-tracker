@@ -17,6 +17,22 @@ export const CATEGORY_COLOR: Record<TransactionCategory, string> = {
   other: 'hsl(220 8% 40%)',
 };
 
+/**
+ * Couleur du TEXTE des puces (L23/t1) : les couleurs ci-dessus restent celles des graphiques.
+ * Sur le fond des lignes, « Autre » et « Virements » étaient à 2,95:1 et 4,12:1 (WCAG 1.4.3) et
+ * plusieurs teintes saturées frôlaient le seuil : celles-ci sont éclaircies pour passer 4,5:1.
+ */
+export const CATEGORY_TEXT_COLOR: Record<TransactionCategory, string> = {
+  ...CATEGORY_COLOR,
+  housing: 'hsl(217 91% 66%)',
+  food: 'hsl(280 85% 70%)',
+  health: 'hsl(0 84% 67%)',
+  entertainment: 'hsl(330 85% 66%)',
+  transfers: 'hsl(220 12% 60%)',
+  taxes: 'hsl(20 90% 56%)',
+  other: 'hsl(220 8% 59%)',
+};
+
 function MerchantAvatar({ merchant, fallback }: { merchant: { name: string } | null; fallback: string }) {
   // Pas de logo distant (L69) : carré avec l'initiale, aucune requête tierce.
   const initial = (merchant?.name ?? fallback).trim().match(/[A-Za-z0-9]/)?.[0]?.toUpperCase() ?? '?';
@@ -38,6 +54,7 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
   const positive = t.amount > 0;
   const knownCat = (Object.keys(CATEGORY_LABELS) as TransactionCategory[]).includes(t.category);
   const color = knownCat ? CATEGORY_COLOR[t.category] : 'hsl(220 12% 50%)';
+  const textColor = knownCat ? CATEGORY_TEXT_COLOR[t.category] : 'hsl(220 12% 62%)';
   const label = knownCat ? CATEGORY_LABELS[t.category] : t.category;
   const merchant = recognizeMerchant(t.description);
   return (
@@ -58,7 +75,7 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
         <button
           onClick={() => onPickCategory(t)}
           className="badge text-[10px] cursor-pointer hover:ring-1 hover:ring-accent transition"
-          style={{ background: `${color}20`, color }}
+          style={{ background: `${color}20`, color: textColor }}
           title="Modifier la catégorie"
         >
           {label}
