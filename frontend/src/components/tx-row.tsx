@@ -20,10 +20,15 @@ export const CATEGORY_COLOR: Record<TransactionCategory, string> = {
 /**
  * Couleur du TEXTE des puces (L23/t1) : les couleurs ci-dessus restent celles des graphiques.
  * Sur le fond des lignes (--surface), « Autre » et « Virements » étaient à 2,97:1 et 4,15:1
- * (WCAG 1.4.3) : seules ces deux teintes sont éclaircies pour passer 4,5:1.
+ * (WCAG 1.4.3). Depuis L80 le fond de la puce est réellement teinté (12,5 % de la couleur) :
+ * Logement, Alimentation, Santé et Loisirs tombent alors sous 4,5:1 et sont éclaircis à leur tour.
  */
 export const CATEGORY_TEXT_COLOR: Record<TransactionCategory, string> = {
   ...CATEGORY_COLOR,
+  housing: 'hsl(217 91% 66%)',
+  food: 'hsl(280 85% 68%)',
+  health: 'hsl(0 84% 66%)',
+  entertainment: 'hsl(330 85% 64%)',
   transfers: 'hsl(220 12% 60%)',
   other: 'hsl(220 8% 59%)',
 };
@@ -70,7 +75,7 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
         <button
           onClick={() => onPickCategory(t)}
           className="badge text-[10px] cursor-pointer hover:ring-1 hover:ring-accent transition"
-          style={{ background: `${color}20`, color: textColor }}
+          style={{ background: `color-mix(in srgb, ${color} 12.5%, transparent)`, color: textColor }}
           title="Modifier la catégorie"
         >
           {label}

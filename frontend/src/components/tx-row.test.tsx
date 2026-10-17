@@ -90,7 +90,7 @@ describe('ligne de transaction du relevé à 390 px (L78)', () => {
   });
 });
 
-// Contraste WCAG 1.4.3 de la puce de catégorie sur le fond réel des lignes : --surface de la carte (la teinte `${color}20` est une valeur CSS invalide, donc ignorée).
+// Contraste WCAG 1.4.3 de la puce de catégorie sur le fond réel des lignes : --surface de la carte (teinte du fond comprise, lue sur la puce rendue).
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   s /= 100; l /= 100;
   const k = (n: number) => (n + h / 30) % 12;
@@ -107,19 +107,38 @@ function luminance([r, g, b]: number[]) {
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
+// Fond RÉELLEMENT rendu de la puce : la teinte `color-mix(in srgb, <couleur> N%, transparent)` posée en style (jsdom la relit en rgb), composée sur --surface.
+function renderedChipBackground(cat: TransactionCategory, surface: [number, number, number]): [number, number, number] {
+  const { container } = render(<TxRow t={{ ...tx, category: cat } as Transaction} onPickCategory={() => {}} />);
+  const raw = container.querySelector('button')!.getAttribute('style') ?? '';
+  const m = raw.match(/background:\s*color-mix\(in srgb, rgb\((\d+), (\d+), (\d+)\) (\d+(?:\.\d+)?)%, transparent\)/);
+  if (!m) throw new Error(`fond de puce non valide ou absent pour ${cat} : « ${raw} »`);
+  const a = +m[4] / 100;
+  const tint = [+m[1], +m[2], +m[3]];
+  return [0, 1, 2].map((k) => tint[k] * a + surface[k] * (1 - a)) as [number, number, number];
+}
+
 describe('puces de catégorie (L23/t1)', () => {
-  it('R1 — chaque puce atteint 4,5:1 sur le fond des lignes (--surface, sans teinte)', () => {
-    const bg = parseHsl('hsl(222 19% 10%)');
+  it('R1 — chaque puce atteint 4,5:1 sur son fond rendu (teinte de la catégorie composée sur --surface)', () => {
+    const surface = parseHsl('hsl(222 19% 10%)');
     for (const cat of Object.keys(CATEGORY_COLOR) as TransactionCategory[]) {
+      const bg = renderedChipBackground(cat, surface);
       const fg = parseHsl(CATEGORY_TEXT_COLOR[cat]);
       const [hi, lo] = [luminance(fg), luminance(bg)].sort((a, b) => b - a);
       const ratio = (hi + 0.05) / (lo + 0.05); expect({ cat, ok: ratio >= 4.5 }).toEqual({ cat, ok: true });
     }
   });
 
-  it('R1b — seules les teintes sous 4,5:1 sont éclaircies (Autre, Virements)', () => {
+  it('R3 — le fond de la puce est une teinte CSS valide : jamais une couleur suivie de « 20 »', () => {
+    const { container } = render(<TxRow t={{ ...tx, category: 'food' } as Transaction} onPickCategory={() => {}} />);
+    const style = container.querySelector('button')!.getAttribute('style') ?? '';
+    expect(style).toMatch(/background:\s*color-mix\(in srgb, rgb\(191, 90, 242\) \d+(\.\d+)?%, transparent\)/);
+    expect(style).not.toMatch(/\)20/);
+  });
+
+  it('R1b — seules les teintes sous 4,5:1 sur leur fond rendu sont éclaircies (Autre, Virements, Logement, Alimentation, Santé, Loisirs)', () => {
     const changed = (Object.keys(CATEGORY_COLOR) as TransactionCategory[]).filter((c) => CATEGORY_TEXT_COLOR[c] !== CATEGORY_COLOR[c]);
-    expect(changed.sort()).toEqual(['other', 'transfers']);
+    expect(changed.sort()).toEqual(['entertainment', 'food', 'health', 'housing', 'other', 'transfers']);
   });
 
   it('R2 — la puce rendue utilise la couleur de texte accessible', () => {
