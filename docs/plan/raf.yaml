@@ -288,14 +288,15 @@ lots:
       - { date: 2026-10-17, text: "revue UX 17-10, mineurs en note : états vides de la recherche (« Aucun relevé. », sous-titre « 6 relevés analysés » inchangé, montants non cherchés) et du filtre sans « Effacer » ; relevé introuvable en jargon (« identifiant … en base ») sans lien de retour ; cibles tactiles sous 44 px (filtres 24 px, lignes de répartition 28 px) ; deux boutons « Re-analyser en français » ; signes = et ↑1 % sans légende ; textes d'analyse de la démo non recalés sur le mois affiché (« Mars positif » sur septembre) ; panneaux étirés à 1440 (cartes 181 px, répartition 728 px) ; net et solde masqués à 390 px. Maquette approuvée par le lead pour t2, t5, t6 : liste à plat au téléphone, sous-libellés CRÉDITS/DÉBITS/SCORE, texte du score entier sous le cercle" }
     started: 2026-10-17
     tasks:
-      - { id: t1, title: "Les puces de catégorie Autre et Virements atteignent un contraste d'au moins 4,5:1 sur le fond des lignes de transaction (2,95:1 et 4,12:1 mesurés, WCAG 1.4.3)", status: todo }
-      - { id: t2, title: "La liste des transactions du relevé se lit à plat au téléphone (pas de cadre de 640 px sous lg) et reste atteignable au clavier au bureau (tabindex 0, aria-label, hauteur max liée à la fenêtre)", status: todo }
-      - { id: t3, title: "Les filtres Tout/Crédit/Débit et les lignes de la répartition portent aria-pressed, et le compteur « N / 24 transactions » est un role=status", status: todo }
-      - { id: t4, title: Chaque section du relevé porte un titre de niveau 2 (sr-only possible pour les cartes) et les transactions comme les relevés forment une liste ul/li, status: todo }
-      - { id: t5, title: "Les colonnes crédits, débits et score de la liste des relevés portent un sous-libellé comme NET et SOLDE (score /100), icônes aria-hidden", status: todo }
-      - { id: t6, title: L'explication du score se lit en entier dans la carte Score (texte complet ou bouton Lire la suite) au lieu d'être coupée à trois lignes, status: todo }
-      - { id: t7, title: Les champs Rechercher et Filtrer ont un nom accessible indépendant de leur texte d'aide (label ou aria-label), status: todo }
+      - { id: t1, title: "Les puces de catégorie Autre et Virements atteignent un contraste d'au moins 4,5:1 sur le fond des lignes de transaction (2,95:1 et 4,12:1 mesurés, WCAG 1.4.3)", status: done }
+      - { id: t2, title: "La liste des transactions du relevé se lit à plat au téléphone (pas de cadre de 640 px sous lg) et reste atteignable au clavier au bureau (tabindex 0, aria-label, hauteur max liée à la fenêtre)", status: done }
+      - { id: t3, title: "Les filtres Tout/Crédit/Débit et les lignes de la répartition portent aria-pressed, et le compteur « N / 24 transactions » est un role=status", status: done }
+      - { id: t4, title: Chaque section du relevé porte un titre de niveau 2 (sr-only possible pour les cartes) et les transactions comme les relevés forment une liste ul/li, status: done }
+      - { id: t5, title: "Les colonnes crédits, débits et score de la liste des relevés portent un sous-libellé comme NET et SOLDE (score /100), icônes aria-hidden", status: done }
+      - { id: t6, title: L'explication du score se lit en entier dans la carte Score (texte complet ou bouton Lire la suite) au lieu d'être coupée à trois lignes, status: done }
+      - { id: t7, title: Les champs Rechercher et Filtrer ont un nom accessible indépendant de leur texte d'aide (label ou aria-label), status: done }
     ux: { date: 2026-10-17, verdict: "non conforme (revue 17-10 sur la démo) : 1 bloquant (contraste 2,95:1 et 4,12:1 des puces Autre/Virements), 5 majeurs (liste en cadre défilant de 640 px, état des filtres non vocalisé, un seul titre, colonnes de la liste sans libellé, explication du score coupée), 10 mineurs ; écarts en sous-tâches t1–t7, le reste en note ; QA L16 du 14-10 (barre repliée à 390 px) résorbé" }
+    review: { date: 2026-10-17, verdict: "conforme (re-revue 17-10 : mineurs corrigés, 0 bloquant, 0 majeur, 0 mineur ; 447 tests Vitest verts, tsc propre) — orchestré (vague 2026-10-17-1105, 0 passe(s) de correction + passe des mineurs)", commit: e8306927172c9bc92fe5822e9377128452453c47 }
   - id: L24
     title: Revue UX — Budget
     status: todo
