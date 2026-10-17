@@ -39,6 +39,7 @@ api: /api/statements
 
 Ouvrir le relevé le plus récent de `/history`, pas une URL en dur.
 shows: « N / N transactions » (tous les relevés listés), RÉPARTITION DES DÉPENSES
+shows: à 390 px, chaque ligne de transaction tient dans la largeur (aucun défilement horizontal), montant avec € sur la première rangée, · récurrent sur une seule ligne
 api: /api/statements/<mois>, /api/statements/<mois>/anomalies
 may be empty when aucune anomalie (`/anomalies`)
 

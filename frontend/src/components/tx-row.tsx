@@ -30,8 +30,9 @@ function MerchantAvatar({ merchant, fallback }: { merchant: { name: string } | n
 /**
  * Ligne de transaction du relevé détaillé. Sous md (L78) : deux rangées sur une grille
  * [libellé | montant] — libellé tronquable et montant à sa largeur naturelle sur la 1re,
- * date et catégorie sur la 2e, sous-ligne (« · récurrent » compris) à la ligne plutôt que rognée — pour que rien ne dépasse à 390 px. Dès md : les 12 colonnes
- * d'origine, sur une seule rangée.
+ * date et catégorie sur la 2e — pour que rien ne dépasse à 390 px. Dès md : les 12 colonnes
+ * d'origine, sur une seule rangée. À toute largeur (L79), titre et sous-ligne (« · récurrent »
+ * compris) passent à la ligne plutôt que d'être rognés par une ellipse.
  */
 export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (t: Transaction) => void }) {
   const positive = t.amount > 0;
@@ -45,8 +46,8 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
       <div className="row-start-1 col-start-1 md:row-start-auto md:col-start-auto md:col-span-5 min-w-0 flex items-center gap-2.5">
         <MerchantAvatar merchant={merchant} fallback={t.description} />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-fg font-medium">{merchant?.name ?? t.description}</div>
-          <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5 break-words md:truncate">
+          <div className="break-words text-fg font-medium">{merchant?.name ?? t.description}</div>
+          <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5 break-words">
             {merchant ? <><span className="normal-case lowercase italic text-fg-dim/80">{t.description}</span>{' '}</> : null}
             {categoryLabelFr(t.subcategory || label)}
             {t.isRecurring && <>{' '}<span className="text-accent-bright">·&nbsp;récurrent</span></>}

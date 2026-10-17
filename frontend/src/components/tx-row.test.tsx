@@ -45,13 +45,19 @@ describe('ligne de transaction du relevé à 390 px (L78)', () => {
     expect(amount.className).toMatch(/md:col-span-3/);
   });
 
-  it("R4 — « · récurrent » n'est pas rogné au téléphone : la sous-ligne passe à la ligne, ne tronque que dès md", () => {
+  it("R4 (L79) — « · récurrent » n'est rogné à aucune largeur : la sous-ligne passe à la ligne, jamais d'ellipse (ni dès md)", () => {
     const { label } = cells();
     expect(label.textContent).toMatch(/·\srécurrent/);
     const sub = Array.from(label.querySelectorAll('span')).find((e) => /^·.récurrent$/.test(e.textContent ?? ''))!.parentElement!;
     expect(sub.className).toMatch(/break-words/);
-    expect(sub.className).toMatch(/md:truncate/);
-    expect(sub.className).not.toMatch(/(^|\s)truncate/);
+    expect(sub.className).not.toMatch(/truncate/);
+  });
+
+  it("R8 (L79) — le libellé brut sans marchand reconnu n'est pas tronqué au téléphone  ni plus large : le titre passe à la ligne (break-words), jamais d'ellipse", () => {
+    const { container } = render(<TxRow t={{ ...tx, description: 'PRLV SEPA ASSOCIATION DES AMIS DU PETIT THEATRE 0123456789' } as unknown as Transaction} onPickCategory={() => {}} />);
+    const title = Array.from(container.querySelectorAll('div')).find((e) => e.children.length === 0 && /ASSOCIATION DES AMIS/.test(e.textContent ?? '') && /font-medium/.test(e.className))!;
+    expect(title.className).toMatch(/break-words/);
+    expect(title.className).not.toMatch(/(^|\s)truncate/);
   });
 
   it("R6 — la sous-ligne a de vraies espaces ordinaires entre description, catégorie et « · récurrent » (sinon un seul mot, coupé n'importe où) ; « · » reste collé à « récurrent »", () => {

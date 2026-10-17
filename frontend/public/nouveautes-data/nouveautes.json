@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-16 09:13",
+  "generated": "2026-10-17 09:59",
   "entries": [
+    {
+      "slug": "2026-10-17-releve-detaille-la-mention-recurrent-reste-lisible-sur-grand",
+      "title": "Relevé détaillé : la mention récurrent reste lisible sur grand écran",
+      "date": "2026-10-17",
+      "lots": [
+        "L79"
+      ],
+      "captures": [],
+      "html": "<p>Dans le détail d'un relevé, la mention « · récurrent » n'est plus coupée par des points de suspension sur tablette et sur grand écran. Le libellé d'une transaction dont le marchand n'est pas reconnu n'est plus tronqué non plus, au téléphone comme ailleurs : le texte passe simplement à la ligne.</p>"
+    },
     {
       "slug": "2026-10-16-releve-detaille-lignes-de-transaction-lisibles-au-telephone",
       "title": "Relevé détaillé : lignes de transaction lisibles au téléphone",
