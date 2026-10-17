@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatementDetailPage } from './statement.$id';
@@ -21,13 +21,15 @@ const statement = {
   analysisNarrative: 'Analyse du mois.',
 };
 
+let current: typeof statement = statement;
+
 vi.mock('@tanstack/react-router', () => ({
   useParams: () => ({ id: '2025-09' }),
   useNavigate: () => () => {},
   Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
 }));
 vi.mock('@/lib/queries', () => ({
-  useStatement: (id?: string) => ({ isLoading: false, data: id === '2025-09' ? statement : undefined }),
+  useStatement: (id?: string) => ({ isLoading: false, data: id === '2025-09' ? current : undefined }),
   useDeleteStatement: () => ({ mutateAsync: async () => {}, isPending: false }),
   useReanalyzeStatement: () => ({ mutateAsync: async () => {}, isPending: false, isError: false }),
 }));
@@ -49,6 +51,19 @@ async function renderPage() {
 }
 
 describe('StatementDetailPage — accessibilité et lisibilité (L23)', () => {
+  afterEach(() => { current = statement; });
+
+  it('un relevé sans transaction ne laisse pas de titre « Qualité de la catégorisation » vide', async () => {
+    current = { ...statement, transactions: [] };
+    await renderPage();
+    expect(screen.queryByRole('heading', { level: 2, name: 'Qualité de la catégorisation' })).toBeNull();
+  });
+
+  it('un relevé avec transactions garde ce titre', async () => {
+    await renderPage();
+    expect(screen.getByRole('heading', { level: 2, name: 'Qualité de la catégorisation' })).toBeTruthy();
+  });
+
   it('t2 — la liste des transactions est focalisable, nommée, sans cadre fixe sous lg', async () => {
     await renderPage();
     const list = screen.getByRole('list', { name: 'Transactions du relevé' });

@@ -236,10 +236,12 @@ export function StatementDetailPage() {
         </div>
       </section>
 
-      <section className="mb-6">
-        <h2 className="sr-only">Qualité de la catégorisation</h2>
-        <CategorizationQualityCard transactions={transactions} />
-      </section>
+      {transactions.length > 0 && (
+        <section className="mb-6">
+          <h2 className="sr-only">Qualité de la catégorisation</h2>
+          <CategorizationQualityCard transactions={transactions} />
+        </section>
+      )}
 
       {anomalies.length > 0 && (
         <section className="card p-5 mb-6">
