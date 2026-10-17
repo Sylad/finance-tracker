@@ -40,6 +40,13 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
+// jsdom n'a pas matchMedia : `wide` simule un viewport au-dessus (true) ou en dessous (false) de lg.
+function mockViewport(wide: boolean) {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: wide, media: query, addEventListener: () => {}, removeEventListener: () => {},
+  }));
+}
+
 async function renderPage() {
   const view = render(
     <QueryClientProvider client={new QueryClient()}>
@@ -51,7 +58,7 @@ async function renderPage() {
 }
 
 describe('StatementDetailPage — accessibilité et lisibilité (L23)', () => {
-  afterEach(() => { current = statement; });
+  afterEach(() => { current = statement; vi.unstubAllGlobals(); });
 
   it('un relevé sans transaction ne laisse pas de titre « Qualité de la catégorisation » vide', async () => {
     current = { ...statement, transactions: [] };
@@ -64,13 +71,34 @@ describe('StatementDetailPage — accessibilité et lisibilité (L23)', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Qualité de la catégorisation' })).toBeTruthy();
   });
 
-  it('t2 — la liste des transactions est focalisable, nommée, sans cadre fixe sous lg', async () => {
+  it('t2 — au-dessus de lg la liste est focalisable, nommée, dans un cadre fixe', async () => {
+    mockViewport(true);
     await renderPage();
     const list = screen.getByRole('list', { name: 'Transactions du relevé' });
     expect(list.getAttribute('tabindex')).toBe('0');
     expect(list.className).toMatch(/(^| )lg:overflow-auto( |$)/);
     expect(list.className).toMatch(/(^| )lg:max-h-\[min\(640px,\d+vh\)\]( |$)/);
     expect(list.className).not.toMatch(/(^| )(max-h-|overflow-auto)/);
+  });
+
+  it('t2 — sous lg la liste ne défile pas : pas d’arrêt de tabulation, mais toujours nommée', async () => {
+    mockViewport(false);
+    await renderPage();
+    const list = screen.getByRole('list', { name: 'Transactions du relevé' });
+    expect(list.hasAttribute('tabindex')).toBe(false);
+    expect(list.className).not.toMatch(/(^| )(max-h-|overflow-auto)/);
+  });
+
+  it('t2 — sans matchMedia (jsdom) la liste est traitée comme étroite', async () => {
+    await renderPage();
+    const list = screen.getByRole('list', { name: 'Transactions du relevé' });
+    expect(list.hasAttribute('tabindex')).toBe(false);
+  });
+
+  it('les quatre cartes du haut gardent chacune leur hauteur (pas d’étirement à la plus haute)', async () => {
+    await renderPage();
+    const grid = screen.getByRole('heading', { level: 2, name: 'Chiffres du mois' }).parentElement!;
+    expect(grid.className).toMatch(/(^| )items-start( |$)/);
   });
 
   it('t3 — filtres et lignes de répartition portent aria-pressed, le compteur est un status', async () => {

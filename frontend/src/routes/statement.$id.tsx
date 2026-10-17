@@ -23,6 +23,7 @@ import { LoadingState } from '@/components/loading-state';
 import { ScoreRing } from '@/components/score-ring';
 import { CategoryPicker } from '@/components/category-picker';
 import { TxRow, CATEGORY_COLOR } from '@/components/tx-row';
+import { useMediaQuery, LG_QUERY } from '@/hooks/use-media-query';
 import { AutoCategorizeModal } from '@/components/auto-categorize-modal';
 import { CategorizationQualityCard } from '@/components/categorization-quality-card';
 import {
@@ -54,6 +55,9 @@ function categoryTotalsFor(transactions: Transaction[]): Map<TransactionCategory
 export function StatementDetailPage() {
   const { id } = useParams({ from: '/history/$id' });
   const { data, isLoading } = useStatement(id);
+  // Le cadre défilant de la liste (lg:overflow-auto) n'existe qu'à partir de lg : c'est là seulement
+  // qu'il est un arrêt de tabulation utile (WCAG 2.1.1) ; en dessous, la liste ne défile pas.
+  const framed = useMediaQuery(LG_QUERY);
   const prevId = prevMonthId(id);
   // Best-effort fetch of the previous statement for delta comparisons.
   // It's OK if it doesn't exist (first month, missing import) — we just hide the deltas.
@@ -174,7 +178,7 @@ export function StatementDetailPage() {
         }
       />
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 items-start gap-4 mb-6">
         <h2 className="sr-only">Chiffres du mois</h2>
         <div className="card p-5">
           <div className="stat-label">Crédits</div>
@@ -376,7 +380,7 @@ export function StatementDetailPage() {
             </div>
           </div>
           <ul
-            tabIndex={0}
+            tabIndex={framed ? 0 : undefined}
             aria-label="Transactions du relevé"
             className="divide-y divide-border lg:max-h-[min(640px,70vh)] lg:overflow-auto"
           >
