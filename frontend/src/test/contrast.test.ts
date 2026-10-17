@@ -136,4 +136,28 @@ describe('contraste des jetons de texte (WCAG 1.4.3)', () => {
       expect(fs.readFileSync(path.resolve(__dirname, '..', f), 'utf8')).toMatch(/['"` ]input[ '"`]/);
     }
   });
+  // L83 (UX de L82) : le menu déroulant du mois de /expenses portait border-border (1,31:1).
+  it('R6 — aucun select / input / textarea de src ne garde border-border (ni border-border/…)', () => {
+    const root = path.resolve(__dirname, '..');
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) walk(full);
+        else if (/\.tsx$/.test(e.name) && !/\.test\.tsx$/.test(e.name)) {
+          const src = fs.readFileSync(full, 'utf8');
+          for (const m of src.matchAll(/<(select|textarea|input)\b[\s\S]*?(?:\/>|\n\s*>|[^=]>[ \t]*\n)/g)) {
+            if (/\bborder-border\b/.test(m[0])) offenders.push(`${path.relative(root, full)} <${m[1]}>`);
+          }
+        }
+      }
+    };
+    walk(root);
+    expect(offenders).toEqual([]);
+  });
+  it('R7 — le menu déroulant du mois de /expenses emploie le jeton input-border', () => {
+    const src = fs.readFileSync(path.resolve(__dirname, '../routes/expenses.tsx'), 'utf8');
+    const select = /<select\b[\s\S]*?(?:\n\s*>|[^=]>[ \t]*\n)/.exec(src)?.[0] ?? '';
+    expect(select).toMatch(/\bborder-input-border\b/);
+  });
 });

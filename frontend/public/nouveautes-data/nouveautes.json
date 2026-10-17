@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-17 15:29",
+  "generated": "2026-10-17 15:48",
   "entries": [
+    {
+      "slug": "2026-10-17-le-choix-du-mois-sur-la-page-depenses-est-mieux-delimite",
+      "title": "Le choix du mois sur la page Dépenses est mieux délimité",
+      "date": "2026-10-17",
+      "lots": [
+        "L83"
+      ],
+      "captures": [
+        "captures/depenses-mois-1440.png",
+        "captures/depenses-mois-390.png"
+      ],
+      "alts": [
+        "Page Dépenses sur grand écran : le menu du mois en haut à droite a un contour bien visible",
+        "Page Dépenses au téléphone : le menu du mois a un contour bien visible"
+      ],
+      "html": "<p>Sur la page Dépenses, le menu déroulant qui sert à choisir le mois a maintenant un contour plus marqué : on le repère plus facilement sur le fond de la carte, sur grand écran comme au téléphone. Les autres champs de saisie de l'application avaient déjà ce contour renforcé.</p>"
+    },
     {
       "slug": "2026-10-17-champs-de-saisie-mieux-delimites",
       "title": "Champs de saisie mieux délimités",

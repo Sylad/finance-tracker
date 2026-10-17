@@ -112,7 +112,7 @@ export function ExpensesPage() {
             <select
               value={monthId ?? data?.monthId ?? ''}
               onChange={(e) => { setMonthId(e.target.value); setActiveSlice(null); }}
-              className="bg-surface-2 border border-border rounded-md px-3 py-2 text-sm text-fg"
+              className="bg-surface-2 border border-input-border rounded-md px-3 py-2 text-sm text-fg"
             >
               {(statements ?? []).map((s) => (
                 <option key={s.id} value={s.id}>{s.id}</option>
