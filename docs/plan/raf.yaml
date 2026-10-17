@@ -313,6 +313,7 @@ lots:
       - { id: t6, title: "Le budget signale les modifications non enregistrées, désactive Enregistrer sans modification et demande confirmation avant de quitter la page avec un brouillon modifié", status: todo }
     notes:
       - { date: 2026-10-17, text: "Revue UX 17-10 (ux-reviewer, captures regardées par le lead) : 3 bloquants + 4 majeurs → 6 sous-tâches ; bordure des champs .input transversale → lot autonome. Mineurs (note) : LoadingState sans role=status/aria-busy (partagé) ; bouton sans « Enregistrement… » ni aria-busy pendant l'appel ; sous-titre « Le dashboard affichera… » au lieu de « Tableau de bord » ; bandeau démo « Toutes les fonctionnalités sont actives » sur l'hôte verrouillé (app-shell.tsx l.32) ; focus des champs = bordure 1 px (AA ok, AAA non) ; cibles 38/36 px (AA ok, < 44 px tactile)" }
+    review: { date: 2026-10-17, verdict: "conforme : correctifs vérifiés (45 fichiers / 468 tests Vitest verts, tsc 0), 1 mineur en note (un plafond décimal touché puis remis à sa valeur est encore signalé) — orchestré (vague 2026-10-17-1432, 0 passe(s) de correction + passe des mineurs)", commit: 1b98e457fe161270a5ee76bee16e3f043dbfbada }
   - id: L25
     title: Revue UX — Revenus
     status: todo
