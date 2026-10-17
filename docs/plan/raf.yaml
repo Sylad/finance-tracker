@@ -838,3 +838,4 @@ lots:
     screen: component
     created: 2026-10-17
     started: 2026-10-17
+    review: { date: 2026-10-17, verdict: "compliant after 1 minor fix (R5 /loans test targets the wrong file; /expenses select left out of scope, noted) — orchestré (vague 2026-10-17-1530, 0 passe(s) de correction)", commit: 5c73b2eaa5510c7cb0011e8a494f74a2f7257a82 }
