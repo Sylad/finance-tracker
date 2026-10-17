@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import { Loader2, Sparkles, AlertCircle, Scissors, Repeat, ShoppingBag, HelpCircle } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
@@ -58,6 +58,7 @@ export function ExpensesPage() {
   const { data, isLoading } = useQuery<Breakdown>({
     queryKey: ['expenses-breakdown', monthId],
     queryFn: () => api.get<Breakdown>(`/expenses/breakdown${monthId ? `?monthId=${monthId}` : ''}`),
+    placeholderData: keepPreviousData,
   });
 
   const proposeCuts = useMutation({
@@ -110,6 +111,7 @@ export function ExpensesPage() {
         actions={
           <div className="flex gap-2 items-center">
             <select
+              aria-label="Mois du relevé"
               value={monthId ?? data?.monthId ?? ''}
               onChange={(e) => { setMonthId(e.target.value); setActiveSlice(null); }}
               className="bg-surface-2 border border-input-border rounded-md px-3 py-2 text-sm text-fg"
