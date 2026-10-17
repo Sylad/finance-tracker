@@ -791,3 +791,11 @@ lots:
     review: { date: 2026-10-17, verdict: "conforme (revue courte sonnet 17-10, vague 2026-10-17-1010 ; 2 mineurs en note) — le commit postérieur abb11c2 ne contient que les captures Nouveautés et les données publiques regénérées, aucun code, vérifié par le lead", commit: abb11c215e34cf122557905c93d07bae15aaa2ac }
     ux: { date: 2026-10-17, verdict: "conforme (revue courte 17-10 et captures regardées par le lead : aucune ellipse ni débordement à 390, 768, 1024 et 1440 px, « · récurrent » d'un seul bloc ; 2 mineurs en note : lignes jusqu'à 103 px à 1440 px, titre du test R8 mal écrit)" }
     finished: 2026-10-17
+  - id: L80
+    title: "Détail d'un relevé : le fond teinté des puces de catégorie est écrit « hsl(...)20 », valeur CSS invalide que le navigateur ignore (puces sans fond depuis toujours) — poser une teinte valide (color-mix ou alpha) et faire mesurer au test de contraste R1 le fond réellement rendu (revue de code L23 17-10)"
+    public: "Détail d'un relevé : les puces de catégorie retrouvent leur fond teinté"
+    status: todo
+    estimate: 1
+    visible: true
+    screen: component
+    created: 2026-10-17

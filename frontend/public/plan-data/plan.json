@@ -166,6 +166,11 @@
       "status": "done",
       "started": "2026-10-17",
       "finished": "2026-10-17"
+    },
+    {
+      "id": "L80",
+      "title": "Détail d'un relevé : les puces de catégorie retrouvent leur fond teinté",
+      "status": "todo"
     }
   ]
 }
