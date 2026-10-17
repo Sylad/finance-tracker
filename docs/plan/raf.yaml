@@ -300,20 +300,23 @@ lots:
     finished: 2026-10-17
   - id: L24
     title: Revue UX — Budget
-    status: doing
+    status: done
     estimate: 0.75
     created: 2026-09-28
     started: 2026-10-17
     tasks:
-      - { id: t1, title: "Un enregistrement refusé du budget (403 démo, 400, réseau) affiche le message du serveur dans un role=alert et garde les montants saisis ; « Enregistré » est annoncé par un role=status ; en démo verrouillée (/demo/status forced) le bouton est désactivé avec la mention « Enregistrement désactivé en démo » ; plus aucune pageerror non interceptée à l'échec", status: todo }
-      - { id: t2, title: "Chaque champ de plafond du budget a pour nom accessible sa catégorie (label relié, plus « — »), l'unité € lui est associée, et l'arbre d'accessibilité nomme les 8 champs par leur libellé visible", status: todo }
-      - { id: t3, title: Un échec de chargement des budgets affiche ErrorState avec Réessayer et masque le formulaire et Enregistrer (plus de formulaire vide identique à l'état sans budget), status: todo }
-      - { id: t4, title: "Un plafond négatif ou non entier est signalé sur son champ (message relié, aria-invalid) et bloque l'enregistrement ; « 12,5 » n'est plus enregistré comme 125 ; step=10 retiré", status: todo }
-      - { id: t5, title: "Entrée dans un champ du budget enregistre (form onSubmit) et le bouton Enregistrer est aligné sur la carte des champs à 1440 px (écart horizontal ≤ 0 px avec son bord droit, 334 px mesurés)", status: todo }
-      - { id: t6, title: "Le budget signale les modifications non enregistrées, désactive Enregistrer sans modification et demande confirmation avant de quitter la page avec un brouillon modifié", status: todo }
+      - { id: t1, title: "Un enregistrement refusé du budget (403 démo, 400, réseau) affiche le message du serveur dans un role=alert et garde les montants saisis ; « Enregistré » est annoncé par un role=status ; en démo verrouillée (/demo/status forced) le bouton est désactivé avec la mention « Enregistrement désactivé en démo » ; plus aucune pageerror non interceptée à l'échec", status: done }
+      - { id: t2, title: "Chaque champ de plafond du budget a pour nom accessible sa catégorie (label relié, plus « — »), l'unité € lui est associée, et l'arbre d'accessibilité nomme les 8 champs par leur libellé visible", status: done }
+      - { id: t3, title: Un échec de chargement des budgets affiche ErrorState avec Réessayer et masque le formulaire et Enregistrer (plus de formulaire vide identique à l'état sans budget), status: done }
+      - { id: t4, title: "Un plafond négatif ou non entier est signalé sur son champ (message relié, aria-invalid) et bloque l'enregistrement ; « 12,5 » n'est plus enregistré comme 125 ; step=10 retiré", status: done }
+      - { id: t5, title: "Entrée dans un champ du budget enregistre (form onSubmit) et le bouton Enregistrer est aligné sur la carte des champs à 1440 px (écart horizontal ≤ 0 px avec son bord droit, 334 px mesurés)", status: done }
+      - { id: t6, title: "Le budget signale les modifications non enregistrées, désactive Enregistrer sans modification et demande confirmation avant de quitter la page avec un brouillon modifié", status: done }
     notes:
       - { date: 2026-10-17, text: "Revue UX 17-10 (ux-reviewer, captures regardées par le lead) : 3 bloquants + 4 majeurs → 6 sous-tâches ; bordure des champs .input transversale → lot autonome. Mineurs (note) : LoadingState sans role=status/aria-busy (partagé) ; bouton sans « Enregistrement… » ni aria-busy pendant l'appel ; sous-titre « Le dashboard affichera… » au lieu de « Tableau de bord » ; bandeau démo « Toutes les fonctionnalités sont actives » sur l'hôte verrouillé (app-shell.tsx l.32) ; focus des champs = bordure 1 px (AA ok, AAA non) ; cibles 38/36 px (AA ok, < 44 px tactile)" }
+      - { date: 2026-10-17, text: "Mineurs de conformité 17-10 (note) : (1) Réessayer repasse toute la page en LoadingState et le focus tombe sur body (budget.tsx l.77, isLoading avant l'erreur — isLoading && !isError) ; (2) en démo verrouillée, quitter un brouillon impossible à enregistrer demande quand même confirmation (champs readOnly si forced, ou blocage si !forced) ; (3) un 400 réel du ZodValidationPipe affiche « Validation failed » en anglais ; toujours ouvert : bandeau démo « Toutes les fonctionnalités sont actives » sur l'hôte verrouillé" }
     review: { date: 2026-10-17, verdict: "conforme : correctifs vérifiés (45 fichiers / 468 tests Vitest verts, tsc 0), 1 mineur en note (un plafond décimal touché puis remis à sa valeur est encore signalé) — orchestré (vague 2026-10-17-1432, 0 passe(s) de correction + passe des mineurs)", commit: 1b98e457fe161270a5ee76bee16e3f043dbfbada }
+    ux: { date: 2026-10-17, verdict: "conforme — t1 à t6 vérifiés à 1440 et 390 px par le ux-reviewer (conformité), captures regardées par le lead (refus 403 annoncé avec saisie gardée, erreurs reliées par champ, bouton aligné sur la carte) ; aucune régression bloquante ni majeure" }
+    finished: 2026-10-17
   - id: L25
     title: Revue UX — Revenus
     status: todo
