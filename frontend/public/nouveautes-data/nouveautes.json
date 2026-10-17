@@ -1,7 +1,22 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-17 10:12",
+  "generated": "2026-10-17 13:33",
   "entries": [
+    {
+      "slug": "2026-10-17-detail-d-un-releve-les-puces-de-categorie-retrouvent-leur-fo",
+      "title": "Détail d'un relevé : les puces de catégorie retrouvent leur fond teinté",
+      "date": "2026-10-17",
+      "lots": [
+        "L80"
+      ],
+      "captures": [
+        "captures/L80-puces-categorie-1440.png"
+      ],
+      "alts": [
+        "Détail d'un relevé : les puces de catégorie (Revenus, Logement, Transport…) ont chacune un fond teinté à la couleur de leur catégorie"
+      ],
+      "html": "<p>Dans le détail d'un relevé, les puces de catégorie à droite de chaque transaction (Revenus, Logement, Transport…) ont de nouveau un léger fond teinté à la couleur de leur catégorie : jusqu'ici, ce fond n'était jamais affiché et les puces apparaissaient sans fond. Le texte de quelques puces (Logement, Alimentation, Santé, Loisirs) est un peu plus clair pour rester lisible sur ce fond.</p>"
+    },
     {
       "slug": "2026-10-17-releve-detaille-la-mention-recurrent-reste-lisible-sur-grand",
       "title": "Relevé détaillé : la mention récurrent reste lisible sur grand écran",
