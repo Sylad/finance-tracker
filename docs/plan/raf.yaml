@@ -280,11 +280,12 @@ lots:
     finished: 2026-10-17
   - id: L23
     title: Revue UX — Historique des relevés (liste + détail)
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-09-28
     notes:
       - { date: 2026-10-14, text: "QA L16 14-10 (390 px) : barre Export CSV/Recalculer/recherche déborde à 513 px, champ de recherche coupé — replier ; attendu QA à ajouter : scrollWidth = clientWidth sur /history (capture tmp/qa-finance-l16/overflow-history-390.png)" }
+    started: 2026-10-17
   - id: L24
     title: Revue UX — Budget
     status: todo
