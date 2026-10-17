@@ -755,10 +755,11 @@ lots:
   - id: L79
     title: "Relevé détaillé dès 768 px : « · récurrent » coupé par l'ellipse de la sous-ligne (md:truncate, tx-row.tsx:49) — 11/24 lignes à 768, 15/24 à 1024, 10/24 à 1440 sur le relevé démo 2026-09 (revue L78 16-10) ; et le libellé brut sans marchand reconnu reste tronqué au téléphone (ligne de titre en truncate)"
     public: "Relevé détaillé : la mention récurrent reste lisible sur grand écran"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     screen: component
     created: 2026-10-16
     notes:
       - { date: 2026-10-16, text: "QA 16-10 : à 1440, 10/24 sous-lignes tronquées par l'ellipse dont 5 scindent « · récurrent » ; à 390, 5/24 titres bruts sans marchand reconnu tronqués. Ajouter dans docs/qa/expectations.md, section /history/<mois> : « shows: à 390 px, chaque ligne de transaction tient dans la largeur (aucun défilement horizontal), montant avec € sur la première rangée, · récurrent sur une seule ligne »" }
+    started: 2026-10-17
