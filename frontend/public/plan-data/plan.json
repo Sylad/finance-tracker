@@ -184,11 +184,12 @@
     {
       "id": "L84",
       "title": "Choix du mois annoncé par les lecteurs d'écran",
-      "status": "doing",
+      "status": "done",
       "started": "2026-10-17",
+      "finished": "2026-10-17",
       "tasks": [
         {
-          "status": "todo"
+          "status": "done"
         }
       ]
     }
