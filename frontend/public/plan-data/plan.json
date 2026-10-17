@@ -184,7 +184,12 @@
     {
       "id": "L84",
       "title": "Choix du mois annoncé par les lecteurs d'écran",
-      "status": "todo"
+      "status": "todo",
+      "tasks": [
+        {
+          "status": "todo"
+        }
+      ]
     }
   ]
 }

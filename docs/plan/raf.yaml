@@ -862,3 +862,5 @@ lots:
     visible: true
     screen: component
     created: 2026-10-17
+    tasks:
+      - { id: t1, title: "/expenses : changer de mois au clavier démonte la page (LoadingState à chaque nouveau monthId, expenses.tsx) et renvoie le focus sur body — garder la page affichée pendant le chargement (placeholderData) et le focus sur le select ; mesuré par la QA de L83 le 17-10 (à t=60 ms plus de select, focus BODY)", status: todo }
