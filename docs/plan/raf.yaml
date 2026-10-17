@@ -832,8 +832,9 @@ lots:
   - id: L82
     title: "La bordure des champs .input (index.css l.149, partagée par toutes les pages à formulaire) atteint au moins 3:1 contre le fond de carte : 1,31:1 mesuré sur /budget (revue UX L24 17-10, WCAG 1.4.11) ; teinte 222 12 %, L ≥ 43 % ; mesurée sur /budget et une autre page à formulaire, sur --surface et --surface-2"
     public: Champs de saisie mieux délimités
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     screen: component
     created: 2026-10-17
+    started: 2026-10-17
