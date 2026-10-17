@@ -9,6 +9,7 @@ Repris du brouillon du rapport QA L14 du 11-10 (22 routes), corrigé pour L61 (s
 - `shows:` ce qui est visible à l'écran ; plusieurs éléments séparés par des virgules.
 - `api:` appels `/api/…` qui doivent répondre 2xx pendant la visite de la route.
 - `never:` texte qui ne doit apparaître nulle part sur la route. Le reviewer compare sans casse : un mot court comme « nan » se trouverait dans « fiNANcière » ; on écrit donc les formes réelles du défaut (« NaN € », « NaN % ») et non le mot seul.
+- `source:` quelle donnée fait foi quand deux sources de l'écran peuvent sembler se contredire.
 - `may be empty when …:` une réponse vide ou un état vide est normal dans ce cas.
 
 ## Règle de lecture des dates (L63)
@@ -24,6 +25,7 @@ never: « Erreur : », « Erreur inconnue », Impossible de charger, undefined, 
 shows: à 1440 px seulement, « Vue d'ensemble basée sur 6 relevés » (l'en-tête de page est masqué sous `md` : le tableau de bord téléphone affiche le mois et la tendance, pas cette phrase) ; aux deux tailles PATRIMOINE NET, SANTÉ FINANCIÈRE /100, RELEVÉS RÉCENTS (5 cartes à 1440 px, 3 à 390 px)
 api: /api/statements, /api/statements/score-history, /api/loans, /api/savings-accounts, /api/budgets, /api/dashboard/net-worth, /api/dashboard/yearly-overview?months=12, /api/health-check/diagnostic, /api/dashboard/alerts
 may be empty when aucune alerte (`/api/dashboard/alerts`)
+source: la tuile « POINTS D'ATTENTION » lit le **diagnostic santé** (`/api/health-check/diagnostic`) et c'est lui qui fait foi ; `/api/dashboard/alerts` alimente un bloc « Alertes (N) » distinct (revolving ≥ 80 % du plafond, solde en baisse ≥ 30 %, crédit finissant sous 90 jours). Une tuile « Taux d'effort 70,5 % » avec `/api/dashboard/alerts` à `[]` n'est donc pas un défaut : le taux d'effort n'est pas une alerte de ce flux.
 
 ## /loans
 
@@ -32,13 +34,14 @@ api: /api/loans, /api/loan-suggestions
 
 ## /history
 
-shows: 6 relevés, du plus récent (le mois précédent) au plus ancien (six mois avant)
+shows: 6 relevés, du plus récent (le mois précédent) au plus ancien (six mois avant), dans des `li` d'un `ul` (un `ul` par année), chacun avec CRÉDITS, DÉBITS et SCORE /100 ; à 390 px, `scrollWidth` = `clientWidth` (aucun défilement horizontal)
 api: /api/statements
 
 ## /history/<mois du dernier relevé>
 
 Ouvrir le relevé le plus récent de `/history`, pas une URL en dur.
-shows: « N / N transactions » (tous les relevés listés), RÉPARTITION DES DÉPENSES
+shows: « N / N transactions » (tous les relevés listés) dans un `[role=status]`, RÉPARTITION DES DÉPENSES avec une ligne par poste portant `aria-pressed`, 3 filtres (Tout, Crédit, Débit) portant `aria-pressed`, puces de catégorie à contraste ≥ 4,5:1 sur leur fond rendu (L80)
+shows: la liste des transactions est focalisable (`tabindex="0"`) à 1440 px seulement ; à 390 px elle ne défile pas et n'a pas de `tabindex` (L23)
 shows: à 390 px, chaque ligne de transaction tient dans la largeur (aucun défilement horizontal), montant avec € sur la première rangée, · récurrent sur une seule ligne
 api: /api/statements/<mois>, /api/statements/<mois>/anomalies
 may be empty when aucune anomalie (`/anomalies`)
