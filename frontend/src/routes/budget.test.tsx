@@ -145,4 +145,35 @@ describe('<BudgetPage /> — revue UX L24', () => {
     expect(state.blocker!.shouldBlockFn()).toBe(false);
     await act(async () => {});
   });
+
+  it('fix — une saisie faite pendant l’appel au serveur survit à la réponse', async () => {
+    let resolve!: () => void;
+    state.mutateAsync.mockReturnValue(new Promise<void>((r) => { resolve = r; }));
+    const other = EXPENSE_CATEGORIES[1];
+    const user = userEvent.setup();
+    render(<BudgetPage />);
+    await user.type(field(), '5{Enter}');
+    await user.type(field(other), '200');
+    await act(async () => { resolve(); });
+    expect(field(other)).toHaveValue('200');
+    expect(screen.getByText('Modifications non enregistrées')).toBeInTheDocument();
+  });
+
+  it('fix — un plafond décimal déjà enregistré n’est pas signalé et n’empêche pas d’enregistrer une autre catégorie', async () => {
+    state.budget = { ...state.budget, data: { [cat]: 12.5 } };
+    const other = EXPENSE_CATEGORIES[1];
+    const user = userEvent.setup();
+    render(<BudgetPage />);
+    expect(field()).not.toHaveAttribute('aria-invalid', 'true');
+    await user.type(field(other), '100{Enter}');
+    expect(state.mutateAsync).toHaveBeenCalledWith({ [cat]: 12.5, [other]: 100 });
+  });
+
+  it('fix — un échec réseau du navigateur est annoncé en français', async () => {
+    state.mutateAsync.mockRejectedValue(new TypeError('Failed to fetch'));
+    const user = userEvent.setup();
+    render(<BudgetPage />);
+    await user.type(field(), '1{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent(/injoignable/);
+  });
 });

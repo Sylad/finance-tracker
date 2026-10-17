@@ -32,7 +32,8 @@ export function BudgetPage() {
   const errors: Record<string, string> = {};
   for (const cat of EXPENSE_CATEGORIES) {
     const v = valueOf(cat).trim();
-    if (v !== '' && !AMOUNT.test(v)) errors[cat] = AMOUNT_ERROR;
+    // Seul un champ touché est validé : un plafond décimal déjà enregistré reste accepté.
+    if (cat in edits && v !== '' && !AMOUNT.test(v)) errors[cat] = AMOUNT_ERROR;
   }
   const dirty = EXPENSE_CATEGORIES.some((cat) => valueOf(cat).trim() !== base(cat));
   const forced = demo.data?.forced === true;
@@ -50,19 +51,26 @@ export function BudgetPage() {
       return;
     }
     const budget: Budget = { ...data };
+    const sent: Record<string, string> = {};
     for (const cat of EXPENSE_CATEGORIES) {
       const v = valueOf(cat).trim();
+      sent[cat] = valueOf(cat);
       if (v === '') delete budget[cat];
       else budget[cat] = Number(v);
     }
     setSaveError(null);
     try {
       await update.mutateAsync(budget);
-      setEdits({});
+      // Ne retire que ce qui a été envoyé : une saisie faite pendant l'appel est conservée.
+      setEdits((cur) => Object.fromEntries(Object.entries(cur).filter(([c, v]) => v !== sent[c])));
       setSaved(true);
     } catch (err) {
       setSaved(false);
-      setSaveError(err instanceof Error ? err.message : 'Enregistrement impossible.');
+      setSaveError(
+        err instanceof TypeError
+          ? 'Le serveur est injoignable. Vérifie ta connexion et réessaie.'
+          : err instanceof Error ? err.message : 'Enregistrement impossible.',
+      );
     }
   };
 
