@@ -845,10 +845,19 @@ lots:
     finished: 2026-10-17
   - id: L83
     title: "Le menu déroulant du mois de /expenses (routes/expenses.tsx:115, border-border) garde une bordure à 1,31:1 contre la carte (WCAG 1.4.11) : lui donner le jeton --input-border de L82 (≥ 3:1), et repérer les autres contrôles de formulaire hors .input dans le même cas ; mesuré par l'UX de L82 le 17-10"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     screen: component
     created: 2026-10-17
     started: 2026-10-17
     review: { date: 2026-10-17, verdict: "compliant (0 bloquant, 0 majeur, 1 note mineure : select du mois sans nom accessible, antérieur au lot) — orchestré (vague 2026-10-17-1600, 0 passe(s) de correction)", commit: 8af88797dbb8161d41de7b6945522fa0e18dd109 }
+    ux: { date: 2026-10-17, verdict: "conforme — select du mois de /expenses sur le jeton --input-border (≥ 3:1), capture 390 regardée par le lead : contrôle nettement délimité" }
+    finished: 2026-10-17
+  - id: L84
+    title: "Le select du mois de /expenses (routes/expenses.tsx:113-121) n'a ni label, ni aria-label, ni aria-labelledby : un lecteur d'écran l'annonce « liste déroulante » sans dire ce qu'elle choisit (WCAG 1.3.1, 3.3.2, 4.1.2) ; lui donner le nom « Relevé » ou « Mois du relevé », relevé par la revue de L83 le 17-10"
+    status: todo
+    estimate: 0.1
+    visible: true
+    screen: component
+    created: 2026-10-17
