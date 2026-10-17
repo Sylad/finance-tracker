@@ -266,6 +266,15 @@ lots:
     estimate: 0.25
     created: 2026-09-28
     started: 2026-10-17
+    tasks:
+      - { id: t1, title: "Annoncer l'erreur de connexion au lecteur d'écran et l'associer au champ PIN (role alert, aria-describedby, aria-invalid)", status: todo }
+      - { id: t2, title: "Garder le focus dans le champ PIN quand la vérification échoue après un clic sur Déverrouiller (bouton non désactivé pendant l'appel, aria-busy, doubles soumissions ignorées)", status: todo }
+      - { id: t3, title: "Afficher un libellé « Déverrouillage… » et un état occupé pendant la vérification du PIN, hauteur du bouton stable, spinner masqué aux lecteurs d'écran", status: todo }
+      - { id: t4, title: "Effacer le message et le PIN faux à la correction, et rendre visible la bordure d'erreur du champ (focus:border-accent l'emporte sur border-negative)", status: todo }
+      - { id: t5, title: Masquer l'icône cadenas décorative du libellé PIN aux lecteurs d'écran (aria-hidden), status: todo }
+    notes:
+      - { date: 2026-10-17, text: "revue UX 17-10, mineurs laissés en note : Entrée sur champ vide sans retour (bouton désactivé suffit à la souris) ; autocomplete=off sur le champ PIN (finalité current-password non déclarée, collage possible donc 3.3.8 tenu, choix laissé tel quel pour un PIN perso). Hors UX : aucune limite de tentatives côté backend (6 × 401 puis 200 au bon PIN) à proposer à Sylvain en lot sécurité ; CLAUDE.md dit localStorage alors que auth.ts utilise sessionStorage ; contraste du texte d'erreur 4,70:1 sans marge (--negative-fg donnerait 5,1:1)" }
+    ux: { date: 2026-10-17, verdict: "non conforme (revue 17-10 sur instance jetable avec PIN) : 1 bloquant (erreur de PIN non annoncée au lecteur d'écran et focus perdu après clic, WCAG 4.1.3 / 3.3.1 / 2.4.3), 1 majeur (état de chargement muet, bouton sans nom, WCAG 4.1.2), 4 mineurs ; contrastes, clavier, cibles et reflow conformes ; écarts en sous-tâches t1–t5" }
   - id: L23
     title: Revue UX — Historique des relevés (liste + détail)
     status: todo
