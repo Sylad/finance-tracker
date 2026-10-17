@@ -810,3 +810,4 @@ lots:
     estimate: 0.1
     created: 2026-10-17
     started: 2026-10-17
+    review: { date: 2026-10-17, verdict: "compliant after 2 minor notes (la ligne `source:` n'est pas un mot-clé reconnu du qa-reviewer ; la condition « 1440 px seulement » est écrite en milieu de phrase) — orchestré (vague 2026-10-17-1408, 0 passe(s) de correction)", commit: 15b5d71cc24f9f8d04ef13ed7fe87c115888e6d6 }
