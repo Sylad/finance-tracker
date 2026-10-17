@@ -806,6 +806,7 @@ lots:
     finished: 2026-10-17
   - id: L81
     title: "QA 17-10 : attentes docs/qa/expectations.md — / affiche « POINTS D'ATTENTION · Taux d'effort 70,5 % » alors que /api/dashboard/alerts répond [] : dire quelle source fait foi (diagnostic santé ?) ou faire remonter l'alerte par /api/dashboard/alerts ; /history : 6 li dans un ul, chaque relevé avec CRÉDITS, DÉBITS, SCORE /100, scrollWidth = clientWidth à 390 ; /history/<mois> : [role=status] « N / N transactions », 3 filtres et une ligne par poste de la répartition avec aria-pressed, puces de catégorie ≥ 4,5:1 sur le fond rendu, liste focalisable (tabindex) à 1440 seulement (QA L23)"
-    status: todo
+    status: doing
     estimate: 0.1
     created: 2026-10-17
+    started: 2026-10-17
