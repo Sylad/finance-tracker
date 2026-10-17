@@ -1,6 +1,6 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-17 09:59",
+  "generated": "2026-10-17 10:12",
   "entries": [
     {
       "slug": "2026-10-17-releve-detaille-la-mention-recurrent-reste-lisible-sur-grand",
@@ -9,7 +9,14 @@
       "lots": [
         "L79"
       ],
-      "captures": [],
+      "captures": [
+        "captures/2026-10-17-l79-releve-detaille-sans-ellipse-1440.png",
+        "captures/2026-10-17-l79-releve-detaille-sans-ellipse-390.png"
+      ],
+      "alts": [
+        "Détail d'un relevé à 1440 px : la mention « · récurrent » et le libellé brut d'une transaction (PRELEVT FLOA N° 78451236 CRÉDIT) s'affichent en entier, sans points de suspension",
+        "Détail d'un relevé à 390 px : les libellés bruts longs (PRELEVT BNP IMMOBILIER N° 12345678 PRÊT IMMOBILIER) passent à la ligne avec « · récurrent », sans points de suspension"
+      ],
       "html": "<p>Dans le détail d'un relevé, la mention « · récurrent » n'est plus coupée par des points de suspension sur tablette et sur grand écran. Le libellé d'une transaction dont le marchand n'est pas reconnu n'est plus tronqué non plus, au téléphone comme ailleurs : le texte passe simplement à la ligne.</p>"
     },
     {
