@@ -90,7 +90,7 @@ describe('ligne de transaction du relevé à 390 px (L78)', () => {
   });
 });
 
-// Contraste WCAG 1.4.3 de la puce de catégorie sur le fond des lignes (--surface-2 = cas le plus clair).
+// Contraste WCAG 1.4.3 de la puce de catégorie sur le fond réel des lignes : --surface de la carte (la teinte `${color}20` est une valeur CSS invalide, donc ignorée).
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   s /= 100; l /= 100;
   const k = (n: number) => (n + h / 30) % 12;
@@ -108,15 +108,18 @@ function luminance([r, g, b]: number[]) {
 }
 
 describe('puces de catégorie (L23/t1)', () => {
-  it('R1 — chaque puce atteint 4,5:1 sur le fond des lignes, fond teinté à 12,5 % compris', () => {
-    const bg = parseHsl('hsl(222 17% 13%)');
+  it('R1 — chaque puce atteint 4,5:1 sur le fond des lignes (--surface, sans teinte)', () => {
+    const bg = parseHsl('hsl(222 19% 10%)');
     for (const cat of Object.keys(CATEGORY_COLOR) as TransactionCategory[]) {
       const fg = parseHsl(CATEGORY_TEXT_COLOR[cat]);
-      const base = parseHsl(CATEGORY_COLOR[cat]);
-      const tinted = bg.map((v, i) => v * (1 - 0x20 / 255) + base[i] * (0x20 / 255));
-      const [hi, lo] = [luminance(fg), luminance(tinted)].sort((a, b) => b - a);
+      const [hi, lo] = [luminance(fg), luminance(bg)].sort((a, b) => b - a);
       const ratio = (hi + 0.05) / (lo + 0.05); expect({ cat, ok: ratio >= 4.5 }).toEqual({ cat, ok: true });
     }
+  });
+
+  it('R1b — seules les teintes sous 4,5:1 sont éclaircies (Autre, Virements)', () => {
+    const changed = (Object.keys(CATEGORY_COLOR) as TransactionCategory[]).filter((c) => CATEGORY_TEXT_COLOR[c] !== CATEGORY_COLOR[c]);
+    expect(changed.sort()).toEqual(['other', 'transfers']);
   });
 
   it('R2 — la puce rendue utilise la couleur de texte accessible', () => {

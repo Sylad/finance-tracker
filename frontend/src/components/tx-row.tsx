@@ -19,17 +19,12 @@ export const CATEGORY_COLOR: Record<TransactionCategory, string> = {
 
 /**
  * Couleur du TEXTE des puces (L23/t1) : les couleurs ci-dessus restent celles des graphiques.
- * Sur le fond des lignes, « Autre » et « Virements » étaient à 2,95:1 et 4,12:1 (WCAG 1.4.3) et
- * plusieurs teintes saturées frôlaient le seuil : celles-ci sont éclaircies pour passer 4,5:1.
+ * Sur le fond des lignes (--surface), « Autre » et « Virements » étaient à 2,97:1 et 4,15:1
+ * (WCAG 1.4.3) : seules ces deux teintes sont éclaircies pour passer 4,5:1.
  */
 export const CATEGORY_TEXT_COLOR: Record<TransactionCategory, string> = {
   ...CATEGORY_COLOR,
-  housing: 'hsl(217 91% 66%)',
-  food: 'hsl(280 85% 70%)',
-  health: 'hsl(0 84% 67%)',
-  entertainment: 'hsl(330 85% 66%)',
   transfers: 'hsl(220 12% 60%)',
-  taxes: 'hsl(20 90% 56%)',
   other: 'hsl(220 8% 59%)',
 };
 
