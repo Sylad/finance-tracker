@@ -63,6 +63,19 @@ describe('<IncomePage /> — revue UX L25', () => {
     expect(within(ended).getByText(/300,00/).className).not.toContain('text-positive');
   });
 
+  it('t1 — les inactifs sont triés par dernier vu décroissant, quel que soit l’ordre reçu', () => {
+    setData([
+      credit({ id: 'o', description: 'VIR VIEUX', monthlyAmount: 900, isActive: false, lastSeenDate: '2026-01-04' }),
+      credit({ id: 'n', description: 'VIR RECENT', monthlyAmount: 100, isActive: false, lastSeenDate: '2026-08-04' }),
+      credit({ id: 'm', description: 'VIR MILIEU', monthlyAmount: 500, isActive: false, lastSeenDate: '2026-04-04' }),
+    ]);
+    render(<IncomePage />);
+    const ended = screen.getByRole('region', { name: 'Revenus terminés' });
+    const text = ended.textContent ?? '';
+    expect(text.indexOf('VIR RECENT')).toBeLessThan(text.indexOf('VIR MILIEU'));
+    expect(text.indexOf('VIR MILIEU')).toBeLessThan(text.indexOf('VIR VIEUX'));
+  });
+
   it('t1 — sans inactif, pas de carte « Revenus terminés »', () => {
     setData([credit({})]);
     render(<IncomePage />);
