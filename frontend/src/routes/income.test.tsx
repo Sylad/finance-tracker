@@ -118,6 +118,29 @@ describe('<IncomePage /> — revue UX L25', () => {
     expect(screen.getByText('Mensuel').textContent).toContain('·');
   });
 
+  it('t6 — à 320 px le badge « Inactif » passe sous le libellé (flex-wrap) au lieu de lui prendre sa largeur', () => {
+    setData([
+      credit({ id: 'c', description: 'VIR ANCIEN EMPLOYEUR INTERIM', isActive: false, lastSeenDate: '2026-03-04' }),
+      credit({ id: 'd', description: 'REF SEPA0123456789012345678901234567890123456789', isActive: false, lastSeenDate: '2026-02-04' }),
+    ]);
+    render(<IncomePage />);
+    const [first, sepa] = screen.getAllByTestId('income-ended-row');
+    for (const [row, text] of [[first, 'VIR ANCIEN EMPLOYEUR INTERIM'], [sepa, 'REF SEPA0123456789012345678901234567890123456789']] as const) {
+      const label = within(row).getByText(text);
+      const badge = within(row).getByText('Inactif');
+      const titleRow = label.parentElement as HTMLElement;
+      // libellé et badge sont frères dans une rangée qui peut passer à la ligne
+      expect(badge.parentElement).toBe(titleRow);
+      expect(titleRow.className).toContain('flex-wrap');
+      // le libellé est avant le badge et peut rétrécir sans que le badge lui prenne sa largeur
+      expect(label.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(label.className).toContain('min-w-0');
+      // retour à la ligne sans débordement, y compris pour une référence sans espace
+      expect(label.className).toContain('break-words');
+      expect(label.className).not.toContain('truncate');
+    }
+  });
+
   it('t5 — l’état vide parle de revenus et propose « Importer un relevé » vers /upload', () => {
     setData([]);
     render(<IncomePage />);

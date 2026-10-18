@@ -44,7 +44,7 @@ function IncomeRow({ c, ended = false }: { c: RecurringCredit; ended?: boolean }
     <div data-testid={ended ? 'income-ended-row' : 'income-active-row'} className="px-5 py-4 flex items-center gap-4">
       <Repeat className="h-4 w-4 text-accent shrink-0" />
       <div className="flex-1 min-w-0">
-        <div className="flex items-start gap-2">
+        <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
           <div className="text-sm font-medium text-fg-bright break-words min-w-0">{c.description}</div>
           {ended && <span className="badge-neutral shrink-0">Inactif</span>}
         </div>
