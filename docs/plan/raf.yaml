@@ -332,6 +332,7 @@ lots:
     notes:
       - { date: 2026-10-18, text: "revue UX du 18-10 (prod, états simulés par page.route, captures ~/projects/developpeur/tmp/ux-finance-L25/) : non conforme, 1 bloquant 4 majeurs 2 mineurs → 5 sous-tâches ; notes : LoadingState sans role=status/aria-live (transversal, WCAG 4.1.3) ; <title> « Finance Tracker » partout et h1 = le montant (PageHeader, transversal, WCAG 2.4.2/2.4.6) ; aucune correction possible d'une détection erronée (périmètre produit) ; tri backend par montant sans isActive (storage.service getRecurringCredits) ; monthlyAmount des fréquences trimestrielle/irrégulière non vérifié comme équivalent mensuel" }
     started: 2026-10-18
+    review: { date: 2026-10-18, verdict: "conforme : le correctif du tri des inactifs est testé, rien n'est cassé (vitest 488/488, tsc vert, plan.json à jour) — orchestré (vague 2026-10-18-l25, 0 passe(s) de correction + passe des mineurs)", commit: 90643676529c53db549052b1efc76a7c783a0cc8 }
   - id: L26
     title: Revue UX — Récurrents
     status: todo
