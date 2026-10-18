@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Loader2, RotateCw } from 'lucide-react';
 
 export function LoadingState({ label = 'Chargement…' }: { label?: string }) {
@@ -9,11 +10,12 @@ export function LoadingState({ label = 'Chargement…' }: { label?: string }) {
   );
 }
 
-export function EmptyState({ title, hint }: { title: string; hint?: string }) {
+export function EmptyState({ title, hint, action }: { title: string; hint?: string; action?: ReactNode }) {
   return (
     <div className="card p-8 text-center">
       <div className="text-fg-muted text-sm font-medium">{title}</div>
       {hint && <div className="text-fg-dim text-xs mt-1.5">{hint}</div>}
+      {action && <div className="mt-4">{action}</div>}
     </div>
   );
 }
