@@ -320,21 +320,23 @@ lots:
     finished: 2026-10-17
   - id: L25
     title: Revue UX — Revenus
-    status: doing
+    status: done
     estimate: 0.75
     created: 2026-09-28
     tasks:
-      - { id: t1, title: "Revenus : un revenu inactif n'est signalé que par l'opacité 0,5 (texte à 2,2:1, WCAG 1.4.3/1.4.1) et le sous-titre dit « 1 revenus récurrents détectés » au-dessus de 2 lignes — maquette de la revue UX : carte « Revenus terminés » sous les actifs (affichée si M > 0), badge texte « Inactif », « Dernier vu : jj/mm/aaaa » (lastSeenDate), montant en text-fg-muted ≥ 4,5:1 sans le vert, pleine opacité ; sous-titre « N revenu(s) récurrent(s) actif(s) · M inactif(s), exclu(s) du total » accordé sur les actifs ; actifs triés par montant", status: todo }
-      - { id: t2, title: "Revenus : une erreur de l'API (500) s'affiche « 0,00 € / mois » + « Importe au moins 2 relevés » — afficher ErrorState avec Réessayer (comme budget.tsx et health.tsx) et masquer le total", status: todo }
-      - { id: t3, title: "Revenus : badges de fiabilité de la date de fin en anglais brut (high / medium / low) — libellés français explicites (« Fiabilité élevée / moyenne / faible ») qui disent ce qu'ils qualifient", status: todo }
-      - { id: t4, title: "Revenus au téléphone : libellé tronqué sans moyen de le lire (« VIR LOYER LOCATAIRE DUP… », 178 px visibles sur 460 à 390 px, WCAG 1.4.10) et séparateurs « · » orphelins en fin de ligne — retour à la ligne du libellé (line-clamp-2 ou break-words sous sm) et séparateurs rattachés à l'élément suivant", status: todo }
-      - { id: t5, title: "Revenus : état vide « Aucun crédit récurrent détecté » (« Crédits » = emprunts dans la barre latérale) sans lien — « Aucun revenu récurrent détecté pour l'instant » et lien « Importer un relevé » vers /upload", status: todo }
-      - { id: t6, title: "Revenus à 320 px : dans la carte « Revenus terminés », le badge « Inactif » (shrink-0, 52 px) réduit la colonne du libellé à 48–60 px et coupe les mots au milieu (« EMPL/OYEUR », « ANCIE/N ») — rangée titre en flex-wrap ou badge en ligne après le libellé, test à 320 px (revue UX de conformité du 18-10)", status: todo }
+      - { id: t1, title: "Revenus : un revenu inactif n'est signalé que par l'opacité 0,5 (texte à 2,2:1, WCAG 1.4.3/1.4.1) et le sous-titre dit « 1 revenus récurrents détectés » au-dessus de 2 lignes — maquette de la revue UX : carte « Revenus terminés » sous les actifs (affichée si M > 0), badge texte « Inactif », « Dernier vu : jj/mm/aaaa » (lastSeenDate), montant en text-fg-muted ≥ 4,5:1 sans le vert, pleine opacité ; sous-titre « N revenu(s) récurrent(s) actif(s) · M inactif(s), exclu(s) du total » accordé sur les actifs ; actifs triés par montant", status: done }
+      - { id: t2, title: "Revenus : une erreur de l'API (500) s'affiche « 0,00 € / mois » + « Importe au moins 2 relevés » — afficher ErrorState avec Réessayer (comme budget.tsx et health.tsx) et masquer le total", status: done }
+      - { id: t3, title: "Revenus : badges de fiabilité de la date de fin en anglais brut (high / medium / low) — libellés français explicites (« Fiabilité élevée / moyenne / faible ») qui disent ce qu'ils qualifient", status: done }
+      - { id: t4, title: "Revenus au téléphone : libellé tronqué sans moyen de le lire (« VIR LOYER LOCATAIRE DUP… », 178 px visibles sur 460 à 390 px, WCAG 1.4.10) et séparateurs « · » orphelins en fin de ligne — retour à la ligne du libellé (line-clamp-2 ou break-words sous sm) et séparateurs rattachés à l'élément suivant", status: done }
+      - { id: t5, title: "Revenus : état vide « Aucun crédit récurrent détecté » (« Crédits » = emprunts dans la barre latérale) sans lien — « Aucun revenu récurrent détecté pour l'instant » et lien « Importer un relevé » vers /upload", status: done }
+      - { id: t6, title: "Revenus à 320 px : dans la carte « Revenus terminés », le badge « Inactif » (shrink-0, 52 px) réduit la colonne du libellé à 48–60 px et coupe les mots au milieu (« EMPL/OYEUR », « ANCIE/N ») — rangée titre en flex-wrap ou badge en ligne après le libellé, test à 320 px (revue UX de conformité du 18-10)", status: done }
     notes:
       - { date: 2026-10-18, text: "revue UX du 18-10 (prod, états simulés par page.route, captures ~/projects/developpeur/tmp/ux-finance-L25/) : non conforme, 1 bloquant 4 majeurs 2 mineurs → 5 sous-tâches ; notes : LoadingState sans role=status/aria-live (transversal, WCAG 4.1.3) ; <title> « Finance Tracker » partout et h1 = le montant (PageHeader, transversal, WCAG 2.4.2/2.4.6) ; aucune correction possible d'une détection erronée (périmètre produit) ; tri backend par montant sans isActive (storage.service getRecurringCredits) ; monthlyAmount des fréquences trimestrielle/irrégulière non vérifié comme équivalent mensuel" }
       - { date: 2026-10-18, text: "revue UX de conformité du 18-10 (captures ~/projects/developpeur/tmp/ux-finance-L25-apres/) : t1 t2 t3 t5 conformes (ligne inactive 7,44:1, ErrorState + Réessayer, fiabilité en français, état vide avec lien) ; t4 non conforme à 320 px → t6 ; notes : séparateurs « · » asymétriques (8 px avant, 3,2 px après), Réessayer fait perdre le focus clavier (toute la page repasse en Chargement, WCAG 2.4.3)" }
     started: 2026-10-18
-    review: { date: 2026-10-18, verdict: "conforme : le correctif du tri des inactifs est testé, rien n'est cassé (vitest 488/488, tsc vert, plan.json à jour) — orchestré (vague 2026-10-18-l25, 0 passe(s) de correction + passe des mineurs)", commit: 90643676529c53db549052b1efc76a7c783a0cc8 }
+    review: { date: 2026-10-18, verdict: "conforme (revue Opus de 62a6d66 + 9064367 après correction, revue de 372cb52 conforme) ; note : le test t6 vérifie classes et structure (jsdom ne met pas en page), le rendu à 320 px est confirmé par la revue UX", commit: 372cb520f88d39049e54d3dbc2e070bd4ed4eee9 }
+    ux: { date: 2026-10-18, verdict: "conforme : t1–t6 vérifiés sur l'app locale, captures regardées par le lead (ligne inactive 7,44:1 en carte « Revenus terminés », ErrorState + Réessayer, fiabilité en français, état vide avec lien vers l'import, libellé inactif sans mot coupé à 320/390 px) ; 2 mineurs en notes (séparateur · 8 px avant / 3,2 px après ; focus perdu au Réessayer)" }
+    finished: 2026-10-18
   - id: L26
     title: Revue UX — Récurrents
     status: todo
