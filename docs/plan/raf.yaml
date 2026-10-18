@@ -339,9 +339,14 @@ lots:
     finished: 2026-10-18
   - id: L26
     title: Revue UX — Récurrents
-    status: todo
+    status: done
     estimate: 0.25
     created: 2026-09-28
+    ux: { date: 2026-10-18, verdict: "conforme : /recurring n'est qu'une redirection vers /income depuis 073fc49 (02-05), page Revenus revue dans L25 ; redirection vérifiée à 1440/390/320 px (remplace l'historique, Revenus marqué page courante, aucun défilement horizontal) ; 3 mineurs en note" }
+    notes:
+      - { date: 2026-10-18, text: "revue UX 18-10 (prod démo, captures ~/projects/developpeur/tmp/ux-fin-L26/) — mineurs : palette ⌘K « récurrent »/« recurring » ne trouve rien (mots-clés cachés sur l'entrée /income, recherche insensible aux accents) ; docs/qa/expectations.md:60-63 attend encore /recurring comme une page (écrire « redirige vers /income ») ; 56 px de défilement vertical en trop au téléphone sur page courte (coque app-shell min-h-screen + pb-20, hors écran) ; L29 : « Crédits récurrents » de yearly.tsx:121 entre en conflit avec « Crédits » = emprunts" }
+    started: 2026-10-18
+    finished: 2026-10-18
   - id: L27
     title: Revue UX — Déclarations
     status: todo
