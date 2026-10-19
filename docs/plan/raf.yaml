@@ -360,9 +360,14 @@ lots:
     finished: 2026-10-19
   - id: L28
     title: Revue UX — Prévisions
-    status: todo
+    status: done
     estimate: 0.25
     created: 2026-09-28
+    ux: { date: 2026-10-19, verdict: "non conforme — 9 constats (2 bloquants WCAG 4.1.2 / 1.4.1, 7 majeurs : horizon sans effet, erreur = état vide, état vide jamais atteint, axe « 2k » faux, passé présenté comme projection, arrondis graphe ≠ cartes, solde absent) → 4 lots ; captures tmp/ux-finance-l28/ regardées par le lead ; maquette du lot passé/en cours/prévu validée par le lead" }
+    notes:
+      - { date: 2026-10-19, text: "Mineurs : spinner pleine page sans role=status ni message au-delà de 8 s ; état vide sans action ni lien ; mois en ISO (formatMonthShort existe) ; curseur Recharts gris clair sur thème sombre ; boutons d'horizon 62×28 à 390 ; libellés ENTRÉES/SORTIES en 9 px ; pas de lien d'évitement (22 Tab, toute l'app) ; graphe sans légende ni accès clavier. Non vérifié : lecteur d'écran, tactile, zoom 200 %, reduced-motion." }
+    started: 2026-10-19
+    finished: 2026-10-19
   - id: L29
     title: Revue UX — Bilan annuel
     status: todo
@@ -927,3 +932,31 @@ lots:
     finished: 2026-10-19
     notes:
       - { date: 2026-10-19, text: "QA prod 19-10 : 3/3 pages conformes (declarations, accueil, nouveautes à 1440/390/320). Faux positif des attendus : la ligne never « Impossible de charger » du bloc * se déclenche sur /nouveautes (le journal L87 cite le message) — exempter /nouveautes dans docs/qa/expectations.md à la prochaine retouche." }
+  - id: L88
+    title: "Prévisions : le sélecteur 3/6/12 mois filtre réellement la fenêtre à partir du mois courant (backend ?months ignoré : declarations.controller.ts:39-42), expose aria-pressed, et garde titre, sélecteur et focus pendant le rechargement (placeholderData) — revue UX L28"
+    public: "Prévisions : le choix 3, 6 ou 12 mois change vraiment la vue"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-19
+  - id: L89
+    title: "Prévisions : erreur API = ErrorState avec Réessayer (plus « Pas de déclaration »), mois tous sans occurrence = état vide avec lien vers Déclarations (plus de 12 cartes à 0,00 € vertes) — revue UX L28"
+    public: "Prévisions : message clair en cas d'erreur ou sans déclaration"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-19
+  - id: L90
+    title: "Prévisions : axe Y en formatEURCompact (« 2k » pour 1 500 € aujourd'hui), info-bulle aux montants exacts (2 068,15 € et non 2 068,00 €) avec ligne Solde, solde mensuel tracé sur le graphe — revue UX L28"
+    public: "Prévisions : montants exacts et solde du mois sur le graphe"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-19
+  - id: L91
+    title: "Prévisions : chaque carte dit en texte « Passé », « En cours » ou « Prévu » (badge à gauche du solde) ; type et rapprochement de chaque ligne dans son nom accessible ; légende sous le titre (● Revenus ● Crédits ● Abonnements ● Dépenses · estompé = non rapproché) — sans changer mise en page, couleurs ni animations — revue UX L28"
+    public: "Prévisions : mois passés, en cours et prévus distingués en clair"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-19

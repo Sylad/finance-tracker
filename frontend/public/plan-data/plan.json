@@ -213,6 +213,26 @@
       "status": "done",
       "started": "2026-10-19",
       "finished": "2026-10-19"
+    },
+    {
+      "id": "L88",
+      "title": "Prévisions : le choix 3, 6 ou 12 mois change vraiment la vue",
+      "status": "todo"
+    },
+    {
+      "id": "L89",
+      "title": "Prévisions : message clair en cas d'erreur ou sans déclaration",
+      "status": "todo"
+    },
+    {
+      "id": "L90",
+      "title": "Prévisions : montants exacts et solde du mois sur le graphe",
+      "status": "todo"
+    },
+    {
+      "id": "L91",
+      "title": "Prévisions : mois passés, en cours et prévus distingués en clair",
+      "status": "todo"
     }
   ]
 }
