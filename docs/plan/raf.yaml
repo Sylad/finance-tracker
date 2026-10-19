@@ -349,9 +349,10 @@ lots:
     finished: 2026-10-18
   - id: L27
     title: Revue UX — Déclarations
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-09-28
+    started: 2026-10-19
   - id: L28
     title: Revue UX — Prévisions
     status: todo
