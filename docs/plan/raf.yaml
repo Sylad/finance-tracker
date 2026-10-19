@@ -913,7 +913,8 @@ lots:
     review: { date: 2026-10-19, verdict: "compliant (0 blocking, 0 major, 2 minor notes: orphan « · » separators at line end, `contents` not locked by tests) — orchestré (vague 2026-10-19-fin-decl, 0 passe(s) de correction)", commit: 7e136241264ed94c8573ee33bfd63b75f06f3831 }
   - id: L87
     title: "Déclarations : erreurs montrées à l'utilisateur — chargement en échec = ErrorState avec Réessayer (pas l'état vide) ; échec d'enregistrement = message de l'API dans la modale (role=alert) sans perdre la saisie, rejet géré ; échec de suppression = message quand la ligne réapparaît — issu de la revue UX L27"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-19
+    started: 2026-10-19
