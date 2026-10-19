@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts';
+import { Link } from '@tanstack/react-router';
 import { useForecast } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
-import { LoadingState, EmptyState } from '@/components/loading-state';
+import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
 import { formatEUR, cn, chartTooltipProps } from '@/lib/utils';
 import { DECLARATION_TYPE_LABELS } from '@/types/api';
 
@@ -10,16 +11,33 @@ const HORIZONS = [3, 6, 12] as const;
 
 export function ForecastPage() {
   const [horizon, setHorizon] = useState<3 | 6 | 12>(12);
-  const { data, isLoading } = useForecast(horizon);
+  const { data, isLoading, isError, isFetching, refetch } = useForecast(horizon);
 
   if (isLoading) return <LoadingState />;
+
+  if (isError && !data) {
+    return (
+      <>
+        <PageHeader title="Prévisions" />
+        <ErrorState
+          message="Impossible de charger les prévisions."
+          onRetry={() => { void refetch(); }}
+          retrying={isFetching}
+        />
+      </>
+    );
+  }
+
   const months = data ?? [];
 
-  if (months.length === 0) {
+  if (months.every((m) => m.occurrences.length === 0)) {
     return (
       <>
         <PageHeader title="Prévisions" subtitle="Aucune projection. Configure des déclarations pour générer un prévisionnel." />
-        <EmptyState title="Pas de déclaration → pas de prévision" hint="Va dans Déclarations pour ajouter tes revenus et engagements." />
+        <EmptyState title="Pas de déclaration → pas de prévision" 
+          hint="Ajoute tes revenus et engagements dans Déclarations pour générer un prévisionnel."
+          action={<Link to="/declarations" className="btn-secondary inline-flex">Aller aux Déclarations</Link>}
+        />
       </>
     );
   }

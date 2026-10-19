@@ -3,6 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ForecastPage } from './forecast';
 
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ to, children, ...rest }: { to: string; children: React.ReactNode }) => <a href={to} {...rest}>{children}</a>,
+}));
+
 vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
 
 // jsdom n'a pas de mise en page : Recharts n'y dessine rien, on isole la page.
@@ -14,7 +18,8 @@ vi.mock('recharts', () => {
   };
 });
 
-const month = (m: string) => ({ month: m, income: 100, expense: 50, net: 50, occurrences: [] });
+const occ = { declarationId: 'd1', label: 'Salaire', type: 'income', amountSigned: 100, matched: false };
+const month = (m: string, occurrences: unknown[] = [occ]) => ({ month: m, income: 100, expense: 50, net: 50, occurrences });
 const pending = vi.hoisted(() => ({ release: null as null | (() => void) }));
 const get = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/api', () => ({
@@ -67,5 +72,48 @@ describe('Prévisions — sélecteur 3/6/12 mois (L88)', () => {
     pending.release!();
     await waitFor(() => expect(screen.getAllByText(/^2026-1\d$/).length).toBe(6));
     expect(document.activeElement).toBe(b6);
+  });
+});
+
+describe('Prévisions — erreur et absence de déclaration (L89)', () => {
+  const defaultImpl = get.getMockImplementation()!;
+
+  it('R1 — une erreur API affiche ErrorState avec Réessayer, jamais « Pas de déclaration »', async () => {
+    get.mockImplementation(() => Promise.reject(new Error('boom')));
+    renderPage();
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.queryByText(/Pas de déclaration/)).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Prévisions' })).toBeTruthy();
+    get.mockImplementation(defaultImpl);
+    fireEvent.click(screen.getByRole('button', { name: /Réessayer/ }));
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    expect(screen.getAllByText(/^2026-\d+$/).length).toBe(12);
+  });
+
+  it('R2 — des mois tous sans occurrence donnent l\'état vide avec lien vers Déclarations, sans carte à 0 €', async () => {
+    get.mockImplementation(() => Promise.resolve(
+      Array.from({ length: 12 }, (_, i) => ({ month: `2026-${i}`, income: 0, expense: 0, net: 0, occurrences: [] })),
+    ));
+    renderPage();
+    expect(await screen.findByText(/Pas de déclaration/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Déclarations/ }).getAttribute('href')).toBe('/declarations');
+    expect(screen.queryByText(/^2026-\d+$/)).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    get.mockImplementation(defaultImpl);
+  });
+
+  it('R3 — une liste vide donne le même état vide', async () => {
+    get.mockImplementation(() => Promise.resolve([]));
+    renderPage();
+    expect(await screen.findByRole('link', { name: /Déclarations/ })).toBeTruthy();
+    get.mockImplementation(defaultImpl);
+  });
+
+  it('R4 — un seul mois avec occurrence suffit à afficher la projection', async () => {
+    get.mockImplementation(() => Promise.resolve([month('2026-01', []), month('2026-02')]));
+    renderPage();
+    expect(await screen.findByText('2026-02')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /Déclarations/ })).toBeNull();
+    get.mockImplementation(defaultImpl);
   });
 });
