@@ -9,8 +9,8 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { round2 } from '../../common/money';
 import { monthKey as monthOfDate } from '../../common/month-key';
 
-const PAST_MONTHS = 6;
-const FUTURE_MONTHS = 5;
+export const FORECAST_HORIZONS = [3, 6, 12] as const;
+export const DEFAULT_FORECAST_MONTHS = 12;
 const AMOUNT_TOLERANCE_PCT = 0.05;
 const AMOUNT_TOLERANCE_MIN = 0.5;
 
@@ -23,7 +23,7 @@ export class ForecastService {
     private readonly subscriptions: SubscriptionsService,
   ) {}
 
-  async compute(): Promise<ForecastMonth[]> {
+  async compute(months: number = DEFAULT_FORECAST_MONTHS): Promise<ForecastMonth[]> {
     const declarations = await this.declarations.getAll();
     const activeLoans = (await this.loans.getAll()).filter((l) => l.isActive);
     const activeSubs = (await this.subscriptions.getAll()).filter((s) => s.isActive);
@@ -38,7 +38,7 @@ export class ForecastService {
         && (c.category === 'salary' || c.category === 'pension' || c.category === 'rental')
         && (c.frequency === 'monthly' || c.frequency === 'bimonthly'),
     );
-    const window = buildWindow(new Date(), PAST_MONTHS, FUTURE_MONTHS);
+    const window = buildWindow(new Date(), months);
     const statements = await this.storage.getAllStatements();
     const txByMonth = indexTransactionsByMonth(statements);
     const consumed = new Set<string>();
@@ -151,9 +151,10 @@ export class ForecastService {
   }
 }
 
-function buildWindow(ref: Date, past: number, future: number): { year: number; month: number }[] {
+/** `count` mois consécutifs, le premier étant le mois de `ref`. */
+function buildWindow(ref: Date, count: number): { year: number; month: number }[] {
   const out: { year: number; month: number }[] = [];
-  for (let i = -past; i <= future; i++) {
+  for (let i = 0; i < count; i++) {
     const d = new Date(ref.getFullYear(), ref.getMonth() + i, 1);
     out.push({ year: d.getFullYear(), month: d.getMonth() + 1 });
   }

@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { DeclarationsService } from './declarations.service';
-import { ForecastService } from './forecast.service';
+import { DEFAULT_FORECAST_MONTHS, FORECAST_HORIZONS, ForecastService } from './forecast.service';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { DeclarationInputSchema } from './declarations.schema';
 import type { Declaration, DeclarationInput, ForecastMonth } from '../../models/declaration.model';
@@ -37,7 +37,12 @@ export class DeclarationsController {
   }
 
   @Get('forecast')
-  getForecast(): Promise<ForecastMonth[]> {
-    return this.forecast.compute();
+  getForecast(@Query('months') months?: string): Promise<ForecastMonth[]> {
+    if (months === undefined) return this.forecast.compute(DEFAULT_FORECAST_MONTHS);
+    const n = Number(months);
+    if (!(FORECAST_HORIZONS as readonly number[]).includes(n)) {
+      throw new BadRequestException(`months doit valoir ${FORECAST_HORIZONS.join(', ')}`);
+    }
+    return this.forecast.compute(n);
   }
 }
