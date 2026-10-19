@@ -897,10 +897,11 @@ lots:
     finished: 2026-10-17
   - id: L85
     title: "Déclarations : modale de saisie accessible et utilisable au téléphone — rôle dialog + aria-modal + aria-labelledby, focus sur Libellé à l'ouverture, piège à focus, Échap ferme, focus rendu au bouton d'origine, aria-label « Fermer » sur × (modèle thresholds-drawer.tsx) ; à 320×568 la carte défile (max-h 100dvh) au lieu de déborder (WCAG 4.1.2, 2.4.3, 2.1.1, 1.4.10) — issu de la revue UX L27"
-    status: todo
+    status: doing
     estimate: 0.5
     visible: true
     created: 2026-10-19
+    started: 2026-10-19
   - id: L86
     title: "Déclarations : liste lisible au téléphone — sous 640 px chaque ligne sur deux rangées (badge + libellé entier, puis détails à gauche, montant et actions à droite) ; à 320 px plus de libellé à 14 px ni de détails sous le montant (WCAG 1.4.10) — issu de la revue UX L27"
     status: todo
