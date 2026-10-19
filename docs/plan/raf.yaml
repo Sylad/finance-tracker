@@ -944,10 +944,11 @@ lots:
   - id: L89
     title: "Prévisions : erreur API = ErrorState avec Réessayer (plus « Pas de déclaration »), mois tous sans occurrence = état vide avec lien vers Déclarations (plus de 12 cartes à 0,00 € vertes) — revue UX L28"
     public: "Prévisions : message clair en cas d'erreur ou sans déclaration"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-19
+    started: 2026-10-19
   - id: L90
     title: "Prévisions : axe Y en formatEURCompact (« 2k » pour 1 500 € aujourd'hui), info-bulle aux montants exacts (2 068,15 € et non 2 068,00 €) avec ligne Solde, solde mensuel tracé sur le graphe — revue UX L28"
     public: "Prévisions : montants exacts et solde du mois sur le graphe"
