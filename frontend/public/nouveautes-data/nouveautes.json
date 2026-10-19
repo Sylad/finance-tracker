@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-19 20:40",
+  "generated": "2026-10-19 20:58",
   "entries": [
+    {
+      "slug": "2026-10-19-previsions-message-clair-en-cas-d-erreur-ou-sans-declaration",
+      "title": "Prévisions : message clair en cas d'erreur ou sans déclaration",
+      "date": "2026-10-19",
+      "lots": [
+        "L89"
+      ],
+      "captures": [
+        "captures/previsions-erreur-1440.png",
+        "captures/previsions-erreur-390.png"
+      ],
+      "alts": [
+        "Page Prévisions sur ordinateur : un message d'erreur « Impossible de charger les prévisions » avec un bouton Réessayer",
+        "Page Prévisions sur téléphone : le même message d'erreur avec le bouton Réessayer"
+      ],
+      "html": "<p>Sur la page Prévisions, quand le chargement échoue, tu vois maintenant un message d'erreur « Impossible de charger les prévisions » avec un bouton <strong>Réessayer</strong>. Avant, la page affichait à tort « Pas de déclaration → pas de prévision », comme si tu n'avais rien déclaré.</p>\n<p>Et quand tes déclarations ne produisent aucune ligne sur la période, la page n'affiche plus douze cartes vertes à 0,00 € : elle explique qu'il n'y a pas de prévision et propose un bouton vers la page Déclarations pour ajouter tes revenus et engagements.</p>"
+    },
     {
       "slug": "2026-10-19-previsions-le-choix-3-6-ou-12-mois-change-vraiment-la-vue",
       "title": "Prévisions : le choix 3, 6 ou 12 mois change vraiment la vue",
