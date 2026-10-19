@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-19 10:42",
+  "generated": "2026-10-19 10:47",
   "entries": [
+    {
+      "slug": "2026-10-19-declarations-erreurs-montrees-a-l-utilisateur-chargement-en",
+      "title": "Déclarations : quand ça ne marche pas, la page te le dit",
+      "date": "2026-10-19",
+      "lots": [
+        "L87"
+      ],
+      "captures": [],
+      "html": "<p>Sur la page Déclarations, un problème n'est plus passé sous silence. Si la liste ne peut pas se charger, la page affiche « Impossible de charger les déclarations » avec un bouton Réessayer, au lieu de faire croire qu'il n'y a aucune déclaration. Si un enregistrement est refusé, le message du serveur apparaît dans la fenêtre de saisie, qui reste ouverte avec tout ce que tu as tapé. Si une suppression échoue, un message indique quelle déclaration n'a pas été supprimée, au moment où la ligne réapparaît.</p>"
+    },
     {
       "slug": "2026-10-19-declarations-liste-lisible-au-telephone-sous-640-px-chaque-l",
       "title": "Déclarations : la liste se lit en entier sur téléphone",

@@ -204,6 +204,12 @@
       "title": "Déclarations : la liste se lit en entier sur téléphone",
       "status": "doing",
       "started": "2026-10-19"
+    },
+    {
+      "id": "L87",
+      "title": "Déclarations : quand ça ne marche pas, la page te le dit",
+      "status": "doing",
+      "started": "2026-10-19"
     }
   ]
 }
