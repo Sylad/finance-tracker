@@ -15,19 +15,6 @@ export function ForecastPage() {
 
   if (isLoading) return <LoadingState />;
 
-  if (isError && !data) {
-    return (
-      <>
-        <PageHeader title="Prévisions" />
-        <ErrorState
-          message="Impossible de charger les prévisions."
-          onRetry={() => { void refetch(); }}
-          retrying={isFetching}
-        />
-      </>
-    );
-  }
-
   const months = data ?? [];
 
   const horizonSelector = (
@@ -48,6 +35,19 @@ export function ForecastPage() {
       ))}
     </div>
   );
+
+  if (isError && !data) {
+    return (
+      <>
+        <PageHeader title="Prévisions" actions={horizonSelector} />
+        <ErrorState
+          message="Impossible de charger les prévisions."
+          onRetry={() => { void refetch(); }}
+          retrying={isFetching}
+        />
+      </>
+    );
+  }
 
   if (months.every((m) => m.occurrences.length === 0)) {
     const reduced = horizon < 12;

@@ -124,6 +124,22 @@ describe('Prévisions — erreur et absence de déclaration (L89)', () => {
     get.mockImplementation(defaultImpl);
   });
 
+  it('R6 — un échec au changement d\'horizon garde le sélecteur et le focus, et 12 mois ramène la projection', async () => {
+    get.mockImplementation((url: string) => (url.includes('months=3')
+      ? Promise.reject(new Error('boom'))
+      : Promise.resolve([month('2026-05')])));
+    renderPage();
+    const b3 = await screen.findByRole('button', { name: '3 mois' });
+    b3.focus();
+    fireEvent.click(b3);
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '3 mois' })).toBe(b3);
+    expect(document.activeElement).toBe(b3);
+    fireEvent.click(screen.getByRole('button', { name: '12 mois' }));
+    expect(await screen.findByText('2026-05')).toBeTruthy();
+    get.mockImplementation(defaultImpl);
+  });
+
   it('R4 — un seul mois avec occurrence suffit à afficher la projection', async () => {
     get.mockImplementation(() => Promise.resolve([month('2026-01', []), month('2026-02')]));
     renderPage();
