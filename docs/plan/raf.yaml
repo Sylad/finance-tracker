@@ -935,10 +935,11 @@ lots:
   - id: L88
     title: "Prévisions : le sélecteur 3/6/12 mois filtre réellement la fenêtre à partir du mois courant (backend ?months ignoré : declarations.controller.ts:39-42), expose aria-pressed, et garde titre, sélecteur et focus pendant le rechargement (placeholderData) — revue UX L28"
     public: "Prévisions : le choix 3, 6 ou 12 mois change vraiment la vue"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-19
+    started: 2026-10-19
   - id: L89
     title: "Prévisions : erreur API = ErrorState avec Réessayer (plus « Pas de déclaration »), mois tous sans occurrence = état vide avec lien vers Déclarations (plus de 12 cartes à 0,00 € vertes) — revue UX L28"
     public: "Prévisions : message clair en cas d'erreur ou sans déclaration"
