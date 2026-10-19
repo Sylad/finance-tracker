@@ -918,3 +918,4 @@ lots:
     visible: true
     created: 2026-10-19
     started: 2026-10-19
+    review: { date: 2026-10-19, verdict: "compliant (0 bloquant, 0 majeur, 1 mineur en note : message de suppression en haut de page ; rendu visuel non vérifié, navigateur indisponible) — orchestré (vague 2026-10-19-fin-decl, 0 passe(s) de correction)", commit: 08e64b1af615a650512d76d605c3e373bd931d21 }
