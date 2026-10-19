@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, X, Pencil } from 'lucide-react';
 import {
   useDeclarations,
@@ -147,16 +147,61 @@ export function DeclarationForm({
   busy: boolean;
 }) {
   const [form, setForm] = useState<DeclarationInput>(init);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLInputElement>(null);
+  // Gardé à jour sans relancer l'effet : onCancel change à chaque rendu du parent.
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
+
+  // Focus sur Libellé à l'ouverture, rendu au bouton d'origine à la fermeture.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    labelRef.current?.focus();
+    return () => opener?.focus?.();
+  }, []);
+
+  // Échap ferme ; Tab / Maj+Tab bouclent dans la modale.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCancelRef.current();
+        return;
+      }
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onCancel}>
-      <div className="card max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <h2 className="font-display font-semibold text-fg-bright">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="declaration-dialog-title"
+        className="card max-w-lg w-full max-h-[100dvh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border px-5 py-3 sticky top-0 bg-surface z-10">
+          <h2 id="declaration-dialog-title" className="font-display font-semibold text-fg-bright">
             {init.label ? 'Modifier la déclaration' : 'Nouvelle déclaration'}
           </h2>
-          <button onClick={onCancel} className="btn-ghost p-1">
-            <X className="h-4 w-4" />
+          <button type="button" onClick={onCancel} className="btn-ghost p-1" aria-label="Fermer">
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
         <form
@@ -164,7 +209,7 @@ export function DeclarationForm({
           onSubmit={(e) => { e.preventDefault(); onSave(form); }}
         >
           <Field label="Libellé">
-            <input className="input" required value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} />
+            <input ref={labelRef} className="input" required value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Type">
