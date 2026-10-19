@@ -193,7 +193,7 @@ export function DeclarationForm({
         role="dialog"
         aria-modal="true"
         aria-labelledby="declaration-dialog-title"
-        className="card max-w-lg w-full max-h-[100dvh] overflow-y-auto"
+        className="card max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3 sticky top-0 bg-surface z-10">

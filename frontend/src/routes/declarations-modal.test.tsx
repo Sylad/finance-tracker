@@ -83,10 +83,10 @@ describe('Déclarations — modale de saisie (L85)', () => {
     expect(document.activeElement).toBe(opener);
   });
 
-  it("à 320×568 la carte défile : hauteur bornée à 100dvh et overflow-y auto", () => {
+  it("à 320×568 la carte défile : hauteur bornée à 100dvh moins la marge de 2rem et overflow-y auto", () => {
     render(<DeclarationForm init={init} onSave={() => {}} onCancel={() => {}} busy={false} />);
     const dialog = screen.getByRole('dialog');
-    expect(dialog.className).toContain('max-h-[100dvh]');
+    expect(dialog.className).toContain('max-h-[calc(100dvh-2rem)]');
     expect(dialog.className).toContain('overflow-y-auto');
   });
 });

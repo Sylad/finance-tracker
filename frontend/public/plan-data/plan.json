@@ -192,6 +192,12 @@
           "status": "done"
         }
       ]
+    },
+    {
+      "id": "L85",
+      "title": "Déclarations : la fenêtre de saisie s'utilise au clavier et au téléphone",
+      "status": "doing",
+      "started": "2026-10-19"
     }
   ]
 }

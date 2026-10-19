@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-17 16:03",
+  "generated": "2026-10-19 10:20",
   "entries": [
+    {
+      "slug": "2026-10-19-declarations-la-fenetre-de-saisie-s-utilise-au-clavier-et-au",
+      "title": "Déclarations : la fenêtre de saisie s'utilise au clavier et au téléphone",
+      "date": "2026-10-19",
+      "lots": [
+        "L85"
+      ],
+      "captures": [
+        "captures/declarations-modale-1440.png",
+        "captures/declarations-modale-320.png"
+      ],
+      "alts": [
+        "Page Déclarations sur grand écran : la fenêtre « Nouvelle déclaration » est ouverte, le curseur est dans le champ Libellé",
+        "Page Déclarations sur petit téléphone : la fenêtre « Nouvelle déclaration » tient dans l'écran et son contenu défile"
+      ],
+      "html": "<p>La fenêtre « Nouvelle déclaration » (et « Modifier la déclaration ») s'ouvre maintenant avec le curseur dans le champ Libellé. La touche Tab reste dans la fenêtre, Échap la ferme, et le focus revient au bouton qui l'avait ouverte. Le bouton × s'annonce « Fermer » aux lecteurs d'écran. Sur un petit téléphone, la fenêtre ne dépasse plus de l'écran : son contenu défile, avec le titre et le bouton × qui restent en haut.</p>"
+    },
     {
       "slug": "2026-10-17-choix-du-mois-annonce-par-les-lecteurs-d-ecran",
       "title": "Choix du mois annoncé par les lecteurs d'écran",
