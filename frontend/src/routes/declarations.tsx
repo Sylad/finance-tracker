@@ -7,7 +7,7 @@ import {
   useUpdateDeclaration,
 } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
-import { LoadingState, EmptyState } from '@/components/loading-state';
+import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
 import {
   DECLARATION_TYPE_LABELS,
   PERIODICITY_LABELS,
@@ -41,26 +41,68 @@ const empty: DeclarationInput = {
   matchPattern: '',
 };
 
+// Message montré à l'utilisateur : celui de l'API, ou une phrase claire si le serveur ne répond pas.
+function errorText(err: unknown, fallback: string): string {
+  if (err instanceof TypeError) return 'Le serveur est injoignable. Vérifie ta connexion et réessaie.';
+  return err instanceof Error && err.message ? err.message : fallback;
+}
+
 export function DeclarationsPage() {
-  const { data, isLoading } = useDeclarations();
+  const { data, isLoading, isError, isFetching, refetch } = useDeclarations();
   const create = useCreateDeclaration();
   const update = useUpdateDeclaration();
   const remove = useDeleteDeclaration();
 
   const [editing, setEditing] = useState<Declaration | null>(null);
   const [creating, setCreating] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const openForm = (target: Declaration | null) => {
+    setSaveError(null);
+    setEditing(target);
+    setCreating(target === null);
+  };
+  const closeForm = () => {
+    setSaveError(null);
+    setCreating(false);
+    setEditing(null);
+  };
 
   const handleSave = async (input: DeclarationInput) => {
-    if (editing) {
-      await update.mutateAsync({ id: editing.id, input });
-      setEditing(null);
-    } else {
-      await create.mutateAsync(input);
-      setCreating(false);
+    setSaveError(null);
+    try {
+      if (editing) await update.mutateAsync({ id: editing.id, input });
+      else await create.mutateAsync(input);
+      closeForm();
+    } catch (err) {
+      setSaveError(errorText(err, 'Enregistrement impossible.'));
     }
   };
 
+  const handleDelete = (d: Declaration) => {
+    if (!confirm('Supprimer ?')) return;
+    setDeleteError(null);
+    remove.mutate(d.id, {
+      onError: (err) =>
+        setDeleteError(`« ${d.label} » n'a pas été supprimée : ${errorText(err, 'suppression impossible.')}`),
+    });
+  };
+
   if (isLoading) return <LoadingState />;
+
+  if (isError && !data) {
+    return (
+      <>
+        <PageHeader title="Déclarations" />
+        <ErrorState
+          message="Impossible de charger les déclarations."
+          onRetry={() => { void refetch(); }}
+          retrying={isFetching}
+        />
+      </>
+    );
+  }
   const items = data ?? [];
 
   return (
@@ -69,11 +111,15 @@ export function DeclarationsPage() {
         title="Déclarations"
         subtitle="Tes engagements récurrents (revenus, crédits, abonnements). Servent à générer les prévisions et à matcher les transactions automatiquement."
         actions={
-          <button onClick={() => { setCreating(true); setEditing(null); }} className="btn-primary">
+          <button onClick={() => openForm(null)} className="btn-primary">
             <Plus className="h-4 w-4" /> Nouvelle déclaration
           </button>
         }
       />
+
+      {deleteError && (
+        <div role="alert" className="card border-negative/30 p-3 mb-3 text-sm text-negative">{deleteError}</div>
+      )}
 
       {items.length === 0 ? (
         <EmptyState title="Aucune déclaration pour l'instant." hint="Ajoute tes revenus mensuels, crédits, abonnements." />
@@ -83,8 +129,8 @@ export function DeclarationsPage() {
             <DeclarationRow
               key={d.id}
               d={d}
-              onEdit={() => { setEditing(d); setCreating(false); }}
-              onDelete={() => confirm('Supprimer ?') && remove.mutate(d.id)}
+              onEdit={() => openForm(d)}
+              onDelete={() => handleDelete(d)}
             />
           ))}
         </div>
@@ -95,8 +141,9 @@ export function DeclarationsPage() {
           key={editing?.id ?? 'new'}
           init={editing ? toInput(editing) : empty}
           onSave={handleSave}
-          onCancel={() => { setCreating(false); setEditing(null); }}
+          onCancel={closeForm}
           busy={create.isPending || update.isPending}
+          error={saveError}
         />
       )}
     </>
@@ -163,11 +210,13 @@ export function DeclarationForm({
   onSave,
   onCancel,
   busy,
+  error = null,
 }: {
   init: DeclarationInput;
   onSave: (input: DeclarationInput) => void;
   onCancel: () => void;
   busy: boolean;
+  error?: string | null;
 }) {
   const [form, setForm] = useState<DeclarationInput>(init);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -292,6 +341,9 @@ export function DeclarationForm({
           <Field label="Notes">
             <textarea className="input min-h-[60px]" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </Field>
+          {error && (
+            <div role="alert" className="text-sm text-negative border border-negative/30 rounded-md px-3 py-2">{error}</div>
+          )}
           <div className="flex items-center justify-end gap-2 pt-2">
             <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
             <button type="submit" disabled={busy} className="btn-primary">Enregistrer</button>
