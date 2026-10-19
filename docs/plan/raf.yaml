@@ -925,3 +925,5 @@ lots:
     review: { date: 2026-10-19, verdict: "compliant (0 bloquant, 0 majeur, 1 mineur en note : message de suppression en haut de page ; rendu visuel non vérifié, navigateur indisponible) — orchestré (vague 2026-10-19-fin-decl, 0 passe(s) de correction)", commit: 08e64b1af615a650512d76d605c3e373bd931d21 }
     ux: { date: 2026-10-19, verdict: "conforme (lead, captures regardées : chargement 500 → ErrorState + Réessayer ; enregistrement 403 → message dans la modale, saisie gardée ; suppression 403 → bandeau nommant l'élément ; contraste 4,7:1) ; note : bandeau d'échec de suppression sans bouton de fermeture" }
     finished: 2026-10-19
+    notes:
+      - { date: 2026-10-19, text: "QA prod 19-10 : 3/3 pages conformes (declarations, accueil, nouveautes à 1440/390/320). Faux positif des attendus : la ligne never « Impossible de charger » du bloc * se déclenche sur /nouveautes (le journal L87 cite le message) — exempter /nouveautes dans docs/qa/expectations.md à la prochaine retouche." }
