@@ -80,39 +80,12 @@ export function DeclarationsPage() {
       ) : (
         <div className="card divide-y divide-border">
           {items.map((d) => (
-            <div key={d.id} className="px-5 py-4 flex items-center gap-4">
-              <span className={cn(TYPE_TONE[d.type], 'shrink-0')}>
-                {DECLARATION_TYPE_LABELS[d.type]}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-fg-bright truncate">{d.label}</div>
-                <div className="text-xs text-fg-dim mt-0.5 flex items-center gap-2 flex-wrap">
-                  <span>{PERIODICITY_LABELS[d.periodicity]}</span>
-                  {d.category && <><span>·</span><span>{categoryLabelFr(d.category)}</span></>}
-                  {d.startDate && <><span>·</span><span>Depuis {formatDate(d.startDate)}</span></>}
-                  {d.endDate && <><span>·</span><span>Jusqu'à {formatDate(d.endDate)}</span></>}
-                </div>
-              </div>
-              <div className={cn('text-right tabular font-medium', d.type === 'income' ? 'text-positive' : 'text-fg-bright')}>
-                {formatEUR(d.amount)}
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => { setEditing(d); setCreating(false); }}
-                  className="btn-ghost p-1.5"
-                  aria-label="Éditer"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => confirm('Supprimer ?') && remove.mutate(d.id)}
-                  className="btn-ghost p-1.5 hover:text-negative"
-                  aria-label="Supprimer"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
+            <DeclarationRow
+              key={d.id}
+              d={d}
+              onEdit={() => { setEditing(d); setCreating(false); }}
+              onDelete={() => confirm('Supprimer ?') && remove.mutate(d.id)}
+            />
           ))}
         </div>
       )}
@@ -127,6 +100,55 @@ export function DeclarationsPage() {
         />
       )}
     </>
+  );
+}
+
+export function DeclarationRow({
+  d,
+  onEdit,
+  onDelete,
+}: {
+  d: Declaration;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  // Sous 640 px : grille à deux rangées (badge + libellé entier, puis détails à gauche,
+  // montant et actions à droite). Dès sm : une seule ligne, détails sous le libellé.
+  return (
+    <div
+      data-testid="declaration-row"
+      className="px-5 py-4 grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-2 sm:flex sm:gap-4"
+    >
+      <span className={cn(TYPE_TONE[d.type], 'shrink-0 row-start-1 col-start-1')}>
+        {DECLARATION_TYPE_LABELS[d.type]}
+      </span>
+      <div className="contents sm:block sm:flex-1 sm:min-w-0">
+        <div className="row-start-1 col-start-2 col-span-3 text-sm font-medium text-fg-bright break-words min-w-0">{d.label}</div>
+        <div
+          data-testid="declaration-details"
+          className="row-start-2 col-start-1 col-span-2 min-w-0 text-xs text-fg-dim sm:mt-0.5 flex items-center gap-x-2 flex-wrap"
+        >
+          <span>{PERIODICITY_LABELS[d.periodicity]}</span>
+          {d.category && <><span>·</span><span>{categoryLabelFr(d.category)}</span></>}
+          {d.startDate && <><span>·</span><span>Depuis {formatDate(d.startDate)}</span></>}
+          {d.endDate && <><span>·</span><span>Jusqu'à {formatDate(d.endDate)}</span></>}
+        </div>
+      </div>
+      <div
+        data-testid="declaration-amount"
+        className={cn('row-start-2 col-start-3 shrink-0 whitespace-nowrap text-right tabular font-medium', d.type === 'income' ? 'text-positive' : 'text-fg-bright')}
+      >
+        {formatEUR(d.amount)}
+      </div>
+      <div data-testid="declaration-actions" className="row-start-2 col-start-4 flex items-center gap-1">
+        <button onClick={onEdit} className="btn-ghost p-1.5" aria-label="Éditer">
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button onClick={onDelete} className="btn-ghost p-1.5 hover:text-negative" aria-label="Supprimer">
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
   );
 }
 

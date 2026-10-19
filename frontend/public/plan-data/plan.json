@@ -198,6 +198,12 @@
       "title": "Déclarations : la fenêtre de saisie s'utilise au clavier et au téléphone",
       "status": "doing",
       "started": "2026-10-19"
+    },
+    {
+      "id": "L86",
+      "title": "Déclarations : la liste se lit en entier sur téléphone",
+      "status": "doing",
+      "started": "2026-10-19"
     }
   ]
 }
