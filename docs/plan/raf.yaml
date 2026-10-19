@@ -905,10 +905,11 @@ lots:
     review: { date: 2026-10-19, verdict: "conforme, 2 mineurs : Libellé masqué sous l'en-tête collant au retour Maj+Tab à 320×568 ; dates coupées à 320 px (défaut antérieur au lot) — orchestré (vague 2026-10-19-fin-decl, 2 passe(s) de correction)", commit: 5b75a12c7568828cb6a1100fbb6a3b4544d3de56 }
   - id: L86
     title: "Déclarations : liste lisible au téléphone — sous 640 px chaque ligne sur deux rangées (badge + libellé entier, puis détails à gauche, montant et actions à droite) ; à 320 px plus de libellé à 14 px ni de détails sous le montant (WCAG 1.4.10) — issu de la revue UX L27"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-19
+    started: 2026-10-19
   - id: L87
     title: "Déclarations : erreurs montrées à l'utilisateur — chargement en échec = ErrorState avec Réessayer (pas l'état vide) ; échec d'enregistrement = message de l'API dans la modale (role=alert) sans perdre la saisie, rejet géré ; échec de suppression = message quand la ligne réapparaît — issu de la revue UX L27"
     status: todo
