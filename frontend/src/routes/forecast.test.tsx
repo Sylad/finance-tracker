@@ -109,6 +109,21 @@ describe('Prévisions — erreur et absence de déclaration (L89)', () => {
     get.mockImplementation(defaultImpl);
   });
 
+  it('R5 — horizon réduit vide : le sélecteur reste, le message est exact et 12 mois ramène la projection', async () => {
+    get.mockImplementation((url: string) => Promise.resolve(
+      url.includes('months=3')
+        ? Array.from({ length: 3 }, (_, i) => ({ month: `2026-0${i}`, income: 0, expense: 0, net: 0, occurrences: [] }))
+        : [month('2026-05')],
+    ));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: '3 mois' }));
+    expect(await screen.findByText(/Aucune échéance sur les 3 prochains mois/)).toBeTruthy();
+    expect(screen.queryByText(/Pas de déclaration/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '12 mois' }));
+    expect(await screen.findByText('2026-05')).toBeTruthy();
+    get.mockImplementation(defaultImpl);
+  });
+
   it('R4 — un seul mois avec occurrence suffit à afficher la projection', async () => {
     get.mockImplementation(() => Promise.resolve([month('2026-01', []), month('2026-02')]));
     renderPage();

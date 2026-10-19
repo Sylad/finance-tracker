@@ -30,12 +30,41 @@ export function ForecastPage() {
 
   const months = data ?? [];
 
+  const horizonSelector = (
+    <div className="flex bg-surface-2 rounded p-0.5 text-xs">
+      {HORIZONS.map((h) => (
+        <button
+          key={h}
+          type="button"
+          aria-pressed={horizon === h}
+          onClick={() => setHorizon(h)}
+          className={cn(
+            'px-3 py-1.5 rounded transition-colors font-medium',
+            horizon === h ? 'bg-surface-3 text-fg-bright' : 'text-fg-muted hover:text-fg',
+          )}
+        >
+          {h} mois
+        </button>
+      ))}
+    </div>
+  );
+
   if (months.every((m) => m.occurrences.length === 0)) {
+    const reduced = horizon < 12;
     return (
       <>
-        <PageHeader title="Prévisions" subtitle="Aucune projection. Configure des déclarations pour générer un prévisionnel." />
-        <EmptyState title="Pas de déclaration → pas de prévision" 
-          hint="Ajoute tes revenus et engagements dans Déclarations pour générer un prévisionnel."
+        <PageHeader
+          title="Prévisions"
+          subtitle={reduced
+            ? 'Aucune échéance sur cet horizon.'
+            : 'Aucune projection. Configure des déclarations pour générer un prévisionnel.'}
+          actions={horizonSelector}
+        />
+        <EmptyState
+          title={reduced ? `Aucune échéance sur les ${horizon} prochains mois` : 'Pas de déclaration → pas de prévision'}
+          hint={reduced
+            ? 'Élargis l\'horizon avec le sélecteur, ou ajoute des déclarations dans Déclarations.'
+            : 'Ajoute tes revenus et engagements dans Déclarations pour générer un prévisionnel.'}
           action={<Link to="/declarations" className="btn-secondary inline-flex">Aller aux Déclarations</Link>}
         />
       </>
@@ -54,24 +83,7 @@ export function ForecastPage() {
       <PageHeader
         title="Prévisions"
         subtitle="Projection mensuelle basée sur tes déclarations actives."
-        actions={
-          <div className="flex bg-surface-2 rounded p-0.5 text-xs">
-            {HORIZONS.map((h) => (
-              <button
-                key={h}
-                type="button"
-                aria-pressed={horizon === h}
-                onClick={() => setHorizon(h)}
-                className={cn(
-                  'px-3 py-1.5 rounded transition-colors font-medium',
-                  horizon === h ? 'bg-surface-3 text-fg-bright' : 'text-fg-muted hover:text-fg',
-                )}
-              >
-                {h} mois
-              </button>
-            ))}
-          </div>
-        }
+        actions={horizonSelector}
       />
 
       <section className="card p-5 mb-6">
