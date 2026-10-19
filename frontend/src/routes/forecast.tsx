@@ -41,6 +41,8 @@ export function ForecastPage() {
             {HORIZONS.map((h) => (
               <button
                 key={h}
+                type="button"
+                aria-pressed={horizon === h}
                 onClick={() => setHorizon(h)}
                 className={cn(
                   'px-3 py-1.5 rounded transition-colors font-medium',

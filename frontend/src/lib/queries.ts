@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 import { api } from './api';
 
@@ -223,6 +223,9 @@ export function useForecast(months = 12) {
   return useQuery({
     queryKey: qk.forecast(months),
     queryFn: () => api.get<ForecastMonth[]>(`/forecast?months=${months}`),
+    // Changer d'horizon garde la vue précédente à l'écran (titre, sélecteur,
+    // focus) au lieu de repasser par l'écran de chargement.
+    placeholderData: keepPreviousData,
   });
 }
 
