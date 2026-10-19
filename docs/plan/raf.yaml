@@ -349,10 +349,15 @@ lots:
     finished: 2026-10-18
   - id: L27
     title: Revue UX — Déclarations
-    status: doing
+    status: done
     estimate: 0.25
     created: 2026-09-28
     started: 2026-10-19
+    ux: { date: 2026-10-19, verdict: "non conforme : 2 bloquants (modale de saisie inaccessible au clavier et au lecteur d'écran ; liste illisible à 320 px), 4 majeurs (erreur de chargement affichée comme liste vide, échecs d'enregistrement et de suppression silencieux, modale qui déborde à 320×568) — captures regardées par le lead (loaded-320, form-new-320x568) ; corrections en L28–L30" }
+    notes:
+      - { date: 2026-10-19, text: "Mineurs (notes, pas des lots) : confirmation « Supprimer ? » sans nommer l'élément (subscriptions/loans le font) ; aria-label Éditer/Supprimer identiques sur chaque ligne ; catégorie en texte libre aux codes anglais (category-picker.tsx existe) ; « Pattern (regex…) » jargon ; boutons 26×26 px collés au téléphone. Hors écran : le bandeau de démo dit « Toutes les fonctionnalités sont actives » alors que les écritures répondent 403. Captures ~/projects/developpeur/tmp/ux-l27/finance-declarations/." }
+      - { date: 2026-10-19, text: "Correction du verdict UX : les corrections sont L85 (modale), L86 (liste au téléphone), L87 (erreurs), pas L28–L30." }
+    finished: 2026-10-19
   - id: L28
     title: Revue UX — Prévisions
     status: todo
@@ -890,3 +895,21 @@ lots:
     notes:
       - { date: 2026-10-17, text: "Mineur 17-10 (note) : avec keepPreviousData et sans indicateur, pendant une requête lente le select montre déjà le nouveau mois alors que le titre et la répartition restent sur l'ancien (mesuré avec 1,5 s de latence simulée) — un indicateur de chargement discret lèverait l'ambiguïté" }
     finished: 2026-10-17
+  - id: L85
+    title: "Déclarations : modale de saisie accessible et utilisable au téléphone — rôle dialog + aria-modal + aria-labelledby, focus sur Libellé à l'ouverture, piège à focus, Échap ferme, focus rendu au bouton d'origine, aria-label « Fermer » sur × (modèle thresholds-drawer.tsx) ; à 320×568 la carte défile (max-h 100dvh) au lieu de déborder (WCAG 4.1.2, 2.4.3, 2.1.1, 1.4.10) — issu de la revue UX L27"
+    status: todo
+    estimate: 0.5
+    visible: true
+    created: 2026-10-19
+  - id: L86
+    title: "Déclarations : liste lisible au téléphone — sous 640 px chaque ligne sur deux rangées (badge + libellé entier, puis détails à gauche, montant et actions à droite) ; à 320 px plus de libellé à 14 px ni de détails sous le montant (WCAG 1.4.10) — issu de la revue UX L27"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-19
+  - id: L87
+    title: "Déclarations : erreurs montrées à l'utilisateur — chargement en échec = ErrorState avec Réessayer (pas l'état vide) ; échec d'enregistrement = message de l'API dans la modale (role=alert) sans perdre la saisie, rejet géré ; échec de suppression = message quand la ligne réapparaît — issu de la revue UX L27"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-19
