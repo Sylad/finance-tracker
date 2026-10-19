@@ -940,6 +940,7 @@ lots:
     visible: true
     created: 2026-10-19
     started: 2026-10-19
+    review: { date: 2026-10-19, verdict: "compliant (0 bloquant, 0 majeur, 1 mineur : pas d'indicateur de chargement pendant le placeholder ; captures non prises, Playwright indisponible) — orchestré (vague 2026-10-19-fin-prev, 0 passe(s) de correction)", commit: 1a8e406d511be6c7c20aab55c22ccbaec66bc40e }
   - id: L89
     title: "Prévisions : erreur API = ErrorState avec Réessayer (plus « Pas de déclaration »), mois tous sans occurrence = état vide avec lien vers Déclarations (plus de 12 cartes à 0,00 € vertes) — revue UX L28"
     public: "Prévisions : message clair en cas d'erreur ou sans déclaration"
