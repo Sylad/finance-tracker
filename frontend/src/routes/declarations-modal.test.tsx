@@ -60,6 +60,22 @@ describe('Déclarations — modale de saisie (L85)', () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
+  it("Échap venu d'une couche posée par-dessus (palette ⌘K) ne ferme pas la modale", async () => {
+    const onCancel = vi.fn();
+    render(
+      <>
+        <DeclarationForm init={init} onSave={() => {}} onCancel={onCancel} busy={false} />
+        <input aria-label="Palette" />
+      </>,
+    );
+    screen.getByRole('textbox', { name: 'Palette' }).focus();
+    await userEvent.keyboard('{Escape}');
+    expect(onCancel).not.toHaveBeenCalled();
+    (document.activeElement as HTMLElement).blur();
+    await userEvent.keyboard('{Escape}');
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
   it('Tab et Maj+Tab bouclent dans la modale', async () => {
     render(<DeclarationForm init={init} onSave={() => {}} onCancel={() => {}} busy={false} />);
     const dialog = screen.getByRole('dialog');

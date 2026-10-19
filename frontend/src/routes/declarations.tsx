@@ -160,9 +160,13 @@ export function DeclarationForm({
     return () => opener?.focus?.();
   }, []);
 
-  // Échap ferme ; Tab / Maj+Tab bouclent dans la modale.
+  // Échap ferme ; Tab / Maj+Tab bouclent dans la modale. Une touche dont la cible est
+  // une couche posée par-dessus (palette ⌘K) lui appartient : la modale l'ignore.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const target = e.target as Node | null;
+      const inModal = !target || target === document.body || !!dialogRef.current?.contains(target);
+      if (!inModal) return;
       if (e.key === 'Escape') {
         onCancelRef.current();
         return;
