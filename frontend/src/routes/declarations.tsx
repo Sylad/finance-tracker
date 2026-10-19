@@ -119,6 +119,7 @@ export function DeclarationsPage() {
 
       {(creating || editing) && (
         <DeclarationForm
+          key={editing?.id ?? 'new'}
           init={editing ? toInput(editing) : empty}
           onSave={handleSave}
           onCancel={() => { setCreating(false); setEditing(null); }}
@@ -178,7 +179,11 @@ export function DeclarationForm({
       if (focusables.length === 0) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
+      // Focus hors de la modale (body après un clic sur une zone inerte) : on y rentre.
+      if (!dialogRef.current.contains(document.activeElement)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      } else if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
         last.focus();
       } else if (!e.shiftKey && document.activeElement === last) {

@@ -89,6 +89,25 @@ describe('Déclarations — modale de saisie (L85)', () => {
     expect(dialog.contains(document.activeElement)).toBe(true);
   });
 
+  it('focus tombé sur body (clic sur une zone inerte) : Tab et Maj+Tab ramènent dans la modale', async () => {
+    render(
+      <>
+        <button>Derrière le voile</button>
+        <DeclarationForm init={init} onSave={() => {}} onCancel={() => {}} busy={false} />
+        <button>Après</button>
+      </>,
+    );
+    const dialog = screen.getByRole('dialog');
+    (document.activeElement as HTMLElement).blur();
+    expect(document.activeElement).toBe(document.body);
+    await userEvent.tab();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Fermer' }));
+    (document.activeElement as HTMLElement).blur();
+    await userEvent.tab({ shift: true });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+
   it("à la fermeture le focus revient au bouton d'origine", async () => {
     render(<Harness />);
     const opener = screen.getByRole('button', { name: 'Nouvelle déclaration' });
