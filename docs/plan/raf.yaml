@@ -897,25 +897,31 @@ lots:
     finished: 2026-10-17
   - id: L85
     title: "Déclarations : modale de saisie accessible et utilisable au téléphone — rôle dialog + aria-modal + aria-labelledby, focus sur Libellé à l'ouverture, piège à focus, Échap ferme, focus rendu au bouton d'origine, aria-label « Fermer » sur × (modèle thresholds-drawer.tsx) ; à 320×568 la carte défile (max-h 100dvh) au lieu de déborder (WCAG 4.1.2, 2.4.3, 2.1.1, 1.4.10) — issu de la revue UX L27"
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     created: 2026-10-19
     started: 2026-10-19
     review: { date: 2026-10-19, verdict: "conforme, 2 mineurs : Libellé masqué sous l'en-tête collant au retour Maj+Tab à 320×568 ; dates coupées à 320 px (défaut antérieur au lot) — orchestré (vague 2026-10-19-fin-decl, 2 passe(s) de correction)", commit: 5b75a12c7568828cb6a1100fbb6a3b4544d3de56 }
+    ux: { date: 2026-10-19, verdict: "conforme (lead, captures 320/1440 regardées : modale centrée, focus sur Libellé, défile à 320×568) ; mineurs : Libellé masqué sous l'en-tête collant au retour Maj+Tab à 320×568 ; dates coupées à 320 px (antérieur)" }
+    finished: 2026-10-19
   - id: L86
     title: "Déclarations : liste lisible au téléphone — sous 640 px chaque ligne sur deux rangées (badge + libellé entier, puis détails à gauche, montant et actions à droite) ; à 320 px plus de libellé à 14 px ni de détails sous le montant (WCAG 1.4.10) — issu de la revue UX L27"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-19
     started: 2026-10-19
     review: { date: 2026-10-19, verdict: "compliant (0 blocking, 0 major, 2 minor notes: orphan « · » separators at line end, `contents` not locked by tests) — orchestré (vague 2026-10-19-fin-decl, 0 passe(s) de correction)", commit: 7e136241264ed94c8573ee33bfd63b75f06f3831 }
+    ux: { date: 2026-10-19, verdict: "conforme (lead, captures 320/390/1440 regardées : deux rangées, libellé entier, plus de chevauchement) ; note : à 320 px des détails longs s'empilent mot par mot (colonne 72–82 px)" }
+    finished: 2026-10-19
   - id: L87
     title: "Déclarations : erreurs montrées à l'utilisateur — chargement en échec = ErrorState avec Réessayer (pas l'état vide) ; échec d'enregistrement = message de l'API dans la modale (role=alert) sans perdre la saisie, rejet géré ; échec de suppression = message quand la ligne réapparaît — issu de la revue UX L27"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-19
     started: 2026-10-19
     review: { date: 2026-10-19, verdict: "compliant (0 bloquant, 0 majeur, 1 mineur en note : message de suppression en haut de page ; rendu visuel non vérifié, navigateur indisponible) — orchestré (vague 2026-10-19-fin-decl, 0 passe(s) de correction)", commit: 08e64b1af615a650512d76d605c3e373bd931d21 }
+    ux: { date: 2026-10-19, verdict: "conforme (lead, captures regardées : chargement 500 → ErrorState + Réessayer ; enregistrement 403 → message dans la modale, saisie gardée ; suppression 403 → bandeau nommant l'élément ; contraste 4,7:1) ; note : bandeau d'échec de suppression sans bouton de fermeture" }
+    finished: 2026-10-19
