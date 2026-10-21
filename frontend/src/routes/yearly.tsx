@@ -8,6 +8,8 @@ import { ScoreBadge } from '@/components/score-ring';
 import { cashFlowSeries } from '@/lib/yearly-cashflow';
 import { formatEUR, formatEURCompact, formatMonth, formatMonthShort, cn, chartTooltipProps } from '@/lib/utils';
 import { categoryLabelFr } from '@/lib/category-label';
+import { summarizeInOut, summarizeTrend } from '@/components/dashboard/chart-summaries';
+import { SquareDot } from './yearly-chart-marks';
 
 export function YearlyPage() {
   const list = useYearlySummaries();
@@ -19,6 +21,17 @@ export function YearlyPage() {
   const activeYear = year ?? years[0] ?? null;
   const detail = useYearlySummary(activeYear ?? undefined);
   const cashFlow = useMemo(() => (detail.data ? cashFlowSeries(detail.data) : []), [detail.data]);
+  const monthRows = useMemo(() => {
+    if (!detail.data) return [];
+    const { scoreProgression, monthlyCashFlow, year: y } = detail.data;
+    const months = [...new Set([...scoreProgression.map((s) => s.month), ...(monthlyCashFlow ?? []).map((m) => m.month)])].sort((a, b) => a - b);
+    return months.map((month) => ({
+      month,
+      label: formatMonth(month, y),
+      score: scoreProgression.find((s) => s.month === month)?.score,
+      flow: monthlyCashFlow?.find((m) => m.month === month),
+    }));
+  }, [detail.data]);
 
   if (list.isLoading) return <LoadingState />;
 
@@ -149,13 +162,17 @@ export function YearlyPage() {
 
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             <div className="card p-5">
-              <div className="stat-label mb-4">Progression du score</div>
-              <div className="h-56">
+              <h2 className="stat-label mb-4">Progression du score</h2>
+              <div
+                className="h-56"
+                role="img"
+                aria-label={summarizeTrend('Progression du score', summary.scoreProgression.map((s) => ({ label: formatMonthShort(s.month, summary.year), value: s.score })))}
+              >
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={summary.scoreProgression.map((s) => ({
                     label: formatMonthShort(s.month, summary.year),
                     score: s.score,
-                  }))} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
+                  }))} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
                     <defs>
                       <linearGradient id="yscore-grad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="hsl(160 84% 50%)" stopOpacity={0.3} />
@@ -163,7 +180,7 @@ export function YearlyPage() {
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
+                    <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={36} />
                     <Tooltip {...chartTooltipProps} />
                     <Area type="monotone" dataKey="score" stroke="hsl(160 84% 50%)" strokeWidth={2} fill="url(#yscore-grad)" />
                   </AreaChart>
@@ -172,7 +189,7 @@ export function YearlyPage() {
             </div>
 
             <div className="card p-5">
-              <div className="stat-label mb-4">Top catégories de dépense</div>
+              <h2 className="stat-label mb-4">Top catégories de dépense</h2>
               <div className="space-y-2">
                 {summary.topCategories.slice(0, 8).map((c, i) => {
                   const max = summary.topCategories[0]?.totalAmount ?? 1;
@@ -200,11 +217,15 @@ export function YearlyPage() {
           </section>
 
           <section className="card p-5">
-            <div className="stat-label mb-4">Cash flow mensuel</div>
+            <h2 className="stat-label mb-4">Cash flow mensuel</h2>
             {cashFlow.length === 0 ? (
               <p className="text-sm text-fg-dim">Pas de flux mensuels disponibles pour cette année.</p>
             ) : (
-              <div className="h-44">
+              <div
+                className="h-44"
+                role="img"
+                aria-label={summarizeInOut(cashFlow)}
+              >
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={cashFlow} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
                     <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -212,11 +233,40 @@ export function YearlyPage() {
                     <Tooltip {...chartTooltipProps} formatter={(v: number) => formatEUR(v)} />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     <Line type="monotone" name="Entrées" dataKey="credits" stroke="hsl(160 84% 50%)" strokeWidth={2} dot={{ r: 3 }} />
-                    <Line type="monotone" name="Sorties" dataKey="debits" stroke="hsl(0 84% 60%)" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" name="Sorties" dataKey="debits" stroke="hsl(0 84% 60%)" strokeWidth={2} strokeDasharray="6 4" dot={<SquareDot />} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
+          </section>
+
+          <section className="card p-5 mt-6">
+            <h2 className="stat-label mb-4">Détail mois par mois</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm tabular">
+                <caption className="sr-only">Détail mois par mois</caption>
+                <thead>
+                  <tr className="text-left text-xs text-fg-dim">
+                    <th scope="col" className="py-1.5 pr-3 font-medium">Mois</th>
+                    <th scope="col" className="py-1.5 px-3 font-medium text-right">Score</th>
+                    <th scope="col" className="py-1.5 px-3 font-medium text-right">Entrées</th>
+                    <th scope="col" className="py-1.5 px-3 font-medium text-right">Sorties</th>
+                    <th scope="col" className="py-1.5 pl-3 font-medium text-right">Solde</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthRows.map((r) => (
+                    <tr key={r.month} className="border-t border-border">
+                      <th scope="row" className="py-1.5 pr-3 text-left font-medium text-fg">{r.label}</th>
+                      <td className="py-1.5 px-3 text-right">{r.score ?? '—'}</td>
+                      <td className="py-1.5 px-3 text-right">{r.flow ? formatEUR(r.flow.credits) : '—'}</td>
+                      <td className="py-1.5 px-3 text-right">{r.flow ? formatEUR(r.flow.debits) : '—'}</td>
+                      <td className="py-1.5 pl-3 text-right">{r.flow ? formatEUR(r.flow.net, true) : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
         </>
       )}

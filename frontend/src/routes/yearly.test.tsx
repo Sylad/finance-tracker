@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { YearlySummary } from '@/types/api';
 import { YearlyPage } from './yearly';
+import { SquareDot } from './yearly-chart-marks';
 
 const state = vi.hoisted(() => ({
   list: { isLoading: false, data: undefined as unknown },
@@ -14,10 +15,20 @@ vi.mock('@/lib/queries', () => ({
 }));
 
 // jsdom n'a pas de mise en page : Recharts n'y dessine rien, on isole la page.
+// Les propriétés qui décident du rendu (trait, marqueur, largeur d'axe, marge) sont exposées en data-*.
 vi.mock('recharts', () => {
   const Nop = () => null;
   return {
-    LineChart: Nop, Line: Nop, XAxis: Nop, YAxis: Nop, Tooltip: Nop, Legend: Nop, AreaChart: Nop, Area: Nop,
+    LineChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>, XAxis: Nop, Tooltip: Nop, Legend: Nop, Area: Nop,
+    Line: (p: { name: string; strokeDasharray?: string; dot?: unknown }) => (
+      <span data-testid={`line-${p.name}`} data-dash={p.strokeDasharray ?? ''} data-dot={typeof p.dot} />
+    ),
+    YAxis: (p: { width?: number; domain?: number[] }) => (
+      p.domain ? <span data-testid="score-axis" data-width={p.width} /> : null
+    ),
+    AreaChart: (p: { margin?: { left?: number }; children: React.ReactNode }) => (
+      <svg data-testid="score-chart" data-margin-left={p.margin?.left ?? 0}>{p.children}</svg>
+    ),
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   };
 });
@@ -77,8 +88,8 @@ describe('<YearlyPage /> (L65)', () => {
 
   it('L101 — les cartes parlent d\'Entrées, de Sorties et de Revenus récurrents, plus de Crédits ni de Débits', () => {
     render(<YearlyPage />);
-    expect(screen.getByText('Entrées')).toBeTruthy();
-    expect(screen.getByText('Sorties')).toBeTruthy();
+    expect(screen.getAllByText('Entrées').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Sorties').length).toBeGreaterThan(0);
     expect(screen.getByText('Revenus récurrents')).toBeTruthy();
     expect(screen.queryByText('Crédits')).toBeNull();
     expect(screen.queryByText('Débits')).toBeNull();
@@ -98,5 +109,71 @@ describe('<YearlyPage /> (L65)', () => {
     expect(y24.getAttribute('aria-pressed')).toBe('true');
     expect(y25.getAttribute('aria-pressed')).toBe('false');
     expect(y24.className).toContain('ring-accent');
+  });
+
+  it('L99 R1 — chaque graphique porte un aria-label de résumé (role=img) lisible sans souris', () => {
+    render(<YearlyPage />);
+    const imgs = screen.getAllByRole('img').map((e) => e.getAttribute('aria-label') ?? '');
+    expect(imgs.some((l) => l.startsWith('Progression du score sur 2 mois'))).toBe(true);
+    expect(imgs.some((l) => l.startsWith('Entrées et sorties sur 1 mois.'))).toBe(true);
+  });
+
+  it('L99 R2 — un tableau Mois/Score/Entrées/Sorties/Solde donne les valeurs de chaque mois', () => {
+    state.detail = { data: summary([
+      { month: 1, credits: 1000, debits: 1100, net: -100 },
+      { month: 2, credits: 1500, debits: 1200, net: 300 },
+    ]) };
+    render(<YearlyPage />);
+    const table = screen.getByRole('table', { name: 'Détail mois par mois' });
+    const heads = within(table).getAllByRole('columnheader').map((h) => h.textContent);
+    expect(heads).toEqual(['Mois', 'Score', 'Entrées', 'Sorties', 'Solde']);
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(2);
+    const feb = within(rows[1]).getAllByRole('cell').map((c) => c.textContent?.replace(/\s/g, ' '));
+    expect(feb[0]).toBe('80');
+    expect(feb[1]).toContain('500');
+    expect(feb[2]).toContain('200');
+    expect(feb[3]).toContain('+');
+    expect(feb[3]).toContain('300');
+  });
+
+  it('L99 R2 — un mois sans flux (bilan ancien) garde sa ligne avec « — » pour les montants', () => {
+    state.detail = { data: summary(undefined) };
+    render(<YearlyPage />);
+    const table = screen.getByRole('table', { name: 'Détail mois par mois' });
+    const first = within(within(table).getAllByRole('row')[1]).getAllByRole('cell').map((c) => c.textContent);
+    expect(first.slice(1)).toEqual(['—', '—', '—']);
+  });
+
+  it('L99 R3 — Sorties se distingue d\'Entrées par un trait pointillé et un marqueur carré, pas seulement la couleur', () => {
+    render(<YearlyPage />);
+    expect(screen.getByTestId('line-Sorties').getAttribute('data-dash')).not.toBe('');
+    expect(screen.getByTestId('line-Entrées').getAttribute('data-dash')).toBe('');
+    expect(screen.getByTestId('line-Sorties').getAttribute('data-dot')).toBe('object'); // élément <SquareDot />
+    expect(screen.getByTestId('line-Entrées').getAttribute('data-dot')).toBe('object');
+    const { container } = render(<svg><SquareDot cx={10} cy={20} stroke="red" /></svg>);
+    const rect = container.querySelector('rect');
+    expect(rect).not.toBeNull();
+    expect(rect?.getAttribute('stroke')).toBe('red');
+  });
+
+  it('L99 R3 — SquareDot ne dessine rien sans coordonnées', () => {
+    const { container } = render(<svg><SquareDot stroke="red" /></svg>);
+    expect(container.querySelector('rect')).toBeNull();
+  });
+
+  it('L99 R4 — les titres de section sont des h2', () => {
+    render(<YearlyPage />);
+    const names = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
+    expect(names).toEqual(expect.arrayContaining([
+      'Progression du score', 'Top catégories de dépense', 'Cash flow mensuel', 'Détail mois par mois',
+    ]));
+  });
+
+  it('L99 R5 — l\'axe du score laisse la place à « 100 » (largeur + marge gauche ≥ 30 px)', () => {
+    render(<YearlyPage />);
+    const width = Number(screen.getByTestId('score-axis').getAttribute('data-width'));
+    const left = Number(screen.getByTestId('score-chart').getAttribute('data-margin-left'));
+    expect(width + left).toBeGreaterThanOrEqual(30);
   });
 });
