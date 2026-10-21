@@ -1004,6 +1004,7 @@ lots:
     estimate: 0.1
     created: 2026-10-21
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant (1 minor note: l.1531-1533 loans.service montants encore au point décimal, hors périmètre) — orchestré (vague 2026-10-21-fin-loans, 0 passe(s) de correction)", commit: 4f15979b7ba80999e79322ff40b786129ba2dc38 }
   - id: L95
     title: "Prêts : le nom du crédit démo « CETELEM (240.00 €/mois) » s'affiche au point décimal sur /loans (nom stocké, demo-fixtures.json l.2225) — recaler la fixture en fr-FR ou retirer le montant du nom à l'affichage (QA L93)"
     status: todo
