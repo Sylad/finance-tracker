@@ -962,7 +962,8 @@ lots:
   - id: L91
     title: "Prévisions : chaque carte dit en texte « Passé », « En cours » ou « Prévu » (badge à gauche du solde) ; type et rapprochement de chaque ligne dans son nom accessible ; légende sous le titre (● Revenus ● Crédits ● Abonnements ● Dépenses · estompé = non rapproché) — sans changer mise en page, couleurs ni animations — revue UX L28"
     public: "Prévisions : mois passés, en cours et prévus distingués en clair"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-19
+    started: 2026-10-21
