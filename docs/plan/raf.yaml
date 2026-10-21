@@ -949,6 +949,7 @@ lots:
     visible: true
     created: 2026-10-19
     started: 2026-10-19
+    review: { date: 2026-10-21, verdict: "conforme, 2 mineurs en note : captures Nouveautés prises avant l'ajout du sélecteur à l'état d'erreur (d8f4b2b) ; sur horizon réduit, « Élargis l'horizon » s'affiche même quand 12 mois est vide aussi — orchestré (vague 2026-10-19-fin-prev, 2 passe(s) de correction)", commit: d8f4b2ba0ab392ac720caa0d5496c4a9160b6030 }
   - id: L90
     title: "Prévisions : axe Y en formatEURCompact (« 2k » pour 1 500 € aujourd'hui), info-bulle aux montants exacts (2 068,15 € et non 2 068,00 €) avec ligne Solde, solde mensuel tracé sur le graphe — revue UX L28"
     public: "Prévisions : montants exacts et solde du mois sur le graphe"
