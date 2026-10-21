@@ -138,7 +138,7 @@ export function LoansPage() {
         title={`${formatEUR(totalMonthly)} / mois`}
         subtitle={`${items.filter((l) => l.isActive).length} crédit${items.length > 1 ? 's' : ''} actif${items.length > 1 ? 's' : ''}`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <input
               ref={fileInputRef}
               type="file"
