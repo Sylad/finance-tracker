@@ -81,7 +81,7 @@ export function YearlyPage() {
         <>
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="card p-5">
-              <div className="stat-label flex items-center gap-1.5"><ArrowUpRight className="h-3 w-3 text-positive" /> Crédits</div>
+              <div className="stat-label flex items-center gap-1.5"><ArrowUpRight className="h-3 w-3 text-positive" /> Entrées</div>
               <div className="font-display text-xl font-semibold tabular text-positive mt-2">
                 {formatEUR(summary.totalCredits)}
               </div>
@@ -90,7 +90,7 @@ export function YearlyPage() {
               </div>
             </div>
             <div className="card p-5">
-              <div className="stat-label flex items-center gap-1.5"><ArrowDownRight className="h-3 w-3 text-negative" /> Débits</div>
+              <div className="stat-label flex items-center gap-1.5"><ArrowDownRight className="h-3 w-3 text-negative" /> Sorties</div>
               <div className="font-display text-xl font-semibold tabular text-negative mt-2">
                 {formatEUR(summary.totalDebits)}
               </div>
@@ -137,7 +137,7 @@ export function YearlyPage() {
               </div>
             </div>
             <div className="card p-5">
-              <div className="stat-label">Crédits récurrents</div>
+              <div className="stat-label">Revenus récurrents</div>
               <div className="font-display text-2xl font-bold tabular text-fg-bright mt-2">
                 {summary.recurringCreditsCount}
               </div>

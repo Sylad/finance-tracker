@@ -74,4 +74,14 @@ describe('<YearlyPage /> (L65)', () => {
     render(<YearlyPage />);
     expect(screen.getByText(NO_FLOW)).toBeTruthy();
   });
+
+  it('L101 — les cartes parlent d\'Entrées, de Sorties et de Revenus récurrents, plus de Crédits ni de Débits', () => {
+    render(<YearlyPage />);
+    expect(screen.getByText('Entrées')).toBeTruthy();
+    expect(screen.getByText('Sorties')).toBeTruthy();
+    expect(screen.getByText('Revenus récurrents')).toBeTruthy();
+    expect(screen.queryByText('Crédits')).toBeNull();
+    expect(screen.queryByText('Débits')).toBeNull();
+    expect(screen.queryByText('Crédits récurrents')).toBeNull();
+  });
 });

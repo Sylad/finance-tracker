@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-21 17:59",
+  "generated": "2026-10-21 18:06",
   "entries": [
+    {
+      "slug": "2026-10-21-bilan-annuel-mots-entrees-et-sorties-partout",
+      "title": "Bilan annuel : mots Entrées et Sorties partout",
+      "date": "2026-10-21",
+      "lots": [
+        "L101"
+      ],
+      "captures": [
+        "captures/bilan-entrees-sorties-1440.png",
+        "captures/bilan-entrees-sorties-390.png"
+      ],
+      "alts": [
+        "Bilan annuel à 1440 px : cartes Entrées, Sorties et Revenus récurrents",
+        "Bilan annuel à 390 px, mêmes cartes"
+      ],
+      "html": "<p>Sur le Bilan annuel, les deux premières cartes s'appellent désormais « Entrées » et « Sorties », comme la légende du graphique « Cash flow mensuel » et le tableau de bord. La carte « Crédits récurrents » devient « Revenus récurrents » : « Crédits » désigne uniquement vos emprunts, comme dans le menu. Les montants et les calculs ne changent pas.</p>"
+    },
     {
       "slug": "2026-10-21-bilan-annuel-message-clair-en-cas-d-erreur",
       "title": "Bilan annuel : message clair en cas d'erreur",
