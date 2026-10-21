@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-21 18:06",
+  "generated": "2026-10-21 18:19",
   "entries": [
+    {
+      "slug": "2026-10-21-bilan-annuel-l-annee-choisie-se-voit-mieux",
+      "title": "Bilan annuel : l'année choisie se voit mieux",
+      "date": "2026-10-21",
+      "lots": [
+        "L102"
+      ],
+      "captures": [
+        "captures/bilan-annee-choisie-1440.png",
+        "captures/bilan-annee-choisie-390.png"
+      ],
+      "alts": [
+        "Bilan annuel à 1440 px : l'année choisie est entourée d'un liseré vert",
+        "Bilan annuel à 390 px, même sélecteur d'année"
+      ],
+      "html": "<p>Sur le Bilan annuel, l'année que vous avez choisie se repère d'un coup d'œil : son bouton est entouré d'un liseré vert bien contrasté, en plus du fond plus clair. Les lecteurs d'écran annoncent aussi quelle année est sélectionnée.</p>"
+    },
     {
       "slug": "2026-10-21-bilan-annuel-mots-entrees-et-sorties-partout",
       "title": "Bilan annuel : mots Entrées et Sorties partout",

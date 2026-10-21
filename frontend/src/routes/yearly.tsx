@@ -56,10 +56,12 @@ export function YearlyPage() {
             {years.map((y) => (
               <button
                 key={y}
+                type="button"
+                aria-pressed={activeYear === y}
                 onClick={() => setYear(y)}
                 className={cn(
                   'px-3 py-1.5 rounded transition-colors font-medium tabular',
-                  activeYear === y ? 'bg-surface-3 text-fg-bright' : 'text-fg-muted hover:text-fg',
+                  activeYear === y ? 'bg-surface-3 text-fg-bright ring-1 ring-inset ring-accent' : 'text-fg-muted hover:text-fg',
                 )}
               >
                 {y}

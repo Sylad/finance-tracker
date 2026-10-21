@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { YearlySummary } from '@/types/api';
 import { YearlyPage } from './yearly';
 
@@ -83,5 +83,20 @@ describe('<YearlyPage /> (L65)', () => {
     expect(screen.queryByText('Crédits')).toBeNull();
     expect(screen.queryByText('Débits')).toBeNull();
     expect(screen.queryByText('Crédits récurrents')).toBeNull();
+  });
+
+  it('R1 — le sélecteur d\'année expose aria-pressed et marque l\'année choisie d\'un liseré d\'accent (≥ 3:1)', () => {
+    state.list = { isLoading: false, data: [{ year: 2025 }, { year: 2024 }] };
+    render(<YearlyPage />);
+    const y25 = screen.getByRole('button', { name: '2025' });
+    const y24 = screen.getByRole('button', { name: '2024' });
+    expect(y25.getAttribute('aria-pressed')).toBe('true');
+    expect(y24.getAttribute('aria-pressed')).toBe('false');
+    expect(y25.className).toContain('ring-accent');
+    expect(y24.className).not.toContain('ring-accent');
+    fireEvent.click(y24);
+    expect(y24.getAttribute('aria-pressed')).toBe('true');
+    expect(y25.getAttribute('aria-pressed')).toBe('false');
+    expect(y24.className).toContain('ring-accent');
   });
 });
