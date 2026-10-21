@@ -1126,3 +1126,4 @@ lots:
     visible: true
     created: 2026-10-21
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant after 2 minor notes (rond Entrées creux/sombre dans la légende contre rond à fond #fff sur la courbe ; README qui dit « rond plein ») — orchestré (vague 2026-10-21-fin-epargne, 0 passe(s) de correction)", commit: 3189a3427266924f454219f04d9323fea350d385 }
