@@ -255,6 +255,26 @@
       "status": "done",
       "started": "2026-10-21",
       "finished": "2026-10-21"
+    },
+    {
+      "id": "L99",
+      "title": "Bilan annuel : détail mois par mois lisible sans souris",
+      "status": "todo"
+    },
+    {
+      "id": "L100",
+      "title": "Bilan annuel : message clair en cas d'erreur",
+      "status": "todo"
+    },
+    {
+      "id": "L101",
+      "title": "Bilan annuel : mots Entrées et Sorties partout",
+      "status": "todo"
+    },
+    {
+      "id": "L102",
+      "title": "Bilan annuel : l'année choisie se voit mieux",
+      "status": "todo"
     }
   ]
 }

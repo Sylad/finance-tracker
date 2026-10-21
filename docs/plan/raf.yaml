@@ -370,9 +370,12 @@ lots:
     finished: 2026-10-19
   - id: L29
     title: Revue UX — Bilan annuel
-    status: todo
+    status: done
     estimate: 0.25
     created: 2026-09-28
+    started: 2026-10-21
+    ux: { date: 2026-10-21, verdict: "non conforme (lead, captures 1440 chargé et erreur regardées) : 1 bloquant → L99 (détail mensuel seulement au survol, Entrées/Sorties par la seule couleur, axe « 00 »), majeurs → L100 (erreur affichée comme vide / chargement sans fin), L101 (Crédits/Débits/« Crédits récurrents »), L102 (année choisie non exposée) ; « Épargne nette » (entrées − sorties, épargne versée comptée en sortie) : question à Sylvain. Mineurs en note : score « 71.0 » au point et en double, mois couverts non nommés, icônes annoncées à vide, montants serrés à 320 px, mois masqués sur l'axe, axe du flux depuis 0, état vide sans action, bouton d'année seul inutile, spinner sans role=status, démo « Bilan 2025 » pour des relevés 2026" }
+    finished: 2026-10-21
   - id: L30
     title: Revue UX — Import de relevés
     status: todo
@@ -1040,3 +1043,31 @@ lots:
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant — 1 commit (fe85057), aucun constat ; les quatre choix de l'auteur tiennent — orchestré (vague 2026-10-21-wh-emp, 0 passe(s) de correction)", commit: fe850579da6c6a35c330d70bc3c8c20ee8863dfe }
     finished: 2026-10-21
+  - id: L99
+    title: "Bilan annuel : données mensuelles des graphiques lisibles sans souris (aria-label de résumé + tableau Mois/Score/Entrées/Sorties/Solde), Sorties distinguées autrement que par la couleur (trait pointillé, marqueur carré), titres de section en h2, graduation 100 de l'axe score non rognée (« 00 ») — revue UX L29"
+    public: "Bilan annuel : détail mois par mois lisible sans souris"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-21
+  - id: L100
+    title: "Bilan annuel : une erreur de la liste s'affiche « Pas encore de bilan » et une erreur du détail laisse « Chargement… » sans fin — ErrorState avec Réessayer (comme L87) — revue UX L29"
+    public: "Bilan annuel : message clair en cas d'erreur"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-21
+  - id: L101
+    title: "Bilan annuel : vocabulaire — Entrées/Sorties au lieu de Crédits/Débits (comme la légende et le tableau de bord), « Revenus récurrents » au lieu de « Crédits récurrents » (Crédits = emprunts dans la navigation) — revue UX L29"
+    public: "Bilan annuel : mots Entrées et Sorties partout"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-21
+  - id: L102
+    title: "Bilan annuel : le sélecteur d'année expose l'année choisie (aria-pressed) avec un indicateur visuel d'au moins 3:1 (comme le sélecteur des Prévisions) — revue UX L29"
+    public: "Bilan annuel : l'année choisie se voit mieux"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-21
