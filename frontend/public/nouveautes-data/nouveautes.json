@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-21 15:46",
+  "generated": "2026-10-21 16:23",
   "entries": [
+    {
+      "slug": "2026-10-21-credits-les-boutons-du-haut-de-page-tiennent-sur-un-telephon",
+      "title": "Crédits : les boutons du haut de page tiennent sur un téléphone",
+      "date": "2026-10-21",
+      "lots": [
+        "L96"
+      ],
+      "captures": [
+        "captures/credits-actions-390.png",
+        "captures/credits-actions-1440.png"
+      ],
+      "alts": [
+        "Page Crédits sur téléphone : les six boutons d'action (Importer PDF crédits, Détecter les crédits, Doublons, Suspects, Reset, Nouveau crédit) sont répartis sur plusieurs lignes sous le total mensuel",
+        "Page Crédits sur ordinateur : les six boutons d'action alignés à droite du total mensuel"
+      ],
+      "html": "<p>Sur la page Crédits, les six boutons du haut de page (Importer PDF crédits, Détecter les crédits, Doublons, Suspects, Reset, Nouveau crédit) passent maintenant à la ligne sur un téléphone. Avant, ils restaient sur une seule rangée trop large : la page débordait sur la droite et il fallait la faire défiler horizontalement. Tous les boutons sont visibles sans quitter l'écran des yeux ; sur ordinateur, rien ne change.</p>"
+    },
     {
       "slug": "2026-10-21-previsions-le-halo-sombre-de-la-courbe-solde-se-dessine-deca",
       "title": "Prévisions : la courbe du solde se dessine d'un seul trait",

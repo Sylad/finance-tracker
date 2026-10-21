@@ -248,6 +248,12 @@
       "status": "done",
       "started": "2026-10-21",
       "finished": "2026-10-21"
+    },
+    {
+      "id": "L96",
+      "title": "Crédits : les boutons du haut de page tiennent sur un téléphone",
+      "status": "doing",
+      "started": "2026-10-21"
     }
   ]
 }
