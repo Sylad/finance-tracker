@@ -990,6 +990,7 @@ lots:
     review: { date: 2026-10-21, verdict: "conforme — orchestré (vague 2026-10-21-suite3, 0 passe(s) de correction)", commit: dc9460e4ca18f1d1c70d499f72fbdd97e7ac6039 }
   - id: L93
     title: "Prévisions : les libellés des crédits venus des prêts portent un montant au point décimal (« CETELEM (240.00 €/mois) ») à côté de « -240,00 € » — formater en fr-FR ou retirer le montant du libellé (QA prod L88–L91)"
-    status: todo
+    status: doing
     estimate: 0.1
     created: 2026-10-21
+    started: 2026-10-21
