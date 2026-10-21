@@ -1011,6 +1011,7 @@ lots:
     estimate: 0.1
     created: 2026-10-21
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant — commit 625c1f0 : 3 noms de crédits démo recalés en fr-FR, test sur tous les noms de la fixture, aucun constat — orchestré (vague 2026-10-21-fin-loans, 0 passe(s) de correction)", commit: 625c1f0466c8fd40c93d8d8edaeeb5507270059a }
   - id: L96
     title: "Prêts à 390 px : la rangée d'actions de l'en-tête (6 boutons, 722 px) élargit la page à 738 px — défilement horizontal (QA L93, capture tmp/qa-fin-l92-93/loans-390-overflow.png)"
     status: todo
