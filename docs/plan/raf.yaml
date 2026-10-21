@@ -1058,6 +1058,7 @@ lots:
     visible: true
     created: 2026-10-21
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant — 0 bloquant, 0 majeur, 1 mineur (sous-titre « ... » laissé en état d'erreur du détail) — orchestré (vague 2026-10-21-fin-bilan, 0 passe(s) de correction)", commit: 31dc77dc3f328645648b41e56c4f60b427b8807f }
   - id: L101
     title: "Bilan annuel : vocabulaire — Entrées/Sorties au lieu de Crédits/Débits (comme la légende et le tableau de bord), « Revenus récurrents » au lieu de « Crédits récurrents » (Crédits = emprunts dans la navigation) — revue UX L29"
     public: "Bilan annuel : mots Entrées et Sorties partout"
