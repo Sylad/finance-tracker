@@ -1062,10 +1062,11 @@ lots:
   - id: L101
     title: "Bilan annuel : vocabulaire — Entrées/Sorties au lieu de Crédits/Débits (comme la légende et le tableau de bord), « Revenus récurrents » au lieu de « Crédits récurrents » (Crédits = emprunts dans la navigation) — revue UX L29"
     public: "Bilan annuel : mots Entrées et Sorties partout"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     created: 2026-10-21
+    started: 2026-10-21
   - id: L102
     title: "Bilan annuel : le sélecteur d'année expose l'année choisie (aria-pressed) avec un indicateur visuel d'au moins 3:1 (comme le sélecteur des Prévisions) — revue UX L29"
     public: "Bilan annuel : l'année choisie se voit mieux"
