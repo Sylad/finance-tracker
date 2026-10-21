@@ -264,7 +264,8 @@
     {
       "id": "L100",
       "title": "Bilan annuel : message clair en cas d'erreur",
-      "status": "todo"
+      "status": "doing",
+      "started": "2026-10-21"
     },
     {
       "id": "L101",
