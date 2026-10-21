@@ -987,6 +987,18 @@ describe('AutoSyncService', () => {
       });
     });
 
+    it('L93 — deux paliers du même créancier : le montant du nom est au format fr-FR (virgule)', async () => {
+      const mk = (id: string, amount: number) => ({
+        id, label: 'PRLV CETELEM', monthlyAmount: amount, occurrencesSeen: 6,
+        firstSeenStatementId: '2026-01', firstSeenDate: '2026-01-10', lastSeenDate: '2026-06-10',
+        suggestedType: 'loan', matchPattern: 'CETELEM', creditor: 'CETELEM', status: 'pending', createdAt: '',
+      });
+      suggestions.getPending.mockResolvedValue([mk('a', 240), mk('b', 120)]);
+      await svc.syncStatement({ ...baseStatement, transactions: [] });
+      const names = (loans as unknown as { create: jest.Mock }).create.mock.calls.map((c) => c[0].name as string);
+      expect(names.sort()).toEqual(['CETELEM (120,00 €/mois)', 'CETELEM (240,00 €/mois)']);
+    });
+
     it('skip pay-in-4 (label "4X CB AMAZON") + snooze sans création', async () => {
       suggestions.getPending.mockResolvedValue([
         {

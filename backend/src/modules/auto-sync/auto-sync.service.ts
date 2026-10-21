@@ -809,7 +809,7 @@ export class AutoSyncService {
       // suffix with the amount so the user sees them as distinct.
       const sameCreditorBuckets = [...byKey.keys()].filter((k) => k.startsWith(creditorKey + '|'));
       const name = sameCreditorBuckets.length > 1
-        ? `${creditor} (${avgMonthly.toFixed(2)} €/mois)`
+        ? `${creditor} (${avgMonthly.toFixed(2).replace(".", ",")} €/mois)`
         : creditor;
       const escaped = escapeRegex(creditor);
       // L44 : grande banque → nom ET mot de crédit (sinon le motif capte

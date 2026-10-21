@@ -2,14 +2,14 @@ import { BadRequestException } from '@nestjs/common';
 import { ForecastService } from './forecast.service';
 import { DeclarationsController } from './declarations.controller';
 
-function makeService(): ForecastService {
+function makeService(loans: unknown[] = []): ForecastService {
   return new ForecastService(
     { getAll: async () => [] } as never,
     {
       getAllStatements: async () => [],
       getAggregatedRecurringCredits: async () => [],
     } as never,
-    { getAll: async () => [] } as never,
+    { getAll: async () => loans } as never,
     { getAll: async () => [] } as never,
   );
 }
@@ -47,5 +47,28 @@ describe('Prévisions : fenêtre 3/6/12 mois', () => {
     const ctrl = new DeclarationsController({} as never, { compute: jest.fn() } as never);
     expect(() => ctrl.getForecast('7')).toThrow(BadRequestException);
     expect(() => ctrl.getForecast('abc')).toThrow(BadRequestException);
+  });
+});
+
+describe('Prévisions : libellé des crédits (L93)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 10, 15));
+  });
+  afterEach(() => jest.useRealTimers());
+
+  const loan = (name: string) => ({
+    id: 'l1', name, isActive: true, monthlyPayment: 240, category: 'consumer', startDate: null, endDate: null,
+  });
+
+  it('R1 — le montant au point décimal « (240.00 €/mois) » du nom du prêt n\'est pas repris dans le libellé', async () => {
+    const out = await makeService([loan('CETELEM (240.00 €/mois)')]).compute(3);
+    const occ = out[0].occurrences.find((o) => o.type === 'loan');
+    expect(occ?.label).toBe('CETELEM');
+    expect(occ?.amountSigned).toBe(-240);
+  });
+
+  it('R2 — un nom de prêt sans montant reste inchangé', async () => {
+    const out = await makeService([loan('CETELEM (prêt auto)')]).compute(3);
+    expect(out[0].occurrences.find((o) => o.type === 'loan')?.label).toBe('CETELEM (prêt auto)');
   });
 });

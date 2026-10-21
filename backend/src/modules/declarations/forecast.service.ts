@@ -14,6 +14,15 @@ export const DEFAULT_FORECAST_MONTHS = 12;
 const AMOUNT_TOLERANCE_PCT = 0.05;
 const AMOUNT_TOLERANCE_MIN = 0.5;
 
+/**
+ * Les prêts créés par l'auto-sync portent parfois leur mensualité dans le nom
+ * (« CETELEM (240.00 €/mois) ») ; la ligne de Prévisions affiche déjà le montant
+ * à côté : on le retire du libellé plutôt que de le montrer deux fois.
+ */
+function loanForecastLabel(name: string): string {
+  return name.replace(/\s*\(\d+(?:[.,]\d+)?\s*€\/mois\)\s*$/, '').trim() || name;
+}
+
 @Injectable()
 export class ForecastService {
   constructor(
@@ -80,7 +89,7 @@ export class ForecastService {
         if (matchedTx) consumed.add(matchedTx.id);
         occurrences.push({
           declarationId: `loan:${loan.id}`,
-          label: loan.name,
+          label: loanForecastLabel(loan.name),
           type: 'loan',
           category: loan.category,
           amountSigned: -loan.monthlyPayment,
