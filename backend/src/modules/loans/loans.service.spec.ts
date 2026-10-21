@@ -1800,4 +1800,24 @@ describe('LoansService', () => {
       expect(updated.creditor).toBe('Mon nom personnalisé');
     });
   });
+
+  describe('splitByAmount : nom des sous-crédits (L94)', () => {
+    it('L94 — le suffixe écrit le montant au format fr-FR (virgule), pas au point décimal', async () => {
+      const loan = await svc.create({
+        name: 'CETELEM', type: 'classic', category: 'consumer', monthlyPayment: 240,
+        matchPattern: 'CETELEM', isActive: true, creditor: 'CETELEM',
+      });
+      // addOccurrence garde 1 débit/mois : les deux paliers vivent sur des mois distincts.
+      for (const m of ['01', '02', '03']) {
+        await svc.addOccurrence(loan.id, { statementId: `2026-${m}`, date: `2026-${m}-05`, amount: -240, transactionId: `a${m}`, description: 'PRLV CETELEM 11112222331234' });
+      }
+      for (const m of ['04', '05', '06']) {
+        await svc.addOccurrence(loan.id, { statementId: `2026-${m}`, date: `2026-${m}-05`, amount: -120.5, transactionId: `b${m}`, description: 'PRLV CETELEM 99998888775678' });
+      }
+      const res = await svc.splitByAmount(loan.id);
+      expect(res.split).toBe(true);
+      const names = (await svc.getAll()).map((l) => l.name).sort();
+      expect(names).toEqual(['CETELEM (120,50 €/mois · …5678)', 'CETELEM (240,00 €/mois · …1234)']);
+    });
+  });
 });

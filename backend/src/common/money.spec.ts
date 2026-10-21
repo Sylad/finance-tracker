@@ -1,4 +1,4 @@
-import { round2 } from './money';
+import { formatDecimalFr, round2 } from './money';
 
 describe('round2', () => {
   it('arrondit au centime', () => {
@@ -9,5 +9,12 @@ describe('round2', () => {
   it('laisse les entiers et zéro intacts', () => {
     expect(round2(5)).toBe(5);
     expect(round2(0)).toBe(0);
+  });
+});
+
+describe('formatDecimalFr', () => {
+  it('L94 — deux décimales, virgule française', () => {
+    expect(formatDecimalFr(240)).toBe('240,00');
+    expect(formatDecimalFr(120.5)).toBe('120,50');
   });
 });

@@ -15,12 +15,13 @@ const AMOUNT_TOLERANCE_PCT = 0.05;
 const AMOUNT_TOLERANCE_MIN = 0.5;
 
 /**
- * Les prêts créés par l'auto-sync portent parfois leur mensualité dans le nom
- * (« CETELEM (240.00 €/mois) ») ; la ligne de Prévisions affiche déjà le montant
- * à côté : on le retire du libellé plutôt que de le montrer deux fois.
+ * Les prêts créés par l'auto-sync ou le découpage en sous-crédits portent parfois
+ * leur mensualité dans le nom (« CETELEM (240,00 €/mois) », « CETELEM (240,00 €/mois
+ * · …1234) », ou l'ancien « 240.00 ») ; la ligne de Prévisions affiche déjà le montant
+ * à côté : on retire ce suffixe du libellé plutôt que de le montrer deux fois.
  */
 function loanForecastLabel(name: string): string {
-  return name.replace(/\s*\(\d+(?:[.,]\d+)?\s*€\/mois\)\s*$/, '').trim() || name;
+  return name.replace(/\s*\(\d+(?:[.,]\d+)?\s*€\/mois(?:\s*·[^)]*)?\)\s*$/, '').trim() || name;
 }
 
 @Injectable()

@@ -10,6 +10,7 @@ import { StorageService } from '../storage/storage.service';
 import { PAY_IN_N_PATTERN } from './loans-patterns';
 import { monthKey } from '../../common/month-key';
 import { clusterByAmount } from '../../common/amount-clustering';
+import { formatDecimalFr } from '../../common/money';
 
 export interface CreditStatementSnapshotInput {
   creditor: string;
@@ -517,7 +518,7 @@ export class LoansService {
     // Helper: name suffix from amount + ref
     const groupSuffix = (amount: number, ref: string): string => {
       const refTail = ref ? `…${ref.slice(-4)}` : '';
-      return `(${amount.toFixed(2)} €/mois${refTail ? ` · ${refTail}` : ''})`;
+      return `(${formatDecimalFr(amount)} €/mois${refTail ? ` · ${refTail}` : ''})`;
     };
 
     // Update original : ne retirer QUE les occurrences migrées vers les

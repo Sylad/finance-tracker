@@ -67,6 +67,16 @@ describe('Prévisions : libellé des crédits (L93)', () => {
     expect(occ?.amountSigned).toBe(-240);
   });
 
+  it('L94 — le suffixe de sous-crédit fr-FR « (240,00 €/mois · …1234) » n\'est pas repris dans le libellé', async () => {
+    const out = await makeService([loan('CETELEM (240,00 €/mois · …1234)')]).compute(3);
+    expect(out[0].occurrences.find((o) => o.type === 'loan')?.label).toBe('CETELEM');
+  });
+
+  it('L94 — le suffixe au point décimal avec référence « (240.00 €/mois · …1234) » est retiré aussi', async () => {
+    const out = await makeService([loan('CETELEM (240.00 €/mois · …1234)')]).compute(3);
+    expect(out[0].occurrences.find((o) => o.type === 'loan')?.label).toBe('CETELEM');
+  });
+
   it('R2 — un nom de prêt sans montant reste inchangé', async () => {
     const out = await makeService([loan('CETELEM (prêt auto)')]).compute(3);
     expect(out[0].occurrences.find((o) => o.type === 'loan')?.label).toBe('CETELEM (prêt auto)');
