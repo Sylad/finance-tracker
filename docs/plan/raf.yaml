@@ -1038,3 +1038,4 @@ lots:
     estimate: 0.25
     created: 2026-10-21
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant — 1 commit (fe85057), aucun constat ; les quatre choix de l'auteur tiennent — orchestré (vague 2026-10-21-wh-emp, 0 passe(s) de correction)", commit: fe850579da6c6a35c330d70bc3c8c20ee8863dfe }
