@@ -1046,12 +1046,14 @@ lots:
   - id: L99
     title: "Bilan annuel : données mensuelles des graphiques lisibles sans souris (aria-label de résumé + tableau Mois/Score/Entrées/Sorties/Solde), Sorties distinguées autrement que par la couleur (trait pointillé, marqueur carré), titres de section en h2, graduation 100 de l'axe score non rognée (« 00 ») — revue UX L29"
     public: "Bilan annuel : détail mois par mois lisible sans souris"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant — 0 bloquant, 0 majeur, 2 mineurs (conteneur de défilement du tableau non atteignable au clavier à 390 px ; minuscule après un point dans le README) — orchestré (vague 2026-10-21-fin-bilan2, 0 passe(s) de correction)", commit: 1e6959c07eae717d54c39aaf9d1e5a00e2281685 }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, capture 1440 : axe score « 100 » entier, Sorties en pointillé à marqueurs carrés, tableau Détail mois par mois) ; mineurs : conteneur du tableau non atteignable au clavier à 390 px, minuscule après un point au README" }
+    finished: 2026-10-21
   - id: L100
     title: "Bilan annuel : une erreur de la liste s'affiche « Pas encore de bilan » et une erreur du détail laisse « Chargement… » sans fin — ErrorState avec Réessayer (comme L87) — revue UX L29"
     public: "Bilan annuel : message clair en cas d'erreur"
@@ -1088,18 +1090,22 @@ lots:
   - id: L103
     title: "Prévisions : le sélecteur 3/6/12 mois marque l'horizon choisi d'un liseré d'accent ≥ 3:1 (fond surface-3 seul ≈ 1,1:1, WCAG 1.4.11), comme le sélecteur du Bilan annuel (revue L102)"
     public: "Prévisions : l'horizon choisi se voit mieux"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant — orchestré (vague 2026-10-21-fin-bilan2, 0 passe(s) de correction)", commit: bdaf6950345ee902075add06ff315485f4514535 }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, capture 1440 : horizon choisi cerclé d'un liseré d'accent)" }
+    finished: 2026-10-21
   - id: L104
     title: "Bilan annuel : « Épargne nette » renommée « Solde net (entrées − sorties) », avec une ligne « dont X € versés en épargne » (décision Sylvain 21-10, option a, revue UX L29)"
     public: "Bilan annuel : le solde net dit ce qu'il compte"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant (0 blocking, 0 major, 1 minor : captures parasites à la racine) — orchestré (vague 2026-10-21-fin-bilan2, 0 passe(s) de correction)", commit: 9477e8bcb8ef020cc5d4f5864d67e4110a74c3c0 }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, capture 1440 : « Solde net (entrées − sorties) » + « dont 900,00 € versés en épargne »)" }
+    finished: 2026-10-21

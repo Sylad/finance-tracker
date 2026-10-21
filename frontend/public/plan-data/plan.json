@@ -259,8 +259,9 @@
     {
       "id": "L99",
       "title": "Bilan annuel : détail mois par mois lisible sans souris",
-      "status": "doing",
-      "started": "2026-10-21"
+      "status": "done",
+      "started": "2026-10-21",
+      "finished": "2026-10-21"
     },
     {
       "id": "L100",
@@ -286,14 +287,16 @@
     {
       "id": "L103",
       "title": "Prévisions : l'horizon choisi se voit mieux",
-      "status": "doing",
-      "started": "2026-10-21"
+      "status": "done",
+      "started": "2026-10-21",
+      "finished": "2026-10-21"
     },
     {
       "id": "L104",
       "title": "Bilan annuel : le solde net dit ce qu'il compte",
-      "status": "doing",
-      "started": "2026-10-21"
+      "status": "done",
+      "started": "2026-10-21",
+      "finished": "2026-10-21"
     }
   ]
 }
