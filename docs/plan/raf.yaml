@@ -982,16 +982,24 @@ lots:
     finished: 2026-10-21
   - id: L92
     title: "Prévisions : le halo sombre de la courbe Solde se dessine décalé de la ligne blanche pendant l'animation (changement d'horizon, premier chargement) — même réglage d'animation sur les deux <Line> (revue UX L90)"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "conforme — orchestré (vague 2026-10-21-suite3, 0 passe(s) de correction)", commit: dc9460e4ca18f1d1c70d499f72fbdd97e7ac6039 }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, mesuré : à 350 ms d'un changement d'horizon, halo et courbe Solde ont le même tracé M230.173,98.75…, contre 231,5 vs 144,1 avant)" }
+    finished: 2026-10-21
   - id: L93
     title: "Prévisions : les libellés des crédits venus des prêts portent un montant au point décimal (« CETELEM (240.00 €/mois) ») à côté de « -240,00 € » — formater en fr-FR ou retirer le montant du libellé (QA prod L88–L91)"
-    status: doing
+    status: done
     estimate: 0.1
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant: 0 blocking, 0 major, 1 minor note (the sub-credit split suffix in loans.service.ts:520 still writes the amount with a decimal point) — orchestré (vague 2026-10-21-suite3, 0 passe(s) de correction)", commit: 5182d6a542c197fbe386d30c9605fc33fe60bfc5 }
+    finished: 2026-10-21
+  - id: L94
+    title: "Prévisions/Prêts : le suffixe de découpage en sous-crédits (loans.service.ts groupSuffix, l.520) écrit encore le montant au point décimal « (240.00 €/mois · …1234) » — formater en fr-FR et l'élargir dans loanForecastLabel (revue L93)"
+    status: todo
+    estimate: 0.1
+    created: 2026-10-21
