@@ -1071,7 +1071,8 @@ lots:
   - id: L102
     title: "Bilan annuel : le sélecteur d'année expose l'année choisie (aria-pressed) avec un indicateur visuel d'au moins 3:1 (comme le sélecteur des Prévisions) — revue UX L29"
     public: "Bilan annuel : l'année choisie se voit mieux"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     created: 2026-10-21
+    started: 2026-10-21
