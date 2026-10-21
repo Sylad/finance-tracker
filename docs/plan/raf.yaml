@@ -935,36 +935,46 @@ lots:
   - id: L88
     title: "Prévisions : le sélecteur 3/6/12 mois filtre réellement la fenêtre à partir du mois courant (backend ?months ignoré : declarations.controller.ts:39-42), expose aria-pressed, et garde titre, sélecteur et focus pendant le rechargement (placeholderData) — revue UX L28"
     public: "Prévisions : le choix 3, 6 ou 12 mois change vraiment la vue"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-19
     started: 2026-10-19
     review: { date: 2026-10-19, verdict: "compliant (0 bloquant, 0 majeur, 1 mineur : pas d'indicateur de chargement pendant le placeholder ; captures non prises, Playwright indisponible) — orchestré (vague 2026-10-19-fin-prev, 0 passe(s) de correction)", commit: 1a8e406d511be6c7c20aab55c22ccbaec66bc40e }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, captures 1440/390 prises par le lead : sélecteur 3/6/12 aria-pressed, fenêtre filtrée) ; 1 mineur : pas d'indicateur de chargement pendant le placeholder" }
+    finished: 2026-10-21
   - id: L89
     title: "Prévisions : erreur API = ErrorState avec Réessayer (plus « Pas de déclaration »), mois tous sans occurrence = état vide avec lien vers Déclarations (plus de 12 cartes à 0,00 € vertes) — revue UX L28"
     public: "Prévisions : message clair en cas d'erreur ou sans déclaration"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-19
     started: 2026-10-19
     review: { date: 2026-10-21, verdict: "conforme, 2 mineurs en note : captures Nouveautés prises avant l'ajout du sélecteur à l'état d'erreur (d8f4b2b) ; sur horizon réduit, « Élargis l'horizon » s'affiche même quand 12 mois est vide aussi — orchestré (vague 2026-10-19-fin-prev, 2 passe(s) de correction)", commit: d8f4b2ba0ab392ac720caa0d5496c4a9160b6030 }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, captures erreur 1440/390 : sélecteur gardé, ErrorState + Réessayer) ; 2 mineurs : captures Nouveautés antérieures à d8f4b2b ; « Élargis l'horizon » même si 12 mois vide" }
+    finished: 2026-10-21
   - id: L90
     title: "Prévisions : axe Y en formatEURCompact (« 2k » pour 1 500 € aujourd'hui), info-bulle aux montants exacts (2 068,15 € et non 2 068,00 €) avec ligne Solde, solde mensuel tracé sur le graphe — revue UX L28"
     public: "Prévisions : montants exacts et solde du mois sur le graphe"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-19
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "conforme, 4 mineurs en note : le halo de la courbe Solde n'est pas animé et se dessine décalé pendant la transition ; pas de légende pour la courbe Solde ; captures Nouveautés antérieures au contour ; titre du test R1 (« 2 k ») inexact — orchestré (vague 2026-10-19-fin-prev, 1 passe(s) de correction)", commit: fe74579ada892d7fb8b2690f7711076f329fe31d }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, captures 1440/390 : courbe Solde contourée) ; mineurs : halo décalé pendant l'animation (sous-tâche L92), pas de légende du Solde, captures Nouveautés antérieures au contour, titre du test R1 inexact" }
+    finished: 2026-10-21
+    tasks:
+      - { id: t1, title: "Prévisions : le halo sombre de la courbe Solde se dessine décalé de la ligne blanche pendant l'animation (changement d'horizon, premier chargement) — même réglage d'animation sur les deux <Line> (revue UX L90)", status: todo }
   - id: L91
     title: "Prévisions : chaque carte dit en texte « Passé », « En cours » ou « Prévu » (badge à gauche du solde) ; type et rapprochement de chaque ligne dans son nom accessible ; légende sous le titre (● Revenus ● Crédits ● Abonnements ● Dépenses · estompé = non rapproché) — sans changer mise en page, couleurs ni animations — revue UX L28"
     public: "Prévisions : mois passés, en cours et prévus distingués en clair"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-19
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant (3 minor notes: montant absent du nom accessible, <ul> de légende sans role=list, mois calculé sur l'heure du navigateur ; captures non prises, Playwright indisponible) — orchestré (vague 2026-10-19-fin-prev, 0 passe(s) de correction)", commit: f25ea49b958ec41a03154f2080ff2b3579cf342d }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, captures 1440/390 : légende des lignes, badges En cours/Prévu) ; 3 mineurs : montant absent du nom accessible, <ul> de légende sans role=list, mois en heure du navigateur" }
+    finished: 2026-10-21
