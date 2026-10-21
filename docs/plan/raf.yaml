@@ -1000,9 +1000,10 @@ lots:
     finished: 2026-10-21
   - id: L94
     title: "Prévisions/Prêts : le suffixe de découpage en sous-crédits (loans.service.ts groupSuffix, l.520) écrit encore le montant au point décimal « (240.00 €/mois · …1234) » — formater en fr-FR et l'élargir dans loanForecastLabel (revue L93)"
-    status: todo
+    status: doing
     estimate: 0.1
     created: 2026-10-21
+    started: 2026-10-21
   - id: L95
     title: "Prêts : le nom du crédit démo « CETELEM (240.00 €/mois) » s'affiche au point décimal sur /loans (nom stocké, demo-fixtures.json l.2225) — recaler la fixture en fr-FR ou retirer le montant du nom à l'affichage (QA L93)"
     status: todo
