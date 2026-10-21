@@ -1051,6 +1051,7 @@ lots:
     visible: true
     created: 2026-10-21
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant — 0 bloquant, 0 majeur, 2 mineurs (conteneur de défilement du tableau non atteignable au clavier à 390 px ; minuscule après un point dans le README) — orchestré (vague 2026-10-21-fin-bilan2, 0 passe(s) de correction)", commit: 1e6959c07eae717d54c39aaf9d1e5a00e2281685 }
   - id: L100
     title: "Bilan annuel : une erreur de la liste s'affiche « Pas encore de bilan » et une erreur du détail laisse « Chargement… » sans fin — ErrorState avec Réessayer (comme L87) — revue UX L29"
     public: "Bilan annuel : message clair en cas d'erreur"
