@@ -212,4 +212,33 @@ describe('DemoSeedService — recalage des dates (L63)', () => {
     service.onApplicationBootstrap();
     expect(fs.readFileSync(path.join(demoDir, 'budgets.json'), 'utf8')).toBe('{"custom":1}');
   });
+
+  it("R1 — réécrit les données synthétiques quand les fixtures changent, décalage inchangé", async () => {
+    setNow('2026-10-11T10:00:00Z');
+    await service.seed();
+    fs.writeFileSync(path.join(demoDir, 'loans.json'), '[{"name":"CETELEM (240.00 €/mois)"}]');
+    fs.writeFileSync(path.join(demoDir, '.fixtures'), 'empreinte-d-une-ancienne-version');
+    service.onApplicationBootstrap();
+    const loans = read<{ name: string }[]>('loans.json');
+    expect(loans.some((l) => l.name.startsWith('CETELEM (240.00'))).toBe(false);
+    expect(loans.length).toBeGreaterThan(1);
+  });
+
+  it("R2 — une démo amorcée avant L98 (pas de fichier .fixtures) est réécrite", async () => {
+    setNow('2026-10-11T10:00:00Z');
+    await service.seed();
+    fs.writeFileSync(path.join(demoDir, 'budgets.json'), '{"custom":1}');
+    fs.rmSync(path.join(demoDir, '.fixtures'));
+    service.onApplicationBootstrap();
+    expect(fs.readFileSync(path.join(demoDir, 'budgets.json'), 'utf8')).not.toBe('{"custom":1}');
+    expect(fs.existsSync(path.join(demoDir, '.fixtures'))).toBe(true);
+  });
+
+  it("R3 — l'empreinte inchangée ne réécrit rien (même décalage)", async () => {
+    setNow('2026-10-11T10:00:00Z');
+    await service.seed();
+    fs.writeFileSync(path.join(demoDir, 'loans.json'), '{"custom":1}');
+    service.onApplicationBootstrap();
+    expect(fs.readFileSync(path.join(demoDir, 'loans.json'), 'utf8')).toBe('{"custom":1}');
+  });
 });

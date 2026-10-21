@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { atomicWriteJsonSync } from '../../common/atomic-write';
@@ -19,21 +20,27 @@ export class DemoSeedService implements OnApplicationBootstrap {
 
   /**
    * Fixtures recalées (L63) : leur dernier relevé devient le mois précédant la
-   * date du jour. Le décalage retenu est renvoyé pour être mémorisé (`.shift`).
+   * date du jour. Le décalage retenu est renvoyé pour être mémorisé (`.shift`),
+   * avec l'empreinte du fichier de fixtures (`.fixtures`, L98).
    */
-  private loadFixtures(): { fixtures: Record<string, unknown>; shift: number } {
+  private loadFixtures(): { fixtures: Record<string, unknown>; shift: number; fingerprint: string } {
     const fixturePath = path.join(__dirname, 'demo-fixtures.json');
-    const raw = JSON.parse(fs.readFileSync(fixturePath, 'utf-8')) as Record<string, unknown>;
+    const text = fs.readFileSync(fixturePath, 'utf-8');
+    const raw = JSON.parse(text) as Record<string, unknown>;
     const last = (raw.statements as MonthlyStatement[]).reduce((a, s) =>
       s.year * 12 + s.month > a.year * 12 + a.month ? s : a,
     );
     const shift = monthsToShift(last.year, last.month, new Date());
-    return { fixtures: capUploadDates(shiftDemoFixtures(raw, shift), new Date()), shift };
+    return {
+      fixtures: capUploadDates(shiftDemoFixtures(raw, shift), new Date()),
+      shift,
+      fingerprint: createHash('sha256').update(text).digest('hex'),
+    };
   }
 
-  private readShift(demoDir: string): number | null {
+  private readMarker(demoDir: string, name: '.shift' | '.fixtures'): string | null {
     try {
-      return Number(fs.readFileSync(path.join(demoDir, '.shift'), 'utf-8'));
+      return fs.readFileSync(path.join(demoDir, name), 'utf-8');
     } catch {
       return null;
     }
@@ -72,12 +79,17 @@ export class DemoSeedService implements OnApplicationBootstrap {
 
   /**
    * Démo déjà amorcée : si le décalage des dates n'est plus celui du jour
-   * (mois écoulé, ou démo antérieure à L63), les données synthétiques sont
-   * réécrites ; sinon seuls les fichiers absents sont rattrapés (L62).
+   * (mois écoulé, ou démo antérieure à L63) ou si les fixtures ont changé
+   * (empreinte `.fixtures` différente ou absente, L98), les données
+   * synthétiques sont réécrites ; sinon seuls les fichiers absents sont
+   * rattrapés (L62).
    */
   private refreshSeeded(demoDir: string): void {
     const loaded = this.loadFixtures();
-    if (this.readShift(demoDir) === loaded.shift) {
+    if (
+      this.readMarker(demoDir, '.shift') === String(loaded.shift) &&
+      this.readMarker(demoDir, '.fixtures') === loaded.fingerprint
+    ) {
       this.writeHistory(demoDir, loaded.fixtures, false);
       return;
     }
@@ -89,10 +101,10 @@ export class DemoSeedService implements OnApplicationBootstrap {
       if (f.endsWith('.json')) fs.rmSync(path.join(demoDir, 'yearly', f));
     }
     this.writeAll(demoDir, loaded);
-    this.logger.log(`Demo dates recalées de ${loaded.shift} mois à ${demoDir}`);
+    this.logger.log(`Demo réécrite à ${demoDir} (décalage de ${loaded.shift} mois, fixtures ${loaded.fingerprint.slice(0, 8)})`);
   }
 
-  private writeAll(demoDir: string, loaded: { fixtures: Record<string, unknown>; shift: number }): void {
+  private writeAll(demoDir: string, loaded: { fixtures: Record<string, unknown>; shift: number; fingerprint: string }): void {
     const f = loaded.fixtures;
     for (const stmt of f.statements as { id: string }[]) {
       atomicWriteJsonSync(path.join(demoDir, 'statements', `${stmt.id}.json`), stmt);
@@ -104,6 +116,7 @@ export class DemoSeedService implements OnApplicationBootstrap {
     atomicWriteJsonSync(path.join(demoDir, 'declarations.json'), f.declarations);
     atomicWriteJsonSync(path.join(demoDir, 'budgets.json'), f.budgets);
     fs.writeFileSync(path.join(demoDir, '.shift'), String(loaded.shift));
+    fs.writeFileSync(path.join(demoDir, '.fixtures'), loaded.fingerprint);
     fs.writeFileSync(path.join(demoDir, '.seeded'), new Date().toISOString());
   }
 
