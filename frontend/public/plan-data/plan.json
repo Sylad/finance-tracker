@@ -217,26 +217,30 @@
     {
       "id": "L88",
       "title": "Prévisions : le choix 3, 6 ou 12 mois change vraiment la vue",
-      "status": "doing",
-      "started": "2026-10-19"
+      "status": "done",
+      "started": "2026-10-19",
+      "finished": "2026-10-21"
     },
     {
       "id": "L89",
       "title": "Prévisions : message clair en cas d'erreur ou sans déclaration",
-      "status": "doing",
-      "started": "2026-10-19"
+      "status": "done",
+      "started": "2026-10-19",
+      "finished": "2026-10-21"
     },
     {
       "id": "L90",
       "title": "Prévisions : montants exacts et solde du mois sur le graphe",
-      "status": "doing",
-      "started": "2026-10-21"
+      "status": "done",
+      "started": "2026-10-21",
+      "finished": "2026-10-21"
     },
     {
       "id": "L91",
       "title": "Prévisions : mois passés, en cours et prévus distingués en clair",
-      "status": "doing",
-      "started": "2026-10-21"
+      "status": "done",
+      "started": "2026-10-21",
+      "finished": "2026-10-21"
     }
   ]
 }
