@@ -1003,3 +1003,14 @@ lots:
     status: todo
     estimate: 0.1
     created: 2026-10-21
+  - id: L95
+    title: "Prêts : le nom du crédit démo « CETELEM (240.00 €/mois) » s'affiche au point décimal sur /loans (nom stocké, demo-fixtures.json l.2225) — recaler la fixture en fr-FR ou retirer le montant du nom à l'affichage (QA L93)"
+    status: todo
+    estimate: 0.1
+    created: 2026-10-21
+  - id: L96
+    title: "Prêts à 390 px : la rangée d'actions de l'en-tête (6 boutons, 722 px) élargit la page à 738 px — défilement horizontal (QA L93, capture tmp/qa-fin-l92-93/loans-390-overflow.png)"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-21
