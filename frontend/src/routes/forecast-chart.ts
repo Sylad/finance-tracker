@@ -21,3 +21,12 @@ export function forecastChartData(months: ForecastMonth[]) {
 export function forecastTooltipFormatter(v: number, name: string): [string, string] {
   return [formatEUR(name === 'Solde' ? v : Math.abs(v)), name];
 }
+
+export type ForecastMonthStatus = 'Passé' | 'En cours' | 'Prévu';
+
+/** État d'un mois « AAAA-MM » par rapport au mois de `now` : l'ordre se lit sur année × 12 + mois. */
+export function forecastMonthStatus(month: string, now: Date = new Date()): ForecastMonthStatus {
+  const [y, m] = month.split('-').map(Number);
+  const diff = y * 12 + m - (now.getFullYear() * 12 + now.getMonth() + 1);
+  return diff < 0 ? 'Passé' : diff === 0 ? 'En cours' : 'Prévu';
+}

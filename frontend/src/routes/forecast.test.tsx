@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ForecastPage } from './forecast';
+import { forecastMonthStatus } from './forecast-chart';
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ to, children, ...rest }: { to: string; children: React.ReactNode }) => <a href={to} {...rest}>{children}</a>,
@@ -145,6 +146,74 @@ describe('Prévisions — erreur et absence de déclaration (L89)', () => {
     renderPage();
     expect(await screen.findByText('2026-02')).toBeTruthy();
     expect(screen.queryByRole('link', { name: /Déclarations/ })).toBeNull();
+    get.mockImplementation(defaultImpl);
+  });
+});
+
+describe('Prévisions — passé, en cours, prévu en texte (L91)', () => {
+  const defaultImpl = get.getMockImplementation()!;
+  const ym = (offset: number) => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  };
+  const withOccurrences = () => get.mockImplementation(() => Promise.resolve([
+    month(ym(-1), [{ ...occ, label: 'Salaire', matched: true }]),
+    month(ym(0), [
+      { declarationId: 'd2', label: 'Prêt auto', type: 'loan', amountSigned: -300, matched: false },
+      { declarationId: 'd3', label: 'Netflix', type: 'subscription', amountSigned: -13, matched: true },
+    ]),
+    month(ym(1), [{ declarationId: 'd4', label: 'Loyer', type: 'expense', amountSigned: -700, matched: false }]),
+  ]));
+
+  it('R1 — forecastMonthStatus : mois antérieur « Passé », courant « En cours », suivant « Prévu »', () => {
+    const now = new Date(2026, 9, 21);
+    expect(forecastMonthStatus('2026-09', now)).toBe('Passé');
+    expect(forecastMonthStatus('2025-12', now)).toBe('Passé');
+    expect(forecastMonthStatus('2026-10', now)).toBe('En cours');
+    expect(forecastMonthStatus('2026-11', now)).toBe('Prévu');
+    expect(forecastMonthStatus('2027-01', now)).toBe('Prévu');
+  });
+
+  it('R2 — chaque carte porte son état en texte, dans l\'ordre, à gauche du solde', async () => {
+    withOccurrences();
+    renderPage();
+    await screen.findByText(ym(0));
+    const card = (m: string) => screen.getByText(m).closest('.card') as HTMLElement;
+    expect(within(card(ym(-1))).getByText('Passé')).toBeTruthy();
+    expect(within(card(ym(0))).getByText('En cours')).toBeTruthy();
+    expect(within(card(ym(1))).getByText('Prévu')).toBeTruthy();
+    const header = screen.getByText(ym(0)).parentElement as HTMLElement;
+    const status = within(header).getByText('En cours');
+    const balance = header.querySelector('.badge') as HTMLElement;
+    expect(status.compareDocumentPosition(balance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(header.contains(status)).toBe(true);
+    get.mockImplementation(defaultImpl);
+  });
+
+  it('R3 — le nom accessible de chaque ligne dit libellé, type et rapprochement', async () => {
+    withOccurrences();
+    renderPage();
+    await screen.findByText(ym(0));
+    expect(screen.getByRole('listitem', { name: 'Salaire, Revenu, rapproché' })).toBeTruthy();
+    expect(screen.getByRole('listitem', { name: 'Prêt auto, Crédit, non rapproché' })).toBeTruthy();
+    expect(screen.getByRole('listitem', { name: 'Netflix, Abonnement, rapproché' })).toBeTruthy();
+    expect(screen.getByRole('listitem', { name: 'Loyer, Dépense, non rapproché' })).toBeTruthy();
+    get.mockImplementation(defaultImpl);
+  });
+
+  it('R4 — la légende des pastilles et de l\'estompé est sous le titre, avant le graphe', async () => {
+    withOccurrences();
+    renderPage();
+    const legend = await screen.findByRole('list', { name: 'Légende des lignes' });
+    const items = within(legend).getAllByRole('listitem').map((li) => li.textContent);
+    expect(items).toEqual(['Revenus', 'Crédits', 'Abonnements', 'Dépenses']);
+    expect(legend.parentElement?.textContent).toContain('estompé = non rapproché');
+    const title = screen.getByRole('heading', { name: 'Prévisions' });
+    const chart = screen.getByText('Cash flow projeté');
+    expect(title.compareDocumentPosition(legend) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(legend.compareDocumentPosition(chart) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     get.mockImplementation(defaultImpl);
   });
 });

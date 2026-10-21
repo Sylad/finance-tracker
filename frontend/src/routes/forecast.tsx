@@ -5,8 +5,21 @@ import { useForecast } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
 import { formatEUR, formatEURCompact, cn, chartTooltipProps } from '@/lib/utils';
-import { forecastChartData, forecastTooltipFormatter } from './forecast-chart';
-import { DECLARATION_TYPE_LABELS } from '@/types/api';
+import { forecastChartData, forecastMonthStatus, forecastTooltipFormatter } from './forecast-chart';
+import { DECLARATION_TYPE_LABELS, type DeclarationType } from '@/types/api';
+
+const DOT_CLASS: Record<DeclarationType, string> = {
+  income: 'bg-positive',
+  loan: 'bg-warning',
+  subscription: 'bg-info',
+  expense: 'bg-negative',
+};
+const LEGEND: { type: DeclarationType; label: string }[] = [
+  { type: 'income', label: 'Revenus' },
+  { type: 'loan', label: 'Crédits' },
+  { type: 'subscription', label: 'Abonnements' },
+  { type: 'expense', label: 'Dépenses' },
+];
 
 const HORIZONS = [3, 6, 12] as const;
 
@@ -82,6 +95,18 @@ export function ForecastPage() {
         actions={horizonSelector}
       />
 
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted mb-4">
+        <ul aria-label="Légende des lignes" className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {LEGEND.map((l) => (
+            <li key={l.type} className="flex items-center gap-1.5">
+              <span aria-hidden="true" className={cn('inline-block w-1.5 h-1.5 rounded-full shrink-0', DOT_CLASS[l.type])} />
+              {l.label}
+            </li>
+          ))}
+        </ul>
+        <span>· estompé = non rapproché</span>
+      </div>
+
       <section className="card p-5 mb-6">
         <div className="stat-label mb-4">Cash flow projeté</div>
         <div className="h-72">
@@ -124,9 +149,12 @@ export function ForecastPage() {
           <div key={m.month} className="card p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="font-display text-base font-semibold text-fg-bright">{m.month}</div>
-              <span className={cn('badge tabular text-xs', m.net >= 0 ? 'badge-positive' : 'badge-negative')}>
-                {formatEUR(m.net, true)}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="badge-neutral text-xs">{forecastMonthStatus(m.month)}</span>
+                <span className={cn('badge tabular text-xs', m.net >= 0 ? 'badge-positive' : 'badge-negative')}>
+                  {formatEUR(m.net, true)}
+                </span>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs mb-3">
               <div>
@@ -138,18 +166,18 @@ export function ForecastPage() {
                 <div className="tabular text-negative font-semibold">{formatEUR(m.expense)}</div>
               </div>
             </div>
-            <div className="space-y-1 text-xs max-h-40 overflow-auto pr-1">
+            <div role="list" className="space-y-1 text-xs max-h-40 overflow-auto pr-1">
               {m.occurrences.map((o, i) => (
-                <div key={`${o.declarationId}-${i}`} className="flex items-center justify-between gap-2">
+                <div
+                  key={`${o.declarationId}-${i}`}
+                  role="listitem"
+                  aria-label={`${o.label}, ${DECLARATION_TYPE_LABELS[o.type]}, ${o.matched ? 'rapproché' : 'non rapproché'}`}
+                  className="flex items-center justify-between gap-2"
+                >
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span
-                      className={cn(
-                        'inline-block w-1.5 h-1.5 rounded-full shrink-0',
-                        o.type === 'income' ? 'bg-positive' :
-                        o.type === 'loan' ? 'bg-warning' :
-                        o.type === 'subscription' ? 'bg-info' :
-                        'bg-negative',
-                      )}
+                      aria-hidden="true"
+                      className={cn('inline-block w-1.5 h-1.5 rounded-full shrink-0', DOT_CLASS[o.type])}
                       title={DECLARATION_TYPE_LABELS[o.type]}
                     />
                     <span className={cn('truncate', o.matched ? 'text-fg' : 'text-fg-muted')}>
