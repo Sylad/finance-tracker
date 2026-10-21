@@ -76,6 +76,19 @@ describe('Prévisions — sélecteur 3/6/12 mois (L88)', () => {
   });
 });
 
+describe('Prévisions — liseré de l\'horizon choisi (L103)', () => {
+  it('R1 — seul l\'horizon pressé porte le liseré d\'accent (WCAG 1.4.11), et il suit le choix', async () => {
+    renderPage();
+    const b12 = await screen.findByRole('button', { name: '12 mois' });
+    const b6 = screen.getByRole('button', { name: '6 mois' });
+    expect(b12.className).toContain('ring-accent');
+    expect(b6.className).not.toContain('ring-accent');
+    fireEvent.click(b6);
+    await waitFor(() => expect(screen.getByRole('button', { name: '6 mois' }).className).toContain('ring-accent'));
+    expect(screen.getByRole('button', { name: '12 mois' }).className).not.toContain('ring-accent');
+  });
+});
+
 describe('Prévisions — erreur et absence de déclaration (L89)', () => {
   const defaultImpl = get.getMockImplementation()!;
 
