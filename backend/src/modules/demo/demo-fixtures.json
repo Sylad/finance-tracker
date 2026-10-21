@@ -2222,7 +2222,7 @@
     },
     {
       "id": "demo-loan-auto",
-      "name": "CETELEM (240.00 €/mois)",
+      "name": "CETELEM (240,00 €/mois)",
       "type": "classic",
       "category": "auto",
       "monthlyPayment": 240,
@@ -2288,7 +2288,7 @@
     },
     {
       "id": "demo-loan-cofidis-1",
-      "name": "COFIDIS (186.00 €/mois · …1100)",
+      "name": "COFIDIS (186,00 €/mois · …1100)",
       "type": "revolving",
       "category": "consumer",
       "monthlyPayment": 186,
@@ -2353,7 +2353,7 @@
     },
     {
       "id": "demo-loan-cofidis-2",
-      "name": "COFIDIS (92.34 €/mois · …9003)",
+      "name": "COFIDIS (92,34 €/mois · …9003)",
       "type": "classic",
       "category": "consumer",
       "monthlyPayment": 92.34,
