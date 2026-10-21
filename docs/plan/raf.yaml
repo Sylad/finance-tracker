@@ -1019,3 +1019,4 @@ lots:
     visible: true
     created: 2026-10-21
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant after 1 fix: no bloquant or majeur finding; 2 notes mineures (Nouveauté claims « sur ordinateur, rien ne change » but at 1440 px « Nouveau crédit » wraps alone to a second line, left-aligned) — orchestré (vague 2026-10-21-fin-loans, 0 passe(s) de correction)", commit: 945470def305d8e125815ac720d5b132eecc6ea3 }
