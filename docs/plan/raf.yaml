@@ -1076,3 +1076,4 @@ lots:
     visible: true
     created: 2026-10-21
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant after 0 fixes — 3 minor notes (Prévisions selector keeps 1.1:1 indicator, test asserts class only, README lowercase typo) — orchestré (vague 2026-10-21-fin-bilan, 0 passe(s) de correction)", commit: 6eb468862d9451d89d2cb4151b26145279415fb9 }
