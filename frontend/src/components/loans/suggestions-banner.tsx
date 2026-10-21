@@ -103,7 +103,7 @@ export function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) 
                   </details>
                 )}
               </div>
-              <div className="flex gap-1 shrink-0">
+              <div className="flex flex-wrap gap-1 max-w-full">
                 {s.installment ? (
                   <button
                     onClick={() => acceptInstallment.mutate(s.id, {

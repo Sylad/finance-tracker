@@ -134,6 +134,9 @@ export function LoansPage() {
   return (
     <>
       <PageHeader
+        // Les six actions pèsent ~873 px et la zone de contenu est plafonnée à ~1136 px : à côté du titre
+        // elles ne tiennent à aucune largeur. Titre d'abord, actions dessous, rangée qui passe à la ligne si besoin.
+        className="sm:flex-col sm:items-start sm:justify-start"
         eyebrow="Crédits"
         title={`${formatEUR(totalMonthly)} / mois`}
         subtitle={`${items.filter((l) => l.isActive).length} crédit${items.length > 1 ? 's' : ''} actif${items.length > 1 ? 's' : ''}`}

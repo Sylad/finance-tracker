@@ -25,7 +25,7 @@ const LABELS = [
   /Nouveau crédit/,
 ];
 
-describe('<LoansPage /> — en-tête à 390 px (L96)', () => {
+describe('<LoansPage /> — en-tête à toute largeur (L96)', () => {
   it('R1 — les six actions de l\'en-tête restent toutes présentes', () => {
     render(<LoansPage />);
     for (const label of LABELS) {
@@ -41,5 +41,13 @@ describe('<LoansPage /> — en-tête à 390 px (L96)', () => {
     for (const label of LABELS) {
       expect(screen.getByRole('button', { name: label }).parentElement).toBe(row);
     }
+  });
+
+  it('R3 — dès 640 px le titre et les actions sont empilés, jamais côte à côte', () => {
+    render(<LoansPage />);
+    const header = screen.getByRole('heading', { level: 1 }).closest('header') as HTMLElement;
+    expect(header.className).toContain('sm:flex-col');
+    expect(header.className).not.toContain('sm:flex-row');
+    expect(header.className).not.toMatch(/(^|\s)(md|lg|xl|2xl):flex-row/);
   });
 });
