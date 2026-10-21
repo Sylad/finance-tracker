@@ -103,7 +103,17 @@ export function ForecastPage() {
               <ReferenceLine y={0} stroke="hsl(var(--border-strong))" />
               <Bar dataKey="income" name="Revenus" stackId="cf" fill="hsl(160 84% 50%)" radius={[2, 2, 0, 0]} />
               <Bar dataKey="expense" name="Dépenses" stackId="cf" fill="hsl(0 84% 60%)" radius={[2, 2, 0, 0]} />
-              <Line type="monotone" dataKey="net" name="Solde" stroke="hsl(var(--fg-bright))" strokeWidth={2} dot={{ r: 3 }} />
+              {/* Halo sombre sous la courbe : le blanc seul tombe à ≈ 1,6:1 sur la barre verte (WCAG 1.4.11). */}
+              <Line type="monotone" dataKey="net" stroke="hsl(var(--bg))" strokeWidth={5} dot={false} activeDot={false} legendType="none" tooltipType="none" isAnimationActive={false} />
+              <Line
+                type="monotone"
+                dataKey="net"
+                name="Solde"
+                stroke="hsl(var(--fg-bright))"
+                strokeWidth={2}
+                dot={{ r: 3.5, fill: 'hsl(var(--fg-bright))', stroke: 'hsl(var(--bg))', strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: 'hsl(var(--fg-bright))', stroke: 'hsl(var(--bg))', strokeWidth: 2 }}
+              />
             </ComposedChart>
           </ResponsiveContainer>
         </div>

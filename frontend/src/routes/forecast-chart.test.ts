@@ -32,4 +32,13 @@ describe('Prévisions — graphe : montants exacts et solde (L90)', () => {
   it('R4 — le solde mensuel est tracé (série « Solde » sur le graphe)', () => {
     expect(source).toMatch(/<Line[^>]*dataKey="net"[^>]*name="Solde"/);
   });
+
+  it('R5 — la courbe Solde a un contour sombre (halo + points cerclés) : lisible sur la barre verte (WCAG 1.4.11)', () => {
+    const halo = source.match(/<Line[^>]*stroke="hsl\(var\(--bg\)\)"[^>]*\/>/);
+    expect(halo?.[0]).toContain('dataKey="net"');
+    expect(halo?.[0]).toContain('tooltipType="none"');
+    const line = source.match(/<Line[^>]*name="Solde"[^>]*\/>/);
+    expect(line?.[0]).toMatch(/dot=\{\{[^}]*stroke: 'hsl\(var\(--bg\)\)'/);
+    expect(line?.[0]).toMatch(/activeDot=\{\{[^}]*stroke: 'hsl\(var\(--bg\)\)'/);
+  });
 });
