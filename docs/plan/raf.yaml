@@ -967,3 +967,4 @@ lots:
     visible: true
     created: 2026-10-19
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant (3 minor notes: montant absent du nom accessible, <ul> de légende sans role=list, mois calculé sur l'heure du navigateur ; captures non prises, Playwright indisponible) — orchestré (vague 2026-10-19-fin-prev, 0 passe(s) de correction)", commit: f25ea49b958ec41a03154f2080ff2b3579cf342d }
