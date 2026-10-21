@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-21 19:34",
+  "generated": "2026-10-21 19:41",
   "entries": [
+    {
+      "slug": "2026-10-21-bilan-annuel-legende-entrees-sorties-distincte",
+      "title": "Bilan annuel : légende Entrées et Sorties distincte",
+      "date": "2026-10-21",
+      "lots": [
+        "L106"
+      ],
+      "captures": [
+        "captures/bilan-legende-1440.png",
+        "captures/bilan-legende-390.png"
+      ],
+      "alts": [
+        "Bilan annuel, graphique Cash flow mensuel : la légende montre Entrées en trait plein à rond et Sorties en pointillé à carré",
+        "Même graphique et même légende sur un écran de téléphone"
+      ],
+      "html": "<p>Sous le graphique « Cash flow mensuel » du Bilan annuel, la légende dessine maintenant les deux séries comme les courbes elles-mêmes : « Entrées » en trait plein avec un rond, « Sorties » en pointillé avec un carré. Les deux ne se distinguent plus seulement par la couleur.</p>"
+    },
     {
       "slug": "2026-10-21-bilan-annuel-le-montant-verse-en-epargne-est-juste",
       "title": "Bilan annuel : le montant versé en épargne est juste",

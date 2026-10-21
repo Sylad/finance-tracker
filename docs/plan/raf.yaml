@@ -1120,7 +1120,7 @@ lots:
     review: { date: 2026-10-21, verdict: "compliant (1 minor note: repli Top catégories limité au top 6) — orchestré (vague 2026-10-21-fin-epargne, 0 passe(s) de correction)", commit: 6110a175e20b6c1333441f7b435e172b646952f4 }
   - id: L106
     title: "Bilan annuel : la légende du graphique « Cash flow mensuel » dessine le même pictogramme pour Entrées et Sorties — Sorties en pointillé avec marqueur carré comme la courbe (WCAG 1.4.1, QA L99)"
-    public: "Bilan annuel : légende Entrées / Sorties distincte"
+    public: "Bilan annuel : légende Entrées et Sorties distincte"
     status: doing
     estimate: 0.1
     visible: true
