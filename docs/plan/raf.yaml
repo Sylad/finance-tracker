@@ -1053,10 +1053,11 @@ lots:
   - id: L100
     title: "Bilan annuel : une erreur de la liste s'affiche « Pas encore de bilan » et une erreur du détail laisse « Chargement… » sans fin — ErrorState avec Réessayer (comme L87) — revue UX L29"
     public: "Bilan annuel : message clair en cas d'erreur"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     created: 2026-10-21
+    started: 2026-10-21
   - id: L101
     title: "Bilan annuel : vocabulaire — Entrées/Sorties au lieu de Crédits/Débits (comme la légende et le tableau de bord), « Revenus récurrents » au lieu de « Crédits récurrents » (Crédits = emprunts dans la navigation) — revue UX L29"
     public: "Bilan annuel : mots Entrées et Sorties partout"
