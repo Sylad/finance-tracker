@@ -13,7 +13,7 @@ vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect()
 vi.mock('recharts', () => {
   const Nop = () => null;
   return {
-    BarChart: Nop, Bar: Nop, XAxis: Nop, YAxis: Nop, Tooltip: Nop, ReferenceLine: Nop,
+    ComposedChart: Nop, Bar: Nop, Line: Nop, XAxis: Nop, YAxis: Nop, Tooltip: Nop, ReferenceLine: Nop,
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   };
 });

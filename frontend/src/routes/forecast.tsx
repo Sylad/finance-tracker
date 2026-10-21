@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts';
 import { Link } from '@tanstack/react-router';
 import { useForecast } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
-import { formatEUR, cn, chartTooltipProps } from '@/lib/utils';
+import { formatEUR, formatEURCompact, cn, chartTooltipProps } from '@/lib/utils';
+import { forecastChartData, forecastTooltipFormatter } from './forecast-chart';
 import { DECLARATION_TYPE_LABELS } from '@/types/api';
 
 const HORIZONS = [3, 6, 12] as const;
@@ -71,12 +72,7 @@ export function ForecastPage() {
     );
   }
 
-  const chartData = months.map((m) => ({
-    label: m.month.slice(2),
-    income: Math.round(m.income),
-    expense: -Math.round(m.expense),
-    net: Math.round(m.net),
-  }));
+  const chartData = forecastChartData(months);
 
   return (
     <>
@@ -90,23 +86,25 @@ export function ForecastPage() {
         <div className="stat-label mb-4">Cash flow projeté</div>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }} stackOffset="sign">
+            <ComposedChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }} stackOffset="sign">
               <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis
                 tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
                 width={60}
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                tickFormatter={formatEURCompact}
+                allowDecimals={false}
               />
               <Tooltip
                 {...chartTooltipProps}
-                formatter={(v: number, name: string) => [formatEUR(Math.abs(v)), name]}
+                formatter={forecastTooltipFormatter}
               />
               <ReferenceLine y={0} stroke="hsl(var(--border-strong))" />
               <Bar dataKey="income" name="Revenus" stackId="cf" fill="hsl(160 84% 50%)" radius={[2, 2, 0, 0]} />
               <Bar dataKey="expense" name="Dépenses" stackId="cf" fill="hsl(0 84% 60%)" radius={[2, 2, 0, 0]} />
-            </BarChart>
+              <Line type="monotone" dataKey="net" name="Solde" stroke="hsl(var(--fg-bright))" strokeWidth={2} dot={{ r: 3 }} />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </section>
