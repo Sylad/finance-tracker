@@ -114,10 +114,15 @@ export function YearlyPage() {
               </div>
             </div>
             <div className="card p-5">
-              <div className="stat-label">Épargne nette</div>
+              <div className="stat-label">Solde net (entrées − sorties)</div>
               <div className={cn('font-display text-xl font-semibold tabular mt-2', summary.netSavings >= 0 ? 'text-positive' : 'text-negative')}>
                 {formatEUR(summary.netSavings, true)}
               </div>
+              {summary.savingsDeposited !== undefined && (
+                <div className="text-xs text-fg-dim tabular mt-1">
+                  dont {formatEUR(summary.savingsDeposited)} versés en épargne
+                </div>
+              )}
             </div>
             <div className="card p-5">
               <div className="stat-label">Score moyen</div>

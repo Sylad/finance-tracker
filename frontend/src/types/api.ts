@@ -131,6 +131,7 @@ export interface YearlySummary {
   totalCredits: number;
   totalDebits: number;
   netSavings: number;
+  savingsDeposited?: number;
   averageMonthlyCredits: number;
   averageMonthlyDebits: number;
   averageHealthScore: number;

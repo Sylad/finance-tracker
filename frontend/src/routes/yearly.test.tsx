@@ -41,6 +41,7 @@ const summary = (monthlyCashFlow?: YearlySummary['monthlyCashFlow']): YearlySumm
   totalCredits: 2500,
   totalDebits: 2300,
   netSavings: 200,
+  savingsDeposited: 150,
   averageMonthlyCredits: 1250,
   averageMonthlyDebits: 1150,
   averageHealthScore: 70,
@@ -94,6 +95,24 @@ describe('<YearlyPage /> (L65)', () => {
     expect(screen.queryByText('Crédits')).toBeNull();
     expect(screen.queryByText('Débits')).toBeNull();
     expect(screen.queryByText('Crédits récurrents')).toBeNull();
+  });
+
+  it('L104 — la carte se nomme « Solde net (entrées − sorties) », plus « Épargne nette »', () => {
+    render(<YearlyPage />);
+    expect(screen.getByText('Solde net (entrées − sorties)')).toBeTruthy();
+    expect(screen.queryByText('Épargne nette')).toBeNull();
+  });
+
+  it('L104 — la carte affiche « dont X € versés en épargne » avec le total du bilan', () => {
+    render(<YearlyPage />);
+    const line = screen.getByText(/dont .* versés en épargne/);
+    expect(line.textContent?.replace(/\s/g, ' ')).toContain('150');
+  });
+
+  it('L104 — sans total versé (bilan sans donnée), la ligne « dont » n\'est pas affichée', () => {
+    state.detail = { data: { ...summary([{ month: 1, credits: 1, debits: 1, net: 0 }]), savingsDeposited: undefined } };
+    render(<YearlyPage />);
+    expect(screen.queryByText(/versés en épargne/)).toBeNull();
   });
 
   it('R1 — le sélecteur d\'année expose aria-pressed et marque l\'année choisie d\'un liseré d\'accent (≥ 3:1)', () => {
