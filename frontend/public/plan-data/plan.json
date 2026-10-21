@@ -229,7 +229,8 @@
     {
       "id": "L90",
       "title": "Prévisions : montants exacts et solde du mois sur le graphe",
-      "status": "todo"
+      "status": "doing",
+      "started": "2026-10-21"
     },
     {
       "id": "L91",

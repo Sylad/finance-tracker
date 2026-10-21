@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-19 20:58",
+  "generated": "2026-10-21 14:26",
   "entries": [
+    {
+      "slug": "2026-10-21-previsions-montants-exacts-et-solde-du-mois-sur-le-graphe",
+      "title": "Prévisions : montants exacts et solde du mois sur le graphe",
+      "date": "2026-10-21",
+      "lots": [
+        "L90"
+      ],
+      "captures": [
+        "captures/previsions-graphe-1440.png",
+        "captures/previsions-graphe-390.png"
+      ],
+      "alts": [
+        "Page Prévisions sur ordinateur : graphe avec barres Revenus et Dépenses, courbe du solde et info-bulle aux montants exacts avec une ligne Solde",
+        "Page Prévisions sur téléphone : le même graphe avec la courbe du solde"
+      ],
+      "html": "<p>Sur la page Prévisions, le graphe « Cash flow projeté » affiche maintenant les montants exacts : en survolant un mois, l'info-bulle indique 2 068,15 € là où elle arrondissait à 2 068,00 €. Elle ajoute une ligne <strong>Solde</strong> pour le mois (en négatif quand le mois est déficitaire).</p>\n<p>Le solde de chaque mois est aussi tracé en courbe sur les barres de revenus et de dépenses, et l'axe des montants affiche des euros entiers lisibles (« 1 500 € ») au lieu de graduations arrondies au millier.</p>"
+    },
     {
       "slug": "2026-10-19-previsions-message-clair-en-cas-d-erreur-ou-sans-declaration",
       "title": "Prévisions : message clair en cas d'erreur ou sans déclaration",
