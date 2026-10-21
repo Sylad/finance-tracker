@@ -1528,9 +1528,9 @@ export class LoansService {
     const minP = Math.min(...payments);
     const maxP = Math.max(...payments);
     if (Math.abs(maxP - minP) < 0.01) {
-      reasons.push(`Mensualité identique : ${minP.toFixed(2)} €`);
+      reasons.push(`Mensualité identique : ${formatDecimalFr(minP)} €`);
     } else {
-      reasons.push(`Mensualités proches : ${payments.map((p) => p.toFixed(2) + ' €').join(' / ')}`);
+      reasons.push(`Mensualités proches : ${payments.map((p) => formatDecimalFr(p) + ' €').join(' / ')}`);
     }
     const withContract = cluster.filter((l) => l.contractRef);
     const withRum = cluster.filter((l) => l.rumRefs && l.rumRefs.length > 0);

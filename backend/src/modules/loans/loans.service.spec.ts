@@ -814,6 +814,30 @@ describe('LoansService', () => {
       expect(groups[0].reasons.length).toBeGreaterThan(0);
     });
 
+    it('L97 — les montants des raisons de doublon sont écrits en fr-FR (virgule)', async () => {
+      await svc.create({
+        name: 'Sofinco A', type: 'classic', category: 'auto',
+        monthlyPayment: 240, matchPattern: 'SOFINCO', isActive: true,
+        creditor: 'Sofinco', contractRef: '11111111',
+      });
+      await svc.create({
+        name: 'Sofinco B', type: 'classic', category: 'auto',
+        monthlyPayment: 240, matchPattern: 'SOFINCO', isActive: true,
+        creditor: 'Sofinco',
+      });
+      const identiques = await svc.detectDuplicates();
+      expect(identiques[0].reasons).toContain('Mensualité identique : 240,00 €');
+
+      await svc.create({
+        name: 'Sofinco C', type: 'classic', category: 'auto',
+        monthlyPayment: 245.5, matchPattern: 'SOFINCO', isActive: true,
+        creditor: 'Sofinco',
+      });
+      const proches = (await svc.detectDuplicates())[0].reasons.join('\n');
+      expect(proches).toMatch(/Mensualités proches : [\d, €/]*245,50 €/);
+      expect(proches).not.toMatch(/\d\.\d\d €/);
+    });
+
     it('does NOT group when contractRefs are franchement différents', async () => {
       await svc.create({
         name: 'Sofinco A', type: 'classic', category: 'auto',
