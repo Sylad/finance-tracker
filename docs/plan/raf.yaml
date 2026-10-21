@@ -1088,10 +1088,11 @@ lots:
   - id: L103
     title: "Prévisions : le sélecteur 3/6/12 mois marque l'horizon choisi d'un liseré d'accent ≥ 3:1 (fond surface-3 seul ≈ 1,1:1, WCAG 1.4.11), comme le sélecteur du Bilan annuel (revue L102)"
     public: "Prévisions : l'horizon choisi se voit mieux"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     created: 2026-10-21
+    started: 2026-10-21
   - id: L104
     title: "Bilan annuel : « Épargne nette » renommée « Solde net (entrées − sorties) », avec une ligne « dont X € versés en épargne » (décision Sylvain 21-10, option a, revue UX L29)"
     public: "Bilan annuel : le solde net dit ce qu'il compte"
