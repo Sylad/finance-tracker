@@ -958,6 +958,7 @@ lots:
     visible: true
     created: 2026-10-19
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "conforme, 4 mineurs en note : le halo de la courbe Solde n'est pas animé et se dessine décalé pendant la transition ; pas de légende pour la courbe Solde ; captures Nouveautés antérieures au contour ; titre du test R1 (« 2 k ») inexact — orchestré (vague 2026-10-19-fin-prev, 1 passe(s) de correction)", commit: fe74579ada892d7fb8b2690f7711076f329fe31d }
   - id: L91
     title: "Prévisions : chaque carte dit en texte « Passé », « En cours » ou « Prévu » (badge à gauche du solde) ; type et rapprochement de chaque ligne dans son nom accessible ; légende sous le titre (● Revenus ● Crédits ● Abonnements ● Dépenses · estompé = non rapproché) — sans changer mise en page, couleurs ni animations — revue UX L28"
     public: "Prévisions : mois passés, en cours et prévus distingués en clair"
