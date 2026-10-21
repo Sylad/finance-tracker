@@ -1026,8 +1026,9 @@ lots:
     finished: 2026-10-21
   - id: L97
     title: "Prêts › Doublons : les raisons de doublon de detectDuplicates (loans.service.ts l.1531 et 1533) écrivent les montants au point décimal (« Mensualité identique : 240.00 € ») — format fr-FR (revue L94)"
-    status: doing
+    status: done
     estimate: 0.1
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant — orchestré (vague 2026-10-21-fin-l97, 0 passe(s) de correction)", commit: d6f22d435b34ae2e4d1a2ab759500f41967f0151 }
+    finished: 2026-10-21
