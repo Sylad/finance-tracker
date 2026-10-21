@@ -30,3 +30,6 @@ export function forecastMonthStatus(month: string, now: Date = new Date()): Fore
   const diff = y * 12 + m - (now.getFullYear() * 12 + now.getMonth() + 1);
   return diff < 0 ? 'Passé' : diff === 0 ? 'En cours' : 'Prévu';
 }
+
+/** Réglage d'animation commun au halo et à la ligne du Solde : sans lui, le halo (immobile) précède la ligne qui se dessine. */
+export const SOLDE_LINE_ANIMATION = { isAnimationActive: true, animationDuration: 800, animationEasing: 'ease-out' } as const;

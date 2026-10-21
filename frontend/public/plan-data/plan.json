@@ -241,6 +241,12 @@
       "status": "done",
       "started": "2026-10-21",
       "finished": "2026-10-21"
+    },
+    {
+      "id": "L92",
+      "title": "Prévisions : la courbe du solde se dessine d'un seul trait",
+      "status": "doing",
+      "started": "2026-10-21"
     }
   ]
 }

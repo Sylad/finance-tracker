@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { forecastChartData, forecastTooltipFormatter } from './forecast-chart';
+import { SOLDE_LINE_ANIMATION, forecastChartData, forecastTooltipFormatter } from './forecast-chart';
 
 const months = [{ month: '2026-11', income: 3000.5, expense: 932.35, net: 2068.15, occurrences: [] }];
 
@@ -40,5 +40,13 @@ describe('Prévisions — graphe : montants exacts et solde (L90)', () => {
     const line = source.match(/<Line[^>]*name="Solde"[^>]*\/>/);
     expect(line?.[0]).toMatch(/dot=\{\{[^}]*stroke: 'hsl\(var\(--bg\)\)'/);
     expect(line?.[0]).toMatch(/activeDot=\{\{[^}]*stroke: 'hsl\(var\(--bg\)\)'/);
+  });
+
+  it('R6 — halo et ligne blanche du Solde partagent le même réglage d\'animation : ils se dessinent ensemble (L92)', () => {
+    const lines = source.match(/<Line[^>]*dataKey="net"[\s\S]*?\/>/g) ?? [];
+    expect(lines).toHaveLength(2);
+    for (const line of lines) expect(line).toContain('{...SOLDE_LINE_ANIMATION}');
+    expect(source).not.toMatch(/isAnimationActive/);
+    expect(SOLDE_LINE_ANIMATION.isAnimationActive).toBe(true);
   });
 });

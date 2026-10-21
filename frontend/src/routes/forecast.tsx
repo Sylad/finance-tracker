@@ -5,7 +5,7 @@ import { useForecast } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
 import { formatEUR, formatEURCompact, cn, chartTooltipProps } from '@/lib/utils';
-import { forecastChartData, forecastMonthStatus, forecastTooltipFormatter } from './forecast-chart';
+import { SOLDE_LINE_ANIMATION, forecastChartData, forecastMonthStatus, forecastTooltipFormatter } from './forecast-chart';
 import { DECLARATION_TYPE_LABELS, type DeclarationType } from '@/types/api';
 
 const DOT_CLASS: Record<DeclarationType, string> = {
@@ -129,7 +129,7 @@ export function ForecastPage() {
               <Bar dataKey="income" name="Revenus" stackId="cf" fill="hsl(160 84% 50%)" radius={[2, 2, 0, 0]} />
               <Bar dataKey="expense" name="Dépenses" stackId="cf" fill="hsl(0 84% 60%)" radius={[2, 2, 0, 0]} />
               {/* Halo sombre sous la courbe : le blanc seul tombe à ≈ 1,6:1 sur la barre verte (WCAG 1.4.11). */}
-              <Line type="monotone" dataKey="net" stroke="hsl(var(--bg))" strokeWidth={5} dot={false} activeDot={false} legendType="none" tooltipType="none" isAnimationActive={false} />
+              <Line type="monotone" dataKey="net" stroke="hsl(var(--bg))" strokeWidth={5} dot={false} activeDot={false} legendType="none" tooltipType="none" {...SOLDE_LINE_ANIMATION} />
               <Line
                 type="monotone"
                 dataKey="net"
@@ -138,6 +138,7 @@ export function ForecastPage() {
                 strokeWidth={2}
                 dot={{ r: 3.5, fill: 'hsl(var(--fg-bright))', stroke: 'hsl(var(--bg))', strokeWidth: 2 }}
                 activeDot={{ r: 5, fill: 'hsl(var(--fg-bright))', stroke: 'hsl(var(--bg))', strokeWidth: 2 }}
+                {...SOLDE_LINE_ANIMATION}
               />
             </ComposedChart>
           </ResponsiveContainer>
