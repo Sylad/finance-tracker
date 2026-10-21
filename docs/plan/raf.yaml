@@ -966,7 +966,9 @@ lots:
     ux: { date: 2026-10-21, verdict: "conforme (lead, captures 1440/390 : courbe Solde contourée) ; mineurs : halo décalé pendant l'animation (sous-tâche L92), pas de légende du Solde, captures Nouveautés antérieures au contour, titre du test R1 inexact" }
     finished: 2026-10-21
     tasks:
-      - { id: t1, title: "Prévisions : le halo sombre de la courbe Solde se dessine décalé de la ligne blanche pendant l'animation (changement d'horizon, premier chargement) — même réglage d'animation sur les deux <Line> (revue UX L90)", status: todo }
+      - { id: t1, title: "Prévisions : le halo sombre de la courbe Solde se dessine décalé de la ligne blanche pendant l'animation (changement d'horizon, premier chargement) — même réglage d'animation sur les deux <Line> (revue UX L90)", status: dropped }
+    notes:
+      - { date: 2026-10-21, text: "[L90/t1] abandonné : remplacée par un lot autonome (L90 est clos)" }
   - id: L91
     title: "Prévisions : chaque carte dit en texte « Passé », « En cours » ou « Prévu » (badge à gauche du solde) ; type et rapprochement de chaque ligne dans son nom accessible ; légende sous le titre (● Revenus ● Crédits ● Abonnements ● Dépenses · estompé = non rapproché) — sans changer mise en page, couleurs ni animations — revue UX L28"
     public: "Prévisions : mois passés, en cours et prévus distingués en clair"
@@ -978,3 +980,9 @@ lots:
     review: { date: 2026-10-21, verdict: "compliant (3 minor notes: montant absent du nom accessible, <ul> de légende sans role=list, mois calculé sur l'heure du navigateur ; captures non prises, Playwright indisponible) — orchestré (vague 2026-10-19-fin-prev, 0 passe(s) de correction)", commit: f25ea49b958ec41a03154f2080ff2b3579cf342d }
     ux: { date: 2026-10-21, verdict: "conforme (lead, captures 1440/390 : légende des lignes, badges En cours/Prévu) ; 3 mineurs : montant absent du nom accessible, <ul> de légende sans role=list, mois en heure du navigateur" }
     finished: 2026-10-21
+  - id: L92
+    title: "Prévisions : le halo sombre de la courbe Solde se dessine décalé de la ligne blanche pendant l'animation (changement d'horizon, premier chargement) — même réglage d'animation sur les deux <Line> (revue UX L90)"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-21
