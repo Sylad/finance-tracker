@@ -3,7 +3,7 @@ import { Trophy, Frown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, AreaChart, Area } from 'recharts';
 import { useYearlySummaries, useYearlySummary } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
-import { LoadingState, EmptyState } from '@/components/loading-state';
+import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
 import { ScoreBadge } from '@/components/score-ring';
 import { cashFlowSeries } from '@/lib/yearly-cashflow';
 import { formatEUR, formatEURCompact, formatMonth, formatMonthShort, cn, chartTooltipProps } from '@/lib/utils';
@@ -21,6 +21,19 @@ export function YearlyPage() {
   const cashFlow = useMemo(() => (detail.data ? cashFlowSeries(detail.data) : []), [detail.data]);
 
   if (list.isLoading) return <LoadingState />;
+
+  if (list.isError && !list.data) {
+    return (
+      <>
+        <PageHeader title="Bilan annuel" />
+        <ErrorState
+          message="Impossible de charger les bilans annuels."
+          onRetry={() => { void list.refetch(); }}
+          retrying={list.isFetching}
+        />
+      </>
+    );
+  }
 
   if (years.length === 0) {
     return (
@@ -56,7 +69,13 @@ export function YearlyPage() {
         }
       />
 
-      {!summary ? (
+      {!summary && detail.isError ? (
+        <ErrorState
+          message={`Impossible de charger le bilan ${activeYear}.`}
+          onRetry={() => { void detail.refetch(); }}
+          retrying={detail.isFetching}
+        />
+      ) : !summary ? (
         <LoadingState />
       ) : (
         <>
