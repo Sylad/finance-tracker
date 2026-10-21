@@ -1112,18 +1112,22 @@ lots:
   - id: L105
     title: "Bilan annuel : « dont 0,00 € versés en épargne » alors que le Top catégories montre Épargne 900,00 € (prod démo) — un bilan écrit sans savingsDeposited est recalculé par withCashFlow depuis archive/<année>, vide quand les relevés de l'année ne sont pas archivés (démo, année en cours) ; recalculer depuis les relevés qui ont produit le bilan, test avec un bilan sans le champ et une archive vide (QA L104)"
     public: "Bilan annuel : le montant versé en épargne est juste"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant (1 minor note: repli Top catégories limité au top 6) — orchestré (vague 2026-10-21-fin-epargne, 0 passe(s) de correction)", commit: 6110a175e20b6c1333441f7b435e172b646952f4 }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, capture 1440 : « dont 900,00 € versés en épargne » = Épargne du Top catégories) ; mineur : repli lu dans le Top catégories, tronqué à 6" }
+    finished: 2026-10-21
   - id: L106
     title: "Bilan annuel : la légende du graphique « Cash flow mensuel » dessine le même pictogramme pour Entrées et Sorties — Sorties en pointillé avec marqueur carré comme la courbe (WCAG 1.4.1, QA L99)"
     public: "Bilan annuel : légende Entrées et Sorties distincte"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant after 2 minor notes (rond Entrées creux/sombre dans la légende contre rond à fond #fff sur la courbe ; README qui dit « rond plein ») — orchestré (vague 2026-10-21-fin-epargne, 0 passe(s) de correction)", commit: 3189a3427266924f454219f04d9323fea350d385 }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, capture 1440 : légende Entrées rond / Sorties carré en pointillé) ; mineurs : rond Entrées creux dans la légende contre plein sur la courbe, README qui dit « rond plein »" }
+    finished: 2026-10-21

@@ -301,14 +301,16 @@
     {
       "id": "L105",
       "title": "Bilan annuel : le montant versé en épargne est juste",
-      "status": "doing",
-      "started": "2026-10-21"
+      "status": "done",
+      "started": "2026-10-21",
+      "finished": "2026-10-21"
     },
     {
       "id": "L106",
       "title": "Bilan annuel : légende Entrées et Sorties distincte",
-      "status": "doing",
-      "started": "2026-10-21"
+      "status": "done",
+      "started": "2026-10-21",
+      "finished": "2026-10-21"
     }
   ]
 }
