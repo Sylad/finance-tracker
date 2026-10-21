@@ -994,3 +994,4 @@ lots:
     estimate: 0.1
     created: 2026-10-21
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant: 0 blocking, 0 major, 1 minor note (the sub-credit split suffix in loans.service.ts:520 still writes the amount with a decimal point) — orchestré (vague 2026-10-21-suite3, 0 passe(s) de correction)", commit: 5182d6a542c197fbe386d30c9605fc33fe60bfc5 }
