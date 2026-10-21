@@ -7,7 +7,7 @@ import { MonthlyStatement, StatementSummary } from '../../models/monthly-stateme
 import { ScoreHistoryEntry } from '../../models/financial-health-score.model';
 import { RecurringCredit } from '../../models/recurring-credit.model';
 import { YearlySummary } from '../../models/yearly-summary.model';
-import { buildMonthlyCashFlow, buildYearlySummary } from './yearly-summary.builder';
+import { buildMonthlyCashFlow, buildYearlySummary, sumSavingsDeposited } from './yearly-summary.builder';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { slugify } from '../../common/text';
 
@@ -265,11 +265,15 @@ export class StorageService implements OnModuleInit {
     }
   }
 
-  /** Bilans écrits avant L65 : entrées/sorties recalculées depuis l'archive (lecture seule). */
+  /** Bilans écrits avant L65 / L104 : entrées/sorties et versé en épargne recalculés depuis l'archive (lecture seule). */
   private async withCashFlow(summary: YearlySummary): Promise<YearlySummary> {
-    if (summary.monthlyCashFlow) return summary;
+    if (summary.monthlyCashFlow && summary.savingsDeposited !== undefined) return summary;
     const statements = await this.readStatementsInDir(path.join(this.archiveDir, String(summary.year)));
-    return { ...summary, monthlyCashFlow: buildMonthlyCashFlow(statements) };
+    return {
+      ...summary,
+      monthlyCashFlow: summary.monthlyCashFlow ?? buildMonthlyCashFlow(statements),
+      savingsDeposited: summary.savingsDeposited ?? sumSavingsDeposited(statements),
+    };
   }
 
   // ── Calendar-year archival ────────────────────────────────────────────────

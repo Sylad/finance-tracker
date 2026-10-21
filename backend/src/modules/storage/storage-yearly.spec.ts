@@ -30,4 +30,18 @@ describe('StorageService — bilan annuel ancien format', () => {
     const all = await svc.getAllYearlySummaries();
     expect(all[0].monthlyCashFlow).toHaveLength(2);
   });
+
+  it("recalcule savingsDeposited depuis l'archive quand le bilan écrit n'en a pas (L104)", async () => {
+    fs.writeFileSync(path.join(dir, 'yearly', '2025.json'), JSON.stringify({ year: 2025, scoreProgression: [], monthlyCashFlow: [] }));
+    fs.writeFileSync(
+      path.join(dir, 'statements', 'archive', '2025', '2025-01.json'),
+      JSON.stringify({ id: '2025-01', month: 1, year: 2025, totalCredits: 1, totalDebits: 1, transactions: [{ amount: -75, category: 'savings' }] }),
+    );
+    fs.writeFileSync(
+      path.join(dir, 'statements', 'archive', '2025', '2025-02.json'),
+      JSON.stringify({ id: '2025-02', month: 2, year: 2025, totalCredits: 1, totalDebits: 1 }),
+    );
+    const svc = new StorageService({ get: () => dir } as any, { getDataDir: () => dir } as any);
+    expect((await svc.getYearlySummary(2025))!.savingsDeposited).toBe(75);
+  });
 });

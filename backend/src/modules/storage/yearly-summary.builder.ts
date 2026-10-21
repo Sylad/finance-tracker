@@ -16,6 +16,17 @@ export function buildMonthlyCashFlow(statements: MonthlyStatement[]): YearlyMont
     }));
 }
 
+/** Total en € versé en épargne : sorties de catégorie `savings` (les entrées sont des retraits, ignorées). */
+export function sumSavingsDeposited(statements: MonthlyStatement[]): number {
+  let total = 0;
+  for (const s of statements) {
+    for (const t of s.transactions ?? []) {
+      if (t.category === 'savings' && t.amount < 0) total += -t.amount;
+    }
+  }
+  return round2(total);
+}
+
 /** Agrège les relevés d'une année en bilan annuel (null si aucun relevé). */
 export function buildYearlySummary(year: number, statements: MonthlyStatement[]): YearlySummary | null {
   if (statements.length === 0) return null;
@@ -62,6 +73,7 @@ export function buildYearlySummary(year: number, statements: MonthlyStatement[])
     bestMonth: best,
     worstMonth: worst,
     scoreProgression: scores,
+    savingsDeposited: sumSavingsDeposited(statements),
     monthlyCashFlow: buildMonthlyCashFlow(statements),
     topCategories,
     recurringCreditsCount,

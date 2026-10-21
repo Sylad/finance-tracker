@@ -22,7 +22,10 @@ export interface YearlySummary {
   currency: string;
   totalCredits: number;
   totalDebits: number;
+  /** Entrées − sorties de l'année (solde net) : ne dit rien de ce qui a été mis de côté. */
   netSavings: number;
+  /** Total des sorties de catégorie épargne (€, positif). Absent des bilans écrits avant L104 ; le stockage le recalcule à la lecture. */
+  savingsDeposited?: number;
   averageMonthlyCredits: number;
   averageMonthlyDebits: number;
   averageHealthScore: number;
