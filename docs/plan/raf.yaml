@@ -1054,27 +1054,47 @@ lots:
   - id: L100
     title: "Bilan annuel : une erreur de la liste s'affiche « Pas encore de bilan » et une erreur du détail laisse « Chargement… » sans fin — ErrorState avec Réessayer (comme L87) — revue UX L29"
     public: "Bilan annuel : message clair en cas d'erreur"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant — 0 bloquant, 0 majeur, 1 mineur (sous-titre « ... » laissé en état d'erreur du détail) — orchestré (vague 2026-10-21-fin-bilan, 0 passe(s) de correction)", commit: 31dc77dc3f328645648b41e56c4f60b427b8807f }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, capture erreur du détail 1440 : ErrorState + Réessayer, sélecteur d'année gardé) ; 1 mineur : sous-titre « ... » laissé en erreur du détail" }
+    finished: 2026-10-21
   - id: L101
     title: "Bilan annuel : vocabulaire — Entrées/Sorties au lieu de Crédits/Débits (comme la légende et le tableau de bord), « Revenus récurrents » au lieu de « Crédits récurrents » (Crédits = emprunts dans la navigation) — revue UX L29"
     public: "Bilan annuel : mots Entrées et Sorties partout"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant — 0 bloquant, 0 majeur, 0 mineur (libellés Entrées/Sorties/Revenus récurrents cohérents avec la légende et le menu, test L101 vert, aucun débordement à 390 px) — orchestré (vague 2026-10-21-fin-bilan, 0 passe(s) de correction)", commit: 10b3c93ee7e0076febda6618da77d49c3bcd5a2d }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, capture 1440 : Entrées/Sorties, Revenus récurrents)" }
+    finished: 2026-10-21
   - id: L102
     title: "Bilan annuel : le sélecteur d'année expose l'année choisie (aria-pressed) avec un indicateur visuel d'au moins 3:1 (comme le sélecteur des Prévisions) — revue UX L29"
     public: "Bilan annuel : l'année choisie se voit mieux"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant after 0 fixes — 3 minor notes (Prévisions selector keeps 1.1:1 indicator, test asserts class only, README lowercase typo) — orchestré (vague 2026-10-21-fin-bilan, 0 passe(s) de correction)", commit: 6eb468862d9451d89d2cb4151b26145279415fb9 }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, capture 1440 : année choisie cerclée d'un liseré d'accent) ; mineurs : test R1 n'asserte que la classe, minuscule après un point au README" }
+    finished: 2026-10-21
+  - id: L103
+    title: "Prévisions : le sélecteur 3/6/12 mois marque l'horizon choisi d'un liseré d'accent ≥ 3:1 (fond surface-3 seul ≈ 1,1:1, WCAG 1.4.11), comme le sélecteur du Bilan annuel (revue L102)"
+    public: "Prévisions : l'horizon choisi se voit mieux"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-21
+  - id: L104
+    title: "Bilan annuel : « Épargne nette » renommée « Solde net (entrées − sorties) », avec une ligne « dont X € versés en épargne » (décision Sylvain 21-10, option a, revue UX L29)"
+    public: "Bilan annuel : le solde net dit ce qu'il compte"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-21

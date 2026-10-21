@@ -265,20 +265,33 @@
     {
       "id": "L100",
       "title": "Bilan annuel : message clair en cas d'erreur",
-      "status": "doing",
-      "started": "2026-10-21"
+      "status": "done",
+      "started": "2026-10-21",
+      "finished": "2026-10-21"
     },
     {
       "id": "L101",
       "title": "Bilan annuel : mots Entrées et Sorties partout",
-      "status": "doing",
-      "started": "2026-10-21"
+      "status": "done",
+      "started": "2026-10-21",
+      "finished": "2026-10-21"
     },
     {
       "id": "L102",
       "title": "Bilan annuel : l'année choisie se voit mieux",
-      "status": "doing",
-      "started": "2026-10-21"
+      "status": "done",
+      "started": "2026-10-21",
+      "finished": "2026-10-21"
+    },
+    {
+      "id": "L103",
+      "title": "Prévisions : l'horizon choisi se voit mieux",
+      "status": "todo"
+    },
+    {
+      "id": "L104",
+      "title": "Bilan annuel : le solde net dit ce qu'il compte",
+      "status": "todo"
     }
   ]
 }
