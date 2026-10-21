@@ -1046,10 +1046,11 @@ lots:
   - id: L99
     title: "Bilan annuel : données mensuelles des graphiques lisibles sans souris (aria-label de résumé + tableau Mois/Score/Entrées/Sorties/Solde), Sorties distinguées autrement que par la couleur (trait pointillé, marqueur carré), titres de section en h2, graduation 100 de l'axe score non rognée (« 00 ») — revue UX L29"
     public: "Bilan annuel : détail mois par mois lisible sans souris"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-21
+    started: 2026-10-21
   - id: L100
     title: "Bilan annuel : une erreur de la liste s'affiche « Pas encore de bilan » et une erreur du détail laisse « Chargement… » sans fin — ErrorState avec Réessayer (comme L87) — revue UX L29"
     public: "Bilan annuel : message clair en cas d'erreur"
