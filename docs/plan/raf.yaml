@@ -1034,8 +1034,9 @@ lots:
     finished: 2026-10-21
   - id: L98
     title: "Démo : DemoSeedService.refreshSeeded ne réécrit loans.json (et les autres fichiers des fixtures) que si le décalage .shift change — après L95 la prod affiche encore « CETELEM (240.00 €/mois) » et les deux COFIDIS au point décimal ; réécrire les données synthétiques quand les fixtures changent (empreinte des fixtures à côté de .shift), test (QA L94–L96)"
-    status: doing
+    status: done
     estimate: 0.25
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant — 1 commit (fe85057), aucun constat ; les quatre choix de l'auteur tiennent — orchestré (vague 2026-10-21-wh-emp, 0 passe(s) de correction)", commit: fe850579da6c6a35c330d70bc3c8c20ee8863dfe }
+    finished: 2026-10-21
