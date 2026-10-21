@@ -1109,3 +1109,17 @@ lots:
     review: { date: 2026-10-21, verdict: "compliant (0 blocking, 0 major, 1 minor : captures parasites à la racine) — orchestré (vague 2026-10-21-fin-bilan2, 0 passe(s) de correction)", commit: 9477e8bcb8ef020cc5d4f5864d67e4110a74c3c0 }
     ux: { date: 2026-10-21, verdict: "conforme (lead, capture 1440 : « Solde net (entrées − sorties) » + « dont 900,00 € versés en épargne »)" }
     finished: 2026-10-21
+  - id: L105
+    title: "Bilan annuel : « dont 0,00 € versés en épargne » alors que le Top catégories montre Épargne 900,00 € (prod démo) — un bilan écrit sans savingsDeposited est recalculé par withCashFlow depuis archive/<année>, vide quand les relevés de l'année ne sont pas archivés (démo, année en cours) ; recalculer depuis les relevés qui ont produit le bilan, test avec un bilan sans le champ et une archive vide (QA L104)"
+    public: "Bilan annuel : le montant versé en épargne est juste"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-21
+  - id: L106
+    title: "Bilan annuel : la légende du graphique « Cash flow mensuel » dessine le même pictogramme pour Entrées et Sorties — Sorties en pointillé avec marqueur carré comme la courbe (WCAG 1.4.1, QA L99)"
+    public: "Bilan annuel : légende Entrées / Sorties distincte"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-21
