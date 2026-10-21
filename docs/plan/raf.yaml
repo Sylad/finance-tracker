@@ -1000,23 +1000,32 @@ lots:
     finished: 2026-10-21
   - id: L94
     title: "Prévisions/Prêts : le suffixe de découpage en sous-crédits (loans.service.ts groupSuffix, l.520) écrit encore le montant au point décimal « (240.00 €/mois · …1234) » — formater en fr-FR et l'élargir dans loanForecastLabel (revue L93)"
-    status: doing
+    status: done
     estimate: 0.1
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant (1 minor note: l.1531-1533 loans.service montants encore au point décimal, hors périmètre) — orchestré (vague 2026-10-21-fin-loans, 0 passe(s) de correction)", commit: 4f15979b7ba80999e79322ff40b786129ba2dc38 }
+    finished: 2026-10-21
   - id: L95
     title: "Prêts : le nom du crédit démo « CETELEM (240.00 €/mois) » s'affiche au point décimal sur /loans (nom stocké, demo-fixtures.json l.2225) — recaler la fixture en fr-FR ou retirer le montant du nom à l'affichage (QA L93)"
-    status: doing
+    status: done
     estimate: 0.1
     created: 2026-10-21
     started: 2026-10-21
     review: { date: 2026-10-21, verdict: "compliant — commit 625c1f0 : 3 noms de crédits démo recalés en fr-FR, test sur tous les noms de la fixture, aucun constat — orchestré (vague 2026-10-21-fin-loans, 0 passe(s) de correction)", commit: 625c1f0466c8fd40c93d8d8edaeeb5507270059a }
+    finished: 2026-10-21
   - id: L96
     title: "Prêts à 390 px : la rangée d'actions de l'en-tête (6 boutons, 722 px) élargit la page à 738 px — défilement horizontal (QA L93, capture tmp/qa-fin-l92-93/loans-390-overflow.png)"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-21
     started: 2026-10-21
-    review: { date: 2026-10-21, verdict: "compliant after 1 fix: no bloquant or majeur finding; 2 notes mineures (Nouveauté claims « sur ordinateur, rien ne change » but at 1440 px « Nouveau crédit » wraps alone to a second line, left-aligned) — orchestré (vague 2026-10-21-fin-loans, 0 passe(s) de correction)", commit: 945470def305d8e125815ac720d5b132eecc6ea3 }
+    review: { date: 2026-10-21, verdict: "conforme (revue Sonnet après correction b96a480/083b695 : en-tête empilé dès 640 px, suggestions sans débordement à 320 px, Nouveauté et captures conformes ; 534 tests, tsc vert)", commit: 083b6950ba431a22e444b84ebabfc612a72bf51d }
+    ux: { date: 2026-10-21, verdict: "conforme (lead, captures recapturées 1440/390 : titre sur une ligne, 6 boutons sur une rangée à 1440, rangées multiples sans débordement à 390 ; mesures 1920/1536/1440/1024/768/390/320 px sans défilement horizontal)" }
+    finished: 2026-10-21
+  - id: L97
+    title: "Prêts › Doublons : les raisons de doublon de detectDuplicates (loans.service.ts l.1531 et 1533) écrivent les montants au point décimal (« Mensualité identique : 240.00 € ») — format fr-FR (revue L94)"
+    status: todo
+    estimate: 0.1
+    created: 2026-10-21
