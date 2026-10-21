@@ -1067,6 +1067,7 @@ lots:
     visible: true
     created: 2026-10-21
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant — 0 bloquant, 0 majeur, 0 mineur (libellés Entrées/Sorties/Revenus récurrents cohérents avec la légende et le menu, test L101 vert, aucun débordement à 390 px) — orchestré (vague 2026-10-21-fin-bilan, 0 passe(s) de correction)", commit: 10b3c93ee7e0076febda6618da77d49c3bcd5a2d }
   - id: L102
     title: "Bilan annuel : le sélecteur d'année expose l'année choisie (aria-pressed) avec un indicateur visuel d'au moins 3:1 (comme le sélecteur des Prévisions) — revue UX L29"
     public: "Bilan annuel : l'année choisie se voit mieux"
