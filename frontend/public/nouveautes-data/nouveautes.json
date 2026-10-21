@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-21 18:19",
+  "generated": "2026-10-21 18:29",
   "entries": [
+    {
+      "slug": "2026-10-21-bilan-annuel-detail-mois-par-mois-lisible-sans-souris",
+      "title": "Bilan annuel : détail mois par mois lisible sans souris",
+      "date": "2026-10-21",
+      "lots": [
+        "L99"
+      ],
+      "captures": [
+        "captures/bilan-detail-mensuel-1440.png",
+        "captures/bilan-detail-mensuel-390.png"
+      ],
+      "alts": [
+        "Bilan annuel à 1440 px : cash flow avec Sorties en pointillé à points carrés, puis tableau mois par mois",
+        "Bilan annuel à 390 px, même graphique"
+      ],
+      "html": "<p>Sur le Bilan annuel, les chiffres de chaque mois ne dépendent plus de la souris : un tableau « Détail mois par mois » donne le score, les entrées, les sorties et le solde de chaque mois, et chaque graphique a un résumé lu par les lecteurs d'écran. Dans « Cash flow mensuel », les Sorties se reconnaissent aussi à leur trait pointillé et à leurs points carrés, pas seulement à leur couleur rouge. Les titres des blocs sont de vrais titres de section, et la graduation « 100 » de l'axe du score n'est plus coupée.</p>"
+    },
     {
       "slug": "2026-10-21-bilan-annuel-l-annee-choisie-se-voit-mieux",
       "title": "Bilan annuel : l'année choisie se voit mieux",
