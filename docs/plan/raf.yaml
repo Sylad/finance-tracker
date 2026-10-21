@@ -1100,3 +1100,4 @@ lots:
     visible: true
     created: 2026-10-21
     started: 2026-10-21
+    review: { date: 2026-10-21, verdict: "compliant (0 blocking, 0 major, 1 minor : captures parasites à la racine) — orchestré (vague 2026-10-21-fin-bilan2, 0 passe(s) de correction)", commit: 9477e8bcb8ef020cc5d4f5864d67e4110a74c3c0 }
