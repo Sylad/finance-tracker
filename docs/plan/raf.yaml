@@ -982,10 +982,11 @@ lots:
     finished: 2026-10-21
   - id: L92
     title: "Prévisions : le halo sombre de la courbe Solde se dessine décalé de la ligne blanche pendant l'animation (changement d'horizon, premier chargement) — même réglage d'animation sur les deux <Line> (revue UX L90)"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     created: 2026-10-21
+    started: 2026-10-21
   - id: L93
     title: "Prévisions : les libellés des crédits venus des prêts portent un montant au point décimal (« CETELEM (240.00 €/mois) ») à côté de « -240,00 € » — formater en fr-FR ou retirer le montant du libellé (QA prod L88–L91)"
     status: todo
