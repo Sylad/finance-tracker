@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { YearlySummary } from '@/types/api';
 import { YearlyPage } from './yearly';
-import { SquareDot } from './yearly-chart-marks';
+import { SquareDot, CashFlowLegend } from './yearly-chart-marks';
 
 const state = vi.hoisted(() => ({
   list: { isLoading: false, data: undefined as unknown },
@@ -19,7 +19,7 @@ vi.mock('@/lib/queries', () => ({
 vi.mock('recharts', () => {
   const Nop = () => null;
   return {
-    LineChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>, XAxis: Nop, Tooltip: Nop, Legend: Nop, Area: Nop,
+    LineChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>, XAxis: Nop, Tooltip: Nop, Legend: (p: { content?: React.ReactNode }) => <>{p.content ?? null}</>, Area: Nop,
     Line: (p: { name: string; strokeDasharray?: string; dot?: unknown }) => (
       <span data-testid={`line-${p.name}`} data-dash={p.strokeDasharray ?? ''} data-dot={typeof p.dot} />
     ),
@@ -174,6 +174,26 @@ describe('<YearlyPage /> (L65)', () => {
     const rect = container.querySelector('rect');
     expect(rect).not.toBeNull();
     expect(rect?.getAttribute('stroke')).toBe('red');
+  });
+
+  it('L106 R1 — la légende dessine Entrées en trait plein à rond et Sorties en pointillé à carré', () => {
+    render(<YearlyPage />);
+    const legend = screen.getByTestId('cashflow-legend');
+    const entrees = within(legend).getByText('Entrées').closest('li') as HTMLElement;
+    const sorties = within(legend).getByText('Sorties').closest('li') as HTMLElement;
+    expect(entrees.querySelector('line')?.getAttribute('stroke-dasharray')).toBeNull();
+    expect(entrees.querySelector('circle')).not.toBeNull();
+    expect(entrees.querySelector('rect')).toBeNull();
+    expect(sorties.querySelector('line')?.getAttribute('stroke-dasharray')).toBeTruthy();
+    expect(sorties.querySelector('rect')).not.toBeNull();
+    expect(sorties.querySelector('circle')).toBeNull();
+  });
+
+  it('L106 R2 — la légende garde les couleurs des courbes et masque ses pictogrammes aux lecteurs d\'écran', () => {
+    const { container } = render(<CashFlowLegend />);
+    const strokes = [...container.querySelectorAll('line')].map((l) => l.getAttribute('stroke'));
+    expect(strokes).toEqual(['hsl(160 84% 50%)', 'hsl(0 84% 60%)']);
+    container.querySelectorAll('svg').forEach((svg) => expect(svg.getAttribute('aria-hidden')).toBe('true'));
   });
 
   it('L99 R3 — SquareDot ne dessine rien sans coordonnées', () => {

@@ -9,7 +9,7 @@ import { cashFlowSeries } from '@/lib/yearly-cashflow';
 import { formatEUR, formatEURCompact, formatMonth, formatMonthShort, cn, chartTooltipProps } from '@/lib/utils';
 import { categoryLabelFr } from '@/lib/category-label';
 import { summarizeInOut, summarizeTrend } from '@/components/dashboard/chart-summaries';
-import { SquareDot } from './yearly-chart-marks';
+import { SquareDot, CashFlowLegend } from './yearly-chart-marks';
 
 export function YearlyPage() {
   const list = useYearlySummaries();
@@ -236,7 +236,7 @@ export function YearlyPage() {
                     <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={64} allowDecimals={false} tickFormatter={formatEURCompact} />
                     <Tooltip {...chartTooltipProps} formatter={(v: number) => formatEUR(v)} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Legend content={<CashFlowLegend />} />
                     <Line type="monotone" name="Entrées" dataKey="credits" stroke="hsl(160 84% 50%)" strokeWidth={2} dot={{ r: 3 }} />
                     <Line type="monotone" name="Sorties" dataKey="debits" stroke="hsl(0 84% 60%)" strokeWidth={2} strokeDasharray="6 4" dot={<SquareDot />} />
                   </LineChart>
