@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-21 19:12",
+  "generated": "2026-10-21 19:34",
   "entries": [
+    {
+      "slug": "2026-10-21-bilan-annuel-le-montant-verse-en-epargne-est-juste",
+      "title": "Bilan annuel : le montant versé en épargne est juste",
+      "date": "2026-10-21",
+      "lots": [
+        "L105"
+      ],
+      "captures": [],
+      "html": "<p>Sur la page Bilan annuel, la ligne « dont X € versés en épargne » de la carte « Solde net » affichait 0,00 € pour certains bilans, alors que le Top catégories montrait bien de l'épargne (900,00 € dans la démo). Elle affiche maintenant le montant réellement versé en épargne sur l'année, le même que celui de la catégorie Épargne.</p>"
+    },
     {
       "slug": "2026-10-21-previsions-l-horizon-choisi-se-voit-mieux",
       "title": "Prévisions : l'horizon choisi se voit mieux",

@@ -98,14 +98,27 @@ describe('DemoSeedService — import-logs et bilan annuel (L62)', () => {
       expect(y.monthlyCashFlow!.length).toBeGreaterThan(0);
     });
 
+    it("L105 — complète le bilan d'une démo amorcée avant L104 (sans savingsDeposited) : le versé en épargne vient des relevés, pas d'une archive vide", async () => {
+      const old = JSON.parse(fs.readFileSync(yearlyFile(), 'utf8'));
+      const attendu = old.savingsDeposited;
+      delete old.savingsDeposited;
+      fs.writeFileSync(yearlyFile(), JSON.stringify(old));
+
+      service.onApplicationBootstrap();
+
+      const y = JSON.parse(fs.readFileSync(yearlyFile(), 'utf8')) as YearlySummary;
+      expect(y.savingsDeposited).toBe(attendu);
+      expect(y.savingsDeposited).toBeGreaterThan(0);
+    });
+
     it('ne réécrit pas des fichiers déjà présents', async () => {
       fs.writeFileSync(logsFile(), '[]');
-      fs.writeFileSync(yearlyFile(), '{"year":2025,"custom":true,"monthlyCashFlow":[]}');
+      fs.writeFileSync(yearlyFile(), '{"year":2025,"custom":true,"monthlyCashFlow":[],"savingsDeposited":0}');
 
       await service.seed();
 
       expect(fs.readFileSync(logsFile(), 'utf8')).toBe('[]');
-      expect(fs.readFileSync(yearlyFile(), 'utf8')).toBe('{"year":2025,"custom":true,"monthlyCashFlow":[]}');
+      expect(fs.readFileSync(yearlyFile(), 'utf8')).toBe('{"year":2025,"custom":true,"monthlyCashFlow":[],"savingsDeposited":0}');
     });
   });
 });

@@ -44,4 +44,24 @@ describe('StorageService — bilan annuel ancien format', () => {
     const svc = new StorageService({ get: () => dir } as any, { getDataDir: () => dir } as any);
     expect((await svc.getYearlySummary(2025))!.savingsDeposited).toBe(75);
   });
+
+  it("L105 — bilan sans savingsDeposited et archive vide : repli sur l'épargne du Top catégories (jamais 0 par défaut)", async () => {
+    fs.writeFileSync(
+      path.join(dir, 'yearly', '2025.json'),
+      JSON.stringify({
+        year: 2025,
+        scoreProgression: [],
+        monthlyCashFlow: [],
+        topCategories: [{ category: 'food', totalAmount: 400 }, { category: 'savings', totalAmount: 900 }],
+      }),
+    );
+    const svc = new StorageService({ get: () => dir } as any, { getDataDir: () => dir } as any);
+    expect((await svc.getYearlySummary(2025))!.savingsDeposited).toBe(900);
+  });
+
+  it("L105 — bilan sans savingsDeposited, archive vide et sans épargne dans le Top catégories : 0", async () => {
+    fs.writeFileSync(path.join(dir, 'yearly', '2025.json'), JSON.stringify({ year: 2025, scoreProgression: [], monthlyCashFlow: [], topCategories: [] }));
+    const svc = new StorageService({ get: () => dir } as any, { getDataDir: () => dir } as any);
+    expect((await svc.getYearlySummary(2025))!.savingsDeposited).toBe(0);
+  });
 });

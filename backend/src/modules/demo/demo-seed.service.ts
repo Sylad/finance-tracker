@@ -129,12 +129,14 @@ export class DemoSeedService implements OnApplicationBootstrap {
     const write = (file: string, data: unknown) => {
       if (overwrite || !fs.existsSync(file)) atomicWriteJsonSync(file, data);
     };
-    // Un bilan écrit avant L65 n'a pas monthlyCashFlow, et la démo n'a pas
-    // d'archive d'où le recalculer (StorageService.withCashFlow) : on le réécrit.
+    // Un bilan écrit avant L65 (monthlyCashFlow) ou L104 (savingsDeposited)
+    // n'a pas ces champs, et la démo n'a pas d'archive d'où les recalculer
+    // (StorageService.withCashFlow) : on le réécrit depuis les relevés.
     const writeYearly = (file: string, data: unknown) => {
       const stale = () => {
         try {
-          return !('monthlyCashFlow' in JSON.parse(fs.readFileSync(file, 'utf8')));
+          const written = JSON.parse(fs.readFileSync(file, 'utf8'));
+          return !('monthlyCashFlow' in written) || !('savingsDeposited' in written);
         } catch {
           return true;
         }

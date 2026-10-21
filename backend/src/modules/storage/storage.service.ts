@@ -265,14 +265,22 @@ export class StorageService implements OnModuleInit {
     }
   }
 
-  /** Bilans écrits avant L65 / L104 : entrées/sorties et versé en épargne recalculés depuis l'archive (lecture seule). */
+  /**
+   * Bilans écrits avant L65 / L104 : entrées/sorties et versé en épargne recalculés depuis l'archive (lecture seule).
+   * Archive vide (année en cours, démo) : le versé en épargne se lit dans le Top catégories du bilan,
+   * qui a agrégé les mêmes sorties `savings` (L105) ; 0 si la catégorie n'y figure pas.
+   */
   private async withCashFlow(summary: YearlySummary): Promise<YearlySummary> {
     if (summary.monthlyCashFlow && summary.savingsDeposited !== undefined) return summary;
     const statements = await this.readStatementsInDir(path.join(this.archiveDir, String(summary.year)));
     return {
       ...summary,
       monthlyCashFlow: summary.monthlyCashFlow ?? buildMonthlyCashFlow(statements),
-      savingsDeposited: summary.savingsDeposited ?? sumSavingsDeposited(statements),
+      savingsDeposited:
+        summary.savingsDeposited ??
+        (statements.length > 0
+          ? sumSavingsDeposited(statements)
+          : (summary.topCategories?.find((c) => c.category === 'savings')?.totalAmount ?? 0)),
     };
   }
 
