@@ -1095,7 +1095,8 @@ lots:
   - id: L104
     title: "Bilan annuel : « Épargne nette » renommée « Solde net (entrées − sorties) », avec une ligne « dont X € versés en épargne » (décision Sylvain 21-10, option a, revue UX L29)"
     public: "Bilan annuel : le solde net dit ce qu'il compte"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     created: 2026-10-21
+    started: 2026-10-21
