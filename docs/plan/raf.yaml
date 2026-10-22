@@ -1191,6 +1191,8 @@ lots:
     review: { date: 2026-10-22, verdict: "conforme — 2 notes mineures (bannière d'installation qui recouvre « Analyser » à 1440 px, barre hors écran à 320×568 avant défilement) — orchestré (vague 2026-10-22-fin-import, 1 passe(s) de correction)", commit: a7ebe0ab19530fe1f014c1fa93a2aaa61c306f7a }
     ux: { date: 2026-10-22, verdict: "conforme : barre d'actions collante, Analyser visible avec 12 fichiers à 1440 et 390 px, Retirer jamais caché au focus ; reste (bannière d'installation qui recouvre Analyser) repris en lot" }
     finished: 2026-10-22
+    notes:
+      - { date: 2026-10-22, text: "QA prod 22-10 (sha 5e62087) : 4/4 pages conformes ; « Analyser » recouvert par la navigation à 390 px après une sélection refusée en partie, repris en lot" }
   - id: L112
     title: "Import de relevés, contrôle à la sélection : « dépasse 20 Mo (20,0 Mo) » pour un PDF de 20 Mo + 1 octet (formatMo arrondi, test R2 à corriger) ; un .pdf sans type MIME accepté au front mais refusé par le serveur (400 sur tout le lot) — aligner isPdf sur fileFilter ; focus perdu quand Parcourir se désactive à 12/12 (WCAG 2.4.3) — revue de L108"
     public: "Import de relevés : contrôle des fichiers affiné"
@@ -1204,4 +1206,17 @@ lots:
     status: todo
     estimate: 0.25
     visible: true
+    created: 2026-10-22
+  - id: L114
+    title: "Import de relevés au téléphone : avec un encadré de refus, la section de la liste commence sous la navigation fixe et la barre collante (bloquée en haut de sa section) recouvre « Analyser » (390×844 : barre 761–824, nav 784–844, centre du bouton = lien Importer ; 390×664 : libre seulement après ~200 px de défilement) — ancrer la barre à la page ou la sortir de la section, test navigateur à 390 et 320 px (QA de L111)"
+    public: "Import de relevés : bouton Analyser jamais caché au téléphone"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L115
+    title: "Attentes QA : exempter /nouveautes et /plan des never: du bloc * (une entrée de changelog cite « Impossible de charger ») ; ajouter à /upload « 390 only : avec 12 fichiers et un encadré de refus, le centre du bouton Analyser n'est jamais recouvert par la navigation fixe » (QA de L107 à L111)"
+    status: todo
+    estimate: 0.1
+    quickwin: true
     created: 2026-10-22
