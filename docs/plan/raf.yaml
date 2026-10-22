@@ -1144,6 +1144,7 @@ lots:
     visible: true
     created: 2026-10-22
     started: 2026-10-22
+    review: { date: 2026-10-22, verdict: "conforme — orchestré (vague 2026-10-22-fin-import, 1 passe(s) de correction)", commit: 5fdf5b40c72635cac3d6d4430d48d9d4e5738135 }
   - id: L108
     title: "Import de relevés : fichiers non PDF, de plus de 20 Mo ou au-delà de 12 écartés sans message (un PDF de 25 Mo part et fait échouer tout le lot côté serveur), limite de 20 Mo non écrite, Parcourir actif à 12/12 — contrôler à la sélection et nommer chaque fichier écarté avec sa raison — Nielsen 1, 5, 9 (revue UX L30, M1)"
     public: "Import de relevés : fichiers refusés expliqués"
