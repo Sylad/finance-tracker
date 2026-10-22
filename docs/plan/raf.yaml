@@ -1201,6 +1201,7 @@ lots:
     visible: true
     created: 2026-10-22
     started: 2026-10-22
+    review: { date: 2026-10-22, verdict: "compliant (0 blocking, 0 major, 1 minor: le message du .pdf sans type MIME n'indique pas quoi faire) — orchestré (vague 2026-10-22-fin-import2, 0 passe(s) de correction)", commit: 197a872571a5348b9599d01c286bfc2efec96265 }
   - id: L113
     title: "Import de relevés, suivi et affichage : nom accentué illisible dans l'historique (« relevÃ©_aoÃ»t… », originalname relu en latin1 par multer — corriger au stockage) ; fichier sauté sans journal (mois déjà importé) resté « En attente » et « fichier k / N » faux ; bannière d'installation qui recouvre « Analyser » à 1440 px ; 502/503 annoncés « non importé » et « HTTP 413 » en anglais — revues de L109 à L111"
     public: "Import de relevés : suivi et noms de fichiers justes"
