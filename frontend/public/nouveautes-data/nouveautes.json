@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-21 19:41",
+  "generated": "2026-10-22 10:29",
   "entries": [
+    {
+      "slug": "2026-10-22-import-de-releves-utilisable-au-lecteur-d-ecran",
+      "title": "Import de relevés : utilisable au lecteur d'écran",
+      "date": "2026-10-22",
+      "lots": [
+        "L107"
+      ],
+      "captures": [
+        "captures/2026-10-22-import-lecteur-ecran.png",
+        "captures/2026-10-22-import-lecteur-ecran-390.png"
+      ],
+      "alts": [
+        "Page d'import avec deux relevés choisis, chacun avec son bouton Retirer",
+        "La même page au téléphone"
+      ],
+      "html": "<p>Sur la page d'import de relevés, avec un lecteur d'écran, chaque bouton en croix est maintenant annoncé « Retirer » suivi du nom du fichier. Après avoir retiré un fichier, le curseur se place sur le fichier suivant (ou sur « Parcourir » s'il n'en reste plus) ; il ne se perd plus. Au clic sur « Analyser », le curseur reste sur la page au lieu de disparaître.</p>\n<p>L'analyse en cours, le nombre de relevés importés, ignorés et en échec, chaque échec et le message « Connexion fermée » sont lus automatiquement.</p>"
+    },
     {
       "slug": "2026-10-21-bilan-annuel-legende-entrees-sorties-distincte",
       "title": "Bilan annuel : légende Entrées et Sorties distincte",

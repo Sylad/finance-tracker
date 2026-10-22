@@ -315,7 +315,8 @@
     {
       "id": "L107",
       "title": "Import de relevés : utilisable au lecteur d'écran",
-      "status": "todo"
+      "status": "doing",
+      "started": "2026-10-22"
     },
     {
       "id": "L108",
