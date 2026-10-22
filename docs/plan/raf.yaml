@@ -1196,35 +1196,42 @@ lots:
   - id: L112
     title: "Import de relevés, contrôle à la sélection : « dépasse 20 Mo (20,0 Mo) » pour un PDF de 20 Mo + 1 octet (formatMo arrondi, test R2 à corriger) ; un .pdf sans type MIME accepté au front mais refusé par le serveur (400 sur tout le lot) — aligner isPdf sur fileFilter ; focus perdu quand Parcourir se désactive à 12/12 (WCAG 2.4.3) — revue de L108"
     public: "Import de relevés : contrôle des fichiers affiné"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "compliant (0 blocking, 0 major, 1 minor: le message du .pdf sans type MIME n'indique pas quoi faire) — orchestré (vague 2026-10-22-fin-import2, 0 passe(s) de correction)", commit: 197a872571a5348b9599d01c286bfc2efec96265 }
+    ux: { date: 2026-10-22, verdict: "conforme : contrôle à la sélection aligné sur le serveur (type MIME), taille arrondie au supérieur, focus gardé à 12/12 ; note : message du .pdf sans type MIME sans consigne" }
+    finished: 2026-10-22
   - id: L113
     title: "Import de relevés, suivi et affichage : nom accentué illisible dans l'historique (« relevÃ©_aoÃ»t… », originalname relu en latin1 par multer — corriger au stockage) ; fichier sauté sans journal (mois déjà importé) resté « En attente » et « fichier k / N » faux ; bannière d'installation qui recouvre « Analyser » à 1440 px ; 502/503 annoncés « non importé » et « HTTP 413 » en anglais — revues de L109 à L111"
     public: "Import de relevés : suivi et noms de fichiers justes"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "compliant after 0 fixes — 2 minor notes (413 message blames the per-file limit although a 413 can only come from the total size; unreadable-file branch still leaves no log) — orchestré (vague 2026-10-22-fin-import2, 0 passe(s) de correction)", commit: e5ee41adc1327058b5dd22087a05dab8bdb38c59 }
+    ux: { date: 2026-10-22, verdict: "conforme : nom accentué rétabli au stockage, fichier sauté « Fait » et visible dans l'historique, bannière d'installation hors d'Analyser ; notes : message 413 attribué à la limite par fichier, fichier illisible sans journal" }
+    finished: 2026-10-22
   - id: L114
     title: "Import de relevés au téléphone : avec un encadré de refus, la section de la liste commence sous la navigation fixe et la barre collante (bloquée en haut de sa section) recouvre « Analyser » (390×844 : barre 761–824, nav 784–844, centre du bouton = lien Importer ; 390×664 : libre seulement après ~200 px de défilement) — ancrer la barre à la page ou la sortir de la section, test navigateur à 390 et 320 px (QA de L111)"
     public: "Import de relevés : bouton Analyser jamais caché au téléphone"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "compliant — orchestré (vague 2026-10-22-fin-import2, 0 passe(s) de correction)", commit: 7df190bc8fa5955603841c8f74353c32a5355ba5 }
+    ux: { date: 2026-10-22, verdict: "conforme : barre Vider / Analyser ancrée à la page, « Analyser 12 relevés » visible au-dessus de la navigation du bas à 390 px avec 12 fichiers (capture vue par le lead), 320 et 1440 px capturés" }
+    finished: 2026-10-22
   - id: L115
     title: "Attentes QA : exempter /nouveautes et /plan des never: du bloc * (une entrée de changelog cite « Impossible de charger ») ; ajouter à /upload « 390 only : avec 12 fichiers et un encadré de refus, le centre du bouton Analyser n'est jamais recouvert par la navigation fixe » (QA de L107 à L111)"
-    status: doing
+    status: done
     estimate: 0.1
     quickwin: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "compliant after 2 minor notes (`except:` et `390 only:` en tête de ligne ne sont pas des formes définies par qa-reviewer.md, qui lit le texte en clair ; à confirmer à la prochaine QA) — orchestré (vague 2026-10-22-fin-import2, 0 passe(s) de correction)", commit: 4d1aa04537210805045b953db0ea0e7c01ca1727 }
+    finished: 2026-10-22

@@ -350,20 +350,23 @@
     {
       "id": "L112",
       "title": "Import de relevés : contrôle des fichiers affiné",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
     },
     {
       "id": "L113",
       "title": "Import de relevés : suivi et noms de fichiers justes",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
     },
     {
       "id": "L114",
       "title": "Import de relevés : bouton Analyser jamais caché au téléphone",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
     }
   ]
 }
