@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Upload as UploadIcon, FileText, X, CheckCircle2, AlertCircle, Loader2, History as HistoryIcon, ExternalLink, Info } from 'lucide-react';
+import { Upload as UploadIcon, FileText, X, CheckCircle2, AlertCircle, Loader2, History as HistoryIcon, ExternalLink, Info, Clock } from 'lucide-react';
 import { useUploadStatements, useImportLogs } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import type { UploadResult } from '@/types/api';
 import { cn, formatEUR, formatMonth } from '@/lib/utils';
 import { MAX_FILES as MAX, selectStatementFiles, type RejectedFile } from '@/lib/upload-files';
 import { failuresFromUploadError, skippedMonthLabel } from '@/lib/upload-report';
+import { fileProgress, type FileState } from '@/lib/upload-progress';
+
+const STATE_LABEL: Record<FileState, string> = { waiting: 'En attente', running: 'Claude analyse…', done: 'Fait' };
 
 export function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -20,9 +23,16 @@ export function UploadPage() {
   const [removedAt, setRemovedAt] = useState<number | null>(null);
   const [rejected, setRejected] = useState<RejectedFile[]>([]);
   const upload = useUploadStatements();
+  const { data: importLogs } = useImportLogs();
+  // Journaux déjà présents à l'envoi : seuls les nouveaux disent où en est l'analyse.
+  const knownLogIds = useRef<Set<string>>(new Set());
+  const progress = upload.isPending
+    ? fileProgress(files.map((f) => f.name), importLogs ?? [], knownLogIds.current)
+    : null;
 
   const addFiles = (list: FileList | null) => {
-    if (!list) return;
+    // Pendant l'analyse, la liste suivie ne change plus.
+    if (!list || upload.isPending) return;
     const { accepted, rejected: refused } = selectStatementFiles(files, Array.from(list));
     setFiles(accepted);
     setRejected(refused);
@@ -57,6 +67,7 @@ export function UploadPage() {
     setRejected([]);
     setConnectionLost(false);
     const filenames = files.map((f) => f.name);
+    knownLogIds.current = new Set((importLogs ?? []).map((l) => l.id));
     try {
       const r = await upload.mutateAsync(files);
       setResult(r);
@@ -103,7 +114,7 @@ export function UploadPage() {
           ou clique pour parcourir · {files.length} / {MAX} fichiers sélectionnés
           {files.length >= MAX && ' · la liste est pleine : retire un fichier pour en ajouter'}
         </p>
-        <button ref={browseButton} onClick={() => fileInput.current?.click()} disabled={files.length >= MAX} className="btn-secondary">
+        <button ref={browseButton} onClick={() => fileInput.current?.click()} disabled={files.length >= MAX || upload.isPending} className="btn-secondary">
           Parcourir
         </button>
         <input
@@ -133,18 +144,25 @@ export function UploadPage() {
 
       {files.length > 0 && (
         <section ref={listRef} className="card divide-y divide-border mb-6">
-          {files.map((f, i) => (
-            <div key={`${f.name}-${i}`} className="px-4 py-3">
+          <div role="list" aria-label={upload.isPending ? 'Fichiers en cours d’analyse' : 'Fichiers sélectionnés'} className="divide-y divide-border">
+          {files.map((f, i) => {
+            const st = progress?.states[i];
+            return (
+            <div key={`${f.name}-${i}`} role="listitem" className="px-4 py-3">
               <div className="flex items-center gap-3">
-                <FileText className={cn('h-4 w-4 shrink-0', upload.isPending ? 'text-accent-bright' : 'text-fg-dim')} />
+                <FileText className={cn('h-4 w-4 shrink-0', st === 'running' ? 'text-accent-bright' : 'text-fg-dim')} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm text-fg-bright truncate">{f.name}</div>
                   <div className="text-xs text-fg-dim tabular">
-                    {(f.size / 1024).toFixed(0)} Ko {upload.isPending && '· Claude analyse…'}
+                    {(f.size / 1024).toFixed(0)} Ko {st && `· ${STATE_LABEL[st]}`}
                   </div>
                 </div>
-                {upload.isPending ? (
-                  <Loader2 className="h-4 w-4 text-accent-bright animate-spin" />
+                {st === 'running' ? (
+                  <Loader2 className="h-4 w-4 text-accent-bright animate-spin" aria-hidden="true" />
+                ) : st === 'done' ? (
+                  <CheckCircle2 className="h-4 w-4 text-positive" aria-hidden="true" />
+                ) : st === 'waiting' ? (
+                  <Clock className="h-4 w-4 text-fg-dim" aria-hidden="true" />
                 ) : (
                   <button
                     onClick={() => removeFile(i)}
@@ -156,15 +174,17 @@ export function UploadPage() {
                   </button>
                 )}
               </div>
-              {upload.isPending && <div className="shimmer-bar mt-2" />}
+              {st === 'running' && <div className="shimmer-bar mt-2" />}
             </div>
-          ))}
+            );
+          })}
+          </div>
           <div className="px-4 py-3 bg-surface-2 flex items-center justify-between">
             <span className="text-xs text-fg-muted">{files.length} fichier{files.length > 1 ? 's' : ''}</span>
             <div className="flex items-center gap-2">
-              <button onClick={clearFiles} className="btn-secondary">Vider</button>
+              <button onClick={clearFiles} disabled={upload.isPending} className="btn-secondary">Vider</button>
               <button onClick={handleSubmit} disabled={upload.isPending} className="btn-primary">
-                {upload.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Analyse en cours…</> : <>Analyser {files.length} relevé{files.length > 1 ? 's' : ''}</>}
+                {upload.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Analyse en cours… fichier {progress?.current} / {progress?.total}</> : <>Analyser {files.length} relevé{files.length > 1 ? 's' : ''}</>}
               </button>
             </div>
           </div>
@@ -172,7 +192,7 @@ export function UploadPage() {
       )}
 
       <div ref={statusRegion} role="status" tabIndex={-1} className="outline-none">
-        {upload.isPending && <p className="sr-only">Analyse en cours…</p>}
+        {progress && <p className="sr-only">Analyse en cours… fichier {progress.current} / {progress.total}.</p>}
         {result && (
           <p className="sr-only">
             Analyse terminée : {result.succeeded.length} importé{result.succeeded.length > 1 ? 's' : ''}, {result.skipped.length} ignoré{result.skipped.length > 1 ? 's' : ''}, {result.failed.length} échec{result.failed.length > 1 ? 's' : ''}.
