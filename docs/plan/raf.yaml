@@ -1250,6 +1250,7 @@ lots:
     visible: true
     created: 2026-10-22
     started: 2026-10-22
+    review: { date: 2026-10-22, verdict: "compliant — 1 commit (bfbf395) ; tests du lot 2/2 verts, suite frontend 617/617, tsc propre, plan-data --check à jour ; noms « Modifier/Supprimer <compte> » et « Fermer » confirmés dans l'app réelle ; 1 note mineure (hors lot : role=dialog, couvert par L117) — orchestré (vague 2026-10-22-fin-epargne, 0 passe(s) de correction)", commit: bfbf395a32dc9ce8304cebee9471f4fba7d9c7f5 }
   - id: L117
     title: "Épargne, fenêtre Modifier/Nouveau compte : ni role=dialog ni aria-modal, Échap sans effet, focus resté derrière le voile ; voile sans défilement — à 320×568 titre et × coupés (haut à −20 px), à 200 % de texte « Enregistrer » inatteignable → modèle de la fenêtre Déclarations, voile défilant, une colonne sous sm — WCAG 2.4.3, 4.1.2, 1.4.4, 1.4.10 (UX L31)"
     public: "Épargne : fenêtre de saisie utilisable au clavier et qui défile sur petit écran"
