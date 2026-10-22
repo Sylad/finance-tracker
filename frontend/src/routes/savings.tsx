@@ -18,7 +18,7 @@ import {
   type SavingsAccountType,
   SAVINGS_TYPE_LABELS,
 } from '@/types/api';
-import { formatEUR, maskAccountNumber } from '@/lib/utils';
+import { formatEUR, formatRatePercent, maskAccountNumber, ratePercentInput } from '@/lib/utils';
 
 const TYPES: SavingsAccountType[] = ['livret-a', 'pel', 'cel', 'ldds', 'pea', 'other'];
 
@@ -139,7 +139,7 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
           <PiggyBank className="h-4 w-4 text-accent" />
           <div>
             <div className="font-display font-semibold text-fg-bright">{account.name}</div>
-            <div className="text-xs text-fg-dim">{SAVINGS_TYPE_LABELS[account.type]} · {(account.interestRate * 100).toFixed(2)}%</div>
+            <div className="text-xs text-fg-dim">{SAVINGS_TYPE_LABELS[account.type]} · {formatRatePercent(account.interestRate)}</div>
             {account.accountNumber && (
               <div className="text-xs text-fg-dim">{maskAccountNumber(account.accountNumber)}</div>
             )}
@@ -209,7 +209,7 @@ function SavingsForm({ init, onSave, onCancel, busy }: { init: SavingsAccountInp
               </select>
             </Field>
             <Field label="Taux d'intérêt (%)">
-              <input className="input tabular" type="number" step="0.01" required value={form.interestRate * 100}
+              <input className="input tabular" type="number" step="0.01" required value={ratePercentInput(form.interestRate)}
                      onChange={(e) => setForm({ ...form, interestRate: Number(e.target.value) / 100 })} />
             </Field>
           </div>

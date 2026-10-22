@@ -14,6 +14,20 @@ export function formatEUR(amount: number, signed = false): string {
   }).format(amount);
 }
 
+/** Taux (0,017) affiché en fr-FR : « 1,70 % ». */
+export function formatRatePercent(rate: number): string {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'percent',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(rate);
+}
+
+/** Taux (0,017) en pourcentage pour un champ (1.7), arrondi au centième : 0.017 * 100 = 1.7000000000000002. */
+export function ratePercentInput(rate: number): number {
+  return Math.round(rate * 10000) / 100;
+}
+
 /** Returns the YYYY-MM id of the month preceding the given one. */
 export function prevMonthId(id: string): string | null {
   const m = id.match(/^(\d{4})-(\d{2})$/);

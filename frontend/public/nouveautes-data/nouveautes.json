@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-22 21:14",
+  "generated": "2026-10-22 21:28",
   "entries": [
+    {
+      "slug": "2026-10-22-epargne-taux-d-interet-au-format-francais-sans-decimales-par",
+      "title": "Épargne : taux d'intérêt au format français, sans décimales parasites",
+      "date": "2026-10-22",
+      "lots": [
+        "L121"
+      ],
+      "captures": [],
+      "html": "<p>Sur la page Épargne, le taux d'intérêt de chaque compte s'écrit désormais à la française : « 2,00 % », « 1,75 % », comme les montants en euros (au lieu de « 2.00% »).</p>\n<p>Dans la fenêtre Modifier le compte, le champ « Taux d'intérêt (%) » affiche le taux tel qu'il a été saisi : 1,7 pour 1,7 % (et non plus « 1.7000000000000002 »), de même pour 1,75 et 2,2.</p>"
+    },
     {
       "slug": "2026-10-22-epargne-un-echec-de-chargement-affiche-comme-une-erreur-avec",
       "title": "Épargne : un échec de chargement affiché comme une erreur, avec Réessayer",

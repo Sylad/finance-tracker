@@ -4,6 +4,8 @@ import {
   formatEURCompact,
   formatMonth,
   formatMonthShort,
+  formatRatePercent,
+  ratePercentInput,
   maskAccountNumber,
   slugify,
   prevMonthId,
@@ -118,5 +120,20 @@ describe('formatEURCompact (graduations des axes, L21/t5)', () => {
 describe('slugify', () => {
   it('minuscules sans accents, ponctuation → un espace (miroir du backend common/text)', () => {
     expect(slugify('Prêt-Été  (CA) ')).toBe('pret ete ca');
+  });
+});
+
+describe('taux d\'intérêt (L121)', () => {
+  it('R1 — formatRatePercent affiche en fr-FR, virgule et espace avant %', () => {
+    expect(formatRatePercent(0.02).replace(/\s/g, ' ')).toBe('2,00 %');
+    expect(formatRatePercent(0.0175).replace(/\s/g, ' ')).toBe('1,75 %');
+    expect(formatRatePercent(0.015).replace(/\s/g, ' ')).toBe('1,50 %');
+  });
+
+  it('R2 — ratePercentInput efface les décimales parasites du × 100', () => {
+    expect(ratePercentInput(0.017)).toBe(1.7);
+    expect(ratePercentInput(0.0175)).toBe(1.75);
+    expect(ratePercentInput(0.022)).toBe(2.2);
+    expect(ratePercentInput(0.015)).toBe(1.5);
   });
 });

@@ -399,7 +399,8 @@
     {
       "id": "L121",
       "title": "Épargne : taux d'intérêt au format français, sans décimales parasites",
-      "status": "todo"
+      "status": "doing",
+      "started": "2026-10-22"
     },
     {
       "id": "L122",

@@ -88,4 +88,13 @@ describe('<SavingsPage /> — fenêtre Modifier/Nouveau compte (L117)', () => {
       expect(g.className).not.toMatch(/(^|\s)grid-cols-2/);
     }
   });
+
+  it('R3 (L121) — la carte affiche le taux en fr-FR et le champ le taux arrondi', async () => {
+    account.interestRate = 0.017;
+    render(<SavingsPage />);
+    expect(screen.getByText(/1,70\s%/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Modifier Livret A' }));
+    expect((screen.getByLabelText("Taux d'intérêt (%)") as HTMLInputElement).value).toBe('1.7');
+    account.interestRate = 0.015;
+  });
 });
