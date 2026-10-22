@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Plus, Trash2, X, Pencil } from 'lucide-react';
+import { useModalDialog } from '@/hooks/use-modal-dialog';
 import {
   useDeclarations,
   useCreateDeclaration,
@@ -219,52 +220,7 @@ export function DeclarationForm({
   error?: string | null;
 }) {
   const [form, setForm] = useState<DeclarationInput>(init);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const labelRef = useRef<HTMLInputElement>(null);
-  // Gardé à jour sans relancer l'effet : onCancel change à chaque rendu du parent.
-  const onCancelRef = useRef(onCancel);
-  onCancelRef.current = onCancel;
-
-  // Focus sur Libellé à l'ouverture, rendu au bouton d'origine à la fermeture.
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    labelRef.current?.focus();
-    return () => opener?.focus?.();
-  }, []);
-
-  // Échap ferme ; Tab / Maj+Tab bouclent dans la modale. Une touche dont la cible est
-  // une couche posée par-dessus (palette ⌘K) lui appartient : la modale l'ignore.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as Node | null;
-      const inModal = !target || target === document.body || !!dialogRef.current?.contains(target);
-      if (!inModal) return;
-      if (e.key === 'Escape') {
-        onCancelRef.current();
-        return;
-      }
-      if (e.key !== 'Tab' || !dialogRef.current) return;
-      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
-      );
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      // Focus hors de la modale (body après un clic sur une zone inerte) : on y rentre.
-      if (!dialogRef.current.contains(document.activeElement)) {
-        e.preventDefault();
-        (e.shiftKey ? last : first).focus();
-      } else if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  const { dialogRef, initialFocusRef: labelRef } = useModalDialog(onCancel);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onCancel}>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, PiggyBank, Pencil, Trash2, X, RefreshCw } from 'lucide-react';
+import { useModalDialog } from '@/hooks/use-modal-dialog';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import {
   useSavingsAccounts,
@@ -172,16 +173,24 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
 
 function SavingsForm({ init, onSave, onCancel, busy }: { init: SavingsAccountInput; onSave: (i: SavingsAccountInput) => void; onCancel: () => void; busy: boolean }) {
   const [form, setForm] = useState<SavingsAccountInput>(init);
+  const { dialogRef, initialFocusRef } = useModalDialog(onCancel);
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onCancel}>
-      <div className="card max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <h2 className="font-display font-semibold text-fg-bright">{init.name ? 'Modifier le compte' : 'Nouveau compte épargne'}</h2>
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in" onClick={onCancel}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="savings-dialog-title"
+        className="card max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border px-5 py-3 sticky top-0 bg-surface z-10">
+          <h2 id="savings-dialog-title" className="font-display font-semibold text-fg-bright">{init.name ? 'Modifier le compte' : 'Nouveau compte épargne'}</h2>
           <button type="button" onClick={onCancel} aria-label="Fermer" className="btn-ghost p-1"><X className="h-4 w-4" aria-hidden="true" /></button>
         </div>
         <form className="p-5 space-y-3" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-          <Field label="Nom"><input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
-          <div className="grid grid-cols-2 gap-3">
+          <Field label="Nom"><input ref={initialFocusRef} className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Type">
               <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as SavingsAccountType })}>
                 {TYPES.map((t) => <option key={t} value={t}>{SAVINGS_TYPE_LABELS[t]}</option>)}
@@ -192,7 +201,7 @@ function SavingsForm({ init, onSave, onCancel, busy }: { init: SavingsAccountInp
                      onChange={(e) => setForm({ ...form, interestRate: Number(e.target.value) / 100 })} />
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Solde initial (€)">
               <input className="input tabular" type="number" step="0.01" required value={form.initialBalance}
                      onChange={(e) => setForm({ ...form, initialBalance: Number(e.target.value) })} />
@@ -202,7 +211,7 @@ function SavingsForm({ init, onSave, onCancel, busy }: { init: SavingsAccountInp
                      onChange={(e) => setForm({ ...form, initialBalanceDate: e.target.value })} />
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Mois anniversaire intérêts (1-12)">
               <input className="input tabular" type="number" min={1} max={12} required value={form.interestAnniversaryMonth}
                      onChange={(e) => setForm({ ...form, interestAnniversaryMonth: Number(e.target.value) })} />
