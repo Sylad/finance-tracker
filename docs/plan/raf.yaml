@@ -378,9 +378,14 @@ lots:
     finished: 2026-10-21
   - id: L30
     title: Revue UX — Import de relevés
-    status: todo
+    status: done
     estimate: 0.25
     created: 2026-09-28
+    notes:
+      - { date: 2026-10-22, text: "Mineurs (revue UX 22-10) : zone de dépôt dit « clique pour parcourir » sans ouvrir le sélecteur, « Glisse-dépose » au tactile ; formats non français (43.2s, 25600 Ko, MB, tiret au lieu du signe moins) ; lignes importées sans libellé du montant ni période ; bandeau Connexion fermée annonce 5 s (code : 2 s / 10 s), spinner sans fin ; h1 → h3, titres de section non balisés ; liens « Voir le relevé » sans le mois ; pas de « réessayer » sur une ligne en erreur" }
+    ux: { date: 2026-10-22, verdict: "non conforme : 2 bloquants (boutons retirer sans nom, états non annoncés et focus perdu), 6 majeurs (refus silencieux, échec global « upload », analyse affichée en parallèle, Vider actif pendant l'analyse, Analyser hors écran) — corrections en L107 à L111 ; contraste, reflow à 320 px et focus visible conformes (captures vues par le lead)" }
+    started: 2026-10-22
+    finished: 2026-10-22
   - id: L31
     title: Revue UX — Épargne
     status: todo
@@ -1131,3 +1136,38 @@ lots:
     review: { date: 2026-10-21, verdict: "compliant after 2 minor notes (rond Entrées creux/sombre dans la légende contre rond à fond #fff sur la courbe ; README qui dit « rond plein ») — orchestré (vague 2026-10-21-fin-epargne, 0 passe(s) de correction)", commit: 3189a3427266924f454219f04d9323fea350d385 }
     ux: { date: 2026-10-21, verdict: "conforme (lead, capture 1440 : légende Entrées rond / Sorties carré en pointillé) ; mineurs : rond Entrées creux dans la légende contre plein sur la courbe, README qui dit « rond plein »" }
     finished: 2026-10-21
+  - id: L107
+    title: "Import de relevés : boutons « retirer » sans nom accessible (icône seule) et focus perdu sur body après suppression et au clic sur Analyser ; résultat, échecs et « Connexion fermée » non annoncés (0 role=status/alert/aria-live) — WCAG 4.1.2, 4.1.3, 2.4.3 (revue UX L30, B1 B2)"
+    public: "Import de relevés : utilisable au lecteur d'écran"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L108
+    title: "Import de relevés : fichiers non PDF, de plus de 20 Mo ou au-delà de 12 écartés sans message (un PDF de 25 Mo part et fait échouer tout le lot côté serveur), limite de 20 Mo non écrite, Parcourir actif à 12/12 — contrôler à la sélection et nommer chaque fichier écarté avec sa raison — Nielsen 1, 5, 9 (revue UX L30, M1)"
+    public: "Import de relevés : fichiers refusés expliqués"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L109
+    title: "Import de relevés : échec global affiché sous le faux nom « upload » sans les raisons par fichier (errors[] du 422 perdu), ignorés comptés mais non nommés (« déjà importé : <mois> » + lien), erreur 500 en anglais — Nielsen 9 (revue UX L30, M2)"
+    public: "Import de relevés : résultat détaillé fichier par fichier"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L110
+    title: "Import de relevés pendant l'analyse : tous les fichiers « Claude analyse… » en même temps alors que le backend les traite un par un (suivre l'historique : en cours / en attente / fait, « fichier k / N »), et « Vider » / « Parcourir » actifs qui effacent la liste suivie — Nielsen 1, 3, 5 (revue UX L30, M3 M4)"
+    public: "Import de relevés : avancement fichier par fichier"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L111
+    title: "Import de relevés : bouton « Analyser » hors écran avec 12 fichiers (y = 1212 px pour 900 à 1440, 1292 pour 844 à 390) et barre d'actions sous la barre du bas au téléphone — barre d'actions collante — Nielsen 7 (revue UX L30, M5)"
+    public: "Import de relevés : bouton Analyser toujours visible"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
