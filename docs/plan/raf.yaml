@@ -1291,6 +1291,7 @@ lots:
     visible: true
     created: 2026-10-22
     started: 2026-10-22
+    review: { date: 2026-10-22, verdict: "compliant (2 notes mineures : arrondi pendant la saisie du taux, motif nocapture inexact) — orchestré (vague 2026-10-22-fin-epargne, 0 passe(s) de correction)", commit: 0116d63b13eccb845fd8728fb9e223c4033748b2 }
   - id: L122
     title: "Démo, fixtures épargne : la somme des mouvements ne fait pas le solde courant (PEL 13 680 pour 13 580, Livret A 6 600 pour 6 750 ; note « 6750 vs 6800 calculé » portant −200) → mouvements cohérents avec les soldes (UX L31)"
     public: "Démo : solde des comptes épargne égal à la somme de leurs mouvements"
