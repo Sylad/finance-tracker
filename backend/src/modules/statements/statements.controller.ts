@@ -28,6 +28,7 @@ import type { MerchantRuleSkipped } from '../category-rules/merchant-dictionary'
 import { ScoreCalculatorService } from '../score/score-calculator.service';
 import { CreditDetectionService } from '../credit-detection/credit-detection.service';
 import { TransactionCategory } from '../../models/transaction.model';
+import { pdfFileFilter } from '../../common/pdf-upload-filter';
 
 @Controller('statements')
 export class StatementsController {
@@ -249,15 +250,7 @@ export class StatementsController {
   @Post(':id/reanalyze')
   @UseInterceptors(
     FileInterceptor('file', {
-      fileFilter: (req, file, cb) => {
-        if (file.mimetype !== 'application/pdf') {
-          return cb(
-            new BadRequestException('Seuls les fichiers PDF sont acceptés'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
+      fileFilter: pdfFileFilter,
       limits: { fileSize: 20 * 1024 * 1024 },
     }),
   )

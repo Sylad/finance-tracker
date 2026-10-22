@@ -35,6 +35,7 @@ import { ImportOrchestratorService } from './import-orchestrator.service';
 import { RequestDataDirService } from '../demo/request-data-dir.service';
 import { MulterExceptionFilter } from '../../filters/multer-exception.filter';
 import { Loan } from '../../models/loan.model';
+import { pdfFileFilter } from '../../common/pdf-upload-filter';
 
 const ResetRevolvingSchema = z.object({ usedAmount: z.number().nonnegative() });
 
@@ -136,12 +137,7 @@ export class LoansController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      fileFilter: (_req, file, cb) => {
-        if (file.mimetype !== 'application/pdf') {
-          return cb(new BadRequestException('Seuls les fichiers PDF sont acceptés'), false);
-        }
-        cb(null, true);
-      },
+      fileFilter: pdfFileFilter,
       limits: { fileSize: 20 * 1024 * 1024 },
     }),
   )
@@ -180,12 +176,7 @@ export class LoansController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      fileFilter: (_req, file, cb) => {
-        if (file.mimetype !== 'application/pdf') {
-          return cb(new BadRequestException('Seuls les fichiers PDF sont acceptés'), false);
-        }
-        cb(null, true);
-      },
+      fileFilter: pdfFileFilter,
       limits: { fileSize: 20 * 1024 * 1024 },
     }),
   )
@@ -235,12 +226,7 @@ export class LoansController {
   @UseInterceptors(
     FilesInterceptor('files', 12, {
       storage: memoryStorage(),
-      fileFilter: (_req, file, cb) => {
-        if (file.mimetype !== 'application/pdf') {
-          return cb(new BadRequestException('Seuls les fichiers PDF sont acceptés'), false);
-        }
-        cb(null, true);
-      },
+      fileFilter: pdfFileFilter,
       limits: { fileSize: 20 * 1024 * 1024 },
     }),
   )

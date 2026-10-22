@@ -20,6 +20,7 @@ import { AnalysisResponse } from '../../models/monthly-statement.model';
 import { StorageService } from '../storage/storage.service';
 import { ImportLogsService } from '../import-logs/import-logs.service';
 import { CreditDetectionService } from '../credit-detection/credit-detection.service';
+import { pdfFileFilter } from '../../common/pdf-upload-filter';
 
 // Detects only the unambiguous YYYY-MM pattern (real period).
 // YYYYMMDD/YYYYMM patterns were removed: bank PDFs (e.g. La Banque Postale) are named by
@@ -58,15 +59,7 @@ export class AnalysisController {
           cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`);
         },
       }),
-      fileFilter: (req, file, cb) => {
-        if (file.mimetype !== 'application/pdf') {
-          return cb(
-            new BadRequestException('Seuls les fichiers PDF sont acceptés'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
+      fileFilter: pdfFileFilter,
       limits: { fileSize: 20 * 1024 * 1024 },
     }),
   )
@@ -89,6 +82,15 @@ export class AnalysisController {
         const existing = await this.storage.getStatement(detectedId);
         if (existing) {
           await this.cleanupFile(file.path);
+          await this.importLogs.log({
+            filename: file.originalname,
+            uploadedAt: new Date().toISOString(),
+            durationMs: 0,
+            status: 'skipped',
+            statementId: detectedId,
+            statementMonth: Number(detectedId.slice(5)),
+            statementYear: Number(detectedId.slice(0, 4)),
+          });
           results.push({ filename: file.originalname, skipped: detectedId });
           this.logger.log(
             `Skipped ${file.originalname} — ${detectedId} already exists`,
