@@ -45,4 +45,11 @@ describe("Import de relevés — barre d'actions collante (L111)", () => {
     expect(bar.querySelector('button.btn-secondary')?.textContent).toBe('Vider');
     expect(bar.className).toMatch(/\bz-\d+/);
   });
+
+  it("R4 — un bouton « Retirer » focalisé au clavier ne passe pas sous la barre collante (marge de défilement)", async () => {
+    render(<UploadPage />);
+    await pick(12);
+    const remove = screen.getByRole('button', { name: 'Retirer m11.pdf' });
+    expect(remove.className).toMatch(/\bscroll-mb-\d+/);
+  });
 });

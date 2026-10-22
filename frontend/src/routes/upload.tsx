@@ -168,7 +168,8 @@ export function UploadPage() {
                     onClick={() => removeFile(i)}
                     data-remove
                     aria-label={`Retirer ${f.name}`}
-                    className="btn-ghost p-1.5"
+                    // scroll-mb-40 : le focus clavier ne passe pas sous la barre collante (WCAG 2.4.11).
+                    className="btn-ghost p-1.5 scroll-mb-40"
                   >
                     <X className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
