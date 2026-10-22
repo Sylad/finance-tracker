@@ -1204,6 +1204,8 @@ lots:
     review: { date: 2026-10-22, verdict: "compliant (0 blocking, 0 major, 1 minor: le message du .pdf sans type MIME n'indique pas quoi faire) — orchestré (vague 2026-10-22-fin-import2, 0 passe(s) de correction)", commit: 197a872571a5348b9599d01c286bfc2efec96265 }
     ux: { date: 2026-10-22, verdict: "conforme : contrôle à la sélection aligné sur le serveur (type MIME), taille arrondie au supérieur, focus gardé à 12/12 ; note : message du .pdf sans type MIME sans consigne" }
     finished: 2026-10-22
+    notes:
+      - { date: 2026-10-22, text: "QA de prod 22-10 (qa-reviewer, lecture seule) sur L112–L115 : 0 bloquant, 0 non bloquant ; /, /upload, /history, /nouveautes mesurés à 1440 et 390 px. Non vérifié faute de POST : suivi d'un envoi, fichier sauté « Fait », messages 413/502/503 (L113). Observation : un PDF < 1 Ko s'affiche « 0 Ko »." }
   - id: L113
     title: "Import de relevés, suivi et affichage : nom accentué illisible dans l'historique (« relevÃ©_aoÃ»t… », originalname relu en latin1 par multer — corriger au stockage) ; fichier sauté sans journal (mois déjà importé) resté « En attente » et « fichier k / N » faux ; bannière d'installation qui recouvre « Analyser » à 1440 px ; 502/503 annoncés « non importé » et « HTTP 413 » en anglais — revues de L109 à L111"
     public: "Import de relevés : suivi et noms de fichiers justes"
