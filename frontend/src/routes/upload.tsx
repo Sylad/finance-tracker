@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Upload as UploadIcon, FileText, X, CheckCircle2, AlertCircle, Loader2, History as HistoryIcon, ExternalLink } from 'lucide-react';
+import { Upload as UploadIcon, FileText, X, CheckCircle2, AlertCircle, Loader2, History as HistoryIcon, ExternalLink, Info } from 'lucide-react';
 import { useUploadStatements, useImportLogs } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import type { UploadResult } from '@/types/api';
 import { cn, formatEUR, formatMonth } from '@/lib/utils';
 import { MAX_FILES as MAX, selectStatementFiles, type RejectedFile } from '@/lib/upload-files';
+import { failuresFromUploadError, skippedMonthLabel } from '@/lib/upload-report';
 
 export function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -55,6 +56,7 @@ export function UploadPage() {
     setResult(null);
     setRejected([]);
     setConnectionLost(false);
+    const filenames = files.map((f) => f.name);
     try {
       const r = await upload.mutateAsync(files);
       setResult(r);
@@ -71,7 +73,7 @@ export function UploadPage() {
         setResult({
           succeeded: [],
           skipped: [],
-          failed: [{ filename: 'upload', error: msg }],
+          failed: failuresFromUploadError(e, filenames),
         });
       }
     }
@@ -226,6 +228,23 @@ function UploadReport({ result }: { result: UploadResult }) {
                 {formatEUR(s.statement.closingBalance)}
               </span>
               {s.replaced && <span className="badge-warning">remplacé</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      {result.skipped.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {result.skipped.map((s) => (
+            <div key={`${s.filename}-${s.statementId}`} className="flex items-center gap-3 text-sm">
+              <Info className="h-4 w-4 text-fg-dim shrink-0" aria-hidden="true" />
+              <span className="flex-1 min-w-0 truncate text-fg">{s.filename}</span>
+              <Link
+                to="/history/$id"
+                params={{ id: s.statementId }}
+                className="text-xs text-accent-bright hover:underline shrink-0"
+              >
+                déjà importé : {skippedMonthLabel(s.statementId)}
+              </Link>
             </div>
           ))}
         </div>
