@@ -9,6 +9,7 @@ Repris du brouillon du rapport QA L14 du 11-10 (22 routes), corrigé pour L61 (s
 - `shows:` ce qui est visible à l'écran ; plusieurs éléments séparés par des virgules.
 - `api:` appels `/api/…` qui doivent répondre 2xx pendant la visite de la route.
 - `never:` texte qui ne doit apparaître nulle part sur la route. Le reviewer compare sans casse : un mot court comme « nan » se trouverait dans « fiNANcière » ; on écrit donc les formes réelles du défaut (« NaN € », « NaN % ») et non le mot seul.
+- `never:` du bloc `*` s'applique à toutes les routes **sauf** celles que le bloc nomme dans sa ligne `except:`.
 - `source:` quelle donnée fait foi quand deux sources de l'écran peuvent sembler se contredire.
 - `may be empty when …:` une réponse vide ou un état vide est normal dans ce cas.
 
@@ -19,6 +20,7 @@ Les fixtures s'arrêtent en mars 2026 mais sont décalées de mois entiers à ch
 ## *
 
 never: « Erreur : », « Erreur inconnue », Impossible de charger, undefined, « NaN € », « NaN % », « NaN/100 »
+except: /nouveautes et /plan — le journal des Nouveautés et le plan de travail sont du texte rédigé qui peut citer ces messages (une entrée de changelog cite « Impossible de charger » : faux positif QA du 19-10) ; ils gardent leur propre ligne `shows:`
 
 ## /
 
@@ -97,6 +99,7 @@ api: /api/statements/yearly, /api/statements/yearly/<année> (détail de l'anné
 ## /upload
 
 shows: Historique des imports avec 4 entrées, aucune datée dans le futur (L63)
+390 only: avec 12 fichiers choisis et un encadré de refus affiché, le centre du bouton « Analyser » n'est jamais recouvert par la navigation fixe (vérifier avec `elementFromPoint` au centre du bouton, après l'avoir amené à l'écran)
 api: /api/import-logs
 
 ## /heatmap
