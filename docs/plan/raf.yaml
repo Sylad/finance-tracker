@@ -1309,3 +1309,11 @@ lots:
     estimate: 0.25
     visible: true
     created: 2026-10-22
+  - id: L123
+    title: "Épargne : liste repliable des mouvements de chaque compte (décision Sylvain 22-10, revue UX L31) — sous la courbe de chaque carte, bouton « Mouvements (n) » avec aria-expanded ; une fois déplié, du plus récent au plus ancien : date jj/mm/aaaa, nature (Solde initial / Versement détecté / Ajustement au relevé / Intérêts), montant signé aligné à droite en chiffres tabulaires, note en texte secondaire ; au téléphone une ligne par mouvement sur deux rangées ; en-tête et grille des cartes inchangés"
+    public: "Épargne : l'historique des mouvements de chaque compte"
+    status: todo
+    estimate: 0.5
+    visible: true
+    screen: component
+    created: 2026-10-22
