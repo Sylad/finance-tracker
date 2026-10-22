@@ -11,7 +11,7 @@ import {
   useResyncSavings,
 } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
-import { LoadingState, EmptyState } from '@/components/loading-state';
+import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
 import {
   type SavingsAccount,
   type SavingsAccountInput,
@@ -34,7 +34,7 @@ const DEFAULT: SavingsAccountInput = {
 };
 
 export function SavingsPage() {
-  const { data, isLoading } = useSavingsAccounts();
+  const { data, isLoading, isError, isFetching, refetch } = useSavingsAccounts();
   const create = useCreateSavingsAccount();
   const update = useUpdateSavingsAccount();
   const remove = useDeleteSavingsAccount();
@@ -42,6 +42,18 @@ export function SavingsPage() {
   const [creating, setCreating] = useState(false);
 
   if (isLoading) return <LoadingState />;
+  if (isError && !data) {
+    return (
+      <>
+        <PageHeader eyebrow="Comptes épargne" title="Épargne" />
+        <ErrorState
+          message="Impossible de charger les comptes épargne."
+          onRetry={() => { void refetch(); }}
+          retrying={isFetching}
+        />
+      </>
+    );
+  }
   const items = data ?? [];
   const total = items.reduce((s, a) => s + a.currentBalance, 0);
 
