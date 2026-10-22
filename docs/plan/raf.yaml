@@ -1222,7 +1222,8 @@ lots:
     review: { date: 2026-10-22, verdict: "compliant — orchestré (vague 2026-10-22-fin-import2, 0 passe(s) de correction)", commit: 7df190bc8fa5955603841c8f74353c32a5355ba5 }
   - id: L115
     title: "Attentes QA : exempter /nouveautes et /plan des never: du bloc * (une entrée de changelog cite « Impossible de charger ») ; ajouter à /upload « 390 only : avec 12 fichiers et un encadré de refus, le centre du bouton Analyser n'est jamais recouvert par la navigation fixe » (QA de L107 à L111)"
-    status: todo
+    status: doing
     estimate: 0.1
     quickwin: true
     created: 2026-10-22
+    started: 2026-10-22
