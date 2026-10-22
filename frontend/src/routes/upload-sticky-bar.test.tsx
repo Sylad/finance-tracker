@@ -52,4 +52,23 @@ describe("Import de relevés — barre d'actions collante (L111)", () => {
     const remove = screen.getByRole('button', { name: 'Retirer m11.pdf' });
     expect(remove.className).toMatch(/\bscroll-mb-\d+/);
   });
+
+  it("R5 — la barre est ancrée à la page, hors de la section de la liste : un sticky ne quitte jamais son parent, donc la section qui commence sous la navigation fixe (encadré de refus) y bloquait la barre sur « Analyser » (L114)", async () => {
+    render(<UploadPage />);
+    await pick(12);
+    const bar = document.querySelector('[data-actions-bar]') as HTMLElement;
+    const list = screen.getByRole('list', { name: 'Fichiers sélectionnés' });
+    expect(list.closest('section')?.contains(bar)).toBe(false);
+    expect(bar.parentElement).toBe(list.closest('section')?.parentElement);
+  });
+
+  it("R6 — avec un encadré de refus, la barre reste hors de la section de la liste et garde Vider / Analyser", async () => {
+    render(<UploadPage />);
+    const input = document.querySelector('input[type=file]') as HTMLInputElement;
+    await userEvent.upload(input, [pdf('ok.pdf'), new File(['x'], 'notes.txt', { type: 'text/plain' })], { applyAccept: false });
+    expect(screen.getByRole('alert')).toBeTruthy();
+    const bar = document.querySelector('[data-actions-bar]') as HTMLElement;
+    expect(screen.getByRole('list', { name: 'Fichiers sélectionnés' }).closest('section')?.contains(bar)).toBe(false);
+    expect(bar.querySelector('button.btn-primary')?.textContent).toContain('Analyser 1 relevé');
+  });
 });

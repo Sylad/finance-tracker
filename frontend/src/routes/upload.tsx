@@ -143,7 +143,8 @@ export function UploadPage() {
       )}
 
       {files.length > 0 && (
-        <section ref={listRef} className="card divide-y divide-border mb-6">
+        <>
+        <section ref={listRef} className="card divide-y divide-border rounded-b-none">
           <div role="list" aria-label={upload.isPending ? 'Fichiers en cours d’analyse' : 'Fichiers sélectionnés'} className="divide-y divide-border">
           {files.map((f, i) => {
             const st = progress?.states[i];
@@ -180,19 +181,20 @@ export function UploadPage() {
             );
           })}
           </div>
-          <div
-            data-actions-bar
-            className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] lg:bottom-0 z-30 px-4 py-3 bg-surface-2 border-t border-border rounded-b-lg shadow-[0_-4px_12px_rgba(0,0,0,0.25)] flex flex-wrap items-center justify-between gap-2"
-          >
-            <span className="text-xs text-fg-muted">{files.length} fichier{files.length > 1 ? 's' : ''}</span>
-            <div className="flex items-center gap-2">
-              <button onClick={clearFiles} disabled={upload.isPending} className="btn-secondary">Vider</button>
-              <button onClick={handleSubmit} disabled={upload.isPending} className="btn-primary">
-                {upload.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Analyse en cours… fichier {progress?.current} / {progress?.total}</> : <>Analyser {files.length} relevé{files.length > 1 ? 's' : ''}</>}
-              </button>
-            </div>
-          </div>
         </section>
+        <div
+          data-actions-bar
+          className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] lg:bottom-0 z-30 px-4 py-3 mb-6 bg-surface-2 border border-t-0 border-border rounded-b-lg shadow-[0_-4px_12px_rgba(0,0,0,0.25)] flex flex-wrap items-center justify-between gap-2"
+        >
+          <span className="text-xs text-fg-muted">{files.length} fichier{files.length > 1 ? 's' : ''}</span>
+          <div className="flex items-center gap-2">
+            <button onClick={clearFiles} disabled={upload.isPending} className="btn-secondary">Vider</button>
+            <button onClick={handleSubmit} disabled={upload.isPending} className="btn-primary">
+              {upload.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Analyse en cours… fichier {progress?.current} / {progress?.total}</> : <>Analyser {files.length} relevé{files.length > 1 ? 's' : ''}</>}
+            </button>
+          </div>
+        </div>
+      </>
       )}
 
       <div ref={statusRegion} role="status" tabIndex={-1} className="outline-none">
