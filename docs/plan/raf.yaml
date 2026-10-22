@@ -1180,3 +1180,4 @@ lots:
     visible: true
     created: 2026-10-22
     started: 2026-10-22
+    review: { date: 2026-10-22, verdict: "conforme — 2 notes mineures (bannière d'installation qui recouvre « Analyser » à 1440 px, barre hors écran à 320×568 avant défilement) — orchestré (vague 2026-10-22-fin-import, 1 passe(s) de correction)", commit: a7ebe0ab19530fe1f014c1fa93a2aaa61c306f7a }
