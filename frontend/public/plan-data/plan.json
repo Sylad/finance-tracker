@@ -315,32 +315,47 @@
     {
       "id": "L107",
       "title": "Import de relevés : utilisable au lecteur d'écran",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
     },
     {
       "id": "L108",
       "title": "Import de relevés : fichiers refusés expliqués",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
     },
     {
       "id": "L109",
       "title": "Import de relevés : résultat détaillé fichier par fichier",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
     },
     {
       "id": "L110",
       "title": "Import de relevés : avancement fichier par fichier",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
     },
     {
       "id": "L111",
       "title": "Import de relevés : bouton Analyser toujours visible",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
+    },
+    {
+      "id": "L112",
+      "title": "Import de relevés : contrôle des fichiers affiné",
+      "status": "todo"
+    },
+    {
+      "id": "L113",
+      "title": "Import de relevés : suivi et noms de fichiers justes",
+      "status": "todo"
     }
   ]
 }

@@ -1139,45 +1139,69 @@ lots:
   - id: L107
     title: "Import de relevés : boutons « retirer » sans nom accessible (icône seule) et focus perdu sur body après suppression et au clic sur Analyser ; résultat, échecs et « Connexion fermée » non annoncés (0 role=status/alert/aria-live) — WCAG 4.1.2, 4.1.3, 2.4.3 (revue UX L30, B1 B2)"
     public: "Import de relevés : utilisable au lecteur d'écran"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "conforme — orchestré (vague 2026-10-22-fin-import, 1 passe(s) de correction)", commit: 5fdf5b40c72635cac3d6d4430d48d9d4e5738135 }
+    ux: { date: 2026-10-22, verdict: "conforme : boutons retirer nommés, focus géré (Vider → Parcourir), résultat et échecs annoncés (verdict du relecteur, mesures DOM)" }
+    finished: 2026-10-22
   - id: L108
     title: "Import de relevés : fichiers non PDF, de plus de 20 Mo ou au-delà de 12 écartés sans message (un PDF de 25 Mo part et fait échouer tout le lot côté serveur), limite de 20 Mo non écrite, Parcourir actif à 12/12 — contrôler à la sélection et nommer chaque fichier écarté avec sa raison — Nielsen 1, 5, 9 (revue UX L30, M1)"
     public: "Import de relevés : fichiers refusés expliqués"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "compliant after 2 fixes (3 minor: message « dépasse 20 Mo (20,0 Mo) » contradictoire à la limite, .pdf sans MIME accepté au front mais refusé au serveur, focus perdu quand Parcourir se désactive) — orchestré (vague 2026-10-22-fin-import, 0 passe(s) de correction)", commit: 33207624a55ea0dfbc579c98f8faa0047844c453 }
+    ux: { date: 2026-10-22, verdict: "conforme : fichiers écartés nommés avec leur raison, limite de 20 Mo écrite, Parcourir désactivé à 12 ; restes mineurs (20,0 Mo à la limite, .pdf sans MIME, focus quand Parcourir se désactive) repris en lot" }
+    finished: 2026-10-22
   - id: L109
     title: "Import de relevés : échec global affiché sous le faux nom « upload » sans les raisons par fichier (errors[] du 422 perdu), ignorés comptés mais non nommés (« déjà importé : <mois> » + lien), erreur 500 en anglais — Nielsen 9 (revue UX L30, M2)"
     public: "Import de relevés : résultat détaillé fichier par fichier"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "compliant (0 bloquant, 0 majeur, 2 notes mineures : message 5xx affirmant « non importé » pour un 502/503 ; « HTTP 413 » encore en anglais) — orchestré (vague 2026-10-22-fin-import, 0 passe(s) de correction)", commit: 3dc8eb49e5da3119108fc7f817645017bd843ee2 }
+    ux: { date: 2026-10-22, verdict: "conforme : raisons par fichier, ignorés nommés avec leur mois et un lien, 500 en français ; restes (502/503, HTTP 413) repris en lot" }
+    finished: 2026-10-22
   - id: L110
     title: "Import de relevés pendant l'analyse : tous les fichiers « Claude analyse… » en même temps alors que le backend les traite un par un (suivre l'historique : en cours / en attente / fait, « fichier k / N »), et « Vider » / « Parcourir » actifs qui effacent la liste suivie — Nielsen 1, 3, 5 (revue UX L30, M3 M4)"
     public: "Import de relevés : avancement fichier par fichier"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "conforme, 2 mineurs : « fichier k / N » et « En attente » faux quand un fichier est sauté sans journal (mois déjà importé) ; trois tests étiquetés R4 pour deux règles — orchestré (vague 2026-10-22-fin-import, 1 passe(s) de correction)", commit: 24fbe13a328442faef4d6478d6055a406f3861fa }
+    ux: { date: 2026-10-22, verdict: "conforme : un fichier en cours à la fois (Fait / Claude analyse / En attente), « fichier 2 / 3 », Vider et Parcourir bloqués (capture vue par le lead) ; restes (fichier sauté sans journal, nom accentué illisible dans l'historique) repris en lot" }
+    finished: 2026-10-22
   - id: L111
     title: "Import de relevés : bouton « Analyser » hors écran avec 12 fichiers (y = 1212 px pour 900 à 1440, 1292 pour 844 à 390) et barre d'actions sous la barre du bas au téléphone — barre d'actions collante — Nielsen 7 (revue UX L30, M5)"
     public: "Import de relevés : bouton Analyser toujours visible"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "conforme — 2 notes mineures (bannière d'installation qui recouvre « Analyser » à 1440 px, barre hors écran à 320×568 avant défilement) — orchestré (vague 2026-10-22-fin-import, 1 passe(s) de correction)", commit: a7ebe0ab19530fe1f014c1fa93a2aaa61c306f7a }
+    ux: { date: 2026-10-22, verdict: "conforme : barre d'actions collante, Analyser visible avec 12 fichiers à 1440 et 390 px, Retirer jamais caché au focus ; reste (bannière d'installation qui recouvre Analyser) repris en lot" }
+    finished: 2026-10-22
+  - id: L112
+    title: "Import de relevés, contrôle à la sélection : « dépasse 20 Mo (20,0 Mo) » pour un PDF de 20 Mo + 1 octet (formatMo arrondi, test R2 à corriger) ; un .pdf sans type MIME accepté au front mais refusé par le serveur (400 sur tout le lot) — aligner isPdf sur fileFilter ; focus perdu quand Parcourir se désactive à 12/12 (WCAG 2.4.3) — revue de L108"
+    public: "Import de relevés : contrôle des fichiers affiné"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L113
+    title: "Import de relevés, suivi et affichage : nom accentué illisible dans l'historique (« relevÃ©_aoÃ»t… », originalname relu en latin1 par multer — corriger au stockage) ; fichier sauté sans journal (mois déjà importé) resté « En attente » et « fichier k / N » faux ; bannière d'installation qui recouvre « Analyser » à 1440 px ; 502/503 annoncés « non importé » et « HTTP 413 » en anglais — revues de L109 à L111"
+    public: "Import de relevés : suivi et noms de fichiers justes"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
