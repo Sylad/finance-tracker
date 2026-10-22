@@ -5,8 +5,7 @@ import { useUploadStatements, useImportLogs } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import type { UploadResult } from '@/types/api';
 import { cn, formatEUR, formatMonth } from '@/lib/utils';
-
-const MAX = 12;
+import { MAX_FILES as MAX, selectStatementFiles, type RejectedFile } from '@/lib/upload-files';
 
 export function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -18,19 +17,14 @@ export function UploadPage() {
   const listRef = useRef<HTMLElement>(null);
   // Index du fichier retiré : le focus passe au « retirer » qui prend sa place.
   const [removedAt, setRemovedAt] = useState<number | null>(null);
+  const [rejected, setRejected] = useState<RejectedFile[]>([]);
   const upload = useUploadStatements();
 
   const addFiles = (list: FileList | null) => {
     if (!list) return;
-    const incoming = Array.from(list).filter((f) => f.type === 'application/pdf' || f.name.endsWith('.pdf'));
-    setFiles((prev) => {
-      const merged = [...prev];
-      for (const f of incoming) {
-        if (!merged.some((m) => m.name === f.name && m.size === f.size)) merged.push(f);
-        if (merged.length >= MAX) break;
-      }
-      return merged;
-    });
+    const { accepted, rejected: refused } = selectStatementFiles(files, Array.from(list));
+    setFiles(accepted);
+    setRejected(refused);
   };
 
   const [connectionLost, setConnectionLost] = useState(false);
@@ -50,6 +44,7 @@ export function UploadPage() {
 
   const clearFiles = () => {
     setFiles([]);
+    setRejected([]);
     setRemovedAt(0);
   };
 
@@ -58,6 +53,7 @@ export function UploadPage() {
     // Le bouton se désactive puis disparaît avec la liste : le focus va à la région de statut.
     statusRegion.current?.focus();
     setResult(null);
+    setRejected([]);
     setConnectionLost(false);
     try {
       const r = await upload.mutateAsync(files);
@@ -85,7 +81,7 @@ export function UploadPage() {
     <>
       <PageHeader
         title="Importer des relevés"
-        subtitle={`Glisse jusqu'à ${MAX} PDFs. Claude analyse chaque relevé : extraction, classification, scoring, narratif. Comptez 30-60s par fichier.`}
+        subtitle={`Glisse jusqu'à ${MAX} PDFs de 20 Mo maximum chacun. Claude analyse chaque relevé : extraction, classification, scoring, narratif. Comptez 30-60s par fichier.`}
       />
 
       <section
@@ -103,8 +99,9 @@ export function UploadPage() {
         </h3>
         <p className="text-sm text-fg-muted mb-5">
           ou clique pour parcourir · {files.length} / {MAX} fichiers sélectionnés
+          {files.length >= MAX && ' · la liste est pleine : retire un fichier pour en ajouter'}
         </p>
-        <button ref={browseButton} onClick={() => fileInput.current?.click()} className="btn-secondary">
+        <button ref={browseButton} onClick={() => fileInput.current?.click()} disabled={files.length >= MAX} className="btn-secondary">
           Parcourir
         </button>
         <input
@@ -113,9 +110,24 @@ export function UploadPage() {
           multiple
           accept="application/pdf,.pdf"
           className="hidden"
-          onChange={(e) => addFiles(e.target.files)}
+          onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }}
         />
       </section>
+
+      {rejected.length > 0 && (
+        <section role="alert" className="card p-4 mb-6 border-l-4 border-l-warning bg-warning/5">
+          <div className="font-medium text-fg-bright mb-2">
+            {rejected.length} fichier{rejected.length > 1 ? 's' : ''} non ajouté{rejected.length > 1 ? 's' : ''}
+          </div>
+          <ul className="text-sm space-y-1">
+            {rejected.map((r, i) => (
+              <li key={`${r.name}-${i}`}>
+                <span className="text-fg-bright">{r.name}</span> <span className="text-fg-muted">: {r.reason}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {files.length > 0 && (
         <section ref={listRef} className="card divide-y divide-border mb-6">
