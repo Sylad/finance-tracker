@@ -179,7 +179,10 @@ export function UploadPage() {
             );
           })}
           </div>
-          <div className="px-4 py-3 bg-surface-2 flex items-center justify-between">
+          <div
+            data-actions-bar
+            className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] lg:bottom-0 z-30 px-4 py-3 bg-surface-2 border-t border-border rounded-b-lg shadow-[0_-4px_12px_rgba(0,0,0,0.25)] flex flex-wrap items-center justify-between gap-2"
+          >
             <span className="text-xs text-fg-muted">{files.length} fichier{files.length > 1 ? 's' : ''}</span>
             <div className="flex items-center gap-2">
               <button onClick={clearFiles} disabled={upload.isPending} className="btn-secondary">Vider</button>
