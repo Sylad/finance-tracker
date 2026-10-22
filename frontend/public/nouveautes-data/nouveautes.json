@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-22 10:52",
+  "generated": "2026-10-22 11:12",
   "entries": [
+    {
+      "slug": "2026-10-22-import-de-releves-avancement-fichier-par-fichier",
+      "title": "Import de relevés : avancement fichier par fichier",
+      "date": "2026-10-22",
+      "lots": [
+        "L110"
+      ],
+      "captures": [
+        "captures/2026-10-22-import-avancement-1440.png",
+        "captures/2026-10-22-import-avancement-390.png"
+      ],
+      "alts": [
+        "Page d'import pendant l'analyse de trois relevés : le premier est « Fait », le deuxième « Claude analyse… », le troisième « En attente », le bouton indique « fichier 2 / 3 » (1440 px)",
+        "Même écran au téléphone (390 px)"
+      ],
+      "html": "<p>Quand tu importes plusieurs relevés, la liste indique désormais où en est chaque fichier : « Fait », « Claude analyse… » pour celui qui est en cours (un seul à la fois, comme le serveur les traite), ou « En attente ». Le bouton affiche « Analyse en cours… fichier 2 / 3 ».</p>\n<p>Pendant l'analyse, « Vider » et « Parcourir » sont grisés et un fichier déposé sur la page est ignoré : la liste que tu suis ne disparaît plus par erreur.</p>"
+    },
     {
       "slug": "2026-10-22-import-de-releves-resultat-detaille-fichier-par-fichier",
       "title": "Import de relevés : résultat détaillé fichier par fichier",
