@@ -1245,30 +1245,36 @@ lots:
   - id: L116
     title: "Épargne : 4 boutons icône (crayon, corbeille, 26×26) et le × de la fenêtre sans nom accessible → aria-label « Modifier/Supprimer <compte> », « Fermer », comme loans.tsx — WCAG 4.1.2, 2.4.6 (UX L31)"
     public: "Épargne : boutons Modifier, Supprimer et Fermer nommés pour les lecteurs d'écran"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "compliant — 1 commit (bfbf395) ; tests du lot 2/2 verts, suite frontend 617/617, tsc propre, plan-data --check à jour ; noms « Modifier/Supprimer <compte> » et « Fermer » confirmés dans l'app réelle ; 1 note mineure (hors lot : role=dialog, couvert par L117) — orchestré (vague 2026-10-22-fin-epargne, 0 passe(s) de correction)", commit: bfbf395a32dc9ce8304cebee9471f4fba7d9c7f5 }
+    ux: { date: 2026-10-22, verdict: conforme (revue UX de la vague ; noms « Modifier/Supprimer <compte> » et « Fermer » confirmés dans l'app réelle par le relecteur) }
+    finished: 2026-10-22
   - id: L117
     title: "Épargne, fenêtre Modifier/Nouveau compte : ni role=dialog ni aria-modal, Échap sans effet, focus resté derrière le voile ; voile sans défilement — à 320×568 titre et × coupés (haut à −20 px), à 200 % de texte « Enregistrer » inatteignable → modèle de la fenêtre Déclarations, voile défilant, une colonne sous sm — WCAG 2.4.3, 4.1.2, 1.4.4, 1.4.10 (UX L31)"
     public: "Épargne : fenêtre de saisie utilisable au clavier et qui défile sur petit écran"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "compliant — orchestré (vague 2026-10-22-fin-epargne, 0 passe(s) de correction)", commit: 038bd9d0e9d6f25e27424bf9c68bceec742dc877 }
+    ux: { date: 2026-10-22, verdict: "conforme (capture 390 regardée par le lead : fenêtre entière, titre et × visibles, une colonne)" }
+    finished: 2026-10-22
   - id: L118
     title: "Épargne : GET /api/savings-accounts en 500 affiché comme un écran vide (« 0,00 € », « Aucun compte épargne déclaré ») → ErrorState avec Réessayer, pas de total en erreur — Nielsen 1, 9 (UX L31)"
     public: "Épargne : un échec de chargement affiché comme une erreur, avec Réessayer"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "compliant: 0 finding (test, type check and published plan green; error state measured at 1440 and 390 px) — orchestré (vague 2026-10-22-fin-epargne, 0 passe(s) de correction)", commit: d15af0cab0c692431a2d27b2bb5310eba21c94e4 }
+    ux: { date: 2026-10-22, verdict: "conforme (captures 1440/390 regardées par le lead : « Erreur — Impossible de charger les comptes épargne » avec Réessayer, plus de total à 0)" }
+    finished: 2026-10-22
   - id: L119
     title: "Épargne, courbe de chaque carte : 0 € pour les mois avant l'ouverture (fausse croissance), aucun repère de période ni de montant, aucune alternative texte → courbe depuis le mois d'ouverture, « 12 derniers mois », montants de début et de fin, aria-label de résumé — Nielsen 2, WCAG 1.1.1 (UX L31)"
     public: "Épargne : courbe de 12 mois lisible, depuis l'ouverture, avec un résumé en texte"
@@ -1286,12 +1292,14 @@ lots:
   - id: L121
     title: "Épargne : taux affichés « 2.00% » (montants en fr-FR) et champ du taux à « 1.7000000000000002 » pour 0,017 (aussi 0,0175, 0,022) → format fr-FR et arrondi à l'affichage et dans le champ (UX L31)"
     public: "Épargne : taux d'intérêt au format français, sans décimales parasites"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "compliant (2 notes mineures : arrondi pendant la saisie du taux, motif nocapture inexact) — orchestré (vague 2026-10-22-fin-epargne, 0 passe(s) de correction)", commit: 0116d63b13eccb845fd8728fb9e223c4033748b2 }
+    ux: { date: 2026-10-22, verdict: "conforme, 2 notes mineures (arrondi pendant la saisie du taux, motif nocapture inexact) ; capture 1440 regardée par le lead : « 2,00 % », « 2,50 % »" }
+    finished: 2026-10-22
   - id: L122
     title: "Démo, fixtures épargne : la somme des mouvements ne fait pas le solde courant (PEL 13 680 pour 13 580, Livret A 6 600 pour 6 750 ; note « 6750 vs 6800 calculé » portant −200) → mouvements cohérents avec les soldes (UX L31)"
     public: "Démo : solde des comptes épargne égal à la somme de leurs mouvements"

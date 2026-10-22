@@ -371,20 +371,23 @@
     {
       "id": "L116",
       "title": "Épargne : boutons Modifier, Supprimer et Fermer nommés pour les lecteurs d'écran",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
     },
     {
       "id": "L117",
       "title": "Épargne : fenêtre de saisie utilisable au clavier et qui défile sur petit écran",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
     },
     {
       "id": "L118",
       "title": "Épargne : un échec de chargement affiché comme une erreur, avec Réessayer",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
     },
     {
       "id": "L119",
@@ -399,8 +402,9 @@
     {
       "id": "L121",
       "title": "Épargne : taux d'intérêt au format français, sans décimales parasites",
-      "status": "doing",
-      "started": "2026-10-22"
+      "status": "done",
+      "started": "2026-10-22",
+      "finished": "2026-10-22"
     },
     {
       "id": "L122",
