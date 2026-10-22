@@ -45,6 +45,13 @@ describe("Import de relevés — lecteur d'écran et focus (L107)", () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Parcourir' })));
   });
 
+  it('R8 — après « Vider », le focus passe à Parcourir (pas sur body)', async () => {
+    render(<UploadPage />);
+    await pick('a.pdf', 'b.pdf', 'c.pdf');
+    await userEvent.click(screen.getByRole('button', { name: 'Vider' }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Parcourir' })));
+  });
+
   it('R3 — au clic sur Analyser, le focus va à la région de statut (pas sur body)', async () => {
     state.mutateAsync = vi.fn().mockResolvedValue({ succeeded: [], skipped: [], failed: [] });
     render(<UploadPage />);

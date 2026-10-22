@@ -48,6 +48,11 @@ export function UploadPage() {
     setRemovedAt(i);
   };
 
+  const clearFiles = () => {
+    setFiles([]);
+    setRemovedAt(0);
+  };
+
   const handleSubmit = async () => {
     if (files.length === 0) return;
     // Le bouton se désactive puis disparaît avec la liste : le focus va à la région de statut.
@@ -143,7 +148,7 @@ export function UploadPage() {
           <div className="px-4 py-3 bg-surface-2 flex items-center justify-between">
             <span className="text-xs text-fg-muted">{files.length} fichier{files.length > 1 ? 's' : ''}</span>
             <div className="flex items-center gap-2">
-              <button onClick={() => setFiles([])} className="btn-secondary">Vider</button>
+              <button onClick={clearFiles} className="btn-secondary">Vider</button>
               <button onClick={handleSubmit} disabled={upload.isPending} className="btn-primary">
                 {upload.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Analyse en cours…</> : <>Analyser {files.length} relevé{files.length > 1 ? 's' : ''}</>}
               </button>
