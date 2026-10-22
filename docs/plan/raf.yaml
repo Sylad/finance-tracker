@@ -1254,10 +1254,11 @@ lots:
   - id: L117
     title: "Épargne, fenêtre Modifier/Nouveau compte : ni role=dialog ni aria-modal, Échap sans effet, focus resté derrière le voile ; voile sans défilement — à 320×568 titre et × coupés (haut à −20 px), à 200 % de texte « Enregistrer » inatteignable → modèle de la fenêtre Déclarations, voile défilant, une colonne sous sm — WCAG 2.4.3, 4.1.2, 1.4.4, 1.4.10 (UX L31)"
     public: "Épargne : fenêtre de saisie utilisable au clavier et qui défile sur petit écran"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-22
+    started: 2026-10-22
   - id: L118
     title: "Épargne : GET /api/savings-accounts en 500 affiché comme un écran vide (« 0,00 € », « Aucun compte épargne déclaré ») → ErrorState avec Réessayer, pas de total en erreur — Nielsen 1, 9 (UX L31)"
     public: "Épargne : un échec de chargement affiché comme une erreur, avec Réessayer"
