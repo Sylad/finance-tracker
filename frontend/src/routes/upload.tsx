@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Upload as UploadIcon, FileText, X, CheckCircle2, AlertCircle, Loader2, History as HistoryIcon, ExternalLink } from 'lucide-react';
 import { useUploadStatements, useImportLogs } from '@/lib/queries';
@@ -13,6 +13,11 @@ export function UploadPage() {
   const [dragOver, setDragOver] = useState(false);
   const [result, setResult] = useState<UploadResult | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const browseButton = useRef<HTMLButtonElement>(null);
+  const statusRegion = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLElement>(null);
+  // Index du fichier retiré : le focus passe au « retirer » qui prend sa place.
+  const [removedAt, setRemovedAt] = useState<number | null>(null);
   const upload = useUploadStatements();
 
   const addFiles = (list: FileList | null) => {
@@ -30,8 +35,23 @@ export function UploadPage() {
 
   const [connectionLost, setConnectionLost] = useState(false);
 
+  useEffect(() => {
+    if (removedAt === null) return;
+    const buttons = listRef.current?.querySelectorAll<HTMLButtonElement>('button[data-remove]');
+    const target = buttons && buttons.length > 0 ? buttons[Math.min(removedAt, buttons.length - 1)] : browseButton.current;
+    target?.focus();
+    setRemovedAt(null);
+  }, [removedAt, files]);
+
+  const removeFile = (i: number) => {
+    setFiles((p) => p.filter((_, j) => j !== i));
+    setRemovedAt(i);
+  };
+
   const handleSubmit = async () => {
     if (files.length === 0) return;
+    // Le bouton se désactive puis disparaît avec la liste : le focus va à la région de statut.
+    statusRegion.current?.focus();
     setResult(null);
     setConnectionLost(false);
     try {
@@ -79,7 +99,7 @@ export function UploadPage() {
         <p className="text-sm text-fg-muted mb-5">
           ou clique pour parcourir · {files.length} / {MAX} fichiers sélectionnés
         </p>
-        <button onClick={() => fileInput.current?.click()} className="btn-secondary">
+        <button ref={browseButton} onClick={() => fileInput.current?.click()} className="btn-secondary">
           Parcourir
         </button>
         <input
@@ -93,7 +113,7 @@ export function UploadPage() {
       </section>
 
       {files.length > 0 && (
-        <section className="card divide-y divide-border mb-6">
+        <section ref={listRef} className="card divide-y divide-border mb-6">
           {files.map((f, i) => (
             <div key={`${f.name}-${i}`} className="px-4 py-3">
               <div className="flex items-center gap-3">
@@ -108,10 +128,12 @@ export function UploadPage() {
                   <Loader2 className="h-4 w-4 text-accent-bright animate-spin" />
                 ) : (
                   <button
-                    onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
+                    onClick={() => removeFile(i)}
+                    data-remove
+                    aria-label={`Retirer ${f.name}`}
                     className="btn-ghost p-1.5"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -130,20 +152,28 @@ export function UploadPage() {
         </section>
       )}
 
-      {connectionLost && (
-        <section className="card p-4 mb-6 border-l-4 border-l-warning bg-warning/5">
-          <div className="flex items-start gap-3">
-            <Loader2 className="h-5 w-5 text-warning shrink-0 mt-0.5 animate-spin" />
-            <div className="flex-1">
-              <div className="font-medium text-fg-bright">Connexion fermée — l'analyse continue côté serveur</div>
-              <div className="text-xs text-fg-muted mt-1 leading-relaxed">
-                La requête a été coupée (souvent un timeout réseau pour les uploads longs), mais Claude continue à traiter tes PDFs en arrière-plan.
-                Suis l'historique des imports ci-dessous : il se rafraîchit toutes les 5 secondes et tu verras chaque fichier passer de "Analyse en cours" à son résultat final.
+      <div ref={statusRegion} role="status" tabIndex={-1} className="outline-none">
+        {upload.isPending && <p className="sr-only">Analyse en cours…</p>}
+        {result && (
+          <p className="sr-only">
+            Analyse terminée : {result.succeeded.length} importé{result.succeeded.length > 1 ? 's' : ''}, {result.skipped.length} ignoré{result.skipped.length > 1 ? 's' : ''}, {result.failed.length} échec{result.failed.length > 1 ? 's' : ''}.
+          </p>
+        )}
+        {connectionLost && (
+          <section className="card p-4 mb-6 border-l-4 border-l-warning bg-warning/5">
+            <div className="flex items-start gap-3">
+              <Loader2 className="h-5 w-5 text-warning shrink-0 mt-0.5 animate-spin" />
+              <div className="flex-1">
+                <div className="font-medium text-fg-bright">Connexion fermée — l'analyse continue côté serveur</div>
+                <div className="text-xs text-fg-muted mt-1 leading-relaxed">
+                  La requête a été coupée (souvent un timeout réseau pour les uploads longs), mais Claude continue à traiter tes PDFs en arrière-plan.
+                  Suis l'historique des imports ci-dessous : il se rafraîchit toutes les 5 secondes et tu verras chaque fichier passer de "Analyse en cours" à son résultat final.
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
+      </div>
       {result && <UploadReport result={result} />}
       <ImportHistory />
     </>
@@ -184,7 +214,7 @@ function UploadReport({ result }: { result: UploadResult }) {
         </div>
       )}
       {result.failed.map((f, i) => (
-        <div key={i} className="flex items-start gap-3 text-sm text-negative">
+        <div key={i} role="alert" className="flex items-start gap-3 text-sm text-negative">
           <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
           <div>
             <div className="font-medium">{f.filename}</div>
