@@ -20,8 +20,16 @@ code { font-size: 13px; padding: 1px 4px; border-radius: 4px; background: var(--
 </style>
 </head>
 <body>
-<header><h1>finance-tracker — nouveautés</h1><p class="meta">Généré le 2026-10-22 12:20 par cadence</p></header>
+<header><h1>finance-tracker — nouveautés</h1><p class="meta">Généré le 2026-10-22 12:34 par cadence</p></header>
 <main>
+<article id="2026-10-22-import-de-releves-controle-des-fichiers-affine">
+  <h2>Import de relevés : contrôle des fichiers affiné</h2>
+  <p class="meta"><time datetime="2026-10-22">2026-10-22</time> · L112</p>
+  <p>Sur la page d'import, le contrôle des fichiers à la sélection est plus juste.</p>
+<ul><li>Un PDF trop gros n'est plus annoncé « 20,0 Mo » : la taille affichée est arrondie au supérieur, donc un fichier un peu au-dessus de 20 Mo se lit « 20,1 Mo ».</li><li>Un fichier en <code>.pdf</code> dont le navigateur ne donne pas le type est refusé tout de suite, avec une raison explicite, au lieu de faire échouer l'envoi de tout le lot.</li><li>Quand la liste atteint 12 fichiers, le bouton « Parcourir » se désactive : si vous l'aviez utilisé au clavier, le focus passe au premier bouton « Retirer » au lieu de se perdre.</li></ul>
+  <a href="captures/import-controle-1440.png"><img src="captures/import-controle-1440.png" alt="Page Importer des relevés à 1440 px : un fichier texte est refusé dans un encadré avec sa raison, les deux PDF restent dans la liste" loading="lazy"></a>
+  <a href="captures/import-controle-390.png"><img src="captures/import-controle-390.png" alt="La même page à 390 px" loading="lazy"></a>
+</article>
 <article id="2026-10-22-import-de-releves-bouton-analyser-jamais-cache-au-telephone">
   <h2>Import de relevés : bouton Analyser jamais caché au téléphone</h2>
   <p class="meta"><time datetime="2026-10-22">2026-10-22</time> · L114</p>

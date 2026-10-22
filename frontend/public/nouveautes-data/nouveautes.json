@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-22 12:20",
+  "generated": "2026-10-22 12:34",
   "entries": [
+    {
+      "slug": "2026-10-22-import-de-releves-controle-des-fichiers-affine",
+      "title": "Import de relevés : contrôle des fichiers affiné",
+      "date": "2026-10-22",
+      "lots": [
+        "L112"
+      ],
+      "captures": [
+        "captures/import-controle-1440.png",
+        "captures/import-controle-390.png"
+      ],
+      "alts": [
+        "Page Importer des relevés à 1440 px : un fichier texte est refusé dans un encadré avec sa raison, les deux PDF restent dans la liste",
+        "La même page à 390 px"
+      ],
+      "html": "<p>Sur la page d'import, le contrôle des fichiers à la sélection est plus juste.</p>\n<ul><li>Un PDF trop gros n'est plus annoncé « 20,0 Mo » : la taille affichée est arrondie au supérieur, donc un fichier un peu au-dessus de 20 Mo se lit « 20,1 Mo ».</li><li>Un fichier en <code>.pdf</code> dont le navigateur ne donne pas le type est refusé tout de suite, avec une raison explicite, au lieu de faire échouer l'envoi de tout le lot.</li><li>Quand la liste atteint 12 fichiers, le bouton « Parcourir » se désactive : si vous l'aviez utilisé au clavier, le focus passe au premier bouton « Retirer » au lieu de se perdre.</li></ul>"
+    },
     {
       "slug": "2026-10-22-import-de-releves-bouton-analyser-jamais-cache-au-telephone",
       "title": "Import de relevés : bouton Analyser jamais caché au téléphone",
