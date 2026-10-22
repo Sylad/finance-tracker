@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 import { api } from './api';
 
@@ -229,9 +229,12 @@ export function useForecast(months = 12) {
   });
 }
 
+const UPLOAD_MUTATION_KEY = ['upload-statements'];
+
 export function useUploadStatements() {
   const qc = useQueryClient();
   return useMutation({
+    mutationKey: UPLOAD_MUTATION_KEY,
     mutationFn: (files: File[]) => {
       const form = new FormData();
       for (const f of files) form.append('files', f);
@@ -281,6 +284,7 @@ export interface CreditStatementImportResult {
 export function useImportCreditStatements() {
   const qc = useQueryClient();
   return useMutation({
+    mutationKey: UPLOAD_MUTATION_KEY,
     mutationFn: (files: File[]) => {
       const form = new FormData();
       for (const f of files) form.append('files', f);
@@ -999,13 +1003,15 @@ export function useGenerateAdvice() {
 }
 
 export function useImportLogs() {
+  // Pendant un envoi, le premier journal d'un fichier apparaît avant tout import « en cours » connu : relire vite.
+  const uploading = useIsMutating({ mutationKey: UPLOAD_MUTATION_KEY }) > 0;
   return useQuery({
     queryKey: qkImportLogs.all(),
     queryFn: () => api.get<ImportLog[]>('/import-logs'),
-    // Polling rapide quand au moins 1 import est en cours, sinon mou.
+    // Polling rapide quand un envoi ou au moins 1 import est en cours, sinon mou.
     refetchInterval: (q) => {
       const data = q.state.data as ImportLog[] | undefined;
-      return data?.some((l) => l.status === 'in-progress') ? 2000 : 10000;
+      return uploading || data?.some((l) => l.status === 'in-progress') ? 2000 : 10000;
     },
   });
 }
