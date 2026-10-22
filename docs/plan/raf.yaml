@@ -1166,10 +1166,11 @@ lots:
   - id: L110
     title: "Import de relevés pendant l'analyse : tous les fichiers « Claude analyse… » en même temps alors que le backend les traite un par un (suivre l'historique : en cours / en attente / fait, « fichier k / N »), et « Vider » / « Parcourir » actifs qui effacent la liste suivie — Nielsen 1, 3, 5 (revue UX L30, M3 M4)"
     public: "Import de relevés : avancement fichier par fichier"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-22
+    started: 2026-10-22
   - id: L111
     title: "Import de relevés : bouton « Analyser » hors écran avec 12 fichiers (y = 1212 px pour 900 à 1440, 1292 pour 844 à 390) et barre d'actions sous la barre du bas au téléphone — barre d'actions collante — Nielsen 7 (revue UX L30, M5)"
     public: "Import de relevés : bouton Analyser toujours visible"
