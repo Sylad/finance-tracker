@@ -35,6 +35,33 @@ describe('failuresFromUploadError (L109)', () => {
   });
 });
 
+describe('failuresFromUploadError — messages d’erreur honnêtes et en français (L113)', () => {
+  it('R3 — un 502 ou 503 ne dit pas « non importé » : le traitement a pu continuer côté serveur', () => {
+    for (const status of [502, 503]) {
+      const [f] = failuresFromUploadError(new ApiError(status, `HTTP ${status}`), ['a.pdf']);
+      expect(f.error).not.toMatch(/n'a pas été importé|HTTP/i);
+      expect(f.error).toMatch(/historique/);
+    }
+  });
+
+  it('R3 — un 500 garde « n’a pas été importé » (le serveur a répondu lui-même)', () => {
+    const [f] = failuresFromUploadError(new ApiError(500, 'Internal server error'), ['a.pdf']);
+    expect(f.error).toMatch(/n'a pas été importé/);
+  });
+
+  it('R4 — un 413 sans corps est dit en français, avec la limite de 20 Mo', () => {
+    const [f] = failuresFromUploadError(new ApiError(413, 'HTTP 413'), ['a.pdf']);
+    expect(f.error).not.toMatch(/HTTP/);
+    expect(f.error).toMatch(/20 Mo/);
+  });
+
+  it('R4 — tout autre « HTTP n » brut est remplacé par une phrase française', () => {
+    const [f] = failuresFromUploadError(new ApiError(418, 'HTTP 418'), ['a.pdf']);
+    expect(f.error).not.toMatch(/HTTP/);
+    expect(f.error).toMatch(/418/);
+  });
+});
+
 describe('skippedMonthLabel (L109)', () => {
   it('R4 — l’identifiant AAAA-MM devient « Mars 2026 »', () => {
     expect(skippedMonthLabel('2026-03')).toBe('Mars 2026');

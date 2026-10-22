@@ -66,3 +66,21 @@ describe('Import de relevés — avancement fichier par fichier (L110)', () => {
     expect(p.states).toEqual(['done']);
   });
 });
+
+describe('Import de relevés — fichier sauté (L113)', () => {
+  it('R2 — un fichier sauté (mois déjà importé, journal « skipped ») est fait, et « fichier k / N » avance', () => {
+    const logs = [
+      log('1', 'a.pdf', 'skipped', '2026-10-22T10:00:00Z'),
+      log('2', 'b.pdf', 'in-progress', '2026-10-22T10:00:01Z'),
+    ];
+    const p = fileProgress(['a.pdf', 'b.pdf', 'c.pdf'], logs, new Set());
+    expect(p.states).toEqual(['done', 'running', 'waiting']);
+    expect(p.current).toBe(2);
+  });
+
+  it('R1 — un journal ancien au nom mal relu (latin1) est rapproché du fichier accentué', () => {
+    const mangled = Buffer.from('août.pdf', 'utf8').toString('latin1');
+    const p = fileProgress(['août.pdf'], [log('1', mangled, 'success', '2026-10-22T10:00:00Z')], new Set());
+    expect(p.states).toEqual(['done']);
+  });
+});

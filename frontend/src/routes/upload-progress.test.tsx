@@ -72,3 +72,22 @@ describe('Import de relevés — suivi pendant l’analyse (L110)', () => {
     expect(screen.getByText('a.pdf')).toBeTruthy();
   });
 });
+
+describe('Import de relevés — historique (L113)', () => {
+  beforeEach(() => {
+    state.isPending = false;
+    state.logs = [];
+  });
+
+  it('R2 — un fichier sauté apparaît dans l’historique comme « déjà importé : Mars 2026 »', () => {
+    state.logs = [{ ...log('1', 'releve_2026-03.pdf', 'skipped', '2026-10-22T10:00:00Z'), statementId: '2026-03', statementMonth: 3, statementYear: 2026 }];
+    render(<UploadPage />);
+    expect(screen.getByText(/déjà importé : Mars 2026/)).toBeTruthy();
+  });
+
+  it('R1 — un nom déjà abîmé dans l’historique est affiché lisible', () => {
+    state.logs = [log('1', Buffer.from('relevé_août.pdf', 'utf8').toString('latin1'), 'success', '2026-10-22T10:00:00Z')];
+    render(<UploadPage />);
+    expect(screen.getByText('relevé_août.pdf')).toBeTruthy();
+  });
+});

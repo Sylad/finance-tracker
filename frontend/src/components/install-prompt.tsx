@@ -46,7 +46,7 @@ export function InstallPrompt() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 max-w-sm card p-4 shadow-xl flex items-start gap-3">
+    <div className="fixed bottom-4 right-4 lg:right-auto lg:left-[256px] z-40 max-w-sm card p-4 shadow-xl flex items-start gap-3">
       <Smartphone className="h-5 w-5 text-accent-bright shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
         <div className="font-medium text-fg-bright text-sm">Installer Finance Tracker</div>

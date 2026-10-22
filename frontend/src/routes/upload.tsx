@@ -7,7 +7,7 @@ import type { UploadResult } from '@/types/api';
 import { cn, formatEUR, formatMonth } from '@/lib/utils';
 import { MAX_FILES as MAX, selectStatementFiles, type RejectedFile } from '@/lib/upload-files';
 import { failuresFromUploadError, skippedMonthLabel } from '@/lib/upload-report';
-import { fileProgress, type FileState } from '@/lib/upload-progress';
+import { fileProgress, fromLatin1, type FileState } from '@/lib/upload-progress';
 
 const STATE_LABEL: Record<FileState, string> = { waiting: 'En attente', running: 'Claude analyse…', done: 'Fait' };
 
@@ -326,16 +326,18 @@ function ImportHistory() {
             it.status === 'in-progress' && 'bg-accent/5 -mx-5 px-5',
           )}>
             {it.status === 'in-progress' && <Loader2 className="h-4 w-4 text-accent-bright shrink-0 animate-spin" />}
+            {it.status === 'skipped' && <Info className="h-4 w-4 text-fg-dim shrink-0" aria-hidden="true" />}
             {it.status === 'success' && <CheckCircle2 className="h-4 w-4 text-positive shrink-0" />}
             {it.status === 'error' && <AlertCircle className="h-4 w-4 text-negative shrink-0" />}
             <div className="flex-1 min-w-0">
-              <div className="text-fg-bright truncate">{it.filename}</div>
+              <div className="text-fg-bright truncate">{fromLatin1(it.filename)}</div>
               <div className="text-xs text-fg-dim">
                 {new Date(it.uploadedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
                 {it.status === 'in-progress' && (
                   <> · <span className="text-accent-bright">Claude analyse… ({Math.round((Date.now() - new Date(it.uploadedAt).getTime()) / 1000)}s)</span></>
                 )}
-                {it.status !== 'in-progress' && <> · {(it.durationMs / 1000).toFixed(1)}s</>}
+                {it.status !== 'in-progress' && it.status !== 'skipped' && <> · {(it.durationMs / 1000).toFixed(1)}s</>}
+                {it.status === 'skipped' && it.statementId && <> · <span className="text-fg-muted">déjà importé : {skippedMonthLabel(it.statementId)}</span></>}
                 {it.status === 'success' && it.statementMonth && it.statementYear && (
                   <> · <span className="text-accent-bright">{formatMonth(it.statementMonth, it.statementYear)}</span></>
                 )}
@@ -344,7 +346,7 @@ function ImportHistory() {
               </div>
             </div>
             {it.status === 'in-progress' && <div className="shimmer-bar absolute left-5 right-5 bottom-0" />}
-            {it.status === 'success' && it.statementId && (
+            {(it.status === 'success' || it.status === 'skipped') && it.statementId && (
               <Link
                 to="/history/$id"
                 params={{ id: it.statementId }}

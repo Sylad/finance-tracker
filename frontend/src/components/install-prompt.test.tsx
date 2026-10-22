@@ -96,3 +96,15 @@ describe('<InstallPrompt /> — interaction', () => {
     });
   });
 });
+
+describe('<InstallPrompt /> — emplacement (L113)', () => {
+  it('R5 — au bureau, la bannière ne se place pas en bas à droite, là où est « Analyser »', () => {
+    localStorage.clear();
+    render(<InstallPrompt />);
+    fireBeforeInstallPrompt();
+    const banner = screen.getByText('Installer Finance Tracker').closest('.fixed') as HTMLElement;
+    const lg = banner.className.split(/\s+/).filter((c) => c.startsWith('lg:'));
+    expect(lg).toContain('lg:right-auto');
+    expect(lg).toContain('lg:left-[256px]');
+  });
+});

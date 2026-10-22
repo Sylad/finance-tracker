@@ -10,7 +10,7 @@ export interface UploadProgress {
 }
 
 /** multer relit les noms de fichier en latin1 : « é » arrive en « Ã© ». Rétablit l'UTF-8 si possible. */
-function fromLatin1(name: string): string {
+export function fromLatin1(name: string): string {
   if ([...name].some((c) => c.charCodeAt(0) > 255)) return name;
   try {
     return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(name, (c) => c.charCodeAt(0)));
