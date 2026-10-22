@@ -1196,10 +1196,11 @@ lots:
   - id: L112
     title: "Import de relevés, contrôle à la sélection : « dépasse 20 Mo (20,0 Mo) » pour un PDF de 20 Mo + 1 octet (formatMo arrondi, test R2 à corriger) ; un .pdf sans type MIME accepté au front mais refusé par le serveur (400 sur tout le lot) — aligner isPdf sur fileFilter ; focus perdu quand Parcourir se désactive à 12/12 (WCAG 2.4.3) — revue de L108"
     public: "Import de relevés : contrôle des fichiers affiné"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-22
+    started: 2026-10-22
   - id: L113
     title: "Import de relevés, suivi et affichage : nom accentué illisible dans l'historique (« relevÃ©_aoÃ»t… », originalname relu en latin1 par multer — corriger au stockage) ; fichier sauté sans journal (mois déjà importé) resté « En attente » et « fichier k / N » faux ; bannière d'installation qui recouvre « Analyser » à 1440 px ; 502/503 annoncés « non importé » et « HTTP 413 » en anglais — revues de L109 à L111"
     public: "Import de relevés : suivi et noms de fichiers justes"
