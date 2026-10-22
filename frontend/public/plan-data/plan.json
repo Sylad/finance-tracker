@@ -367,6 +367,41 @@
       "status": "done",
       "started": "2026-10-22",
       "finished": "2026-10-22"
+    },
+    {
+      "id": "L116",
+      "title": "Épargne : boutons Modifier, Supprimer et Fermer nommés pour les lecteurs d'écran",
+      "status": "todo"
+    },
+    {
+      "id": "L117",
+      "title": "Épargne : fenêtre de saisie utilisable au clavier et qui défile sur petit écran",
+      "status": "todo"
+    },
+    {
+      "id": "L118",
+      "title": "Épargne : un échec de chargement affiché comme une erreur, avec Réessayer",
+      "status": "todo"
+    },
+    {
+      "id": "L119",
+      "title": "Épargne : courbe de 12 mois lisible, depuis l'ouverture, avec un résumé en texte",
+      "status": "todo"
+    },
+    {
+      "id": "L120",
+      "title": "Épargne : dernier mouvement daté et nommé (versement, ajustement, intérêts)",
+      "status": "todo"
+    },
+    {
+      "id": "L121",
+      "title": "Épargne : taux d'intérêt au format français, sans décimales parasites",
+      "status": "todo"
+    },
+    {
+      "id": "L122",
+      "title": "Démo : solde des comptes épargne égal à la somme de leurs mouvements",
+      "status": "todo"
     }
   ]
 }

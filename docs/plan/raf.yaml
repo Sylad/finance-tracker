@@ -388,9 +388,14 @@ lots:
     finished: 2026-10-22
   - id: L31
     title: Revue UX — Épargne
-    status: todo
+    status: done
     estimate: 0.25
     created: 2026-09-28
+    ux: { date: 2026-10-22, verdict: "non conforme : 2 bloquants (boutons icône sans nom ; fenêtre de saisie sans rôle ni focus et sans défilement — titre coupé à 320×568, Enregistrer inatteignable à 200 % de texte), 3 majeurs (erreur affichée comme vide, courbe trompeuse sans alternative, ajustement présenté comme retrait) → L116–L122 ; captures regardées par le lead" }
+    notes:
+      - { date: 2026-10-22, text: "Mineurs (notes) : h1 = montant (modèle commun à toutes les pages), LoadingState sans role=status (sujet commun), état vide sans bouton, confirmation de suppression native sans dire que l'historique est perdu, « Pattern de détection (regex) » jargon, aide du n° de compte non reliée (aria-describedby), boutons icône 26×26 à 4 px d'écart. Lus dans le code, non déclenchés : handleSave sans rattrapage d'échec, re-scan par alert(), « Solde initial » modifié sans effet sur le solde (savings.service.ts update). Proposition de l'agent UX, NON retenue sans Sylvain : liste repliable des mouvements de chaque compte (nouvelle fonction). Captures : tmp/ux-fin-l31/." }
+    started: 2026-10-22
+    finished: 2026-10-22
   - id: L32
     title: Revue UX — Crédits
     status: todo
@@ -1237,3 +1242,52 @@ lots:
     started: 2026-10-22
     review: { date: 2026-10-22, verdict: "compliant after 2 minor notes (`except:` et `390 only:` en tête de ligne ne sont pas des formes définies par qa-reviewer.md, qui lit le texte en clair ; à confirmer à la prochaine QA) — orchestré (vague 2026-10-22-fin-import2, 0 passe(s) de correction)", commit: 4d1aa04537210805045b953db0ea0e7c01ca1727 }
     finished: 2026-10-22
+  - id: L116
+    title: "Épargne : 4 boutons icône (crayon, corbeille, 26×26) et le × de la fenêtre sans nom accessible → aria-label « Modifier/Supprimer <compte> », « Fermer », comme loans.tsx — WCAG 4.1.2, 2.4.6 (UX L31)"
+    public: "Épargne : boutons Modifier, Supprimer et Fermer nommés pour les lecteurs d'écran"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L117
+    title: "Épargne, fenêtre Modifier/Nouveau compte : ni role=dialog ni aria-modal, Échap sans effet, focus resté derrière le voile ; voile sans défilement — à 320×568 titre et × coupés (haut à −20 px), à 200 % de texte « Enregistrer » inatteignable → modèle de la fenêtre Déclarations, voile défilant, une colonne sous sm — WCAG 2.4.3, 4.1.2, 1.4.4, 1.4.10 (UX L31)"
+    public: "Épargne : fenêtre de saisie utilisable au clavier et qui défile sur petit écran"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L118
+    title: "Épargne : GET /api/savings-accounts en 500 affiché comme un écran vide (« 0,00 € », « Aucun compte épargne déclaré ») → ErrorState avec Réessayer, pas de total en erreur — Nielsen 1, 9 (UX L31)"
+    public: "Épargne : un échec de chargement affiché comme une erreur, avec Réessayer"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L119
+    title: "Épargne, courbe de chaque carte : 0 € pour les mois avant l'ouverture (fausse croissance), aucun repère de période ni de montant, aucune alternative texte → courbe depuis le mois d'ouverture, « 12 derniers mois », montants de début et de fin, aria-label de résumé — Nielsen 2, WCAG 1.1.1 (UX L31)"
+    public: "Épargne : courbe de 12 mois lisible, depuis l'ouverture, avec un résumé en texte"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L120
+    title: "Épargne : « ↓ 200,00 € dernier mouvement » en rouge est un ajustement au relevé (bank-extract), sans date ni nature → « Ajustement au relevé · 30/09 : −200,00 € » — Nielsen 1, 2 (UX L31)"
+    public: "Épargne : dernier mouvement daté et nommé (versement, ajustement, intérêts)"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L121
+    title: "Épargne : taux affichés « 2.00% » (montants en fr-FR) et champ du taux à « 1.7000000000000002 » pour 0,017 (aussi 0,0175, 0,022) → format fr-FR et arrondi à l'affichage et dans le champ (UX L31)"
+    public: "Épargne : taux d'intérêt au format français, sans décimales parasites"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
+  - id: L122
+    title: "Démo, fixtures épargne : la somme des mouvements ne fait pas le solde courant (PEL 13 680 pour 13 580, Livret A 6 600 pour 6 750 ; note « 6750 vs 6800 calculé » portant −200) → mouvements cohérents avec les soldes (UX L31)"
+    public: "Démo : solde des comptes épargne égal à la somme de leurs mouvements"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-22
