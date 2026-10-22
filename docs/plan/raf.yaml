@@ -1148,10 +1148,11 @@ lots:
   - id: L108
     title: "Import de relevés : fichiers non PDF, de plus de 20 Mo ou au-delà de 12 écartés sans message (un PDF de 25 Mo part et fait échouer tout le lot côté serveur), limite de 20 Mo non écrite, Parcourir actif à 12/12 — contrôler à la sélection et nommer chaque fichier écarté avec sa raison — Nielsen 1, 5, 9 (revue UX L30, M1)"
     public: "Import de relevés : fichiers refusés expliqués"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-22
+    started: 2026-10-22
   - id: L109
     title: "Import de relevés : échec global affiché sous le faux nom « upload » sans les raisons par fichier (errors[] du 422 perdu), ignorés comptés mais non nommés (« déjà importé : <mois> » + lien), erreur 500 en anglais — Nielsen 9 (revue UX L30, M2)"
     public: "Import de relevés : résultat détaillé fichier par fichier"
