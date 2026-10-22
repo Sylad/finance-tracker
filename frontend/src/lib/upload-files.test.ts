@@ -14,16 +14,26 @@ describe('selectStatementFiles (L108)', () => {
     expect(r.rejected).toEqual([{ name: 'notes.txt', reason: "ce n'est pas un PDF" }]);
   });
 
-  it('R1 — un PDF sans type MIME mais en .pdf (casse comprise) est accepté', () => {
-    const r = selectStatementFiles([], [file('A.PDF', 10, '')]);
-    expect(r.accepted).toHaveLength(1);
-    expect(r.rejected).toEqual([]);
+  it('R1 — un .pdf sans type MIME est écarté dès la sélection, comme le fait le serveur (fileFilter)', () => {
+    const r = selectStatementFiles([], [file('A.PDF', 10, ''), file('b.pdf')]);
+    expect(r.accepted.map((f) => f.name)).toEqual(['b.pdf']);
+    expect(r.rejected).toEqual([{ name: 'A.PDF', reason: "type PDF non reconnu par le navigateur (le serveur l'aurait refusé)" }]);
+  });
+
+  it('R1 — un fichier sans type MIME ni extension .pdf reste « pas un PDF »', () => {
+    const r = selectStatementFiles([], [file('notes', 10, '')]);
+    expect(r.rejected).toEqual([{ name: 'notes', reason: "ce n'est pas un PDF" }]);
   });
 
   it('R2 — un PDF de plus de 20 Mo est écarté, un de 20 Mo pile est gardé', () => {
     const r = selectStatementFiles([], [file('gros.pdf', MAX_FILE_BYTES + 1), file('limite.pdf', MAX_FILE_BYTES)]);
     expect(r.accepted.map((f) => f.name)).toEqual(['limite.pdf']);
-    expect(r.rejected).toEqual([{ name: 'gros.pdf', reason: 'dépasse 20 Mo (20,0 Mo)' }]);
+    expect(r.rejected).toEqual([{ name: 'gros.pdf', reason: 'dépasse 20 Mo (20,1 Mo)' }]);
+  });
+
+  it('R2 — un fichier refusé pour sa taille n’est jamais affiché à 20,0 Mo (arrondi au supérieur)', () => {
+    const r = selectStatementFiles([], [file('gros.pdf', MAX_FILE_BYTES + 1)]);
+    expect(r.rejected[0].reason).not.toContain('20,0 Mo)');
   });
 
   it('R2 — la taille affichée est celle du fichier', () => {

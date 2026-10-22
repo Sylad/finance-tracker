@@ -34,6 +34,8 @@ export function UploadPage() {
     // Pendant l'analyse, la liste suivie ne change plus.
     if (!list || upload.isPending) return;
     const { accepted, rejected: refused } = selectStatementFiles(files, Array.from(list));
+    // Parcourir se désactive à 12/12 : s'il avait le focus, il passe au premier « Retirer » (WCAG 2.4.3).
+    if (accepted.length >= MAX && document.activeElement === browseButton.current) setRemovedAt(0);
     setFiles(accepted);
     setRejected(refused);
   };

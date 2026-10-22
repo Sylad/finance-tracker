@@ -81,4 +81,21 @@ describe('Import de relevés — contrôle à la sélection (L108)', () => {
     pick(file('bon.pdf'));
     expect(screen.queryByRole('alert')).toBeNull();
   });
+
+  it('R9 — à 12/12 atteint depuis Parcourir, le focus passe au premier « Retirer » (WCAG 2.4.3)', () => {
+    render(<UploadPage />);
+    const browse = screen.getByRole('button', { name: 'Parcourir' });
+    browse.focus();
+    expect(document.activeElement).toBe(browse);
+    pick(...Array.from({ length: 12 }, (_, i) => file(`r${i}.pdf`, 100 + i)));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Retirer r0.pdf' }));
+  });
+
+  it('R9 — le focus ne bouge pas quand la liste n’est pas pleine', () => {
+    render(<UploadPage />);
+    const browse = screen.getByRole('button', { name: 'Parcourir' });
+    browse.focus();
+    pick(file('a.pdf'));
+    expect(document.activeElement).toBe(browse);
+  });
 });
