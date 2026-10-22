@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-22 12:34",
+  "generated": "2026-10-22 12:48",
   "entries": [
+    {
+      "slug": "2026-10-22-import-de-releves-suivi-et-noms-de-fichiers-justes",
+      "title": "Import de relevés : suivi et noms de fichiers justes",
+      "date": "2026-10-22",
+      "lots": [
+        "L113"
+      ],
+      "captures": [
+        "captures/suivi-import-1440.png",
+        "captures/suivi-import-390.png"
+      ],
+      "alts": [
+        "Page Importer des relevés à 1440 px : le nom « relevé_août_2026.pdf » est lisible dans l'historique, un fichier ignoré indique « déjà importé », et la bannière d'installation ne recouvre plus le bouton Analyser",
+        "La même page à 390 px"
+      ],
+      "html": "<p>Sur la page d'import, le suivi et l'affichage sont plus justes.</p>\n<ul><li>Les noms de fichiers accentués s'affichent correctement dans l'historique des imports (« relevé_août… » au lieu de « relevÃ©_aoÃ»t… »).</li><li>Un fichier ignoré parce que son mois est déjà importé passe tout de suite à « Fait » pendant l'analyse, fait avancer « fichier k / N » et apparaît dans l'historique avec « déjà importé : » suivi du mois.</li><li>Sur grand écran, la bannière d'installation ne recouvre plus le bouton « Analyser ».</li><li>Quand le serveur est momentanément injoignable, le message ne dit plus que le relevé n'a pas été importé : il invite à consulter l'historique avant de relancer. Un fichier trop volumineux est signalé en français (20 Mo maximum par fichier).</li></ul>"
+    },
     {
       "slug": "2026-10-22-import-de-releves-controle-des-fichiers-affine",
       "title": "Import de relevés : contrôle des fichiers affiné",
