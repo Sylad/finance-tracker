@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-22 12:48",
+  "generated": "2026-10-22 20:54",
   "entries": [
+    {
+      "slug": "2026-10-22-epargne-boutons-modifier-supprimer-et-fermer-nommes-pour-les",
+      "title": "Épargne : boutons Modifier, Supprimer et Fermer nommés pour les lecteurs d'écran",
+      "date": "2026-10-22",
+      "lots": [
+        "L116"
+      ],
+      "captures": [],
+      "html": "<p>Sur la page Épargne, avec un lecteur d'écran, les boutons en forme de crayon et de corbeille de chaque compte sont maintenant annoncés « Modifier » ou « Supprimer » suivi du nom du compte (par exemple « Modifier Livret A »). La croix qui ferme la fenêtre de saisie d'un compte est annoncée « Fermer ».</p>\n<p>Rien ne change à l'écran : l'aspect de la page est le même.</p>"
+    },
     {
       "slug": "2026-10-22-import-de-releves-suivi-et-noms-de-fichiers-justes",
       "title": "Import de relevés : suivi et noms de fichiers justes",

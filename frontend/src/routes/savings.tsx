@@ -133,8 +133,8 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
           </div>
         </div>
         <div className="flex gap-1">
-          <button onClick={onEdit} className="btn-ghost p-1.5"><Pencil className="h-3.5 w-3.5" /></button>
-          <button onClick={onDelete} className="btn-ghost p-1.5 hover:text-negative"><Trash2 className="h-3.5 w-3.5" /></button>
+          <button onClick={onEdit} aria-label={`Modifier ${account.name}`} className="btn-ghost p-1.5"><Pencil className="h-3.5 w-3.5" aria-hidden="true" /></button>
+          <button onClick={onDelete} aria-label={`Supprimer ${account.name}`} className="btn-ghost p-1.5 hover:text-negative"><Trash2 className="h-3.5 w-3.5" aria-hidden="true" /></button>
         </div>
       </div>
       <div className="mt-4 font-display tabular text-3xl font-bold text-fg-bright">{formatEUR(account.currentBalance)}</div>
@@ -177,7 +177,7 @@ function SavingsForm({ init, onSave, onCancel, busy }: { init: SavingsAccountInp
       <div className="card max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h2 className="font-display font-semibold text-fg-bright">{init.name ? 'Modifier le compte' : 'Nouveau compte épargne'}</h2>
-          <button onClick={onCancel} className="btn-ghost p-1"><X className="h-4 w-4" /></button>
+          <button type="button" onClick={onCancel} aria-label="Fermer" className="btn-ghost p-1"><X className="h-4 w-4" aria-hidden="true" /></button>
         </div>
         <form className="p-5 space-y-3" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
           <Field label="Nom"><input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
