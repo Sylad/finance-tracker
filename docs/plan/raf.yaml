@@ -1268,6 +1268,7 @@ lots:
     visible: true
     created: 2026-10-22
     started: 2026-10-22
+    review: { date: 2026-10-22, verdict: "compliant: 0 finding (test, type check and published plan green; error state measured at 1440 and 390 px) — orchestré (vague 2026-10-22-fin-epargne, 0 passe(s) de correction)", commit: d15af0cab0c692431a2d27b2bb5310eba21c94e4 }
   - id: L119
     title: "Épargne, courbe de chaque carte : 0 € pour les mois avant l'ouverture (fausse croissance), aucun repère de période ni de montant, aucune alternative texte → courbe depuis le mois d'ouverture, « 12 derniers mois », montants de début et de fin, aria-label de résumé — Nielsen 2, WCAG 1.1.1 (UX L31)"
     public: "Épargne : courbe de 12 mois lisible, depuis l'ouverture, avec un résumé en texte"
