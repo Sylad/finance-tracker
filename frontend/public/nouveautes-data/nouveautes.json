@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-22 10:47",
+  "generated": "2026-10-22 10:52",
   "entries": [
+    {
+      "slug": "2026-10-22-import-de-releves-resultat-detaille-fichier-par-fichier",
+      "title": "Import de relevés : résultat détaillé fichier par fichier",
+      "date": "2026-10-22",
+      "lots": [
+        "L109"
+      ],
+      "captures": [
+        "captures/2026-10-22-import-resultat-detaille.png",
+        "captures/2026-10-22-import-resultat-detaille-390.png"
+      ],
+      "alts": [
+        "Résultat d'un import : deux fichiers ignorés avec « déjà importé : Mars 2026 » en lien, et un échec nommé avec sa raison",
+        "Le même résultat au téléphone"
+      ],
+      "html": "<p>Après l'analyse, la page d'import de relevés dit maintenant fichier par fichier ce qui s'est passé. Quand aucun relevé n'a pu être analysé, chaque fichier est listé avec sa propre raison, au lieu d'un échec unique attribué à un fichier « upload ».</p>\n<p>Un fichier ignoré parce que son mois est déjà importé est nommé, avec le lien « déjà importé : Mars 2026 » qui ouvre le relevé existant. Une erreur du serveur est écrite en français et indique les fichiers concernés.</p>"
+    },
     {
       "slug": "2026-10-22-import-de-releves-fichiers-refuses-expliques",
       "title": "Import de relevés : fichiers refusés expliqués",

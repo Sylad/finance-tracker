@@ -61,7 +61,7 @@ describe("Import de relevés — lecteur d'écran et focus (L107)", () => {
   });
 
   it("R4 — le résultat est annoncé dans la région de statut avec les compteurs", async () => {
-    state.mutateAsync = vi.fn().mockResolvedValue({ succeeded: [], skipped: [{ filename: 'a.pdf', reason: 'déjà importé' }], failed: [] });
+    state.mutateAsync = vi.fn().mockResolvedValue({ succeeded: [], skipped: [{ filename: 'a.pdf', statementId: '2026-03' }], failed: [] });
     render(<UploadPage />);
     await pick('a.pdf');
     await userEvent.click(screen.getByRole('button', { name: /Analyser 1 relevé/ }));
