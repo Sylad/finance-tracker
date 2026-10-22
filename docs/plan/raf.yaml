@@ -1139,10 +1139,11 @@ lots:
   - id: L107
     title: "Import de relevés : boutons « retirer » sans nom accessible (icône seule) et focus perdu sur body après suppression et au clic sur Analyser ; résultat, échecs et « Connexion fermée » non annoncés (0 role=status/alert/aria-live) — WCAG 4.1.2, 4.1.3, 2.4.3 (revue UX L30, B1 B2)"
     public: "Import de relevés : utilisable au lecteur d'écran"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-22
+    started: 2026-10-22
   - id: L108
     title: "Import de relevés : fichiers non PDF, de plus de 20 Mo ou au-delà de 12 écartés sans message (un PDF de 25 Mo part et fait échouer tout le lot côté serveur), limite de 20 Mo non écrite, Parcourir actif à 12/12 — contrôler à la sélection et nommer chaque fichier écarté avec sa raison — Nielsen 1, 5, 9 (revue UX L30, M1)"
     public: "Import de relevés : fichiers refusés expliqués"
