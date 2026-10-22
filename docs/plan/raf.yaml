@@ -1153,6 +1153,7 @@ lots:
     visible: true
     created: 2026-10-22
     started: 2026-10-22
+    review: { date: 2026-10-22, verdict: "compliant after 2 fixes (3 minor: message « dépasse 20 Mo (20,0 Mo) » contradictoire à la limite, .pdf sans MIME accepté au front mais refusé au serveur, focus perdu quand Parcourir se désactive) — orchestré (vague 2026-10-22-fin-import, 0 passe(s) de correction)", commit: 33207624a55ea0dfbc579c98f8faa0047844c453 }
   - id: L109
     title: "Import de relevés : échec global affiché sous le faux nom « upload » sans les raisons par fichier (errors[] du 422 perdu), ignorés comptés mais non nommés (« déjà importé : <mois> » + lien), erreur 500 en anglais — Nielsen 9 (revue UX L30, M2)"
     public: "Import de relevés : résultat détaillé fichier par fichier"
