@@ -49,4 +49,20 @@ describe('Import de relevés — avancement fichier par fichier (L110)', () => {
     const p = fileProgress(['a.pdf'], logs, new Set());
     expect(p.current).toBe(1);
   });
+
+  it('R4 — un nom accentué que le serveur a relu en latin1 (multer) est rapproché de son fichier', () => {
+    const mojibake = Array.from(new TextEncoder().encode('relevé_août.pdf'), (b) => String.fromCharCode(b)).join('');
+    expect(mojibake).not.toBe('relevé_août.pdf');
+    const p = fileProgress(
+      ['relevé_août.pdf', 'b.pdf'],
+      [log('1', mojibake, 'in-progress', '2026-10-22T10:00:00Z')],
+      new Set(),
+    );
+    expect(p.states).toEqual(['running', 'waiting']);
+  });
+
+  it('R4 — un nom accentué déjà correct reste rapproché', () => {
+    const p = fileProgress(['relevé.pdf'], [log('1', 'relevé.pdf', 'success', '2026-10-22T10:00:00Z')], new Set());
+    expect(p.states).toEqual(['done']);
+  });
 });
