@@ -1227,3 +1227,4 @@ lots:
     quickwin: true
     created: 2026-10-22
     started: 2026-10-22
+    review: { date: 2026-10-22, verdict: "compliant after 2 minor notes (`except:` et `390 only:` en tête de ligne ne sont pas des formes définies par qa-reviewer.md, qui lit le texte en clair ; à confirmer à la prochaine QA) — orchestré (vague 2026-10-22-fin-import2, 0 passe(s) de correction)", commit: 4d1aa04537210805045b953db0ea0e7c01ca1727 }
