@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-22 11:12",
+  "generated": "2026-10-22 11:25",
   "entries": [
+    {
+      "slug": "2026-10-22-import-de-releves-bouton-analyser-toujours-visible",
+      "title": "Import de relevés : bouton Analyser toujours visible",
+      "date": "2026-10-22",
+      "lots": [
+        "L111"
+      ],
+      "captures": [
+        "captures/upload-sticky-1440.png",
+        "captures/upload-sticky-390.png"
+      ],
+      "alts": [
+        "Page d'import avec 12 fichiers : la barre Vider / Analyser reste visible en bas de l'écran",
+        "La même page au téléphone, la barre d'actions posée juste au-dessus de la barre de navigation du bas"
+      ],
+      "html": "<p>Sur la page d'import de relevés, la barre qui porte « Vider » et « Analyser » reste maintenant collée en bas de l'écran pendant que tu fais défiler la liste. Avec 12 fichiers, tu n'as plus à descendre tout en bas pour trouver le bouton « Analyser ».</p>\n<p>Au téléphone, la barre se pose juste au-dessus de la barre de navigation du bas au lieu de passer dessous : « Vider » et « Analyser » restent accessibles sans défiler.</p>"
+    },
     {
       "slug": "2026-10-22-import-de-releves-avancement-fichier-par-fichier",
       "title": "Import de relevés : avancement fichier par fichier",

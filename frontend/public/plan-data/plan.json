@@ -339,7 +339,8 @@
     {
       "id": "L111",
       "title": "Import de relevés : bouton Analyser toujours visible",
-      "status": "todo"
+      "status": "doing",
+      "started": "2026-10-22"
     }
   ]
 }
