@@ -1245,10 +1245,11 @@ lots:
   - id: L116
     title: "Épargne : 4 boutons icône (crayon, corbeille, 26×26) et le × de la fenêtre sans nom accessible → aria-label « Modifier/Supprimer <compte> », « Fermer », comme loans.tsx — WCAG 4.1.2, 2.4.6 (UX L31)"
     public: "Épargne : boutons Modifier, Supprimer et Fermer nommés pour les lecteurs d'écran"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-22
+    started: 2026-10-22
   - id: L117
     title: "Épargne, fenêtre Modifier/Nouveau compte : ni role=dialog ni aria-modal, Échap sans effet, focus resté derrière le voile ; voile sans défilement — à 320×568 titre et × coupés (haut à −20 px), à 200 % de texte « Enregistrer » inatteignable → modèle de la fenêtre Déclarations, voile défilant, une colonne sous sm — WCAG 2.4.3, 4.1.2, 1.4.4, 1.4.10 (UX L31)"
     public: "Épargne : fenêtre de saisie utilisable au clavier et qui défile sur petit écran"
