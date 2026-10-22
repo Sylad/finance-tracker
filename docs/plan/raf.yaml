@@ -1157,10 +1157,11 @@ lots:
   - id: L109
     title: "Import de relevés : échec global affiché sous le faux nom « upload » sans les raisons par fichier (errors[] du 422 perdu), ignorés comptés mais non nommés (« déjà importé : <mois> » + lien), erreur 500 en anglais — Nielsen 9 (revue UX L30, M2)"
     public: "Import de relevés : résultat détaillé fichier par fichier"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-22
+    started: 2026-10-22
   - id: L110
     title: "Import de relevés pendant l'analyse : tous les fichiers « Claude analyse… » en même temps alors que le backend les traite un par un (suivre l'historique : en cours / en attente / fait, « fichier k / N »), et « Vider » / « Parcourir » actifs qui effacent la liste suivie — Nielsen 1, 3, 5 (revue UX L30, M3 M4)"
     public: "Import de relevés : avancement fichier par fichier"
