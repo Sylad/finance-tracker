@@ -1171,6 +1171,7 @@ lots:
     visible: true
     created: 2026-10-22
     started: 2026-10-22
+    review: { date: 2026-10-22, verdict: "conforme, 2 mineurs : « fichier k / N » et « En attente » faux quand un fichier est sauté sans journal (mois déjà importé) ; trois tests étiquetés R4 pour deux règles — orchestré (vague 2026-10-22-fin-import, 1 passe(s) de correction)", commit: 24fbe13a328442faef4d6478d6055a406f3861fa }
   - id: L111
     title: "Import de relevés : bouton « Analyser » hors écran avec 12 fichiers (y = 1212 px pour 900 à 1440, 1292 pour 844 à 390) et barre d'actions sous la barre du bas au téléphone — barre d'actions collante — Nielsen 7 (revue UX L30, M5)"
     public: "Import de relevés : bouton Analyser toujours visible"
