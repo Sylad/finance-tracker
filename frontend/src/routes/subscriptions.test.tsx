@@ -108,4 +108,30 @@ describe('Abonnements — revue UX (L33)', () => {
     expect(within(dialog).getAllByDisplayValue('Spotify').length).toBeGreaterThan(0);
     expect(screen.queryByRole('dialog', { name: "Modifier l'abonnement" })).toBeNull();
   });
+
+  it('R9 — en-tête à 320 px : les actions passent à la ligne (aucun conteneur flex sans wrap autour des boutons)', () => {
+    state.subs = q({ data: [netflix] });
+    state.sugg = q({ data: [suggestion, { ...suggestion, id: 'g2', status: 'snoozed' }] });
+    render(<SubscriptionsPage />);
+    const primary = screen.getByRole('button', { name: /Nouvel abonnement/ });
+    const row = primary.parentElement as HTMLElement;
+    expect(row.className).toMatch(/\bflex-wrap\b/);
+    expect(screen.getByRole('button', { name: /Reset/ }).parentElement).toBe(row);
+  });
+
+  it('R10 — les actions d’une suggestion peuvent passer à la ligne (flex-wrap, pas de shrink-0)', () => {
+    render(<SubscriptionsPage />);
+    const group = screen.getByRole('button', { name: 'Enregistrer Spotify AB' }).parentElement as HTMLElement;
+    expect(group.className).toMatch(/\bflex-wrap\b/);
+    expect(group.className).not.toMatch(/\bshrink-0\b/);
+  });
+
+  it('R11 — « Faux positif » et « Reset » utilisent text-negative-fg (contraste ≥ 4,5:1)', () => {
+    render(<SubscriptionsPage />);
+    for (const name of ['Faux positif Spotify AB', /Reset/]) {
+      const cls = screen.getByRole('button', { name }).className;
+      expect(cls).toMatch(/\btext-negative-fg\b/);
+      expect(cls).not.toMatch(/(^|\s)(hover:)?text-negative(\s|$)/);
+    }
+  });
 });

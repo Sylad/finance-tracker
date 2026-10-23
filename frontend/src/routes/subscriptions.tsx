@@ -178,7 +178,7 @@ export function SubscriptionsPage() {
         title={`${formatEUR(totalMonthly)} / mois`}
         subtitle={`${active.length} abonnement${active.length > 1 ? 's' : ''} actif${active.length > 1 ? 's' : ''}${pendingSugg.length > 0 ? ` · ${pendingSugg.length} suggestion${pendingSugg.length > 1 ? 's' : ''} à trier` : ''}`}
         actions={
-          <div className="flex gap-2">
+          <>
             {hiddenSugg.length > 0 && (
               <button
                 onClick={() => setShowHidden((s) => !s)}
@@ -203,7 +203,7 @@ export function SubscriptionsPage() {
             <button
               onClick={handleReset}
               disabled={resetSubs.isPending}
-              className="btn-secondary text-negative hover:bg-negative/10 hover:text-negative border-negative/30"
+              className="btn-secondary text-negative-fg hover:bg-negative/10 hover:text-negative-fg border-negative/30"
               title="Purge tous les abonnements + reset suggestions à pending"
             >
               {resetSubs.isPending ? (
@@ -218,7 +218,7 @@ export function SubscriptionsPage() {
             >
               <Plus className="h-4 w-4" /> Nouvel abonnement
             </button>
-          </div>
+          </>
         }
       />
 
@@ -464,7 +464,7 @@ function SuggSection({
                 {formatEUR(s.monthlyAmount)}/mois · vu {s.occurrencesSeen} fois
               </div>
             </div>
-            <div className="flex gap-1 shrink-0">
+            <div className="flex flex-wrap gap-1">
               <button
                 onClick={() => onAccept(s)}
                 aria-label={`Enregistrer ${s.label}`}
@@ -485,7 +485,7 @@ function SuggSection({
                 onClick={() => onReject(s.id)}
                 aria-label={`Faux positif ${s.label}`}
                 title="Ce n'est pas un abonnement. Claude ne te la re-proposera plus jamais."
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-negative/10 hover:bg-negative/20 text-negative text-xs font-medium border border-negative/30"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-negative/10 hover:bg-negative/20 text-negative-fg text-xs font-medium border border-negative/30"
               >
                 <XIcon className="h-3 w-3" /> Faux positif
               </button>
