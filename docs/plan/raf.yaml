@@ -1609,10 +1609,11 @@ lots:
   - id: L145
     title: "Crédits, puce Partiel d'un revolving : le panneau dit « la carte compte 6 mensualités prélevées depuis le début » alors que la carte revolving n'affiche aucun compte de mensualités (COFIDIS …1100 en démo) — ne citer la carte que si elle montre ce compte, ou afficher « N mensualités prélevées » sur la carte revolving ; test (QA prod)"
     public: "Crédits : la mention « Partiel » d'un crédit renouvelable suit sa carte"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
   - id: L146
     title: "Démo : un paiement en plusieurs fois ACTIF dans les données de démo (signature et échéances recalées sur la date du jour) pour que la carte N× et ses dates fr-FR s'observent en QA ; attente /loans : au moins une carte de paiement échelonné actif, aucune date AAAA-MM-JJ dans son texte ni ses title ; test"
     status: todo
