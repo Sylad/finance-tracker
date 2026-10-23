@@ -1367,18 +1367,31 @@ lots:
   - id: L126
     title: "Épargne, liste des mouvements : les notes du backend s'affichent brutes — nature répétée dans la note (Intérêts, Ajustement au relevé), préfixe « Auto: », taux écrit à l'anglaise — ne pas répéter la nature, retirer « Auto: », taux au format français « 2,50 % » (revue L123)"
     public: "Épargne : notes des mouvements plus lisibles"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant after 1 minor fix: 0 blocking, 0 major, 2 minor (noteOf non limité à la source `interest` ; raison de nocapture inexacte) — orchestré (vague 2026-10-23-fin-l126, 0 passe(s) de correction)", commit: 323ca22492100e2ad42b691efb75de1a56e1d919 }
+    ux: { date: 2026-10-23, verdict: "conforme — notes sans « Auto: », sans la nature répétée, taux « 2,50 % » ; nocapture (démo sans notes concernées) ; 1 mineur → lot (nettoyage appliqué à toutes les sources)" }
+    finished: 2026-10-23
   - id: L127
     title: "Épargne : l'intérêt est daté ${year}-${month}-31 quel que soit le mois anniversaire (auto-sync.service.ts:412) → la liste L123 affiche 31/06/2026 ou 31/02/2026 — dater au dernier jour réel du mois, test sur février (bissextile ou non), avril, juin, septembre, novembre (revue L123)"
     public: "Épargne : intérêts datés au vrai dernier jour du mois"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "conforme (1 note mineure : la Nouveauté ne dit pas que « Re-scanner les relevés » redate les intérêts existants) — orchestré (vague 2026-10-23-fin-l126, 1 passe(s) de correction)", commit: ab7a73b796e164070d11c051d12f5c3116a93e6a }
+    ux: { date: 2026-10-23, verdict: "conforme — intérêt daté au dernier jour réel du mois anniversaire (Date.UTC, 7 cas testés) ; nocapture (démo sans intérêts) ; 1 note mineure" }
+    notes:
+      - { date: 2026-10-23, text: "Mineur gardé en note (revue L127) : la Nouveauté et le README disent que les intérêts déjà enregistrés gardent leur date « -31 », sans dire que « Re-scanner les relevés » les redate. Aucune migration des dates existantes (choix du lot)." }
+    finished: 2026-10-23
+  - id: L128
+    title: "Épargne : noteOf (savings-last-movement.ts:44-53, L126) retire « Intérêts » en tête et convertit le taux pour TOUTES les sources — un versement détecté noté « Auto: Intérêts créditeurs LDDS » s'affiche « créditeurs LDDS » → nettoyage « Intérêts » et taux limités à source interest, test du cas détecté (revue L126)"
+    public: "Épargne : notes des versements affichées en entier"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
