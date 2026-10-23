@@ -410,12 +410,16 @@ lots:
     finished: 2026-10-23
   - id: L33
     title: Revue UX — Abonnements
-    status: doing
+    status: done
     visible: true
     estimate: 0.25
     created: 2026-09-28
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "conforme — 2 notes mineures (message de suggestions en échec contradictoire quand il n'y a aucun abonnement ; Nouveauté et captures antérieures aux deux derniers correctifs) — orchestré (vague 2026-10-23-2300, 2 passe(s) de correction)", commit: 10a0a7a3d04f95f824d35aa35446d41ac89e9322 }
+    ux: { date: 2026-10-23, verdict: "conforme (ux-reviewer 23-10, 2 mineurs) ; captures regardées par le lead : à 390 px en-tête et actions de suggestion à la ligne, sans débordement ; modale « Nouvel abonnement » lisible ; suite 748/748, build vert" }
+    finished: 2026-10-23
+    notes:
+      - { date: 2026-10-23, text: "Nouveauté et captures (0889838) antérieures à 4702715 et 10a0a7a : la capture formulaire-390 montre encore une barre de défilement horizontale supprimée depuis ; à reprendre avec L151" }
   - id: L34
     title: Revue UX — Règles de catégories
     status: todo
@@ -1673,3 +1677,10 @@ lots:
     notes:
       - { date: 2026-10-23, text: "Mineur 23-10 : libellé « PRELEVT ALMA 4X DARTY » écrit deux fois dans demo-installment.ts." }
     finished: 2026-10-23
+  - id: L151
+    title: "Abonnements, restes de la revue L33 : modale Doublons (rôle dialog, focus), confirm/alert natifs de Supprimer et Reset, libellé « Pattern (regex) », échecs de suppression/masquage/rejet silencieux (onError sans message), message contradictoire quand les suggestions échouent sans abonnement (« Aucun abonnement… importe un relevé »)"
+    public: "Abonnements : dialogues et messages d'échec clairs"
+    status: todo
+    estimate: 0.5
+    visible: true
+    created: 2026-10-23
