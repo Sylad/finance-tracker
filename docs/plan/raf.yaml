@@ -1579,3 +1579,4 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "conforme (1 note mineure : nocapture alors que l'appli de démo permet une capture) — orchestré (vague 2026-10-23-fin-l141, 1 passe(s) de correction)", commit: bea571c78ce0ab815246c00610e1e31a6841f6fa }
