@@ -1514,3 +1514,4 @@ lots:
     quickwin: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "conforme : aucun constat bloquant ni majeur. Commit 24e56d9 : le sous-titre de /loans s'accorde sur le nombre d'actifs, les 3 tests L140 R1–R3 passent avec le type-check. Une note mineure : l'attente QA « N crédits actifs » avec N ≥ 1 ne couvre pas le singulier. — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 24e56d95d44104aea6c57ed7b742aed97c83cd17 }
