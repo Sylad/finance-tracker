@@ -1574,7 +1574,8 @@ lots:
   - id: L144
     title: "Crédits, formulaire à 320 px : les champs Date début / Date fin coupent l'année (« 07/05/202 ») — dates sur une colonne ou largeur suffisante sous 360 px ; test (QA prod L132–L140)"
     public: "Crédits : dates du formulaire lisibles sur petit téléphone"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
