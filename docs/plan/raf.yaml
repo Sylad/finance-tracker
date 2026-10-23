@@ -1458,6 +1458,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant — rien à signaler — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: b2531e00c93f4ae83e77b419e86f9bcc1b3916e8 }
   - id: L134
     title: "Crédits : formulaire de crédit coupé sur petit téléphone (320×568 : haut à -66 px, Enregistrer à y=576, voile non défilable ; 375×667 titre rogné) — voile items-start overflow-y-auto comme Doublons et Suspects, ou panneau à hauteur max avec pied collant ; test (revue UX L32, WCAG 1.4.10)"
     public: "Crédits : formulaire enregistrable sur petit téléphone"
