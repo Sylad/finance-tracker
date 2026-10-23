@@ -402,14 +402,16 @@ export class AutoSyncService {
     // Estimation simple : balance × taux annuel. En rejeu (resync), le solde
     // courant contient encore les mouvements manual / bank-extract postérieurs
     // au relevé : on les retire pour retrouver le solde à la fin du mois du relevé.
-    const monthEnd = `${statement.year}-${String(statement.month).padStart(2, '0')}-31`;
+    // Dernier jour RÉEL du mois (jour 0 du mois suivant) : jamais un « 31/06 » ni un « 31/02 ».
+    const lastDay = new Date(Date.UTC(statement.year, statement.month, 0)).getUTCDate();
+    const monthEnd = `${statement.year}-${String(statement.month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
     const balance = reconstruct
       ? acc.currentBalance - acc.movements.filter((m) => m.date > monthEnd).reduce((s, m) => s + m.amount, 0)
       : acc.currentBalance;
     const interest = Math.round(balance * acc.interestRate * 100) / 100;
     if (interest <= 0) return;
     await this.savings.addMovement(acc.id, {
-      date: `${statement.year}-${String(statement.month).padStart(2, '0')}-31`,
+      date: monthEnd,
       amount: interest,
       source: 'interest',
       statementId: statement.id,

@@ -225,6 +225,21 @@ describe('AutoSyncService', () => {
       expect(interestCalls()[0][1].amount).toBe(70); // (5000 − 1500) × 2 %
     });
 
+    it.each([
+      ['février non bissextile', 2026, 2, '2026-02-28'],
+      ['février bissextile', 2028, 2, '2028-02-29'],
+      ['avril', 2026, 4, '2026-04-30'],
+      ['juin', 2026, 6, '2026-06-30'],
+      ['septembre', 2026, 9, '2026-09-30'],
+      ['novembre', 2026, 11, '2026-11-30'],
+      ['mois de 31 jours', 2026, 12, '2026-12-31'],
+    ])('l\'intérêt est daté du dernier jour réel du mois anniversaire : %s', async (_nom, year, month, attendu) => {
+      savings.getAll.mockResolvedValue([{ ...mkPel(), interestAnniversaryMonth: month }]);
+      await svc.syncStatement({ ...baseStatement, id: `${year}-${String(month).padStart(2, '0')}`, year, month });
+      expect(interestCalls()).toHaveLength(1);
+      expect(interestCalls()[0][1].date).toBe(attendu);
+    });
+
     it('import normal : le solde courant reste la base (aucune reconstruction)', async () => {
       const acc = mkPel();
       acc.movements = [
