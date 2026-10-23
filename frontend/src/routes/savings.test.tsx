@@ -10,7 +10,7 @@ const account = (o: Partial<SavingsAccount>): SavingsAccount => ({
   currentBalance: 100, movements: [], ...o,
 } as SavingsAccount);
 
-const state = vi.hoisted(() => ({ items: [] as unknown[] }));
+const state = vi.hoisted(() => ({ items: [] as unknown[], hist: [] as { month: string; balance: number }[] }));
 const idle = { mutateAsync: vi.fn(), mutate: vi.fn(), isPending: false };
 
 vi.mock('@/lib/queries', () => ({
@@ -18,7 +18,7 @@ vi.mock('@/lib/queries', () => ({
   useCreateSavingsAccount: () => idle,
   useUpdateSavingsAccount: () => idle,
   useDeleteSavingsAccount: () => idle,
-  useSavingsHistory: () => ({ data: [] }),
+  useSavingsHistory: () => ({ data: state.hist }),
   useResyncSavings: () => idle,
 }));
 
@@ -38,5 +38,39 @@ describe('<SavingsPage /> — noms accessibles (L116)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Ajouter un compte' }));
     await userEvent.click(screen.getByRole('button', { name: 'Fermer' }));
     expect(screen.queryByText('Nouveau compte épargne')).not.toBeInTheDocument();
+  });
+});
+
+describe('<SavingsPage /> — courbe de la carte (L119)', () => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+
+  const hist = [
+    { month: '2026-01', balance: 0 }, { month: '2026-02', balance: 0 },
+    { month: '2026-03', balance: 1000 }, { month: '2026-04', balance: 1500 },
+  ];
+
+  it("R6 — la courbe porte un résumé en texte : période, montant de début et de fin", () => {
+    state.items = [account({ initialBalanceDate: '2026-03-01' })];
+    state.hist = hist;
+    render(<SavingsPage />);
+    const img = screen.getByRole('img', { name: /Livret A/ });
+    const label = img.getAttribute('aria-label') ?? '';
+    expect(label).toMatch(/mars 2026/);
+    expect(label).toMatch(/avril 2026/);
+    expect(label).toMatch(/1\s?000,00/);
+    expect(label).toMatch(/1\s?500,00/);
+  });
+
+  it("R7 — « 12 derniers mois » est écrit quand le compte a plus d'un an, « depuis <mois> » sinon", () => {
+    state.items = [account({ initialBalanceDate: '2026-03-01' })];
+    state.hist = hist;
+    const { unmount } = render(<SavingsPage />);
+    expect(screen.getByText(/Depuis mars 2026/)).toBeInTheDocument();
+    unmount();
+    state.items = [account({ initialBalanceDate: '2020-01-01' })];
+    state.hist = ['2025-11', '2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10']
+      .map((month, k) => ({ month, balance: 100 * k }));
+    render(<SavingsPage />);
+    expect(screen.getByText('12 derniers mois')).toBeInTheDocument();
   });
 });

@@ -18,7 +18,8 @@ import {
   type SavingsAccountType,
   SAVINGS_TYPE_LABELS,
 } from '@/types/api';
-import { formatEUR, formatRatePercent, maskAccountNumber, ratePercentInput } from '@/lib/utils';
+import { formatEUR, formatMonth, formatRatePercent, maskAccountNumber, ratePercentInput } from '@/lib/utils';
+import { savingsCurve } from '@/lib/savings-curve';
 
 const TYPES: SavingsAccountType[] = ['livret-a', 'pel', 'cel', 'ldds', 'pea', 'other'];
 
@@ -115,9 +116,15 @@ function toInput(a: SavingsAccount): SavingsAccountInput {
   };
 }
 
+const monthLabel = (ym: string) => formatMonth(Number(ym.slice(5, 7)), Number(ym.slice(0, 4))).toLowerCase();
+
 function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; onEdit: () => void; onDelete: () => void }) {
   const { data: hist } = useSavingsHistory(account.id, 12);
   const resync = useResyncSavings();
+  const curve = hist ? savingsCurve(hist, account) : null;
+  const period = curve && hist
+    ? (curve.points.length === hist.length ? `${hist.length} derniers mois` : `Depuis ${monthLabel(curve.startMonth)}`)
+    : '';
   const lastDelta = account.movements.length >= 2
     ? account.movements[account.movements.length - 1].amount
     : 0;
@@ -156,19 +163,30 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
           {lastDelta > 0 ? '↑' : '↓'} {formatEUR(Math.abs(lastDelta))} dernier mouvement
         </div>
       )}
-      {hist && hist.length > 1 && (
-        <div className="h-12 mt-3 -mx-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={hist}>
-              <defs>
-                <linearGradient id={`grad-${account.id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(160 84% 50%)" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="hsl(160 84% 50%)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <Area type="monotone" dataKey="balance" stroke="hsl(160 84% 50%)" strokeWidth={1.5} fill={`url(#grad-${account.id})`} />
-            </AreaChart>
-          </ResponsiveContainer>
+      {curve && (
+        <div className="mt-3">
+          <div className="text-xs text-fg-dim">{period}</div>
+          <div
+            role="img"
+            aria-label={`Solde de ${account.name} : ${formatEUR(curve.startBalance)} en ${monthLabel(curve.startMonth)}, ${formatEUR(curve.endBalance)} en ${monthLabel(curve.endMonth)}`}
+            className="h-12 -mx-2"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={curve.points}>
+                <defs>
+                  <linearGradient id={`grad-${account.id}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(160 84% 50%)" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="hsl(160 84% 50%)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="balance" stroke="hsl(160 84% 50%)" strokeWidth={1.5} fill={`url(#grad-${account.id})`} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex justify-between text-xs tabular text-fg-dim" aria-hidden="true">
+            <span>{formatEUR(curve.startBalance)}</span>
+            <span>{formatEUR(curve.endBalance)}</span>
+          </div>
         </div>
       )}
       <button
