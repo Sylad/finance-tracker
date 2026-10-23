@@ -1415,8 +1415,18 @@ lots:
   - id: L130
     title: "Jeu de démo épargne : aucun mouvement d'intérêts ni versement détecté noté « Auto: Intérêts créditeurs … » → L126, L127 et L128 inobservables en QA ; ajouter un intérêt sur un mois de 30 jours et un tel versement, somme des mouvements = solde courant gardée (invariant L122) (QA prod 23-10)"
     public: "Démo : épargne avec intérêts et versements annotés"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "conforme — 1 mineur (note « Intérêts 2025 » de l'intérêt recalé → lot) — revue Opus neuve puis re-vérification après 2 passes (vague rendue sur une revue coupée code 143) ; R5 sur 24 mois, L122 et 20 330 € tenus", commit: bcdf448ab2d20ed0e9bb2250c19832f7dfe75f31 }
+    ux: { date: 2026-10-23, verdict: "conforme — intérêt au 30/04/2026 (mois de 30 jours, après l'ouverture), versement « Intérêts créditeurs LIVRET A » en entier ; capture 390 relue par le lead ; 1 mineur → lot (année de la note)" }
+    finished: 2026-10-23
+  - id: L131
+    title: "Démo : l'intérêt recalé en 2026-2027 garde la note « Intérêts 2025 » (affiché « 30/04/2026 · Intérêts · 2025 (2,50 %) », demo-date-shift.ts:101-105 ne recale pas la note) — recaler l'année de la note avec la date (/^Intérêts \\d{4}/), assertion dans R5, captures de la Nouveauté L130 refaites (revue L130)"
+    public: "Démo : l'année des intérêts suit leur date"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
