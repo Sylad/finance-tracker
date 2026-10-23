@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { X, AlertTriangle, CheckCircle2, Loader2, Trash2, ShoppingBag } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2, Trash2, ShoppingBag } from 'lucide-react';
 import {
   useSuspiciousLoans,
   useCleanupSuspiciousLoans,
   useConvertToInstallment,
 } from '@/lib/queries';
+import { Dialog } from '@/components/dialog';
 import { formatEUR } from '@/lib/utils';
 
 interface Props {
@@ -57,22 +58,17 @@ export function SuspiciousModal({ onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto animate-fade-in" onClick={onClose}>
-      <div className="card max-w-3xl w-full my-8" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <div>
-            <h2 className="font-display font-semibold text-fg-bright flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning" />
-              Crédits suspects
-            </h2>
-            <p className="text-xs text-fg-muted">
+    <Dialog
+      title={<><AlertTriangle className="h-4 w-4 text-warning" aria-hidden="true" />Crédits suspects</>}
+      size="max-w-3xl"
+      onClose={onClose}
+      description={
+        <>
               Heuristiques : nom matche pay-in-N (4X CB, FacilyPay…) OU ≤4 occurrences sur ≤4 mois et arrêté depuis ≥60j.
               Vérifie chaque ligne — supprime ou convertis en paiement échelonné (échéancier reconstruit).
-            </p>
-          </div>
-          <button onClick={onClose} className="btn-ghost p-1" aria-label="Fermer"><X className="h-4 w-4" /></button>
-        </div>
-
+            </>
+      }
+    >
         <div className="p-5">
           {isLoading && <p className="text-sm text-fg-muted py-8 text-center">Analyse en cours…</p>}
 
@@ -163,7 +159,6 @@ export function SuspiciousModal({ onClose }: Props) {
             </>
           )}
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }

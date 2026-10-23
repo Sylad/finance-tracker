@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { LoanForm } from './loan-form';
 import type { LoanInput } from '@/types/api';
 
@@ -33,5 +34,20 @@ describe('<LoanForm /> — petit téléphone (L134, WCAG 1.4.10)', () => {
   it('R4 — Enregistrer reste dans le panneau défilable', () => {
     const { panel } = renderForm();
     expect(panel).toContainElement(screen.getByRole('button', { name: 'Enregistrer' }));
+  });
+});
+
+describe('<LoanForm /> — clavier (L133, WCAG 2.4.3 / 4.1.2)', () => {
+  it('R5 — fenêtre modale nommée « Nouveau crédit », focus sur Organisme', () => {
+    renderForm();
+    expect(screen.getByRole('dialog', { name: 'Nouveau crédit' }).getAttribute('aria-modal')).toBe('true');
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: /Organisme/ }));
+  });
+
+  it('R6 — Échap annule', async () => {
+    const onCancel = vi.fn();
+    render(<LoanForm init={INIT} onSave={vi.fn()} onCancel={onCancel} busy={false} />);
+    await userEvent.keyboard('{Escape}');
+    expect(onCancel).toHaveBeenCalledTimes(1);
   });
 });

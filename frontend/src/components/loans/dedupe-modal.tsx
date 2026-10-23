@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { X, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import {
   useLoanDuplicates,
   useMergeLoanDuplicates,
   type LoanDuplicateGroup,
 } from '@/lib/queries';
+import { Dialog } from '@/components/dialog';
 import { formatEUR, cn } from '@/lib/utils';
 
 type RowStatus = 'keep' | 'merge' | 'ignore';
@@ -19,21 +20,19 @@ export function DedupeModal({ onClose }: Props) {
   const [groupStatuses, setGroupStatuses] = useState<Record<string, 'idle' | 'merging' | 'merged' | 'error'>>({});
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto animate-fade-in" onClick={onClose}>
-      <div className="card max-w-3xl w-full my-8" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <div>
-            <h2 className="font-display font-semibold text-fg-bright">Détecter et fusionner les doublons</h2>
-            <p className="text-xs text-fg-muted">
+    <Dialog
+      title="Détecter et fusionner les doublons"
+      size="max-w-3xl"
+      onClose={onClose}
+      description={
+        <>
               Heuristique : même créancier + même type + mensualité ±5%. Pour chaque ligne, choisis :
               <strong className="text-accent"> Conserver</strong> (canonical) ·
               <strong className="text-warning"> Merger</strong> (à fusionner dans le canonical) ·
               <strong className="text-fg-dim"> Ignorer</strong> (faux positif, laisser tel quel).
-            </p>
-          </div>
-          <button onClick={onClose} className="btn-ghost p-1" aria-label="Fermer"><X className="h-4 w-4" /></button>
-        </div>
-
+            </>
+      }
+    >
         <div className="p-5 space-y-4">
           {isLoading && <p className="text-sm text-fg-muted py-8 text-center">Analyse en cours…</p>}
 
@@ -70,8 +69,7 @@ export function DedupeModal({ onClose }: Props) {
         <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
           <button onClick={onClose} className="btn-secondary">Fermer</button>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 

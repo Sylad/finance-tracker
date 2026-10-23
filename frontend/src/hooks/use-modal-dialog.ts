@@ -17,7 +17,10 @@ export function useModalDialog(onCancel: () => void) {
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
-    initialFocusRef.current?.focus();
+    // Sans champ désigné : premier champ de saisie, sinon la fenêtre elle-même (tabIndex -1),
+    // jamais une action (supprimer, fusionner) que Entrée déclencherait aussitôt.
+    const dialog = dialogRef.current;
+    (initialFocusRef.current ?? dialog?.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea:not([disabled])') ?? dialog)?.focus();
     return () => opener?.focus?.();
   }, []);
 
@@ -36,10 +39,11 @@ export function useModalDialog(onCancel: () => void) {
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
       // Focus hors de la fenêtre (body après un clic sur une zone inerte) : on y rentre.
+      // La fenêtre elle-même (focus d'ouverture sans champ) compte comme avant le premier élément.
       if (!dialogRef.current.contains(document.activeElement)) {
         e.preventDefault();
         (e.shiftKey ? last : first).focus();
-      } else if (e.shiftKey && document.activeElement === first) {
+      } else if (e.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
         e.preventDefault();
         last.focus();
       } else if (!e.shiftKey && document.activeElement === last) {
