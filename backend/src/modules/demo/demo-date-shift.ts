@@ -67,9 +67,33 @@ function shiftNode(node: unknown, n: number): unknown {
   return out;
 }
 
+/**
+ * Un intérêt de la démo (L130) doit rester le dernier jour réel d'un mois de 30 jours
+ * pour que L127 s'observe ; le décalage de mois entiers ne le garantit pas (novembre
+ * + 6 = mai, 31 jours). Il est ramené au 30 du mois de 30 jours (avril, juin,
+ * septembre, novembre) le plus proche en arrière, son relevé suit.
+ */
+function snapInterestsToThirtyDayMonth(fixtures: Record<string, unknown>): void {
+  const accounts = fixtures['savings-accounts'];
+  if (!Array.isArray(accounts)) return;
+  for (const account of accounts as { movements?: Record<string, unknown>[] }[]) {
+    for (const m of account.movements ?? []) {
+      const iso = m.source === 'interest' && typeof m.date === 'string' ? ISO_DATE.exec(m.date) : null;
+      if (!iso) continue;
+      let [y, mo] = [+iso[1], +iso[2]];
+      while (new Date(Date.UTC(y, mo, 0)).getUTCDate() !== 30) [y, mo] = addMonths(y, mo, -1);
+      m.date = `${y}-${pad(mo)}-30`;
+      m.statementId = `${y}-${pad(mo)}`;
+    }
+  }
+}
+
 /** Copie des fixtures décalée de `months` mois ; l'entrée n'est pas modifiée. */
 export function shiftDemoFixtures<T extends Record<string, unknown>>(fixtures: T, months: number): T {
-  return months === 0 ? fixtures : (shiftNode(fixtures, months) as T);
+  if (months === 0) return fixtures;
+  const shifted = shiftNode(fixtures, months) as T;
+  snapInterestsToThirtyDayMonth(shifted);
+  return shifted;
 }
 
 /**

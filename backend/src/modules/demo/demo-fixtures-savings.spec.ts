@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { shiftDemoFixtures } from './demo-date-shift';
 
 /**
  * L122 — dans la démo, le solde courant d'un compte d'épargne est la somme de
@@ -68,6 +69,22 @@ describe('demo-fixtures — épargne (L122)', () => {
       expect(m.amount).toBeGreaterThan(0);
       expect(m.transactionId).toBeTruthy();
       expect(m.statementId).toMatch(/^\d{4}-\d{2}$/);
+    }
+  });
+
+  it('R5 — après recalage de la démo, quel que soit le décalage, l’intérêt reste le dernier jour réel d’un mois de 30 jours', () => {
+    for (let n = 0; n <= 24; n++) {
+      const shifted = shiftDemoFixtures(fixtures, n) as typeof fixtures;
+      const interests = shifted['savings-accounts'].flatMap((a: any) =>
+        a.movements.filter((m: any) => m.source === 'interest'),
+      );
+      expect(interests.length).toBeGreaterThanOrEqual(1);
+      for (const m of interests) {
+        const [y, mo, d] = m.date.split('-').map(Number);
+        expect({ n, date: m.date, jours: new Date(Date.UTC(y, mo, 0)).getUTCDate() }).toEqual({ n, date: m.date, jours: 30 });
+        expect(d).toBe(30);
+        expect(m.statementId).toBe(m.date.slice(0, 7));
+      }
     }
   });
 });
