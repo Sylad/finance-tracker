@@ -4,10 +4,16 @@ import { createHash } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { atomicWriteJsonSync } from '../../common/atomic-write';
+import { Loan } from '../../models/loan.model';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { buildYearlySummary } from '../storage/yearly-summary.builder';
 import { capUploadDates, monthsToShift, shiftDemoFixtures } from './demo-date-shift';
-import { buildDemoInstallmentLoan, DEMO_INSTALLMENT_ID } from './demo-installment';
+import {
+  attachDemoInstallmentDebit,
+  buildDemoInstallmentLoan,
+  DEMO_INSTALLMENT_ID,
+  upsertDemoInstallmentDebit,
+} from './demo-installment';
 import { RequestDataDirService } from './request-data-dir.service';
 
 /** Un tick par heure suffit à suivre le changement de jour sans lire les fixtures à chaque requête. */
@@ -38,9 +44,10 @@ export class DemoSeedService implements OnApplicationBootstrap, OnModuleDestroy 
     const shift = monthsToShift(last.year, last.month, new Date());
     const now = new Date();
     const shifted = shiftDemoFixtures(raw, shift);
+    const installment = attachDemoInstallmentDebit(shifted.statements as MonthlyStatement[], buildDemoInstallmentLoan(now));
     return {
       fixtures: capUploadDates(
-        { ...shifted, loans: [...(shifted.loans as unknown[]), buildDemoInstallmentLoan(now)] },
+        { ...shifted, statements: installment.statements, loans: [...(shifted.loans as unknown[]), installment.loan] },
         now,
       ),
       shift,
@@ -130,6 +137,7 @@ export class DemoSeedService implements OnApplicationBootstrap, OnModuleDestroy 
   /**
    * Le paiement en plusieurs fois (L146) est daté du jour, pas d'un décalage
    * de mois : il est remplacé à chaque démarrage puis chaque heure, le reste de loans.json intact.
+   * Le débit de son échéance 1 (L150), dans le relevé du mois, suit la même date.
    */
   private refreshInstallment(demoDir: string, f: Record<string, unknown>): void {
     const file = path.join(demoDir, 'loans.json');
@@ -138,6 +146,12 @@ export class DemoSeedService implements OnApplicationBootstrap, OnModuleDestroy 
       const current = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
       if (!Array.isArray(current) || !fresh) return;
       atomicWriteJsonSync(file, [...current.filter((l: { id?: string }) => l?.id !== DEMO_INSTALLMENT_ID), fresh]);
+      const occurrence = (fresh as unknown as Loan).occurrencesDetected[0];
+      const stmtFile = occurrence && path.join(demoDir, 'statements', `${occurrence.statementId}.json`);
+      if (stmtFile && fs.existsSync(stmtFile)) {
+        const stmt = JSON.parse(fs.readFileSync(stmtFile, 'utf8')) as MonthlyStatement;
+        atomicWriteJsonSync(stmtFile, upsertDemoInstallmentDebit(stmt, occurrence));
+      }
     } catch (e) {
       this.logger.warn(`Recalage du paiement en plusieurs fois impossible : ${(e as Error).message}`);
     }

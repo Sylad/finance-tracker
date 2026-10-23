@@ -28,12 +28,12 @@ shows: à 1440 px seulement, « Vue d'ensemble basée sur 6 relevés » (l'en-t�
 api: /api/statements, /api/statements/score-history, /api/loans, /api/savings-accounts, /api/budgets, /api/dashboard/net-worth, /api/dashboard/yearly-overview?months=12, /api/health-check/diagnostic, /api/dashboard/alerts
 may be empty when aucune alerte (`/api/dashboard/alerts`)
 never: dans le bloc « Alertes », « se termine dans » pour un paiement en plusieurs fois (ALMA 4X) (L149)
-source: la tuile « POINTS D'ATTENTION » lit le **diagnostic santé** (`/api/health-check/diagnostic`) et c'est lui qui fait foi ; `/api/dashboard/alerts` alimente un bloc « Alertes (N) » distinct (revolving ≥ 80 % du plafond, solde en baisse ≥ 30 %, crédit classique finissant sous 90 jours, jamais un paiement en plusieurs fois). Une tuile « Taux d'effort 70,5 % » avec `/api/dashboard/alerts` à `[]` n'est donc pas un défaut : le taux d'effort n'est pas une alerte de ce flux.
+source: la tuile « POINTS D'ATTENTION » lit le **diagnostic santé** (`/api/health-check/diagnostic`) et c'est lui qui fait foi ; `/api/dashboard/alerts` alimente un bloc « Alertes (N) » distinct (revolving ≥ 80 % du plafond, solde en baisse ≥ 30 %, crédit classique finissant sous 90 jours, jamais un paiement en plusieurs fois). Une tuile « Taux d’effort » avec `/api/dashboard/alerts` à `[]` n'est donc pas un défaut : le taux d'effort n'est pas une alerte de ce flux.
 
 ## /loans
 
 shows: « N crédits actifs » avec N ≥ 1, au moins 5 cartes crédit, au moins un crédit dont la santé n'est pas « Trou » (L63 : sans recalage tous passaient en « Trou » et FLOA en « 0 mois restants ») ; les six boutons d'action de l'en-tête (Importer PDF crédits, Détecter les crédits, Doublons, Suspects, Reset, Nouveau crédit) sont tous visibles, passés à la ligne si besoin ; à 390 px, `scrollWidth` = `clientWidth` (aucun défilement horizontal, L32)
-shows: au moins une carte de paiement échelonné actif (section « Paiements échelonnés actifs », carte « ALMA 4X ») ; aucune date AAAA-MM-JJ dans son texte ni dans ses `title` (« signé jj/mm/aaaa », « 1. jj/mm/aaaa », infobulles des pastilles, L141) ; la démo la recale sur la date du jour à chaque démarrage (L146)
+shows: au moins une carte de paiement échelonné actif (section « Paiements échelonnés actifs », carte « ALMA 4X ») ; aucune date AAAA-MM-JJ dans son texte ni dans ses `title` (« signé jj/mm/aaaa », « 1. jj/mm/aaaa », infobulles des pastilles, L141) ; la démo la recale sur la date du jour à chaque démarrage (L146) ; le graphique « Charge crédits » compte l'échéance 1 payée dans le mois de son prélèvement (un débit ALMA existe dans le relevé de ce mois, L150)
 api: /api/loans, /api/loan-suggestions
 
 ## /history
