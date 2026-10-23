@@ -41,6 +41,18 @@ export function lastMovement(movements: SavingsMovement[]): LastMovement | null 
   };
 }
 
+/** Note du backend rendue lisible : sans « Auto: », sans la nature déjà affichée, taux à la française. */
+function noteOf(m: SavingsMovement): string | undefined {
+  if (!m.note || m.source === 'initial') return undefined;
+  const note = m.note
+    .replace(/^Auto:\s*/, '')
+    .replace(/^Intérêts\s+/, '')
+    .replace(/(\d+)\.(\d+)%/g, '$1,$2\u00a0%')
+    .trim();
+  if (!note || (m.source === 'bank-extract' && note === 'Solde recalibré depuis le relevé')) return undefined;
+  return note;
+}
+
 export interface MovementRow {
   id: string;
   date: string;
@@ -56,6 +68,7 @@ export function movementRows(movements: SavingsMovement[]): MovementRow[] {
     .map((m, k) => ({ m, k }))
     .sort((a, b) => (a.m.date === b.m.date ? b.k - a.k : a.m.date < b.m.date ? 1 : -1))
     .map(({ m }) => {
+      const note = noteOf(m);
       const [year, month, day] = m.date.slice(0, 10).split('-');
       return {
         id: m.id,
@@ -63,7 +76,7 @@ export function movementRows(movements: SavingsMovement[]): MovementRow[] {
         nature: natureOf(m),
         amount: signed(m.amount),
         tone: m.source === 'bank-extract' || m.source === 'initial' ? 'neutral' : m.amount > 0 ? 'positive' : m.amount < 0 ? 'negative' : 'neutral',
-        ...(m.note && m.source !== 'initial' ? { note: m.note } : {}),
+        ...(note ? { note } : {}),
       };
     });
 }

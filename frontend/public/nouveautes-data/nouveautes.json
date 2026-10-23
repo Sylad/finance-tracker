@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 10:35",
+  "generated": "2026-10-23 11:03",
   "entries": [
+    {
+      "slug": "2026-10-23-epargne-notes-des-mouvements-plus-lisibles",
+      "title": "Épargne : notes des mouvements plus lisibles",
+      "date": "2026-10-23",
+      "lots": [
+        "L126"
+      ],
+      "captures": [],
+      "html": "<p>Dans la liste des mouvements d'un compte épargne, les notes s'affichent maintenant proprement :</p>\n<ul><li>le préfixe technique « Auto: » a disparu des versements détectés ;</li><li>la note d'un mouvement d'intérêts ne répète plus « Intérêts » : elle indique l'année et le taux, écrit à la française (« 2026 (2,50 %) ») ;</li><li>un ajustement au relevé n'affiche plus la note « Solde recalibré depuis le relevé », qui redisait la même chose que son intitulé.</li></ul>"
+    },
     {
       "slug": "2026-10-23-epargne-l-historique-des-mouvements-de-chaque-compte",
       "title": "Épargne : l'historique des mouvements de chaque compte",

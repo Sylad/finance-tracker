@@ -67,6 +67,29 @@ describe('movementRows (L123)', () => {
     expect(rows[0].note).toBeUndefined();
   });
 
+  it("L126 R1 — la note d'un versement détecté perd son préfixe technique « Auto: »", () => {
+    const rows = movementRows([mv({ id: 'd', source: 'detected', amount: 50, note: 'Auto: VIR LDDS MARS' })]);
+    expect(rows[0].note).toBe('VIR LDDS MARS');
+  });
+
+  it("L126 R2 — la note d'intérêts ne répète pas la nature et écrit le taux en français : « 2026 (2,50 %) »", () => {
+    const rows = movementRows([mv({ id: 'n', source: 'interest', amount: 12.5, note: 'Intérêts 2026 (2.50%)' })]);
+    expect(rows[0].nature).toBe('Intérêts');
+    expect(rows[0].note?.replace(/\s/g, ' ')).toBe('2026 (2,50 %)');
+  });
+
+  it("L126 R3 — la note du recalage « Solde recalibré depuis le relevé » répète la nature et n'est pas affichée ; une note propre est gardée", () => {
+    const rows = movementRows([
+      mv({ id: 'x', source: 'bank-extract', amount: -200, note: 'Solde recalibré depuis le relevé' }),
+      mv({ id: 'y', source: 'bank-extract', date: '2026-08-31', amount: 5, note: 'Écart de 5 € constaté' }),
+      mv({ id: 'z', source: 'manual', date: '2026-07-01', amount: 5, note: 'Auto: ' }),
+    ]);
+    const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
+    expect(byId.x.note).toBeUndefined();
+    expect(byId.y.note).toBe('Écart de 5 € constaté');
+    expect(byId.z.note).toBeUndefined();
+  });
+
   it('R3 — aucun mouvement : liste vide', () => {
     expect(movementRows([])).toEqual([]);
   });
