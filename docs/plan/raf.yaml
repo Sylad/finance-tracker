@@ -1376,7 +1376,8 @@ lots:
   - id: L127
     title: "Épargne : l'intérêt est daté ${year}-${month}-31 quel que soit le mois anniversaire (auto-sync.service.ts:412) → la liste L123 affiche 31/06/2026 ou 31/02/2026 — dater au dernier jour réel du mois, test sur février (bissextile ou non), avril, juin, septembre, novembre (revue L123)"
     public: "Épargne : intérêts datés au vrai dernier jour du mois"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
