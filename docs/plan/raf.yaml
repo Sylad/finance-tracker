@@ -411,41 +411,49 @@ lots:
   - id: L33
     title: Revue UX — Abonnements
     status: todo
+    visible: true
     estimate: 0.25
     created: 2026-09-28
   - id: L34
     title: Revue UX — Règles de catégories
     status: todo
+    visible: true
     estimate: 0.25
     created: 2026-09-28
   - id: L35
     title: Revue UX — Objectifs
     status: todo
+    visible: true
     estimate: 0.25
     created: 2026-09-28
   - id: L36
     title: Revue UX — Heatmap des dépenses
     status: todo
+    visible: true
     estimate: 0.25
     created: 2026-09-28
   - id: L37
     title: Revue UX — Santé financière
     status: todo
+    visible: true
     estimate: 0.25
     created: 2026-09-28
   - id: L38
     title: Revue UX — Dépenses
     status: todo
+    visible: true
     estimate: 0.25
     created: 2026-09-28
   - id: L39
     title: Revue UX — À propos et Nouveautés
     status: todo
+    visible: true
     estimate: 0.25
     created: 2026-09-28
   - id: L40
     title: "Revue UX — Gabarit commun : navigation, en-tête, pied, rendu téléphone"
     status: todo
+    visible: true
     estimate: 0.25
     created: 2026-09-28
   - id: L41
@@ -1549,36 +1557,52 @@ lots:
   - id: L141
     title: "Crédits, carte N× : dates ISO restantes (« signé 2026-… », échéances « 1. 2026-… » et leur title, installment-card.tsx:44, 69, 86) — format fr-FR comme L137 ; test (revue L137)"
     public: "Crédits : dates en français sur les paiements en plusieurs fois"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant (1 minor note: formatDate dépend du fuseau, comme L137) — orchestré (vague 2026-10-23-fin-l141, 0 passe(s) de correction)", commit: f85e8bae4105ea2f400737b149cf0090d920b5b2 }
+    ux: { date: 2026-10-23, verdict: conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l141 et les captures regardées) }
+    notes:
+      - { date: 2026-10-23, text: "Mineur 23-10 : formatDate dépend du fuseau (new Date('AAAA-MM-JJ') lu en UTC) — décale d'un jour en fuseau négatif ; sans effet en France ni en CI." }
+    finished: 2026-10-23
   - id: L142
     title: "Crédits, puce Partiel : le panneau dit « 5 trouvés » quand la carte dit « 6 mensualités prélevées » (fenêtre de 180 j dans health-chip.tsx contre total de la carte) — même compte, ou fenêtre nommée « sur les 180 derniers jours » ; test (QA prod L132–L140)"
     public: "Crédits : la mention « Partiel » compte les prélèvements comme la carte"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant (0 blocking, 0 major, 1 minor noted) — orchestré (vague 2026-10-23-fin-l141, 0 passe(s) de correction)", commit: 4cf438cef1bcac39128b6a5da3f71e79ba6ec6e4 }
+    ux: { date: 2026-10-23, verdict: conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l141 et les captures regardées) }
+    notes:
+      - { date: 2026-10-23, text: "Mineur 23-10 : le rappel du total compare deux comptes différents (fenêtre : toutes occurrences ; carte : débits hors remboursement anticipé) — un revolving à tirages peut encore diverger." }
+    finished: 2026-10-23
   - id: L143
     title: "Crédits, graphe et tableau des mensualités : « 0,00 € » pour un mois sans relevé (Nov 25–Mar 26 et Oct 26 en démo) alors que les crédits courent — « — » ou mois hors relevés signalés, comme /yearly ; test (QA prod L132–L140)"
     public: "Crédits : un mois sans relevé n'apparaît plus comme un mois sans mensualité"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "conforme, 3 notes mineures (texte de la note pour un mois sans relevé bancaire mais avec un montant de relevé crédit, lien avec la page non testé, raison du nocapture inexacte) — orchestré (vague 2026-10-23-fin-l141, 1 passe(s) de correction)", commit: e2e7366b9237c7d8de24c6de4c64406a50c182c0 }
+    ux: { date: 2026-10-23, verdict: conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l141 et les captures regardées) — note « mois sans relevé » visible sous le graphe }
+    notes:
+      - { date: 2026-10-23, text: "Mineurs 23-10 : la note « montant inconnu » s'affiche aussi pour un mois sans relevé bancaire mais avec une occurrence de relevé crédit (barre visible) ; statementMonths (loans.tsx:48) non testé ; raison du nocapture inexacte." }
+    finished: 2026-10-23
   - id: L144
     title: "Crédits, formulaire à 320 px : les champs Date début / Date fin coupent l'année (« 07/05/202 ») — dates sur une colonne ou largeur suffisante sous 360 px ; test (QA prod L132–L140)"
     public: "Crédits : dates du formulaire lisibles sur petit téléphone"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "conforme (1 note mineure : nocapture alors que l'appli de démo permet une capture) — orchestré (vague 2026-10-23-fin-l141, 1 passe(s) de correction)", commit: bea571c78ce0ab815246c00610e1e31a6841f6fa }
+    ux: { date: 2026-10-23, verdict: "conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l141 et les captures regardées) — dates empilées sous 400 px, année entière à 320 et 400" }
+    notes:
+      - { date: 2026-10-23, text: "Mineurs 23-10 : test R1 sur des noms de classes Tailwind, sans largeur mesurée ; raison du nocapture inexacte." }
+    finished: 2026-10-23

@@ -532,26 +532,30 @@
     {
       "id": "L141",
       "title": "Crédits : dates en français sur les paiements en plusieurs fois",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L142",
       "title": "Crédits : la mention « Partiel » compte les prélèvements comme la carte",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L143",
       "title": "Crédits : un mois sans relevé n'apparaît plus comme un mois sans mensualité",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L144",
       "title": "Crédits : dates du formulaire lisibles sur petit téléphone",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     }
   ]
 }
