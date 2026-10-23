@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 12:04",
+  "generated": "2026-10-23 12:49",
   "entries": [
+    {
+      "slug": "2026-10-23-demo-l-annee-des-interets-suit-leur-date",
+      "title": "Démo : l'année des intérêts suit leur date",
+      "date": "2026-10-23",
+      "lots": [
+        "L131"
+      ],
+      "captures": [
+        "captures/demo-interets-annee-1440.png",
+        "captures/demo-interets-annee-390.png"
+      ],
+      "alts": [
+        "Liste des mouvements du Livret A de la démo : l'intérêt de 165,00 € du 30/04/2026 est noté « Intérêts · 2026 (2,50 %) »",
+        "Même liste au téléphone : date du 30/04/2026 et note « 2026 (2,50 %) » concordent"
+      ],
+      "html": "<p>Dans la démo, la note de l'intérêt du Livret A porte maintenant la même année que sa date. Avant, selon le mois où l'on ouvrait la démo, on pouvait lire « 30/04/2026 · Intérêts · 2025 (2,50 %) » : la date avançait avec le temps mais pas l'année de la note. Elle affiche désormais « 30/04/2026 · Intérêts · 2026 (2,50 %) ».</p>"
+    },
     {
       "slug": "2026-10-23-demo-epargne-avec-interets-et-versements-annotes",
       "title": "Démo : épargne avec intérêts et versements annotés",

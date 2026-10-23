@@ -219,6 +219,14 @@
     320,
     568
   ],
+  "captures/demo-interets-annee-1440.png": [
+    1440,
+    900
+  ],
+  "captures/demo-interets-annee-390.png": [
+    380,
+    1585
+  ],
   "captures/depenses-mois-1440.png": [
     1440,
     900
@@ -232,8 +240,8 @@
     900
   ],
   "captures/epargne-interets-390.png": [
-    390,
-    1500
+    380,
+    1585
   ],
   "captures/epargne-mouvements-1440.png": [
     1440,
