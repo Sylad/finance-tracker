@@ -1629,8 +1629,11 @@ lots:
     finished: 2026-10-23
   - id: L147
     title: "Démo : le paiement en plusieurs fois n'est recalé qu'au démarrage du backend — au lendemain, sans redémarrage, son échéance passe « en retard » (pastille orange, « ⚠ en retard ») ; recaler chaque jour ou à la lecture, et journaliser l'échec de refreshInstallment au lieu de l'avaler (catch vide, demo-seed.service.ts:125) ; tests"
-    status: doing
+    status: done
     estimate: 0.25
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant (2 minor notes) — recalage horaire en place, échec journalisé, tests R7–R9 verts (demo : 96/96, backend : 1290/1290, tsc propre) — orchestré (vague 2026-10-23-fin-l147, 0 passe(s) de correction)", commit: 3be6eaddf15d0272c277d7a675ec1959b99c6b10 }
+    notes:
+      - { date: 2026-10-23, text: "Mineur 23-10 : minuteur horaire calé sur l'heure de démarrage, pas sur minuit UTC — jusqu'à une heure de « en retard » après minuit UTC." }
+    finished: 2026-10-23
