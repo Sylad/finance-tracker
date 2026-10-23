@@ -355,6 +355,7 @@ export function SubscriptionsPage() {
 
       {(creating || editing) && (
         <SubscriptionForm
+          isEdit={!!editing}
           init={prefilled ?? (editing ? toSubscriptionInput(editing) : DEFAULT)}
           onSave={handleSave}
           onCancel={() => {

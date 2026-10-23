@@ -100,4 +100,12 @@ describe('Abonnements — revue UX (L33)', () => {
     expect(grids.length).toBe(3);
     grids.forEach((g) => expect(g.className).toMatch(/\bgrid-cols-1\b.*\bsm:grid-cols-2\b/));
   });
+
+  it('R8 — accepter une suggestion ouvre la modale « Nouvel abonnement » pré-remplie, pas « Modifier l’abonnement »', async () => {
+    render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer Spotify AB' }));
+    const dialog = screen.getByRole('dialog', { name: 'Nouvel abonnement' });
+    expect(within(dialog).getAllByDisplayValue('Spotify').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('dialog', { name: "Modifier l'abonnement" })).toBeNull();
+  });
 });

@@ -16,11 +16,13 @@ const FREQUENCIES: SubscriptionFrequency[] = ['monthly', 'quarterly', 'yearly'];
 
 export function SubscriptionForm({
   init,
+  isEdit,
   onSave,
   onCancel,
   busy,
 }: {
   init: SubscriptionInput;
+  isEdit: boolean;
   onSave: (i: SubscriptionInput) => void;
   onCancel: () => void;
   busy: boolean;
@@ -44,7 +46,7 @@ export function SubscriptionForm({
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h2 id={titleId} className="font-display font-semibold text-fg-bright">
-            {init.name ? 'Modifier l\'abonnement' : 'Nouvel abonnement'}
+            {isEdit ? 'Modifier l\'abonnement' : 'Nouvel abonnement'}
           </h2>
           <button type="button" onClick={onCancel} aria-label="Fermer" className="btn-ghost p-1"><X className="h-4 w-4" aria-hidden="true" /></button>
         </div>
