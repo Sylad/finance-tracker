@@ -1494,6 +1494,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant — 2 minor notes (autres dates ISO sur la carte N×, raison de nocapture inexacte); no sub-task — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 482a863142a57d454a95fe392f5da2db52aa471e }
   - id: L138
     title: "Crédits : puce « Partiel » sur les 5 crédits actifs sans dire ce qui manque (explication en title seul, puce non focalisable, trois causes possibles listées) — nommer le critère manquant à côté de la puce ou en faire une divulgation qui liste les critères et l'action ; test (revue UX L32, Nielsen 9)"
     public: "Crédits : la mention « Partiel » dit ce qui manque"
