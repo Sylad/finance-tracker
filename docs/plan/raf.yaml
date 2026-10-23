@@ -1485,6 +1485,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant — 3 minor notes (axe Y non testé dans le graphe, numérotation « (n) » absente des cartes, raison de nocapture inexacte); no sub-task — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 9e128ed68cd85da63e46309d483699f3778c851b }
   - id: L137
     title: "Crédits : dates au format ISO (« Dernière mensualité : 2026-06-15 » sur la carte terminée, « dernière 2026-06-15 » dans Suspects) — format fr-FR comme le reste de l'app ; test (revue UX L32)"
     public: "Crédits : dates en français"
