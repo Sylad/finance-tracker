@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 11:10",
+  "generated": "2026-10-23 11:27",
   "entries": [
+    {
+      "slug": "2026-10-23-epargne-notes-des-versements-affichees-en-entier",
+      "title": "Épargne : notes des versements affichées en entier",
+      "date": "2026-10-23",
+      "lots": [
+        "L128"
+      ],
+      "captures": [],
+      "html": "<p>Dans la liste des mouvements d'un compte épargne, la note d'un versement détecté s'affiche désormais en entier. Un versement noté « Intérêts créditeurs LDDS » ne perd plus son premier mot et n'apparaît plus comme « créditeurs LDDS ». Les notes des intérêts, elles, restent présentées comme avant.</p>"
+    },
     {
       "slug": "2026-10-23-epargne-interets-dates-au-vrai-dernier-jour-du-mois",
       "title": "Épargne : intérêts datés au vrai dernier jour du mois",

@@ -455,7 +455,8 @@
     {
       "id": "L128",
       "title": "Épargne : notes des versements affichées en entier",
-      "status": "todo"
+      "status": "doing",
+      "started": "2026-10-23"
     }
   ]
 }
