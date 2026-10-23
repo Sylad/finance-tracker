@@ -11,7 +11,7 @@ export function LoanForm({ init, onSave, onCancel, busy }: { init: LoanInput; on
       <div className="card max-w-lg w-full my-8" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h2 className="font-display font-semibold text-fg-bright">{init.name ? 'Modifier le crédit' : 'Nouveau crédit'}</h2>
-          <button onClick={onCancel} className="btn-ghost p-1"><X className="h-4 w-4" /></button>
+          <button onClick={onCancel} className="btn-ghost p-1" aria-label="Fermer" title="Fermer"><X className="h-4 w-4" /></button>
         </div>
         <form className="p-5 space-y-3" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
           <Field label="Organisme (Cofidis, Sofinco, ...)">
