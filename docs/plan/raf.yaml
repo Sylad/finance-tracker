@@ -1285,6 +1285,7 @@ lots:
     visible: true
     created: 2026-10-22
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant after 3 minor notes (courbe depuis l'ouverture OK, tests verts 9/9, tsc propre ; réserves : date initiale modifiée après coup, README inexact sur la limite, aucun message sous 2 mois) — orchestré (vague 2026-10-23-fin-epargne2, 0 passe(s) de correction)", commit: 454a8b52d5a48f085611989c4875d5abd32026b2 }
   - id: L120
     title: "Épargne : « ↓ 200,00 € dernier mouvement » en rouge est un ajustement au relevé (bank-extract), sans date ni nature → « Ajustement au relevé · 30/09 : −200,00 € » — Nielsen 1, 2 (UX L31)"
     public: "Épargne : dernier mouvement daté et nommé (versement, ajustement, intérêts)"
