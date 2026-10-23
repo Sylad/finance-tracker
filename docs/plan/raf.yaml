@@ -1498,10 +1498,11 @@ lots:
   - id: L138
     title: "Crédits : puce « Partiel » sur les 5 crédits actifs sans dire ce qui manque (explication en title seul, puce non focalisable, trois causes possibles listées) — nommer le critère manquant à côté de la puce ou en faire une divulgation qui liste les critères et l'action ; test (revue UX L32, Nielsen 9)"
     public: "Crédits : la mention « Partiel » dit ce qui manque"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
   - id: L139
     title: "Crédits : la suggestion de Claude en attente est en bas de page (y≈1850 à 1440, 3,4 écrans à 390) sans signal en haut — « 1 suggestion à valider » dans l'en-tête avec ancre, ou bandeau sous l'en-tête ; test (revue UX L32, Nielsen 1)"
     public: "Crédits : une suggestion à valider se voit dès l'arrivée"
