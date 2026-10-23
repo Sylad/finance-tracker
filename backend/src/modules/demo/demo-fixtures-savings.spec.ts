@@ -35,4 +35,39 @@ describe('demo-fixtures — épargne (L122)', () => {
       }
     }
   });
+
+  /**
+   * L130 — sans intérêt sur un mois de 30 jours ni versement noté « Auto: Intérêts
+   * créditeurs … », L126, L127 et L128 restaient inobservables en QA.
+   */
+  it('R3 — un intérêt tombe le dernier jour réel d’un mois de 30 jours, au taux du compte sur le solde de ce jour', () => {
+    const interests = accounts.flatMap((a) =>
+      a.movements.filter((m: any) => m.source === 'interest').map((m: any) => ({ a, m })),
+    );
+    const thirty = interests.filter(({ m }) => {
+      const [y, mo, d] = m.date.split('-').map(Number);
+      return d === 30 && new Date(Date.UTC(y, mo, 0)).getUTCDate() === 30;
+    });
+    expect(thirty.length).toBeGreaterThanOrEqual(1);
+    for (const { a, m } of thirty) {
+      const base = a.movements
+        .filter((x: any) => x !== m && x.date <= m.date)
+        .reduce((s: number, x: any) => s + x.amount, 0);
+      expect(m.amount).toBe(Math.round(base * a.interestRate * 100) / 100);
+      expect(m.note).toBe(`Intérêts ${m.date.slice(0, 4)} (${(a.interestRate * 100).toFixed(2)}%)`);
+      expect(Number(m.date.slice(5, 7))).toBe(a.interestAnniversaryMonth);
+    }
+  });
+
+  it('R4 — un versement détecté porte une note « Auto: Intérêts créditeurs … » et un montant positif', () => {
+    const versements = accounts.flatMap((a) =>
+      a.movements.filter((m: any) => m.source === 'detected' && /^Auto: Intérêts créditeurs /.test(m.note ?? '')),
+    );
+    expect(versements.length).toBeGreaterThanOrEqual(1);
+    for (const m of versements) {
+      expect(m.amount).toBeGreaterThan(0);
+      expect(m.transactionId).toBeTruthy();
+      expect(m.statementId).toMatch(/^\d{4}-\d{2}$/);
+    }
+  });
 });

@@ -2078,7 +2078,7 @@
       "matchPattern": "VIR.*LIVRET",
       "accountNumber": "FR7610107001234567890123457",
       "interestRate": 0.025,
-      "interestAnniversaryMonth": 12,
+      "interestAnniversaryMonth": 11,
       "currentBalance": 6750,
       "lastSyncedStatementId": "2026-03",
       "movements": [
@@ -2140,13 +2140,31 @@
           "transactionId": "demo-tx-2026-03-017"
         },
         {
+          "id": "ml9",
+          "date": "2025-11-30",
+          "amount": 165,
+          "source": "interest",
+          "statementId": "2025-11",
+          "transactionId": null,
+          "note": "Intérêts 2025 (2.50%)"
+        },
+        {
+          "id": "ml10",
+          "date": "2026-01-05",
+          "amount": 15,
+          "source": "detected",
+          "statementId": "2026-01",
+          "transactionId": "demo-tx-2026-01-099",
+          "note": "Auto: Intérêts créditeurs LIVRET A"
+        },
+        {
           "id": "ml8",
           "date": "2026-03-31",
-          "amount": -50,
+          "amount": -230,
           "source": "bank-extract",
           "statementId": "2026-03",
           "transactionId": null,
-          "note": "Ajustement solde réel depuis relevé (6750 vs 6800 calculé)"
+          "note": "Ajustement solde réel depuis relevé (6750 vs 6980 calculé)"
         }
       ],
       "createdAt": "2025-10-01T00:00:00Z",

@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 11:41",
+  "generated": "2026-10-23 11:47",
   "entries": [
+    {
+      "slug": "2026-10-23-demo-epargne-avec-interets-et-versements-annotes",
+      "title": "Démo : épargne avec intérêts et versements annotés",
+      "date": "2026-10-23",
+      "lots": [
+        "L130"
+      ],
+      "captures": [
+        "captures/epargne-interets-1440.png",
+        "captures/epargne-interets-390.png"
+      ],
+      "alts": [
+        "Page Comptes épargne de la démo, liste des mouvements du Livret A dépliée : un intérêt de 165,00 € daté du 30, un versement détecté de 15,00 € « Intérêts créditeurs LIVRET A » et un ajustement au relevé de −230,00 €",
+        "Même liste de mouvements du Livret A au téléphone, deux rangées par mouvement"
+      ],
+      "html": "<p>Dans la démo, le Livret A montre maintenant un intérêt de 165,00 € (2,50 %), daté du 30 d'un mois de 30 jours, et un versement de 15,00 € dont la note est « Intérêts créditeurs LIVRET A ». On peut ainsi voir dans la liste des mouvements une note d'intérêts nettoyée, une date de fin de mois juste et une note de versement affichée en entier. Le solde reste à 6 750,00 € et le total à 20 330,00 € : l'ajustement au relevé passe de −50,00 € à −230,00 € pour absorber ces deux lignes, et sa note devient « 6 750 vs 6 980 calculé ».</p>"
+    },
     {
       "slug": "2026-10-23-epargne-des-notes-d-ajustement-sans-redite",
       "title": "Épargne : des notes d'ajustement sans redite",
