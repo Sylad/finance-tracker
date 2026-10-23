@@ -1572,6 +1572,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "conforme, 3 notes mineures (texte de la note pour un mois sans relevé bancaire mais avec un montant de relevé crédit, lien avec la page non testé, raison du nocapture inexacte) — orchestré (vague 2026-10-23-fin-l141, 1 passe(s) de correction)", commit: e2e7366b9237c7d8de24c6de4c64406a50c182c0 }
   - id: L144
     title: "Crédits, formulaire à 320 px : les champs Date début / Date fin coupent l'année (« 07/05/202 ») — dates sur une colonne ou largeur suffisante sous 360 px ; test (QA prod L132–L140)"
     public: "Crédits : dates du formulaire lisibles sur petit téléphone"
