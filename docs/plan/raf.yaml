@@ -1621,3 +1621,4 @@ lots:
     estimate: 0.25
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant after 0 blocking fix: 3 minor notes (recalage uniquement au démarrage, catch silencieux dans refreshInstallment, chiffres du diagnostic de démo déplacés) — orchestré (vague 2026-10-23-fin-l145, 0 passe(s) de correction)", commit: 5922a5c56eabf6bf568795c9b696af4203c5b8a5 }
