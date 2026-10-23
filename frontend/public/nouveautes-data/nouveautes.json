@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 17:39",
+  "generated": "2026-10-23 17:46",
   "entries": [
+    {
+      "slug": "2026-10-23-credits-dates-en-francais",
+      "title": "Crédits : dates en français",
+      "date": "2026-10-23",
+      "lots": [
+        "L137"
+      ],
+      "captures": [],
+      "html": "<p>Sur la page Crédits, les dates s'écrivent maintenant comme partout ailleurs dans l'application : jour/mois/année. La carte d'un crédit terminé affiche « Dernière mensualité : 15/06/2026 » au lieu de « 2026-06-15 », et la fenêtre Suspects affiche « dernière 15/06/2026 ».</p>"
+    },
     {
       "slug": "2026-10-23-credits-graphe-des-mensualites-lisible-sans-les-couleurs",
       "title": "Crédits : graphe des mensualités lisible sans les couleurs",
