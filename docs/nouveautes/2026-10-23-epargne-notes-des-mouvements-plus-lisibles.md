@@ -3,7 +3,7 @@ title: "Épargne : notes des mouvements plus lisibles"
 date: 2026-10-23
 created: 2026-10-23T11:02+02:00
 lots: [L126]
-nocapture: les notes concernées (intérêts, ajustement au relevé, versement détecté) n'existent que dans les vraies données, absentes du jeu de démonstration ; l'effet est vérifié par les tests
+nocapture: l'effet se voit dans les notes des mouvements d'un compte (liste dépliée) ; il est vérifié par les tests
 ---
 Dans la liste des mouvements d'un compte épargne, les notes s'affichent maintenant proprement :
 

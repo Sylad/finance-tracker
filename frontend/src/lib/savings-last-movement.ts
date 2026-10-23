@@ -41,14 +41,26 @@ export function lastMovement(movements: SavingsMovement[]): LastMovement | null 
   };
 }
 
-/** Note du backend rendue lisible : sans « Auto: », sans la nature déjà affichée ni taux à la française (intérêts seulement). */
+const NOMBRE_FR = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
+
+/** Redites en tête d'une note d'ajustement au relevé : les deux formulations du backend, que la nature « Ajustement au relevé » dit déjà. */
+const REDITE_AJUSTEMENT = /^(?:Ajustement solde réel depuis relevé|Solde recalibré depuis le relevé)[\s\-—–:]*/;
+
+/** Note du backend rendue lisible : sans « Auto: », sans la nature déjà affichée ni taux à la française (intérêts seulement) ; un ajustement au relevé perd sa redite en tête et écrit ses soldes « a vs b » à la française (seuls nombres reformatés : une année dans une note reste « 2026 »). */
 function noteOf(m: SavingsMovement): string | undefined {
   if (!m.note || m.source === 'initial') return undefined;
   let note = m.note.replace(/^Auto:\s*/, '');
   if (m.source === 'interest') note = note.replace(/^Intérêts\s+/, '').replace(/(\d+)\.(\d+)%/g, '$1,$2\u00a0%');
+  if (m.source === 'bank-extract') {
+    note = note
+      .replace(REDITE_AJUSTEMENT, '')
+      .replace(/^\((.*)\)$/, '$1')
+      .replace(/(\d+(?:\.\d+)?) vs (\d+(?:\.\d+)?)/, (_, a, b) => `${NOMBRE_FR.format(Number(a))} vs ${NOMBRE_FR.format(Number(b))}`);
+    note = note.trim();
+    note = note.charAt(0).toLocaleUpperCase('fr-FR') + note.slice(1);
+  }
   note = note.trim();
-  if (!note || (m.source === 'bank-extract' && note === 'Solde recalibré depuis le relevé')) return undefined;
-  return note;
+  return note || undefined;
 }
 
 export interface MovementRow {

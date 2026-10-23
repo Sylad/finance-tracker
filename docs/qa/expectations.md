@@ -82,6 +82,7 @@ api: /api/budgets
 ## /savings
 
 shows: 2 comptes, total 20 330,00 €
+never: note de mouvement d'ajustement au relevé qui répète « Ajustement solde réel depuis relevé » ou « Solde recalibré depuis le relevé » (L129)
 api: /api/savings-accounts
 
 ## /subscriptions

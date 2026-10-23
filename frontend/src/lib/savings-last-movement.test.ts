@@ -105,6 +105,25 @@ describe('movementRows (L123)', () => {
     expect(byId.z.note).toBeUndefined();
   });
 
+  it("L129 R1 — la redite en tête d'une note d'ajustement est retirée, le reste utile est gardé et ses nombres sont à la française", () => {
+    const rows = movementRows([
+      mv({ id: 'a', source: 'bank-extract', date: '2026-09-30', amount: -50, note: 'Ajustement solde réel depuis relevé (6750 vs 6800 calculé)' }),
+      mv({ id: 'b', source: 'bank-extract', date: '2026-08-31', amount: 5, note: 'Solde recalibré depuis le relevé — écart dû aux intérêts capitalisés' }),
+      mv({ id: 'c', source: 'bank-extract', date: '2026-07-31', amount: 5, note: 'Ajustement solde réel depuis relevé (1250.5 vs 1200 calculé)' }),
+    ]);
+    const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
+    expect(byId.a.note?.replace(/\s/g, ' ')).toBe('6 750 vs 6 800 calculé');
+    expect(byId.b.note).toBe('Écart dû aux intérêts capitalisés');
+    expect(byId.c.note?.replace(/\s/g, ' ')).toBe('1 250,5 vs 1 200 calculé');
+    const annee = movementRows([mv({ source: 'bank-extract', note: 'Écart constaté en 2026' })]);
+    expect(annee[0].note).toBe('Écart constaté en 2026');
+  });
+
+  it("L129 R2 — la redite n'est retirée que des ajustements au relevé : une note de même début sur un mouvement manuel reste intacte", () => {
+    const rows = movementRows([mv({ id: 'm', source: 'manual', amount: 5, note: 'Solde recalibré depuis le relevé — à la main' })]);
+    expect(rows[0].note).toBe('Solde recalibré depuis le relevé — à la main');
+  });
+
   it('R3 — aucun mouvement : liste vide', () => {
     expect(movementRows([])).toEqual([]);
   });
