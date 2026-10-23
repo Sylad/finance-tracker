@@ -1372,6 +1372,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant after 1 minor fix: 0 blocking, 0 major, 2 minor (noteOf non limité à la source `interest` ; raison de nocapture inexacte) — orchestré (vague 2026-10-23-fin-l126, 0 passe(s) de correction)", commit: 323ca22492100e2ad42b691efb75de1a56e1d919 }
   - id: L127
     title: "Épargne : l'intérêt est daté ${year}-${month}-31 quel que soit le mois anniversaire (auto-sync.service.ts:412) → la liste L123 affiche 31/06/2026 ou 31/02/2026 — dater au dernier jour réel du mois, test sur février (bissextile ou non), avril, juin, septembre, novembre (revue L123)"
     public: "Épargne : intérêts datés au vrai dernier jour du mois"
