@@ -1,7 +1,22 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 17:22",
+  "generated": "2026-10-23 17:28",
   "entries": [
+    {
+      "slug": "2026-10-23-credits-fenetres-utilisables-au-clavier-fermees-par-echap",
+      "title": "Crédits : fenêtres utilisables au clavier, fermées par Échap",
+      "date": "2026-10-23",
+      "lots": [
+        "L133"
+      ],
+      "captures": [
+        "captures/L133-formulaire-credit-bureau.png"
+      ],
+      "alts": [
+        "Fenêtre « Nouveau crédit » ouverte sur la page Crédits, le curseur est déjà dans le champ Organisme"
+      ],
+      "html": "<p>Sur la page <strong>Crédits</strong>, le formulaire de crédit, la fenêtre <strong>Doublons</strong> et la fenêtre <strong>Suspects</strong> se comportent désormais comme de vraies fenêtres :</p>\n<ul><li>le curseur arrive directement dans la fenêtre à l'ouverture (dans le premier champ du formulaire) ;</li><li><strong>Tab</strong> et <strong>Maj+Tab</strong> tournent à l'intérieur de la fenêtre : on n'atteint plus, par erreur, les boutons de la page cachée derrière (par exemple Supprimer sur une carte) ;</li><li><strong>Échap</strong> ferme la fenêtre ;</li><li>à la fermeture, vous retrouvez le bouton qui l'avait ouverte ;</li><li>les lecteurs d'écran annoncent la fenêtre par son titre.</li></ul>"
+    },
     {
       "slug": "2026-10-23-credits-boutons-modifier-et-supprimer-annonces-par-les-lecte",
       "title": "Crédits : boutons Modifier et Supprimer annoncés par les lecteurs d'écran",
