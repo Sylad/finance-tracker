@@ -86,7 +86,7 @@ function snapInterestsToThirtyDayMonth(fixtures: Record<string, unknown>): void 
   if (indexes.length === 0) return;
   const [from, to] = [Math.min(...indexes), Math.max(...indexes)];
   const thirtyDays = (idx: number) => new Date(Date.UTC(Math.floor(idx / 12), (idx % 12) + 1, 0)).getUTCDate() === 30;
-  for (const account of accounts as { movements?: Record<string, unknown>[]; initialBalanceDate?: unknown }[]) {
+  for (const account of accounts as { movements?: Record<string, unknown>[]; initialBalanceDate?: unknown; interestAnniversaryMonth?: unknown }[]) {
     const opening = typeof account.initialBalanceDate === 'string' ? ISO_DATE.exec(account.initialBalanceDate) : null;
     const lowest = opening ? Math.max(from, +opening[1] * 12 + +opening[2] - 1) : from;
     for (const m of account.movements ?? []) {
@@ -101,6 +101,8 @@ function snapInterestsToThirtyDayMonth(fixtures: Record<string, unknown>): void 
       const [y, mo] = [Math.floor(best / 12), (best % 12) + 1];
       m.date = `${y}-${pad(mo)}-30`;
       m.statementId = `${y}-${pad(mo)}`;
+      // le mois anniversaire du compte (auto-sync) suit le mois de l'intérêt recalé
+      account.interestAnniversaryMonth = mo;
     }
   }
 }

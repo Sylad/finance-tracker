@@ -104,6 +104,8 @@ describe('demo-fixtures — épargne (L122)', () => {
         expect({ ...ctx, ouverture: m.date >= a.initialBalanceDate }).toEqual({ ...ctx, ouverture: true });
         expect({ ...ctx, plage: m.statementId >= first && m.statementId <= lastId }).toEqual({ ...ctx, plage: true });
         expect(stmtIds).toContain(m.statementId);
+        // le mois anniversaire du compte suit le mois de l'intérêt recalé (R3, version recalée)
+        expect({ ...ctx, anniversaire: a.interestAnniversaryMonth }).toEqual({ ...ctx, anniversaire: mo });
       }
       for (const a of shifted['savings-accounts']) {
         const sum = a.movements.reduce((s: number, m: any) => s + m.amount, 0);
