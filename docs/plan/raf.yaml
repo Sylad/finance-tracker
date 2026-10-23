@@ -1294,6 +1294,7 @@ lots:
     visible: true
     created: 2026-10-22
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant (0 blocking, 0 major, 2 minor notes: « Versement détecté » sur un montant négatif, date sans année) — orchestré (vague 2026-10-23-fin-epargne2, 0 passe(s) de correction)", commit: eafbffbcfcfda8434b856d57a04e0575e6a54842 }
   - id: L121
     title: "Épargne : taux affichés « 2.00% » (montants en fr-FR) et champ du taux à « 1.7000000000000002 » pour 0,017 (aussi 0,0175, 0,022) → format fr-FR et arrondi à l'affichage et dans le champ (UX L31)"
     public: "Épargne : taux d'intérêt au format français, sans décimales parasites"
