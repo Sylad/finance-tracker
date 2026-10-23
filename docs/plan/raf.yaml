@@ -1343,6 +1343,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant — orchestré (vague 2026-10-23-fin-epargne3, 0 passe(s) de correction)", commit: 3fead711d78454f954d85f2c5b9a9b903d8aecb7 }
   - id: L125
     title: "Épargne : un mouvement détecté négatif (auto-sync.service.ts:358 prend -t.amount) s'affiche « Versement détecté · 30/09 : −50,00 € » en rouge (savings-last-movement.ts:10) — libellé « Retrait détecté » pour un montant négatif, test R2 étendu au cas négatif (revue L120, Nielsen 2)"
     public: "Épargne : un retrait détecté n'est plus appelé versement"
