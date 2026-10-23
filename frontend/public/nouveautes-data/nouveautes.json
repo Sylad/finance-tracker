@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 08:35",
+  "generated": "2026-10-23 08:51",
   "entries": [
+    {
+      "slug": "2026-10-23-epargne-dernier-mouvement-date-et-nomme-versement-ajustement",
+      "title": "Épargne : dernier mouvement daté et nommé (versement, ajustement, intérêts)",
+      "date": "2026-10-23",
+      "lots": [
+        "L120"
+      ],
+      "captures": [
+        "captures/2026-10-23-epargne-dernier-mouvement.png",
+        "captures/2026-10-23-epargne-dernier-mouvement-390.png"
+      ],
+      "alts": [
+        "Deux cartes d'épargne : « Ajustement au relevé · 30/09 : −200,00 € » sous le solde",
+        "La même page au téléphone"
+      ],
+      "html": "<p>Sur la page Épargne, la ligne sous le solde de chaque compte dit maintenant de quel mouvement il s'agit et quand il a eu lieu : « Ajustement au relevé · 30/09 : −200,00 € », « Versement détecté · 12/05 : +50,00 € », « Intérêts · 31/12 : +12,50 € ».</p>\n<p>Un ajustement au relevé, qui remet simplement le solde en accord avec le relevé de la banque, n'est plus affiché en rouge comme une perte : il garde une couleur neutre. Les versements restent en vert et les retraits en rouge. Le solde initial n'est jamais présenté comme un mouvement, et la ligne disparaît quand le dernier mouvement est de 0 €.</p>"
+    },
     {
       "slug": "2026-10-23-epargne-courbe-de-12-mois-lisible-depuis-l-ouverture-avec-un",
       "title": "Épargne : courbe de 12 mois lisible, depuis l'ouverture, avec un résumé en texte",
