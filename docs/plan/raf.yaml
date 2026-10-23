@@ -1381,3 +1381,4 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "conforme (1 note mineure : la Nouveauté ne dit pas que « Re-scanner les relevés » redate les intérêts existants) — orchestré (vague 2026-10-23-fin-l126, 1 passe(s) de correction)", commit: ab7a73b796e164070d11c051d12f5c3116a93e6a }
