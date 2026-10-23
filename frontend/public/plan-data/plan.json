@@ -563,6 +563,18 @@
       "status": "done",
       "started": "2026-10-23",
       "finished": "2026-10-23"
+    },
+    {
+      "id": "L148",
+      "title": "Crédits : l'échéance du jour d'un paiement en N fois n'est plus échue",
+      "status": "doing",
+      "started": "2026-10-23"
+    },
+    {
+      "id": "L149",
+      "title": "Tableau de bord : plus d'alerte de fin pour un paiement en plusieurs fois",
+      "status": "doing",
+      "started": "2026-10-23"
     }
   ]
 }

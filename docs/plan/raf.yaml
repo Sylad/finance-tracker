@@ -1639,7 +1639,7 @@ lots:
     finished: 2026-10-23
   - id: L148
     title: "Crédits, carte N× : la puce Partiel compte comme échue l'échéance du jour (health-chip dueDate <= today) alors que la carte la dit « à venir » (installment-card dueDate < today) — même borne des deux côtés et dans getLoanHealth (backend) ; la démo ALMA 4X ne doit plus être en Partiel permanent « 1 échéance échue sur 2 non retrouvée » ; tests (QA prod)"
-    public: "Crédits : l'échéance du jour d'un paiement en plusieurs fois n'est plus comptée échue"
+    public: "Crédits : l'échéance du jour d'un paiement en N fois n'est plus échue"
     status: doing
     estimate: 0.25
     visible: true
