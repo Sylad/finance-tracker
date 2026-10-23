@@ -78,6 +78,21 @@ describe('movementRows (L123)', () => {
     expect(rows[0].note?.replace(/\s/g, ' ')).toBe('2026 (2,50 %)');
   });
 
+  it("L128 R1 — un versement détecté noté « Auto: Intérêts créditeurs LDDS » garde sa note entière, « Intérêts » compris", () => {
+    const rows = movementRows([mv({ id: 'd', source: 'detected', amount: 50, note: 'Auto: Intérêts créditeurs LDDS' })]);
+    expect(rows[0].note).toBe('Intérêts créditeurs LDDS');
+  });
+
+  it("L128 R2 — le taux « 2.50% » n'est converti en français que pour les intérêts, pas dans la note d'un autre mouvement", () => {
+    const rows = movementRows([
+      mv({ id: 'm', source: 'manual', amount: 5, note: 'Réf 12.5% promo' }),
+      mv({ id: 'n', source: 'interest', date: '2026-09-30', amount: 12.5, note: 'Intérêts 2026 (2.50%)' }),
+    ]);
+    const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
+    expect(byId.m.note).toBe('Réf 12.5% promo');
+    expect(byId.n.note?.replace(/\s/g, ' ')).toBe('2026 (2,50 %)');
+  });
+
   it("L126 R3 — la note du recalage « Solde recalibré depuis le relevé » répète la nature et n'est pas affichée ; une note propre est gardée", () => {
     const rows = movementRows([
       mv({ id: 'x', source: 'bank-extract', amount: -200, note: 'Solde recalibré depuis le relevé' }),

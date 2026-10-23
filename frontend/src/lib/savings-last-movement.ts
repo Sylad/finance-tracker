@@ -41,14 +41,12 @@ export function lastMovement(movements: SavingsMovement[]): LastMovement | null 
   };
 }
 
-/** Note du backend rendue lisible : sans « Auto: », sans la nature déjà affichée, taux à la française. */
+/** Note du backend rendue lisible : sans « Auto: », sans la nature déjà affichée ni taux à la française (intérêts seulement). */
 function noteOf(m: SavingsMovement): string | undefined {
   if (!m.note || m.source === 'initial') return undefined;
-  const note = m.note
-    .replace(/^Auto:\s*/, '')
-    .replace(/^Intérêts\s+/, '')
-    .replace(/(\d+)\.(\d+)%/g, '$1,$2\u00a0%')
-    .trim();
+  let note = m.note.replace(/^Auto:\s*/, '');
+  if (m.source === 'interest') note = note.replace(/^Intérêts\s+/, '').replace(/(\d+)\.(\d+)%/g, '$1,$2\u00a0%');
+  note = note.trim();
   if (!note || (m.source === 'bank-extract' && note === 'Solde recalibré depuis le relevé')) return undefined;
   return note;
 }
