@@ -7,6 +7,7 @@ import { atomicWriteJsonSync } from '../../common/atomic-write';
 import { MonthlyStatement } from '../../models/monthly-statement.model';
 import { buildYearlySummary } from '../storage/yearly-summary.builder';
 import { capUploadDates, monthsToShift, shiftDemoFixtures } from './demo-date-shift';
+import { buildDemoInstallmentLoan, DEMO_INSTALLMENT_ID } from './demo-installment';
 import { RequestDataDirService } from './request-data-dir.service';
 
 @Injectable()
@@ -31,8 +32,13 @@ export class DemoSeedService implements OnApplicationBootstrap {
       s.year * 12 + s.month > a.year * 12 + a.month ? s : a,
     );
     const shift = monthsToShift(last.year, last.month, new Date());
+    const now = new Date();
+    const shifted = shiftDemoFixtures(raw, shift);
     return {
-      fixtures: capUploadDates(shiftDemoFixtures(raw, shift), new Date()),
+      fixtures: capUploadDates(
+        { ...shifted, loans: [...(shifted.loans as unknown[]), buildDemoInstallmentLoan(now)] },
+        now,
+      ),
       shift,
       fingerprint: createHash('sha256').update(text).digest('hex'),
     };
@@ -91,6 +97,7 @@ export class DemoSeedService implements OnApplicationBootstrap {
       this.readMarker(demoDir, '.fixtures') === loaded.fingerprint
     ) {
       this.writeHistory(demoDir, loaded.fixtures, false);
+      this.refreshInstallment(demoDir, loaded.fixtures);
       return;
     }
     for (const f of fs.readdirSync(path.join(demoDir, 'statements'))) {
@@ -102,6 +109,22 @@ export class DemoSeedService implements OnApplicationBootstrap {
     }
     this.writeAll(demoDir, loaded);
     this.logger.log(`Demo réécrite à ${demoDir} (décalage de ${loaded.shift} mois, fixtures ${loaded.fingerprint.slice(0, 8)})`);
+  }
+
+  /**
+   * Le paiement en plusieurs fois (L146) est daté du jour, pas d'un décalage
+   * de mois : il est remplacé à chaque démarrage, le reste de loans.json intact.
+   */
+  private refreshInstallment(demoDir: string, f: Record<string, unknown>): void {
+    const file = path.join(demoDir, 'loans.json');
+    const fresh = (f.loans as { id: string }[]).find((l) => l.id === DEMO_INSTALLMENT_ID);
+    try {
+      const current = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
+      if (!Array.isArray(current) || !fresh) return;
+      atomicWriteJsonSync(file, [...current.filter((l: { id?: string }) => l?.id !== DEMO_INSTALLMENT_ID), fresh]);
+    } catch {
+      // loans.json absent ou illisible : rattrapé par la réécriture complète
+    }
   }
 
   private writeAll(demoDir: string, loaded: { fixtures: Record<string, unknown>; shift: number; fingerprint: string }): void {
