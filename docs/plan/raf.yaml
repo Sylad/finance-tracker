@@ -1463,6 +1463,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant — le voile `items-start overflow-y-auto` + `my-8` rend titre et Enregistrer atteignables à 320×568 et 375×667 (mesuré), avec une note mineure sur les autres modales à voile centré — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 0dc2c3a032a156c8a49a8599da5b5e4ddaf8f877 }
   - id: L135
     title: "Crédits : contrastes sous 4,5:1 — texte du bouton Reset 4,36:1, textes atténués de la carte terminée 3,65:1 (opacity-80, closed-card.tsx:12) ; jeton plus clair pour Reset, carte terminée marquée par sa bordure rouge sans opacité ; test (revue UX L32, WCAG 1.4.3)"
     public: "Crédits : textes lisibles sur le bouton Reset et les crédits terminés"
