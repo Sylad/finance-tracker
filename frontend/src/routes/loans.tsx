@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Plus, Upload, Loader2, AlertCircle, X, GitMerge, AlertTriangle, RotateCcw, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   useLoans,
+  useStatements,
   useCreateLoan,
   useUpdateLoan,
   useDeleteLoan,
@@ -43,6 +44,11 @@ const DEFAULT: LoanInput = {
 
 export function LoansPage() {
   const { data, isLoading } = useLoans();
+  const statements = useStatements();
+  const statementMonths = useMemo(
+    () => (statements.data ? new Set(statements.data.map((s) => `${s.year}-${String(s.month).padStart(2, '0')}`)) : undefined),
+    [statements.data],
+  );
   const create = useCreateLoan();
   const update = useUpdateLoan();
   const remove = useDeleteLoan();
@@ -291,7 +297,7 @@ export function LoansPage() {
         <ImportProgressModal files={importFiles} onClose={() => setImportFiles(null)} />
       )}
 
-      {items.length > 0 && <LoansMonthlyChart loans={items} />}
+      {items.length > 0 && <LoansMonthlyChart loans={items} statementMonths={statementMonths} />}
 
       {items.length === 0 ? (
         <EmptyState title="Aucun crédit déclaré" hint="Ajoute ton crédit immobilier, conso ou ta carte revolving." />

@@ -5,7 +5,12 @@ import type { Loan } from '@/types/api';
 import { formatEUR, formatEURCompact, chartTooltipProps, formatMonthShort } from '@/lib/utils';
 import { LOAN_COLORS, chartSeriesNames, monthlyCharge } from './utils';
 
-export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
+/**
+ * `statementMonths` : mois (YYYY-MM) couverts par un relevé. Un mois hors relevés
+ * sans mensualité n'est pas « 0,00 € » (les crédits courent) : le tableau écrit
+ * « — » et le signale, comme /yearly. Absent (relevés pas encore chargés) : rien n'est signalé.
+ */
+export function LoansMonthlyChart({ loans, statementMonths }: { loans: Loan[]; statementMonths?: ReadonlySet<string> }) {
   const data = useMemo(() => {
     // Build the last 12 calendar months in YYYY-MM
     const now = new Date();
@@ -30,6 +35,9 @@ export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
   const visibleLoans = useMemo(() => {
     return loans.filter((l) => data.some((row) => (row[l.id] as number | undefined) ?? 0 > 0));
   }, [loans, data]);
+
+  const isUncovered = (monthKey: string) => !!statementMonths && !statementMonths.has(monthKey);
+  const uncoveredCount = data.filter((row) => isUncovered(row.month as string)).length;
 
   const names = useMemo(() => chartSeriesNames(visibleLoans), [visibleLoans]);
   const seriesName = (id: string) => names.get(id) ?? id;
@@ -57,7 +65,7 @@ export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
       <div
         className="h-72"
         role="img"
-        aria-label={`Charge mensuelle de ${visibleLoans.length} ${visibleLoans.length > 1 ? 'crédits' : 'crédit'} sur les 12 derniers mois : ${visibleLoans.map((l) => seriesName(l.id)).join(', ')}. Montants détaillés dans le tableau qui suit.`}
+        aria-label={`Charge mensuelle de ${visibleLoans.length} ${visibleLoans.length > 1 ? 'crédits' : 'crédit'} sur les 12 derniers mois : ${visibleLoans.map((l) => seriesName(l.id)).join(', ')}. ${uncoveredCount > 0 ? `${uncoveredCount} mois sans relevé (montant inconnu). ` : ''}Montants détaillés dans le tableau qui suit.`}
       >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
@@ -115,10 +123,18 @@ export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
               const [y, mm] = (row.month as string).split('-');
               return (
                 <tr key={row.month as string}>
-                  <th scope="row">{formatMonthShort(Number(mm), Number(y))}</th>
-                  {visibleLoans.map((l) => (
-                    <td key={l.id}>{formatEUR((row[l.id] as number | undefined) ?? 0)}</td>
-                  ))}
+                  <th scope="row">
+                    {formatMonthShort(Number(mm), Number(y))}
+                    {isUncovered(row.month as string) ? ' (sans relevé)' : ''}
+                  </th>
+                  {visibleLoans.map((l) => {
+                    const amount = (row[l.id] as number | undefined) ?? 0;
+                    return (
+                      <td key={l.id}>
+                        {amount === 0 && isUncovered(row.month as string) ? '—' : formatEUR(amount)}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}

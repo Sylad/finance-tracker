@@ -8,6 +8,7 @@ const idle = { mutateAsync: vi.fn(), isPending: false };
 
 vi.mock('@/lib/queries', () => ({
   useLoans: () => ({ data: state.loans, isLoading: false }),
+  useStatements: () => ({ data: undefined }),
   useCreateLoan: () => idle,
   useUpdateLoan: () => idle,
   useDeleteLoan: () => idle,
