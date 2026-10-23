@@ -2059,7 +2059,7 @@
         {
           "id": "m8",
           "date": "2026-03-31",
-          "amount": 1080,
+          "amount": 980,
           "source": "bank-extract",
           "statementId": "2026-03",
           "transactionId": null,
@@ -2142,7 +2142,7 @@
         {
           "id": "ml8",
           "date": "2026-03-31",
-          "amount": -200,
+          "amount": -50,
           "source": "bank-extract",
           "statementId": "2026-03",
           "transactionId": null,
