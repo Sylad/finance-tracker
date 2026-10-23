@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import type { Loan } from '@/types/api';
 import { formatDate } from '@/lib/utils';
+import { mensualitesCount } from './utils';
 
 type Health = NonNullable<Loan['health']>;
 
@@ -71,9 +72,12 @@ function diagnose(loan: Loan, today: string): Diagnosis {
       text: `un tableau d'amortissement ou un relevé crédit de moins de 60 jours${detail}`,
     });
   }
+  // La carte compte tout l'historique, la puce la fenêtre de 180 j : l'écart est dit, pas laissé à deviner.
+  const total = mensualitesCount(loan);
+  const cardNote = total > occurrences ? ` — la carte compte ${total} mensualité${total > 1 ? 's' : ''} prélevée${total > 1 ? 's' : ''} depuis le début` : '';
   criteria.push({
     ok: occurrences >= 3,
-    text: `au moins 3 prélèvements sur 6 mois (${occurrences} trouvé${occurrences > 1 ? 's' : ''})`,
+    text: `au moins 3 prélèvements sur les 180 derniers jours (${occurrences} trouvé${occurrences > 1 ? 's' : ''}${cardNote ? `)${cardNote}` : ')'}`,
   });
 
   const actions: string[] = [];

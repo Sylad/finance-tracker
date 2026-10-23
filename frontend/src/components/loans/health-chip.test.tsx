@@ -25,7 +25,7 @@ describe('Crédits — la puce de santé dit ce qui manque (L138)', () => {
     fireEvent.click(btn);
     expect(btn).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText(/Manque : un tableau d'amortissement ou un relevé crédit de moins de 60 jours/)).toBeInTheDocument();
-    expect(screen.getByText(/Tenu : au moins 3 prélèvements sur 6 mois \(3 trouvés\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Tenu : au moins 3 prélèvements sur les 180 derniers jours \(3 trouvés\)/)).toBeInTheDocument();
     expect(screen.getByText(/Importez un relevé crédit/)).toBeInTheDocument();
   });
 
@@ -48,7 +48,7 @@ describe('Crédits — la puce de santé dit ce qui manque (L138)', () => {
     });
     render(<HealthChip now={NOW} loan={l} />);
     fireEvent.click(screen.getByRole('button', { name: /Partiel/ }));
-    expect(screen.getByText(/Manque : au moins 3 prélèvements sur 6 mois \(1 trouvé\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Manque : au moins 3 prélèvements sur les 180 derniers jours \(1 trouvé\)/)).toBeInTheDocument();
     expect(screen.getByText(/Tenu : un tableau d'amortissement/)).toBeInTheDocument();
   });
 
@@ -76,5 +76,21 @@ describe('Crédits — la puce de santé dit ce qui manque (L138)', () => {
     render(<HealthChip now={NOW} loan={loan({ health: 'complete' })} />);
     expect(screen.queryByRole('button')).toBeNull();
     expect(screen.getByText('Complet')).toBeInTheDocument();
+  });
+
+  it('R7 — la fenêtre est nommée et le total de la carte est rappelé quand il diffère', () => {
+    const l = loan({
+      health: 'partial',
+      occurrencesDetected: occ('2026-10-01', '2026-09-01', '2026-08-01', '2026-07-01', '2026-06-01', '2026-03-01'),
+    });
+    render(<HealthChip now={NOW} loan={l} />);
+    fireEvent.click(screen.getByRole('button', { name: /Partiel/ }));
+    expect(screen.getByText(/5 trouvés\) — la carte compte 6 mensualités prélevées depuis le début/)).toBeInTheDocument();
+  });
+
+  it('R7 — sans écart avec la carte, aucun rappel de total', () => {
+    render(<HealthChip now={NOW} loan={loan({ health: 'partial', occurrencesDetected: occ('2026-10-01', '2026-09-01', '2026-08-01') })} />);
+    fireEvent.click(screen.getByRole('button', { name: /Partiel/ }));
+    expect(screen.queryByText(/la carte compte/)).toBeNull();
   });
 });
