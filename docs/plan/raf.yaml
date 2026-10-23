@@ -1489,10 +1489,11 @@ lots:
   - id: L137
     title: "Crédits : dates au format ISO (« Dernière mensualité : 2026-06-15 » sur la carte terminée, « dernière 2026-06-15 » dans Suspects) — format fr-FR comme le reste de l'app ; test (revue UX L32)"
     public: "Crédits : dates en français"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
   - id: L138
     title: "Crédits : puce « Partiel » sur les 5 crédits actifs sans dire ce qui manque (explication en title seul, puce non focalisable, trois causes possibles listées) — nommer le critère manquant à côté de la puce ou en faire une divulgation qui liste les critères et l'action ; test (revue UX L32, Nielsen 9)"
     public: "Crédits : la mention « Partiel » dit ce qui manque"
