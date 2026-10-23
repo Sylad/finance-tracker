@@ -63,7 +63,7 @@ export function movementRows(movements: SavingsMovement[]): MovementRow[] {
         nature: natureOf(m),
         amount: signed(m.amount),
         tone: m.source === 'bank-extract' || m.source === 'initial' ? 'neutral' : m.amount > 0 ? 'positive' : m.amount < 0 ? 'negative' : 'neutral',
-        ...(m.note ? { note: m.note } : {}),
+        ...(m.note && m.source !== 'initial' ? { note: m.note } : {}),
       };
     });
 }

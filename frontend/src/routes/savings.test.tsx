@@ -99,7 +99,7 @@ describe('<SavingsPage /> — mouvements du compte (L123)', () => {
     state.hist = [];
     state.items = [account({ movements: movements as never })];
     render(<SavingsPage />);
-    const btn = screen.getByRole('button', { name: /Mouvements \(3\)/ });
+    const btn = screen.getByRole('button', { name: /Mouvements de Livret A \(3\)/ });
     expect(btn).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('Solde initial')).not.toBeInTheDocument();
   });
@@ -108,7 +108,7 @@ describe('<SavingsPage /> — mouvements du compte (L123)', () => {
     state.hist = [];
     state.items = [account({ movements: movements as never })];
     render(<SavingsPage />);
-    const btn = screen.getByRole('button', { name: /Mouvements \(3\)/ });
+    const btn = screen.getByRole('button', { name: /Mouvements de Livret A \(3\)/ });
     await userEvent.click(btn);
     expect(btn).toHaveAttribute('aria-expanded', 'true');
     const list = screen.getByRole('list', { name: /Mouvements de Livret A/ });
@@ -124,6 +124,13 @@ describe('<SavingsPage /> — mouvements du compte (L123)', () => {
     await userEvent.click(btn);
     expect(btn).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('list', { name: /Mouvements de Livret A/ })).not.toBeInTheDocument();
+  });
+
+  it("L123 R8 — la grille n'étire pas une carte repliée voisine d'une carte dépliée (items-start)", () => {
+    state.hist = [];
+    state.items = [account({ movements: movements as never })];
+    const { container } = render(<SavingsPage />);
+    expect(container.querySelector('.xl\\:grid-cols-3')).toHaveClass('items-start');
   });
 
   it("R6 — sans mouvement, la carte n'a pas de bouton « Mouvements »", () => {

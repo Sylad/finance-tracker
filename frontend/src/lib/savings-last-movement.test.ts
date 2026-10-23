@@ -62,6 +62,11 @@ describe('movementRows (L123)', () => {
     expect(byId.x.note).toBeUndefined();
   });
 
+  it('R4 — la ligne du solde initial ne répète pas sa nature dans une note', () => {
+    const rows = movementRows([mv({ id: 'i', source: 'initial', date: '2026-01-01', amount: 6800, note: 'Solde initial déclaré' })]);
+    expect(rows[0].note).toBeUndefined();
+  });
+
   it('R3 — aucun mouvement : liste vide', () => {
     expect(movementRows([])).toEqual([]);
   });

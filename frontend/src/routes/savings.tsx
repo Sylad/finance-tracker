@@ -81,7 +81,7 @@ export function SavingsPage() {
       {items.length === 0 ? (
         <EmptyState title="Aucun compte épargne déclaré" hint="Commence par déclarer ton Livret A ou ton PEL." />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 items-start gap-4">
           {items.map((acc) => (
             <SavingsCard
               key={acc.id}
@@ -196,6 +196,7 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
           <button
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
+            aria-label={`Mouvements de ${account.name} (${rows.length})`}
             aria-controls={listId}
             className="btn-ghost text-xs flex items-center gap-1 -ml-2"
           >
