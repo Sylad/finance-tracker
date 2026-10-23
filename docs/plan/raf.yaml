@@ -1458,10 +1458,11 @@ lots:
   - id: L134
     title: "Crédits : formulaire de crédit coupé sur petit téléphone (320×568 : haut à -66 px, Enregistrer à y=576, voile non défilable ; 375×667 titre rogné) — voile items-start overflow-y-auto comme Doublons et Suspects, ou panneau à hauteur max avec pied collant ; test (revue UX L32, WCAG 1.4.10)"
     public: "Crédits : formulaire enregistrable sur petit téléphone"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
   - id: L135
     title: "Crédits : contrastes sous 4,5:1 — texte du bouton Reset 4,36:1, textes atténués de la carte terminée 3,65:1 (opacity-80, closed-card.tsx:12) ; jeton plus clair pour Reset, carte terminée marquée par sa bordure rouge sans opacité ; test (revue UX L32, WCAG 1.4.3)"
     public: "Crédits : textes lisibles sur le bouton Reset et les crédits terminés"
