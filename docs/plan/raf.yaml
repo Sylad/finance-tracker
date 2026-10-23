@@ -1396,3 +1396,4 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant — aucun défaut ; commits 474b8e1 et 4060e73 relus, test de la lib 14/14 vert, tsc propre, et la note d'intérêts du backend (`Intérêts ${année} (x.xx%)`, source interest) garde son nettoyage ; les trois choix de l'auteur tiennent — orchestré (vague 2026-10-23-fin-l128, 0 passe(s) de correction)", commit: 4060e73c0fdfb66eb6c6bf7808bad7f3e0bd7fcd }
