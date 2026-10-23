@@ -404,6 +404,7 @@ lots:
     notes:
       - { date: 2026-10-14, text: "QA L16 14-10 (390 px) : barre d'actions Importer/Détecter/Doublons/Suspects/Reset déborde à 738 px, Suspects et Reset hors écran — replier ou deux lignes ; attendu QA à ajouter : scrollWidth = clientWidth sur /loans (capture tmp/qa-finance-l16/overflow-loans-390.png)" }
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "conforme : aucun constat. Commit 42f591b : attente QA de /loans ajoutée dans docs/qa/expectations.md. Les 3 tests de loans.test.tsx passent. — orchestré (vague 2026-10-23-fin-l32, 0 passe(s) de correction)", commit: null }
   - id: L33
     title: Revue UX — Abonnements
     status: todo
