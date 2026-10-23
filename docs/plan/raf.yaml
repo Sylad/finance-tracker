@@ -1563,6 +1563,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant (0 blocking, 0 major, 1 minor noted) — orchestré (vague 2026-10-23-fin-l141, 0 passe(s) de correction)", commit: 4cf438cef1bcac39128b6a5da3f71e79ba6ec6e4 }
   - id: L143
     title: "Crédits, graphe et tableau des mensualités : « 0,00 € » pour un mois sans relevé (Nov 25–Mar 26 et Oct 26 en démo) alors que les crédits courent — « — » ou mois hors relevés signalés, comme /yearly ; test (QA prod L132–L140)"
     public: "Crédits : un mois sans relevé n'apparaît plus comme un mois sans mensualité"
