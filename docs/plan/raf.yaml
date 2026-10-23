@@ -1367,10 +1367,11 @@ lots:
   - id: L126
     title: "Épargne, liste des mouvements : les notes du backend s'affichent brutes — nature répétée dans la note (Intérêts, Ajustement au relevé), préfixe « Auto: », taux écrit à l'anglaise — ne pas répéter la nature, retirer « Auto: », taux au format français « 2,50 % » (revue L123)"
     public: "Épargne : notes des mouvements plus lisibles"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
   - id: L127
     title: "Épargne : l'intérêt est daté ${year}-${month}-31 quel que soit le mois anniversaire (auto-sync.service.ts:412) → la liste L123 affiche 31/06/2026 ou 31/02/2026 — dater au dernier jour réel du mois, test sur février (bissextile ou non), avril, juin, septembre, novembre (revue L123)"
     public: "Épargne : intérêts datés au vrai dernier jour du mois"
