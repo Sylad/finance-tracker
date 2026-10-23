@@ -410,10 +410,11 @@ lots:
     finished: 2026-10-23
   - id: L33
     title: Revue UX — Abonnements
-    status: todo
+    status: doing
     visible: true
     estimate: 0.25
     created: 2026-09-28
+    started: 2026-10-23
   - id: L34
     title: Revue UX — Règles de catégories
     status: todo
