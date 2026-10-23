@@ -99,7 +99,7 @@ describe('<SavingsPage /> — mouvements du compte (L123)', () => {
     state.hist = [];
     state.items = [account({ movements: movements as never })];
     render(<SavingsPage />);
-    const btn = screen.getByRole('button', { name: /Mouvements de Livret A \(3\)/ });
+    const btn = screen.getByRole('button', { name: /^Mouvements \(3\) de Livret A$/ });
     expect(btn).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('Solde initial')).not.toBeInTheDocument();
   });
@@ -108,7 +108,7 @@ describe('<SavingsPage /> — mouvements du compte (L123)', () => {
     state.hist = [];
     state.items = [account({ movements: movements as never })];
     render(<SavingsPage />);
-    const btn = screen.getByRole('button', { name: /Mouvements de Livret A \(3\)/ });
+    const btn = screen.getByRole('button', { name: /^Mouvements \(3\) de Livret A$/ });
     await userEvent.click(btn);
     expect(btn).toHaveAttribute('aria-expanded', 'true');
     const list = screen.getByRole('list', { name: /Mouvements de Livret A/ });

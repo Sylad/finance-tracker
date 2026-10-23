@@ -196,7 +196,7 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
           <button
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
-            aria-label={`Mouvements de ${account.name} (${rows.length})`}
+            aria-label={`Mouvements (${rows.length}) de ${account.name}`}
             aria-controls={listId}
             className="btn-ghost text-xs flex items-center gap-1 -ml-2"
           >
