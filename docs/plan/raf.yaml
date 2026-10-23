@@ -1645,6 +1645,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant (1 mineur : titre de test R6 altéré dans health-chip.test.tsx) — orchestré (vague 2026-10-23-fin-l148, 0 passe(s) de correction)", commit: 15d954865715a24d4b0f80027f035bbeec7f0799 }
   - id: L149
     title: "Alertes du tableau de bord : « crédit se termine dans 60 jours » levée en permanence pour un paiement en plusieurs fois (ALMA 4X en démo) — exclure kind installment de la règle < 90 jours ou la reformuler pour lui ; attente / ajustée ; tests (QA prod)"
     public: "Tableau de bord : plus d'alerte de fin pour un paiement en plusieurs fois"
