@@ -1411,7 +1411,8 @@ lots:
   - id: L130
     title: "Jeu de démo épargne : aucun mouvement d'intérêts ni versement détecté noté « Auto: Intérêts créditeurs … » → L126, L127 et L128 inobservables en QA ; ajouter un intérêt sur un mois de 30 jours et un tel versement, somme des mouvements = solde courant gardée (invariant L122) (QA prod 23-10)"
     public: "Démo : épargne avec intérêts et versements annotés"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
