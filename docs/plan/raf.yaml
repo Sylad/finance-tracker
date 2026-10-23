@@ -1503,6 +1503,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant (2 notes mineures, aucun bloquant ni majeur) — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: ab689341ab6b99897e96003bf8d023024db7136c }
   - id: L139
     title: "Crédits : la suggestion de Claude en attente est en bas de page (y≈1850 à 1440, 3,4 écrans à 390) sans signal en haut — « 1 suggestion à valider » dans l'en-tête avec ancre, ou bandeau sous l'en-tête ; test (revue UX L32, Nielsen 1)"
     public: "Crédits : une suggestion à valider se voit dès l'arrivée"
