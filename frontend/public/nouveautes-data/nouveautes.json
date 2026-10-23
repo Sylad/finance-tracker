@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 18:21",
+  "generated": "2026-10-23 18:25",
   "entries": [
+    {
+      "slug": "2026-10-23-credits-dates-du-formulaire-lisibles-sur-petit-telephone",
+      "title": "Crédits : dates du formulaire lisibles sur petit téléphone",
+      "date": "2026-10-23",
+      "lots": [
+        "L144"
+      ],
+      "captures": [],
+      "html": "<p>Dans le formulaire d'un crédit classique, les champs « Date début » et « Date fin » ne coupent plus l'année (« 07/05/202 ») sur un petit téléphone : sous 360 px de large, ils s'affichent l'un sous l'autre, chacun sur toute la largeur. Dès 360 px, ils restent côte à côte.</p>"
+    },
     {
       "slug": "2026-10-23-credits-la-mention-partiel-compte-les-prelevements-comme-la",
       "title": "Crédits : la mention « Partiel » compte les prélèvements comme la carte",

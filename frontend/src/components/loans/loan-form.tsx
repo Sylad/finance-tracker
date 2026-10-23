@@ -56,7 +56,7 @@ export function LoanForm({ init, onSave, onCancel, busy }: { init: LoanInput; on
           />
         </Field>
         {form.type === 'classic' ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3">
             <Field label="Date début">
               <input className="input" type="date" value={form.startDate ?? ''} onChange={(e) => setForm({ ...form, startDate: e.target.value || undefined })} />
             </Field>
