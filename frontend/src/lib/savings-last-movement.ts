@@ -1,12 +1,20 @@
 import type { SavingsMovement } from '@/types/api';
 import { formatEUR } from '@/lib/utils';
 
+/** Nature affichée d'un mouvement : un mouvement détecté négatif est un « Retrait détecté ». */
+function natureOf(m: SavingsMovement): string {
+  return m.source === 'detected' && m.amount < 0 ? 'Retrait détecté' : NATURE[m.source];
+}
+
+const signed = (amount: number) => formatEUR(amount, true).replace('-', '−');
+
 export interface LastMovement {
   text: string;
   tone: 'positive' | 'negative' | 'neutral';
 }
 
-const NATURE: Record<Exclude<SavingsMovement['source'], 'initial'>, string> = {
+const NATURE: Record<SavingsMovement['source'], string> = {
+  initial: 'Solde initial',
   detected: 'Versement détecté',
   manual: 'Mouvement manuel',
   interest: 'Intérêts',
@@ -28,7 +36,34 @@ export function lastMovement(movements: SavingsMovement[]): LastMovement | null 
   if (!last || last.source === 'initial' || last.amount === 0) return null;
   const [, month, day] = last.date.slice(0, 10).split('-');
   return {
-    text: `${last.source === 'detected' && last.amount < 0 ? 'Retrait détecté' : NATURE[last.source]} · ${day}/${month} : ${formatEUR(last.amount, true).replace('-', '−')}`,
+    text: `${natureOf(last)} · ${day}/${month} : ${signed(last.amount)}`,
     tone: last.source === 'bank-extract' ? 'neutral' : last.amount > 0 ? 'positive' : 'negative',
   };
+}
+
+export interface MovementRow {
+  id: string;
+  date: string;
+  nature: string;
+  amount: string;
+  tone: LastMovement['tone'];
+  note?: string;
+}
+
+/** Liste des mouvements d'une carte, du plus récent au plus ancien (à date égale, le dernier du tableau d'abord), solde initial compris. */
+export function movementRows(movements: SavingsMovement[]): MovementRow[] {
+  return movements
+    .map((m, k) => ({ m, k }))
+    .sort((a, b) => (a.m.date === b.m.date ? b.k - a.k : a.m.date < b.m.date ? 1 : -1))
+    .map(({ m }) => {
+      const [year, month, day] = m.date.slice(0, 10).split('-');
+      return {
+        id: m.id,
+        date: `${day}/${month}/${year}`,
+        nature: natureOf(m),
+        amount: signed(m.amount),
+        tone: m.source === 'bank-extract' || m.source === 'initial' ? 'neutral' : m.amount > 0 ? 'positive' : m.amount < 0 ? 'negative' : 'neutral',
+        ...(m.note ? { note: m.note } : {}),
+      };
+    });
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, PiggyBank, Pencil, Trash2, X, RefreshCw } from 'lucide-react';
+import { Plus, PiggyBank, Pencil, Trash2, X, RefreshCw, ChevronDown } from 'lucide-react';
 import { useModalDialog } from '@/hooks/use-modal-dialog';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import {
@@ -20,7 +20,7 @@ import {
 } from '@/types/api';
 import { formatEUR, formatMonth, formatRatePercent, maskAccountNumber, ratePercentInput } from '@/lib/utils';
 import { savingsCurve } from '@/lib/savings-curve';
-import { lastMovement } from '@/lib/savings-last-movement';
+import { lastMovement, movementRows } from '@/lib/savings-last-movement';
 
 const TYPES: SavingsAccountType[] = ['livret-a', 'pel', 'cel', 'ldds', 'pea', 'other'];
 
@@ -127,6 +127,9 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
     ? (curve.points.length === hist.length ? `${hist.length} derniers mois` : `Depuis ${monthLabel(curve.startMonth)}`)
     : '';
   const last = lastMovement(account.movements);
+  const [open, setOpen] = useState(false);
+  const rows = movementRows(account.movements);
+  const listId = `mouvements-${account.id}`;
 
   const handleResync = async () => {
     if (!confirm(`Re-scanner tous les relevés pour ${account.name} ? Les mouvements détectés et intérêts seront recalculés.`)) return;
@@ -186,6 +189,33 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
             <span>{formatEUR(curve.startBalance)}</span>
             <span>{formatEUR(curve.endBalance)}</span>
           </div>
+        </div>
+      )}
+      {rows.length > 0 && (
+        <div className="mt-3">
+          <button
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            aria-controls={listId}
+            className="btn-ghost text-xs flex items-center gap-1 -ml-2"
+          >
+            <ChevronDown className={`h-3 w-3 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+            Mouvements ({rows.length})
+          </button>
+          {open && (
+            <ul id={listId} aria-label={`Mouvements de ${account.name}`} className="mt-2 divide-y divide-border text-xs">
+              {rows.map((r) => (
+                <li key={r.id} className="py-1.5 grid grid-cols-[1fr_auto] sm:grid-cols-[5.5rem_1fr_auto] gap-x-3 gap-y-0.5">
+                  <span className="tabular text-fg-dim">{r.date}</span>
+                  <span className={`tabular text-right col-start-2 sm:col-start-3 ${r.tone === 'positive' ? 'text-positive' : r.tone === 'negative' ? 'text-negative' : 'text-fg-dim'}`}>{r.amount}</span>
+                  <span className="col-span-2 sm:col-span-1 sm:col-start-2 sm:row-start-1 text-fg-bright">
+                    {r.nature}
+                    {r.note && <span className="text-fg-dim"> · {r.note}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
       <button

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SavingsPage } from './savings';
 import type { SavingsAccount } from '@/types/api';
@@ -85,5 +85,51 @@ describe('<SavingsPage /> — dernier mouvement (L120)', () => {
     render(<SavingsPage />);
     expect(screen.getByText(/Ajustement au relevé · 30\/09 : −200,00/)).toBeInTheDocument();
     expect(screen.queryByText(/dernier mouvement/)).not.toBeInTheDocument();
+  });
+});
+
+describe('<SavingsPage /> — mouvements du compte (L123)', () => {
+  const movements = [
+    { id: 'i', date: '2026-01-01', amount: 100, source: 'initial', statementId: null, transactionId: null },
+    { id: 'd', date: '2026-03-05', amount: 50, source: 'detected', statementId: 's', transactionId: 't', note: 'Virement mensuel' },
+    { id: 'n', date: '2026-06-30', amount: 1.5, source: 'interest', statementId: null, transactionId: null },
+  ];
+
+  it("R4 — le bouton « Mouvements (n) » est replié par défaut (aria-expanded=false) et la liste n'est pas dans la page", () => {
+    state.hist = [];
+    state.items = [account({ movements: movements as never })];
+    render(<SavingsPage />);
+    const btn = screen.getByRole('button', { name: /Mouvements \(3\)/ });
+    expect(btn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Solde initial')).not.toBeInTheDocument();
+  });
+
+  it('R5 — déplié, la liste montre date, nature, montant signé et note, du plus récent au plus ancien', async () => {
+    state.hist = [];
+    state.items = [account({ movements: movements as never })];
+    render(<SavingsPage />);
+    const btn = screen.getByRole('button', { name: /Mouvements \(3\)/ });
+    await userEvent.click(btn);
+    expect(btn).toHaveAttribute('aria-expanded', 'true');
+    const list = screen.getByRole('list', { name: /Mouvements de Livret A/ });
+    const items = within(list).getAllByRole('listitem');
+    expect(items).toHaveLength(3);
+    expect(items[0]).toHaveTextContent('30/06/2026');
+    expect(items[0]).toHaveTextContent('Intérêts');
+    expect(items[1]).toHaveTextContent('05/03/2026');
+    expect(items[1]).toHaveTextContent('Versement détecté');
+    expect(items[1]).toHaveTextContent('+50,00');
+    expect(items[1]).toHaveTextContent('Virement mensuel');
+    expect(items[2]).toHaveTextContent('Solde initial');
+    await userEvent.click(btn);
+    expect(btn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('list', { name: /Mouvements de Livret A/ })).not.toBeInTheDocument();
+  });
+
+  it("R6 — sans mouvement, la carte n'a pas de bouton « Mouvements »", () => {
+    state.hist = [];
+    state.items = [account({ movements: [] })];
+    render(<SavingsPage />);
+    expect(screen.queryByRole('button', { name: /Mouvements/ })).not.toBeInTheDocument();
   });
 });

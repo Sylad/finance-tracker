@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lastMovement } from './savings-last-movement';
+import { lastMovement, movementRows } from './savings-last-movement';
 import type { SavingsMovement } from '@/types/api';
 
 const mv = (o: Partial<SavingsMovement>): SavingsMovement => ({
@@ -34,5 +34,35 @@ describe('lastMovement (L120)', () => {
     expect(lastMovement([mv({ source: 'bank-extract', amount: -200 })])?.tone).toBe('neutral');
     expect(lastMovement([mv({ source: 'detected', amount: 50 })])?.tone).toBe('positive');
     expect(lastMovement([mv({ source: 'manual', amount: -50 })])?.tone).toBe('negative');
+  });
+});
+
+describe('movementRows (L123)', () => {
+  it('R1 — la liste va du plus récent au plus ancien, solde initial compris, à date égale le dernier du tableau d\'abord', () => {
+    const rows = movementRows([
+      mv({ id: 'i', source: 'initial', date: '2026-01-01', amount: 6800 }),
+      mv({ id: 'a', date: '2026-03-02', amount: 99 }),
+      mv({ id: 'b', date: '2026-09-30', amount: 10 }),
+      mv({ id: 'c', date: '2026-09-30', amount: 20 }),
+    ]);
+    expect(rows.map((r) => r.id)).toEqual(['c', 'b', 'a', 'i']);
+  });
+
+  it('R2 — chaque ligne porte la date jj/mm/aaaa, la nature de la carte (dont Solde initial et Retrait détecté), le montant signé en « − » et la note', () => {
+    const rows = movementRows([
+      mv({ id: 'i', source: 'initial', date: '2026-01-01', amount: 6800 }),
+      mv({ id: 'r', source: 'detected', date: '2026-02-10', amount: -50, note: 'Virement LDDS' }),
+      mv({ id: 'x', source: 'bank-extract', date: '2026-09-30', amount: -200 }),
+    ]);
+    const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
+    expect(byId.i).toMatchObject({ date: '01/01/2026', nature: 'Solde initial' });
+    expect(byId.r).toMatchObject({ date: '10/02/2026', nature: 'Retrait détecté', note: 'Virement LDDS' });
+    expect(byId.r.amount.replace(/\s/g, ' ')).toBe('−50,00 €');
+    expect(byId.x).toMatchObject({ nature: 'Ajustement au relevé', tone: 'neutral' });
+    expect(byId.x.note).toBeUndefined();
+  });
+
+  it('R3 — aucun mouvement : liste vide', () => {
+    expect(movementRows([])).toEqual([]);
   });
 });
