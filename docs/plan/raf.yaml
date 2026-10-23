@@ -1656,6 +1656,7 @@ lots:
     review: { date: 2026-10-23, verdict: "compliant — orchestré (vague 2026-10-23-fin-l148, 0 passe(s) de correction)", commit: 1154d62ea118536ba22db67c6f009b3b8cdb885d }
   - id: L150
     title: "Démo : l'échéance 1 de ALMA 4X est marquée payée sans débit ALMA dans le relevé du mois (graphique Charge crédits sans ALMA en septembre) — ajouter le débit au relevé recalé du mois ; expectations.md : remplacer l'exemple « Taux d'effort 70,5 % » de la ligne source de / par une formulation sans chiffre ; tests (QA prod)"
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-10-23
+    started: 2026-10-23
