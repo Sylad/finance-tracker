@@ -1476,6 +1476,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant — 0 blocking, 0 major, 1 minor (Nouveautés sans capture alors que l'application tournait) — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: edb91cfdaf1f64df68b874dd9af740ede7445f2c }
   - id: L136
     title: "Crédits : graphe des mensualités — séries nommées par créancier (COFIDIS deux fois, distinguées par la seule couleur ; « BNP PARIBAS PERSONAL FINANCE » contre la carte « BNP IMMOBILIER ») et svg sans alternative texte — nom du crédit comme sur la carte (loans-monthly-chart.tsx:84), role=img + aria-label de synthèse ou tableau masqué, axe Y au format fr-FR (« 1 100 € ») ; tests (revue UX L32, WCAG 1.4.1, 1.1.1)"
     public: "Crédits : graphe des mensualités lisible sans les couleurs"
