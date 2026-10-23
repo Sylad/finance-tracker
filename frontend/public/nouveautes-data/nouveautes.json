@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 12:49",
+  "generated": "2026-10-23 17:17",
   "entries": [
+    {
+      "slug": "2026-10-23-credits-formulaire-enregistrable-sur-petit-telephone",
+      "title": "Crédits : formulaire enregistrable sur petit téléphone",
+      "date": "2026-10-23",
+      "lots": [
+        "L134"
+      ],
+      "captures": [],
+      "html": "<p>Sur un petit téléphone (320×568 ou 375×667), la fenêtre « Nouveau crédit » / « Modifier le crédit » ne se coupe plus : son titre n'est plus rogné en haut et le bouton Enregistrer n'est plus caché sous le bas de l'écran. Quand le formulaire est plus haut que l'écran, la fenêtre défile pour atteindre tous les champs et Enregistrer, comme les fenêtres Doublons et Suspects.</p>"
+    },
     {
       "slug": "2026-10-23-demo-l-annee-des-interets-suit-leur-date",
       "title": "Démo : l'année des intérêts suit leur date",
