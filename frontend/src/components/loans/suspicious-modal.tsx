@@ -6,7 +6,7 @@ import {
   useConvertToInstallment,
 } from '@/lib/queries';
 import { Dialog } from '@/components/dialog';
-import { formatEUR } from '@/lib/utils';
+import { formatDate, formatEUR } from '@/lib/utils';
 
 interface Props {
   onClose: () => void;
@@ -120,7 +120,7 @@ export function SuspiciousModal({ onClose }: Props) {
                           <span>{formatEUR(l.monthlyPayment)}/mois</span>
                           <span>· {l.occurrencesCount} occurrence{l.occurrencesCount > 1 ? 's' : ''}</span>
                           {l.lastOccurrenceDate && (
-                            <span className="text-fg-dim">· dernière {l.lastOccurrenceDate}</span>
+                            <span className="text-fg-dim">· dernière {formatDate(l.lastOccurrenceDate)}</span>
                           )}
                         </div>
                         <div className="text-[11px] text-warning mt-1 italic">{l.reason}</div>

@@ -1,6 +1,6 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import { type Loan, LOAN_CATEGORY_LABELS } from '@/types/api';
-import { formatEUR } from '@/lib/utils';
+import { formatDate, formatEUR } from '@/lib/utils';
 import { SplitButton } from './split-button';
 import { mensualitesCount } from './utils';
 
@@ -35,7 +35,7 @@ export function ClosedCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () 
       <div className="text-xs text-fg-muted tabular space-y-0.5">
         <div>{mensualites} mensualité{mensualites > 1 ? 's' : ''} prélevée{mensualites > 1 ? 's' : ''}</div>
         <div>Total remboursé estimé : <span className="text-fg-bright">{formatEUR(totalRepaid)}</span></div>
-        {lastOcc && <div>Dernière mensualité : {lastOcc.date}</div>}
+        {lastOcc && <div>Dernière mensualité : {formatDate(lastOcc.date)}</div>}
       </div>
       <SplitButton loan={loan} />
     </div>
