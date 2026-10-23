@@ -398,13 +398,16 @@ lots:
     finished: 2026-10-22
   - id: L32
     title: Revue UX — Crédits
-    status: doing
+    status: done
     estimate: 0.25
     created: 2026-09-28
     notes:
       - { date: 2026-10-14, text: "QA L16 14-10 (390 px) : barre d'actions Importer/Détecter/Doublons/Suspects/Reset déborde à 738 px, Suspects et Reset hors écran — replier ou deux lignes ; attendu QA à ajouter : scrollWidth = clientWidth sur /loans (capture tmp/qa-finance-l16/overflow-loans-390.png)" }
+      - { date: 2026-10-23, text: "Mineurs UX 23-10 en notes : jargon (« Heuristique », « Merger », « canonical », « pay-in-N », « Pattern (regex, fallback…) », « RUMs ») ; bouton destructif « Supprimer (0) » de Suspects en vert ; 6 mois vides du graphe sans explication (à 390 px les barres tassées à droite) ; boutons icône 26×26 (WCAG 2.5.8 OK, sous les 44 px tactiles). Captures : ~/projects/developpeur/tmp/ux-finance-L32/." }
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "conforme : aucun constat. Commit 42f591b : attente QA de /loans ajoutée dans docs/qa/expectations.md. Les 3 tests de loans.test.tsx passent. — orchestré (vague 2026-10-23-fin-l32, 0 passe(s) de correction)", commit: null }
+    ux: { date: 2026-10-23, verdict: "non conforme — revue planifiée du lead (ux-reviewer sur la démo, captures 1440/390/320 regardées) : 5 bloquants WCAG (boutons icône sans nom, modales sans role=dialog ni Échap, formulaire coupé à 320×568, contrastes 4,36 et 3,65:1, graphe distingué par la seule couleur et sans alternative), 2 majeurs (puce Partiel muette, suggestion enfouie) ; L96 tient (scrollWidth = clientWidth à 390 et 320) ; suites L132–L140" }
+    finished: 2026-10-23
   - id: L33
     title: Revue UX — Abonnements
     status: todo
@@ -1438,3 +1441,65 @@ lots:
     notes:
       - { date: 2026-10-23, text: "Mineur gardé en note (revue L131) : la capture 390 (demo-interets-annee-390.png, comme epargne-interets-390.png, 380×1585) est une pleine page : la barre de navigation fixe du bas apparaît au milieu de l'image." }
     finished: 2026-10-23
+  - id: L132
+    title: "Crédits : boutons icône Modifier / Supprimer des cartes et × du formulaire sans nom accessible (aria-label et title nuls, WCAG 4.1.2) — aria-label et title « Modifier <nom> » / « Supprimer <nom> » ; test (revue UX L32)"
+    public: "Crédits : boutons Modifier et Supprimer annoncés par les lecteurs d'écran"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-23
+  - id: L133
+    title: "Crédits : formulaire de crédit, Doublons et Suspects sans role=dialog — focus laissé derrière (Tab atteint la corbeille masquée par le formulaire, Entrée supprimerait BNP), Échap sans effet — composant Dialog commun (role=dialog, aria-modal, aria-labelledby, focus au premier champ, piège, Échap, retour du focus) ; tests (revue UX L32, WCAG 2.4.3, 2.4.11, 4.1.2)"
+    public: "Crédits : fenêtres utilisables au clavier, fermées par Échap"
+    status: todo
+    estimate: 0.5
+    visible: true
+    created: 2026-10-23
+  - id: L134
+    title: "Crédits : formulaire de crédit coupé sur petit téléphone (320×568 : haut à -66 px, Enregistrer à y=576, voile non défilable ; 375×667 titre rogné) — voile items-start overflow-y-auto comme Doublons et Suspects, ou panneau à hauteur max avec pied collant ; test (revue UX L32, WCAG 1.4.10)"
+    public: "Crédits : formulaire enregistrable sur petit téléphone"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
+  - id: L135
+    title: "Crédits : contrastes sous 4,5:1 — texte du bouton Reset 4,36:1, textes atténués de la carte terminée 3,65:1 (opacity-80, closed-card.tsx:12) ; jeton plus clair pour Reset, carte terminée marquée par sa bordure rouge sans opacité ; test (revue UX L32, WCAG 1.4.3)"
+    public: "Crédits : textes lisibles sur le bouton Reset et les crédits terminés"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
+  - id: L136
+    title: "Crédits : graphe des mensualités — séries nommées par créancier (COFIDIS deux fois, distinguées par la seule couleur ; « BNP PARIBAS PERSONAL FINANCE » contre la carte « BNP IMMOBILIER ») et svg sans alternative texte — nom du crédit comme sur la carte (loans-monthly-chart.tsx:84), role=img + aria-label de synthèse ou tableau masqué, axe Y au format fr-FR (« 1 100 € ») ; tests (revue UX L32, WCAG 1.4.1, 1.1.1)"
+    public: "Crédits : graphe des mensualités lisible sans les couleurs"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
+  - id: L137
+    title: "Crédits : dates au format ISO (« Dernière mensualité : 2026-06-15 » sur la carte terminée, « dernière 2026-06-15 » dans Suspects) — format fr-FR comme le reste de l'app ; test (revue UX L32)"
+    public: "Crédits : dates en français"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-23
+  - id: L138
+    title: "Crédits : puce « Partiel » sur les 5 crédits actifs sans dire ce qui manque (explication en title seul, puce non focalisable, trois causes possibles listées) — nommer le critère manquant à côté de la puce ou en faire une divulgation qui liste les critères et l'action ; test (revue UX L32, Nielsen 9)"
+    public: "Crédits : la mention « Partiel » dit ce qui manque"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
+  - id: L139
+    title: "Crédits : la suggestion de Claude en attente est en bas de page (y≈1850 à 1440, 3,4 écrans à 390) sans signal en haut — « 1 suggestion à valider » dans l'en-tête avec ancre, ou bandeau sous l'en-tête ; test (revue UX L32, Nielsen 1)"
+    public: "Crédits : une suggestion à valider se voit dès l'arrivée"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
+  - id: L140
+    title: "Crédits : le sous-titre accorde « crédits actifs » sur items.length (tous les crédits, terminés compris) au lieu du nombre d'actifs — 1 actif + 1 terminé afficherait « 1 crédits actifs » (loans.tsx:142, lu dans le code par la revue UX L32) ; test"
+    status: todo
+    estimate: 0.1
+    quickwin: true
+    created: 2026-10-23
