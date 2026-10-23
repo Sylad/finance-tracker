@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { LoansPage } from './loans';
 
-const state = vi.hoisted(() => ({ loans: [] as unknown[] }));
+const state = vi.hoisted(() => ({ loans: [] as unknown[], suggestions: [] as unknown[] }));
 
 const idle = { mutateAsync: vi.fn(), isPending: false };
 
@@ -14,6 +14,7 @@ vi.mock('@/lib/queries', () => ({
   useAcceptSuggestion: () => idle,
   useResetLoans: () => idle,
   useDetectionScan: () => idle,
+  useLoanSuggestions: () => ({ data: state.suggestions }),
 }));
 vi.mock('@/components/loans/suggestions-banner', () => ({ SuggestionsBanner: () => null }));
 vi.mock('@/components/loans/classic-card', () => ({ ClassicCard: () => null }));
@@ -80,5 +81,25 @@ describe('<LoansPage /> — sous-titre (L140)', () => {
 
   it('R3 — aucun actif parmi des crédits terminés : « 0 crédit actif »', () => {
     expect(subtitle([loan('a', false), loan('b', false)])).toContain('0 crédit actif');
+  });
+});
+
+describe('<LoansPage /> — suggestion en attente signalée en haut (L139)', () => {
+  it('R6 — le signal est dans l\'en-tête de page, avant les graphiques et les cartes', () => {
+    state.loans = [{ id: 'a', name: 'a', type: 'classic', monthlyPayment: 100, isActive: true }];
+    state.suggestions = [{ id: 's', label: 's', status: 'pending', suggestedType: 'loan' }];
+    const { container } = render(<LoansPage />);
+    const header = container.querySelector('header') as HTMLElement;
+    const signal = screen.getByRole('button', { name: /1 suggestion à valider/ });
+    expect(header.compareDocumentPosition(signal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const firstSection = container.querySelector('section') as HTMLElement;
+    expect(signal.compareDocumentPosition(firstSection) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    state.suggestions = [];
+  });
+
+  it('R7 — sans suggestion en attente, la page n\'affiche aucun signal', () => {
+    state.suggestions = [];
+    render(<LoansPage />);
+    expect(screen.queryByText(/à valider/)).toBeNull();
   });
 });

@@ -21,6 +21,7 @@ import { ClosedCard } from '@/components/loans/closed-card';
 import { InstallmentCard } from '@/components/loans/installment-card';
 import { LoanForm } from '@/components/loans/loan-form';
 import { SuggestionsBanner } from '@/components/loans/suggestions-banner';
+import { PendingSuggestionsSignal } from '@/components/loans/pending-suggestions-signal';
 import { LoansMonthlyChart } from '@/components/loans/loans-monthly-chart';
 import { DedupeModal } from '@/components/loans/dedupe-modal';
 import { ImportProgressModal } from '@/components/loans/import-progress-modal';
@@ -203,6 +204,8 @@ export function LoansPage() {
           </div>
         }
       />
+
+      <PendingSuggestionsSignal />
 
       {dedupeOpen && <DedupeModal onClose={() => setDedupeOpen(false)} />}
       {suspiciousOpen && <SuspiciousModal onClose={() => setSuspiciousOpen(false)} />}

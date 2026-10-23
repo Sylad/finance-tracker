@@ -1,4 +1,4 @@
-import type { Loan, LoanInput, LoanOccurrence } from '@/types/api';
+import type { Loan, LoanInput, LoanOccurrence, LoanSuggestion } from '@/types/api';
 
 /** Remboursements anticipés (virements ≫ mensualité), les plus récents en premier. */
 export function earlyRepayments(loan: Loan): LoanOccurrence[] {
@@ -107,4 +107,9 @@ export function chartSeriesNames(loans: Loan[]): Map<string, string> {
     names.set(l.id, `${l.name} (${n})`);
   }
   return names;
+}
+
+/** Suggestions de crédit à valider : les abonnements et factures relèvent de /subscriptions. */
+export function pendingLoanSuggestions(all: LoanSuggestion[] | undefined): LoanSuggestion[] {
+  return (all ?? []).filter((s) => s.status === 'pending' && s.suggestedType === 'loan');
 }

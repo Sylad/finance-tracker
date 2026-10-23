@@ -9,6 +9,7 @@ import {
 } from '@/lib/queries';
 import type { LoanSuggestion } from '@/types/api';
 import { formatEUR, formatDate, cn } from '@/lib/utils';
+import { pendingLoanSuggestions } from './utils';
 
 /** Libellés français des types suggérés — remplace l'affichage brut « type loan ». */
 const SUGGESTED_TYPE_LABELS: Record<LoanSuggestion['suggestedType'], string> = {
@@ -16,6 +17,9 @@ const SUGGESTED_TYPE_LABELS: Record<LoanSuggestion['suggestedType'], string> = {
   subscription: 'abonnement',
   utility: 'facture',
 };
+
+/** Cible de l'ancre du signal « N suggestions à valider » (en-tête de /loans). */
+export const SUGGESTIONS_BANNER_ID = 'suggestions-claude';
 
 export function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) => void }) {
   const { data } = useLoanSuggestions();
@@ -26,11 +30,11 @@ export function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) 
   const [showHidden, setShowHidden] = useState(false);
   // Cette page concerne les CRÉDITS uniquement.
   // Les suggestions de type subscription/utility appartiennent à la page /subscriptions.
-  const items = (data ?? []).filter((s) => s.status === 'pending' && s.suggestedType === 'loan');
+  const items = pendingLoanSuggestions(data);
   const hidden = (data ?? []).filter((s) => s.status === 'snoozed' && s.suggestedType === 'loan');
   if (items.length === 0 && hidden.length === 0) return null;
   return (
-    <div className="card p-4 mb-6 border-l-4 border-l-warning">
+    <div id={SUGGESTIONS_BANNER_ID} tabIndex={-1} className="card p-4 mb-6 border-l-4 border-l-warning scroll-mt-4 outline-none">
       <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
         <div className="font-display font-semibold text-fg-bright">
           Suggestions de Claude ({items.length})
