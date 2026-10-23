@@ -392,14 +392,16 @@
     {
       "id": "L119",
       "title": "Épargne : courbe de 12 mois lisible, depuis l'ouverture, avec un résumé en texte",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L120",
       "title": "Épargne : dernier mouvement daté et nommé (versement, ajustement, intérêts)",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L121",
@@ -411,12 +413,23 @@
     {
       "id": "L122",
       "title": "Démo : solde des comptes épargne égal à la somme de leurs mouvements",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L123",
       "title": "Épargne : l'historique des mouvements de chaque compte",
+      "status": "todo"
+    },
+    {
+      "id": "L124",
+      "title": "Épargne : la courbe suit la date d'ouverture corrigée",
+      "status": "todo"
+    },
+    {
+      "id": "L125",
+      "title": "Épargne : un retrait détecté n'est plus appelé versement",
       "status": "todo"
     }
   ]

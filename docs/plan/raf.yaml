@@ -1280,21 +1280,29 @@ lots:
   - id: L119
     title: "Épargne, courbe de chaque carte : 0 € pour les mois avant l'ouverture (fausse croissance), aucun repère de période ni de montant, aucune alternative texte → courbe depuis le mois d'ouverture, « 12 derniers mois », montants de début et de fin, aria-label de résumé — Nielsen 2, WCAG 1.1.1 (UX L31)"
     public: "Épargne : courbe de 12 mois lisible, depuis l'ouverture, avec un résumé en texte"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant after 3 minor notes (courbe depuis l'ouverture OK, tests verts 9/9, tsc propre ; réserves : date initiale modifiée après coup, README inexact sur la limite, aucun message sous 2 mois) — orchestré (vague 2026-10-23-fin-epargne2, 0 passe(s) de correction)", commit: 454a8b52d5a48f085611989c4875d5abd32026b2 }
+    ux: { date: 2026-10-23, verdict: "compliant — courbe depuis l'ouverture, période et montants de début/fin, aria-label ; captures 1440/390 relues par le lead (la capture 390 de revue montrait l'animation Recharts en cours, la capture Nouveautés la courbe entière) ; 3 mineurs : date initiale modifiée après coup (→ lot), README inexact sur la limite (→ même lot), aucun message sous 2 mois (note)" }
+    notes:
+      - { date: 2026-10-23, text: "Mineur gardé en note (revue L119) : moins de deux mois depuis l'ouverture → aucune courbe et aucun message à la place (savings.tsx:123), pas de test de route sur ce rendu ; une ligne « Courbe disponible dès le 2ᵉ mois » suffirait." }
+    finished: 2026-10-23
   - id: L120
     title: "Épargne : « ↓ 200,00 € dernier mouvement » en rouge est un ajustement au relevé (bank-extract), sans date ni nature → « Ajustement au relevé · 30/09 : −200,00 € » — Nielsen 1, 2 (UX L31)"
     public: "Épargne : dernier mouvement daté et nommé (versement, ajustement, intérêts)"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant (0 blocking, 0 major, 2 minor notes: « Versement détecté » sur un montant négatif, date sans année) — orchestré (vague 2026-10-23-fin-epargne2, 0 passe(s) de correction)", commit: eafbffbcfcfda8434b856d57a04e0575e6a54842 }
+    ux: { date: 2026-10-23, verdict: "compliant — « Ajustement au relevé · 30/09 : −200,00 € » en ton neutre, capture 1440 relue par le lead ; 2 mineurs : « Versement détecté » sur un montant négatif (→ lot), date sans année (note)" }
+    notes:
+      - { date: 2026-10-23, text: "Mineur gardé en note (revue L120) : date en jj/mm sans année (savings-last-movement.ts:30) ; un compte inactif depuis plus d'un an lirait « 30/09 » comme récent. L123 prévoit jj/mm/aaaa." }
+    finished: 2026-10-23
   - id: L121
     title: "Épargne : taux affichés « 2.00% » (montants en fr-FR) et champ du taux à « 1.7000000000000002 » pour 0,017 (aussi 0,0175, 0,022) → format fr-FR et arrondi à l'affichage et dans le champ (UX L31)"
     public: "Épargne : taux d'intérêt au format français, sans décimales parasites"
@@ -1309,12 +1317,16 @@ lots:
   - id: L122
     title: "Démo, fixtures épargne : la somme des mouvements ne fait pas le solde courant (PEL 13 680 pour 13 580, Livret A 6 600 pour 6 750 ; note « 6750 vs 6800 calculé » portant −200) → mouvements cohérents avec les soldes (UX L31)"
     public: "Démo : solde des comptes épargne égal à la somme de leurs mouvements"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-22
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant (0 blocking, 0 major, 1 minor note : ajustement PEL +980 € peu vraisemblable) — orchestré (vague 2026-10-23-fin-epargne2, 0 passe(s) de correction)", commit: feaa1e7c22ebe2ad1bc85a0e91a039cbdd20254f }
+    ux: { date: 2026-10-23, verdict: "compliant — somme des mouvements = solde courant (PEL 13 580, Livret A 6 750), aucun écran modifié (nocapture) ; 1 mineur : ajustement PEL +980 € peu vraisemblable pour 2 % (note)" }
+    notes:
+      - { date: 2026-10-23, text: "Mineur gardé en note (revue L122) : l'ajustement PEL « intérêts capitalisés » +980 € (demo-fixtures.json:2062) fait 7,8 % pour un compte à 2 % — vraisemblance de la démo, à décider si la démo sert de vitrine." }
+    finished: 2026-10-23
   - id: L123
     title: "Épargne : liste repliable des mouvements de chaque compte (décision Sylvain 22-10, revue UX L31) — sous la courbe de chaque carte, bouton « Mouvements (n) » avec aria-expanded ; une fois déplié, du plus récent au plus ancien : date jj/mm/aaaa, nature (Solde initial / Versement détecté / Ajustement au relevé / Intérêts), montant signé aligné à droite en chiffres tabulaires, note en texte secondaire ; au téléphone une ligne par mouvement sur deux rangées ; en-tête et grille des cartes inchangés"
     public: "Épargne : l'historique des mouvements de chaque compte"
@@ -1323,3 +1335,17 @@ lots:
     visible: true
     screen: component
     created: 2026-10-22
+  - id: L124
+    title: "Épargne : modifier la date du solde initial après coup ne déplace pas le mouvement « initial » (SavingsService.update, savings.service.ts:103-117, recopie movements) → la courbe L119 repart du plus ancien et ramène des 0 € ; README L119 faux sur la limite (« l'historique part de 0 + mouvements et ignore initialBalance » : create ajoute bien un mouvement source initial, l. 76-84) — update recale le mouvement initial, test, README corrigé (revue L119)"
+    public: "Épargne : la courbe suit la date d'ouverture corrigée"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
+  - id: L125
+    title: "Épargne : un mouvement détecté négatif (auto-sync.service.ts:358 prend -t.amount) s'affiche « Versement détecté · 30/09 : −50,00 € » en rouge (savings-last-movement.ts:10) — libellé « Retrait détecté » pour un montant négatif, test R2 étendu au cas négatif (revue L120, Nielsen 2)"
+    public: "Épargne : un retrait détecté n'est plus appelé versement"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
