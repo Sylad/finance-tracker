@@ -7,8 +7,8 @@ const CATEGORIES: LoanCategory[] = ['mortgage', 'consumer', 'auto', 'student', '
 export function LoanForm({ init, onSave, onCancel, busy }: { init: LoanInput; onSave: (i: LoanInput) => void; onCancel: () => void; busy: boolean }) {
   const [form, setForm] = useState<LoanInput>(init);
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onCancel}>
-      <div className="card max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto animate-fade-in" onClick={onCancel}>
+      <div className="card max-w-lg w-full my-8" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h2 className="font-display font-semibold text-fg-bright">{init.name ? 'Modifier le crédit' : 'Nouveau crédit'}</h2>
           <button onClick={onCancel} className="btn-ghost p-1"><X className="h-4 w-4" /></button>
