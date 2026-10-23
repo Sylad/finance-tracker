@@ -1,6 +1,6 @@
 import { Pencil, Trash2, ShoppingBag, Check, Circle, AlertCircle } from 'lucide-react';
 import { type Loan, LOAN_CATEGORY_LABELS } from '@/types/api';
-import { formatEUR, cn } from '@/lib/utils';
+import { formatEUR, formatDate, cn } from '@/lib/utils';
 import { HealthChip } from './health-chip';
 
 interface Props {
@@ -41,7 +41,7 @@ export function InstallmentCard({ loan, onEdit, onDelete }: Props) {
             </div>
             <div className="text-xs text-fg-dim mt-0.5 tabular">
               {schedule.length}× {formatEUR(loan.monthlyPayment)} = <span className="text-fg-bright">{formatEUR(total)}</span>
-              {loan.installmentSignatureDate && <span className="ml-2 text-fg-muted">· signé {loan.installmentSignatureDate}</span>}
+              {loan.installmentSignatureDate && <span className="ml-2 text-fg-muted">· signé {formatDate(loan.installmentSignatureDate)}</span>}
             </div>
           </div>
         </div>
@@ -66,7 +66,7 @@ export function InstallmentCard({ loan, onEdit, onDelete }: Props) {
             return (
               <div
                 key={i}
-                title={`Échéance ${i + 1}/${schedule.length} : ${line.dueDate} · ${formatEUR(line.amount)}${line.paid ? ' ✓ payée' : isLate ? ' (en retard)' : ' (à venir)'}`}
+                title={`Échéance ${i + 1}/${schedule.length} : ${formatDate(line.dueDate)} · ${formatEUR(line.amount)}${line.paid ? ' ✓ payée' : isLate ? ' (en retard)' : ' (à venir)'}`}
                 className={cn('w-7 h-7 rounded-full border flex items-center justify-center text-xs', cls)}
               >
                 <Icon className="h-3 w-3" />
@@ -83,7 +83,7 @@ export function InstallmentCard({ loan, onEdit, onDelete }: Props) {
       <ul className="text-xs text-fg-muted space-y-0.5 list-none border-t border-border pt-2">
         {schedule.map((line, i) => (
           <li key={i} className="flex items-center justify-between tabular">
-            <span>{i + 1}. {line.dueDate}</span>
+            <span>{i + 1}. {formatDate(line.dueDate)}</span>
             <span className={line.paid ? 'text-positive' : line.dueDate < today ? 'text-warning' : 'text-fg-dim'}>
               {formatEUR(line.amount)} {line.paid ? '✓' : line.dueDate < today ? '⚠ en retard' : '⌛'}
             </span>
