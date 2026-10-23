@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 17:46",
+  "generated": "2026-10-23 17:52",
   "entries": [
+    {
+      "slug": "2026-10-23-credits-la-mention-partiel-dit-ce-qui-manque",
+      "title": "Crédits : la mention « Partiel » dit ce qui manque",
+      "date": "2026-10-23",
+      "lots": [
+        "L138"
+      ],
+      "captures": [
+        "captures/credits-partiel-1440.png",
+        "captures/credits-partiel-390.png"
+      ],
+      "alts": [
+        "Carte du crédit FLOA sur grand écran : la puce Partiel est ouverte et affiche ce qui manque, ce qui est tenu et quoi faire",
+        "La même carte au téléphone, avec le détail sous la puce Partiel"
+      ],
+      "html": "<p>Sur la page Crédits, la puce « Partiel » (et la puce « Trou ») n'est plus une simple étiquette : c'est un bouton que vous pouvez toucher ou atteindre au clavier. Il déplie sous le nom du crédit ce qui manque (par exemple un tableau d'amortissement ou un relevé crédit de moins de 60 jours), ce qui est déjà en règle (par exemple au moins 3 prélèvements sur 6 mois, avec le nombre trouvé) et l'action à faire pour compléter les données. Pour un paiement en plusieurs fois, la puce indique combien d'échéances échues n'ont pas été retrouvées dans vos relevés bancaires. La puce « Complet » reste une étiquette.</p>"
+    },
     {
       "slug": "2026-10-23-credits-dates-en-francais",
       "title": "Crédits : dates en français",
