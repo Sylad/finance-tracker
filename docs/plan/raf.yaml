@@ -1330,15 +1330,18 @@ lots:
   - id: L123
     title: "Épargne : liste repliable des mouvements de chaque compte (décision Sylvain 22-10, revue UX L31) — sous la courbe de chaque carte, bouton « Mouvements (n) » avec aria-expanded ; une fois déplié, du plus récent au plus ancien : date jj/mm/aaaa, nature (Solde initial / Versement détecté / Ajustement au relevé / Intérêts), montant signé aligné à droite en chiffres tabulaires, note en texte secondaire ; au téléphone une ligne par mouvement sur deux rangées ; en-tête et grille des cartes inchangés"
     public: "Épargne : l'historique des mouvements de chaque compte"
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     screen: component
     created: 2026-10-22
     notes:
       - { date: 2026-10-23, text: "23-10 (lead) : L125 a ajouté la nature « Retrait détecté » pour un mouvement détecté négatif (savings-last-movement.ts) — la liste des mouvements reprend les mêmes libellés que la carte (Solde initial / Versement détecté / Retrait détecté / Ajustement au relevé / Intérêts), sans dupliquer la table de libellés." }
+      - { date: 2026-10-23, text: "Revue : conforme après 2 corrections (cartes non étirées par items-start, nom accessible commençant par le libellé visible, note du solde initial masquée). Mineur gardé en note : avec items-start, dans une rangée les cartes ne sont plus à la même hauteur quand leur contenu diffère (README:54 dit maintenant « en-tête inchangé »)." }
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "conforme — 2 constats mineurs (notes du backend affichées brutes, date d'intérêts au 31 d'un mois de 30 jours) — orchestré (vague 2026-10-23-fin-l123, 2 passe(s) de correction + passe des mineurs)", commit: 127e3b90624ab41b7b05cfe2edeca269f583fe44 }
+    ux: { date: 2026-10-23, verdict: "conforme — liste repliable des mouvements sous la courbe (date jj/mm/aaaa, nature, montant signé, note), deux rangées au téléphone, nom accessible « Mouvements (n) de <compte> » ; captures 1440/390 relues par le lead ; 2 mineurs → lots (notes brutes du backend, date d'intérêts au 31)" }
+    finished: 2026-10-23
   - id: L124
     title: "Épargne : modifier la date du solde initial après coup ne déplace pas le mouvement « initial » (SavingsService.update, savings.service.ts:103-117, recopie movements) → la courbe L119 repart du plus ancien et ramène des 0 € ; README L119 faux sur la limite (« l'historique part de 0 + mouvements et ignore initialBalance » : create ajoute bien un mouvement source initial, l. 76-84) — update recale le mouvement initial, test, README corrigé (revue L119)"
     public: "Épargne : la courbe suit la date d'ouverture corrigée"
@@ -1361,3 +1364,17 @@ lots:
     review: { date: 2026-10-23, verdict: "compliant — orchestré (vague 2026-10-23-fin-epargne3, 0 passe(s) de correction)", commit: c47d84d69d260256a3f447e6ac0cbe6703860c1a }
     ux: { date: 2026-10-23, verdict: "compliant — « Retrait détecté » pour un mouvement détecté négatif, test R2 étendu ; nocapture (aucun retrait détecté dans la démo)" }
     finished: 2026-10-23
+  - id: L126
+    title: "Épargne, liste des mouvements : les notes du backend s'affichent brutes — nature répétée dans la note (Intérêts, Ajustement au relevé), préfixe « Auto: », taux écrit à l'anglaise — ne pas répéter la nature, retirer « Auto: », taux au format français « 2,50 % » (revue L123)"
+    public: "Épargne : notes des mouvements plus lisibles"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
+  - id: L127
+    title: "Épargne : l'intérêt est daté ${year}-${month}-31 quel que soit le mois anniversaire (auto-sync.service.ts:412) → la liste L123 affiche 31/06/2026 ou 31/02/2026 — dater au dernier jour réel du mois, test sur février (bissextile ou non), avril, juin, septembre, novembre (revue L123)"
+    public: "Épargne : intérêts datés au vrai dernier jour du mois"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
