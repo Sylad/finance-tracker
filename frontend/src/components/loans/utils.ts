@@ -86,3 +86,25 @@ export const LOAN_COLORS = [
   'hsl(0 84% 60%)', 'hsl(330 85% 60%)', 'hsl(195 83% 50%)', 'hsl(38 92% 55%)',
   'hsl(120 70% 50%)', 'hsl(260 80% 65%)', 'hsl(20 90% 55%)', 'hsl(180 70% 45%)',
 ];
+
+/**
+ * Nom de chaque série du graphe des mensualités : le nom du crédit, comme sur
+ * la carte. Deux crédits de même nom reçoivent « (1) », « (2) » pour rester
+ * distincts sans la couleur (WCAG 1.4.1).
+ */
+export function chartSeriesNames(loans: Loan[]): Map<string, string> {
+  const count = new Map<string, number>();
+  for (const l of loans) count.set(l.name, (count.get(l.name) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  const names = new Map<string, string>();
+  for (const l of loans) {
+    if ((count.get(l.name) ?? 0) < 2) {
+      names.set(l.id, l.name);
+      continue;
+    }
+    const n = (seen.get(l.name) ?? 0) + 1;
+    seen.set(l.name, n);
+    names.set(l.id, `${l.name} (${n})`);
+  }
+  return names;
+}

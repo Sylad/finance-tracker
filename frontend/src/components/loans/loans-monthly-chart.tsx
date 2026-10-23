@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import type { Loan } from '@/types/api';
-import { formatEUR, chartTooltipProps, formatMonthShort } from '@/lib/utils';
-import { LOAN_COLORS, monthlyCharge } from './utils';
+import { formatEUR, formatEURCompact, chartTooltipProps, formatMonthShort } from '@/lib/utils';
+import { LOAN_COLORS, chartSeriesNames, monthlyCharge } from './utils';
 
 export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
   const data = useMemo(() => {
@@ -31,6 +31,9 @@ export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
     return loans.filter((l) => data.some((row) => (row[l.id] as number | undefined) ?? 0 > 0));
   }, [loans, data]);
 
+  const names = useMemo(() => chartSeriesNames(visibleLoans), [visibleLoans]);
+  const seriesName = (id: string) => names.get(id) ?? id;
+
   if (visibleLoans.length === 0) {
     return (
       <section className="card p-5 mb-6">
@@ -51,9 +54,13 @@ export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
         <BarChart3 className="h-4 w-4 text-fg-dim" />
         <div className="stat-label">Charge crédits par mois (12 mois glissants)</div>
       </div>
-      <div className="h-72">
+      <div
+        className="h-72"
+        role="img"
+        aria-label={`Charge mensuelle de ${visibleLoans.length} ${visibleLoans.length > 1 ? 'crédits' : 'crédit'} sur les 12 derniers mois : ${visibleLoans.map((l) => seriesName(l.id)).join(', ')}. Montants détaillés dans le tableau qui suit.`}
+      >
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+          <BarChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
             <XAxis
               dataKey="month"
               tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }}
@@ -64,7 +71,9 @@ export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
             />
             <YAxis
               tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }}
-              tickFormatter={(v) => `${v}€`}
+              width={64}
+              allowDecimals={false}
+              tickFormatter={(v: number) => formatEURCompact(v)}
             />
             <Tooltip
               {...chartTooltipProps}
@@ -72,17 +81,11 @@ export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
                 const [y, mm] = m.split('-');
                 return formatMonthShort(Number(mm), Number(y));
               }}
-              formatter={(v: number, name: string) => {
-                const loan = visibleLoans.find((l) => l.id === name);
-                return [formatEUR(v), loan?.creditor ?? loan?.name ?? name];
-              }}
+              formatter={(v: number, name: string) => [formatEUR(v), seriesName(name)]}
             />
             <Legend
               wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-              formatter={(value: string) => {
-                const loan = visibleLoans.find((l) => l.id === value);
-                return <span className="text-fg-muted">{loan?.creditor ?? loan?.name ?? value}</span>;
-              }}
+              formatter={(value: string) => <span className="text-fg-muted">{seriesName(value)}</span>}
             />
             {visibleLoans.map((loan, i) => (
               <Bar
@@ -95,6 +98,32 @@ export function LoansMonthlyChart({ loans }: { loans: Loan[] }) {
             ))}
           </BarChart>
         </ResponsiveContainer>
+      </div>
+      <div className="sr-only">
+        <table>
+          <caption>Charge crédits par mois (12 mois glissants)</caption>
+          <thead>
+            <tr>
+              <th scope="col">Mois</th>
+              {visibleLoans.map((l) => (
+                <th key={l.id} scope="col">{seriesName(l.id)}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row) => {
+              const [y, mm] = (row.month as string).split('-');
+              return (
+                <tr key={row.month as string}>
+                  <th scope="row">{formatMonthShort(Number(mm), Number(y))}</th>
+                  {visibleLoans.map((l) => (
+                    <td key={l.id}>{formatEUR((row[l.id] as number | undefined) ?? 0)}</td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </section>
   );

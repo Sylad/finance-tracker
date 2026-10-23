@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 17:35",
+  "generated": "2026-10-23 17:39",
   "entries": [
+    {
+      "slug": "2026-10-23-credits-graphe-des-mensualites-lisible-sans-les-couleurs",
+      "title": "Crédits : graphe des mensualités lisible sans les couleurs",
+      "date": "2026-10-23",
+      "lots": [
+        "L136"
+      ],
+      "captures": [],
+      "html": "<p>Sur la page Crédits, le graphe « Charge crédits par mois » nomme maintenant chaque série comme la carte du crédit correspondant : deux crédits d'un même créancier (par exemple deux COFIDIS) ne se distinguent plus par la seule couleur, et deux crédits de même nom sont numérotés « (1) » et « (2) ».</p>\n<p>Les lecteurs d'écran annoncent le graphe avec un résumé (nombre de crédits, noms) et peuvent lire un tableau mois par mois des montants exacts de chaque crédit.</p>\n<p>L'axe des montants suit le format français : « 1 100 € ».</p>"
+    },
     {
       "slug": "2026-10-23-credits-textes-lisibles-sur-le-bouton-reset-et-les-credits-t",
       "title": "Crédits : textes lisibles sur le bouton Reset et les crédits terminés",
