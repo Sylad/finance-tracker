@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 17:17",
+  "generated": "2026-10-23 17:22",
   "entries": [
+    {
+      "slug": "2026-10-23-credits-boutons-modifier-et-supprimer-annonces-par-les-lecte",
+      "title": "Crédits : boutons Modifier et Supprimer annoncés par les lecteurs d'écran",
+      "date": "2026-10-23",
+      "lots": [
+        "L132"
+      ],
+      "captures": [],
+      "html": "<p>Sur la page Crédits, les boutons en forme de crayon et de corbeille de chaque carte sont maintenant annoncés par les lecteurs d'écran sous la forme « Modifier Cofidis voiture » ou « Supprimer Cofidis voiture », avec le nom du crédit concerné. Le même texte apparaît en info-bulle au survol. La croix du formulaire de crédit est annoncée « Fermer ». L'apparence de la page ne change pas.</p>"
+    },
     {
       "slug": "2026-10-23-credits-formulaire-enregistrable-sur-petit-telephone",
       "title": "Crédits : formulaire enregistrable sur petit téléphone",
