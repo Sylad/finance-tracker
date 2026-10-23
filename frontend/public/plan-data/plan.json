@@ -519,7 +519,8 @@
     {
       "id": "L139",
       "title": "Crédits : une suggestion à valider se voit dès l'arrivée",
-      "status": "todo"
+      "status": "doing",
+      "started": "2026-10-23"
     }
   ]
 }

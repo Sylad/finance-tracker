@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 17:52",
+  "generated": "2026-10-23 17:57",
   "entries": [
+    {
+      "slug": "2026-10-23-credits-une-suggestion-a-valider-se-voit-des-l-arrivee",
+      "title": "Crédits : une suggestion à valider se voit dès l'arrivée",
+      "date": "2026-10-23",
+      "lots": [
+        "L139"
+      ],
+      "captures": [
+        "captures/L139-signal-suggestion-1440.png",
+        "captures/L139-signal-suggestion-390.png"
+      ],
+      "alts": [
+        "Page Crédits : sous le titre et les boutons, un bandeau « 1 suggestion à valider » avec « Voir »",
+        "Page Crédits sur téléphone : le même bandeau « 1 suggestion à valider » en haut de page"
+      ],
+      "html": "<p>Sur la page Crédits, quand Claude a repéré un crédit possible, un bandeau « 1 suggestion à valider » (ou « 2 suggestions à valider », etc.) apparaît juste sous le titre et les boutons. Un clic dessus amène directement au bloc « Suggestions de Claude », où l'on accepte la suggestion, la reporte ou la refuse. Jusqu'ici ce bloc était tout en bas de la page et rien ne le signalait en arrivant. Sans suggestion en attente, le bandeau n'apparaît pas.</p>"
+    },
     {
       "slug": "2026-10-23-credits-la-mention-partiel-dit-ce-qui-manque",
       "title": "Crédits : la mention « Partiel » dit ce qui manque",
