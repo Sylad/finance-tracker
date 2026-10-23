@@ -71,17 +71,34 @@ function shiftNode(node: unknown, n: number): unknown {
  * Un intérêt de la démo (L130) doit rester le dernier jour réel d'un mois de 30 jours
  * pour que L127 s'observe ; le décalage de mois entiers ne le garantit pas (novembre
  * + 6 = mai, 31 jours). Il est ramené au 30 du mois de 30 jours (avril, juin,
- * septembre, novembre) le plus proche en arrière, son relevé suit.
+ * septembre, novembre) de la plage des relevés recalés le plus proche de sa date
+ * décalée — jamais en dehors : l'application refuse un intérêt avant l'ouverture du
+ * compte et il doit pointer vers un relevé existant. Six mois consécutifs en
+ * contiennent toujours un (écart maximal : novembre à avril, 5 mois). Son relevé suit.
  */
 function snapInterestsToThirtyDayMonth(fixtures: Record<string, unknown>): void {
   const accounts = fixtures['savings-accounts'];
-  if (!Array.isArray(accounts)) return;
-  for (const account of accounts as { movements?: Record<string, unknown>[] }[]) {
+  const statements = fixtures['statements'];
+  if (!Array.isArray(accounts) || !Array.isArray(statements)) return;
+  const indexes = (statements as { year?: unknown; month?: unknown }[])
+    .filter((s) => typeof s.year === 'number' && typeof s.month === 'number')
+    .map((s) => (s.year as number) * 12 + (s.month as number) - 1);
+  if (indexes.length === 0) return;
+  const [from, to] = [Math.min(...indexes), Math.max(...indexes)];
+  const thirtyDays = (idx: number) => new Date(Date.UTC(Math.floor(idx / 12), (idx % 12) + 1, 0)).getUTCDate() === 30;
+  for (const account of accounts as { movements?: Record<string, unknown>[]; initialBalanceDate?: unknown }[]) {
+    const opening = typeof account.initialBalanceDate === 'string' ? ISO_DATE.exec(account.initialBalanceDate) : null;
+    const lowest = opening ? Math.max(from, +opening[1] * 12 + +opening[2] - 1) : from;
     for (const m of account.movements ?? []) {
       const iso = m.source === 'interest' && typeof m.date === 'string' ? ISO_DATE.exec(m.date) : null;
       if (!iso) continue;
-      let [y, mo] = [+iso[1], +iso[2]];
-      while (new Date(Date.UTC(y, mo, 0)).getUTCDate() !== 30) [y, mo] = addMonths(y, mo, -1);
+      const target = +iso[1] * 12 + +iso[2] - 1;
+      let best: number | null = null;
+      for (let idx = lowest; idx <= to; idx++) {
+        if (thirtyDays(idx) && (best === null || Math.abs(idx - target) < Math.abs(best - target))) best = idx;
+      }
+      if (best === null) continue;
+      const [y, mo] = [Math.floor(best / 12), (best % 12) + 1];
       m.date = `${y}-${pad(mo)}-30`;
       m.statementId = `${y}-${pad(mo)}`;
     }
