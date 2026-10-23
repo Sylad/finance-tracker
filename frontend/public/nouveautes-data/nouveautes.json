@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 19:31",
+  "generated": "2026-10-23 19:33",
   "entries": [
+    {
+      "slug": "2026-10-23-tableau-de-bord-plus-d-alerte-de-fin-pour-un-paiement-en-plu",
+      "title": "Tableau de bord : plus d'alerte de fin pour un paiement en plusieurs fois",
+      "date": "2026-10-23",
+      "lots": [
+        "L149"
+      ],
+      "captures": [],
+      "html": "<p>Le bloc « Alertes » du tableau de bord n'affiche plus « Crédit … se termine dans N jours » pour un paiement en plusieurs fois (par exemple ALMA 4X) : ce type de paiement a une fin prévue dès le départ, et l'alerte revenait en permanence. L'alerte reste affichée pour les crédits classiques qui se terminent dans moins de 90 jours.</p>"
+    },
     {
       "slug": "2026-10-23-credits-l-echeance-du-jour-d-un-paiement-en-plusieurs-fois-n",
       "title": "Crédits : l'échéance du jour d'un paiement en plusieurs fois n'est plus comptée échue",

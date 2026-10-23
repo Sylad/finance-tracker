@@ -106,7 +106,8 @@ export class DashboardService {
       }
     }
     const now = new Date();
-    for (const l of loans.filter((x) => x.isActive && x.type === 'classic' && x.endDate)) {
+    // Un paiement en N fois (kind=installment) se termine par construction : pas d'alerte.
+    for (const l of loans.filter((x) => x.isActive && x.type === 'classic' && (x.kind ?? x.type) !== 'installment' && x.endDate)) {
       const days = (new Date(l.endDate!).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
       if (days > 0 && days < 90) {
         alerts.push({

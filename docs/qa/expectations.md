@@ -27,7 +27,8 @@ except: /nouveautes et /plan — le journal des Nouveautés et le plan de travai
 shows: à 1440 px seulement, « Vue d'ensemble basée sur 6 relevés » (l'en-tête de page est masqué sous `md` : le tableau de bord téléphone affiche le mois et la tendance, pas cette phrase) ; aux deux tailles PATRIMOINE NET, SANTÉ FINANCIÈRE /100, RELEVÉS RÉCENTS (5 cartes à 1440 px, 3 à 390 px)
 api: /api/statements, /api/statements/score-history, /api/loans, /api/savings-accounts, /api/budgets, /api/dashboard/net-worth, /api/dashboard/yearly-overview?months=12, /api/health-check/diagnostic, /api/dashboard/alerts
 may be empty when aucune alerte (`/api/dashboard/alerts`)
-source: la tuile « POINTS D'ATTENTION » lit le **diagnostic santé** (`/api/health-check/diagnostic`) et c'est lui qui fait foi ; `/api/dashboard/alerts` alimente un bloc « Alertes (N) » distinct (revolving ≥ 80 % du plafond, solde en baisse ≥ 30 %, crédit finissant sous 90 jours). Une tuile « Taux d'effort 70,5 % » avec `/api/dashboard/alerts` à `[]` n'est donc pas un défaut : le taux d'effort n'est pas une alerte de ce flux.
+never: dans le bloc « Alertes », « se termine dans » pour un paiement en plusieurs fois (ALMA 4X) (L149)
+source: la tuile « POINTS D'ATTENTION » lit le **diagnostic santé** (`/api/health-check/diagnostic`) et c'est lui qui fait foi ; `/api/dashboard/alerts` alimente un bloc « Alertes (N) » distinct (revolving ≥ 80 % du plafond, solde en baisse ≥ 30 %, crédit classique finissant sous 90 jours, jamais un paiement en plusieurs fois). Une tuile « Taux d'effort 70,5 % » avec `/api/dashboard/alerts` à `[]` n'est donc pas un défaut : le taux d'effort n'est pas une alerte de ce flux.
 
 ## /loans
 

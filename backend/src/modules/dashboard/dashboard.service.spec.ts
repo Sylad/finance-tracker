@@ -85,4 +85,29 @@ describe('DashboardService — getNetWorth restant dû officiel', () => {
     expect(out.estimatedDebt).toBe(0);
     expect(out.ignoredLoanIds).toEqual(['l1']);
   });
+  describe('getAlerts — fin de crédit proche', () => {
+    const inDays = (d: number) => isoDaysAgo(-d);
+
+    it('R1 — un crédit classique qui se termine dans moins de 90 jours lève l’alerte', async () => {
+      loansGetAll.mockResolvedValue([mkClassic({ endDate: inDays(60) })]);
+      const alerts = await svc.getAlerts();
+      expect(alerts.map((a) => a.message)).toEqual([expect.stringMatching(/se termine dans/)]);
+    });
+
+    it('R2 — un paiement en plusieurs fois (kind=installment) ne lève jamais « se termine dans »', async () => {
+      loansGetAll.mockResolvedValue([mkClassic({ kind: 'installment', endDate: inDays(60) })]);
+      const alerts = await svc.getAlerts();
+      expect(alerts.filter((a) => /se termine dans/.test(a.message))).toHaveLength(0);
+    });
+
+    it('R3 — kind=installment prime sur type=classic : même exclusion qu’au calcul de la dette', async () => {
+      loansGetAll.mockResolvedValue([
+        mkClassic({ id: 'a', kind: 'installment', endDate: inDays(30) }),
+        mkClassic({ id: 'b', name: 'Auto', kind: 'classic', endDate: inDays(30) }),
+      ]);
+      const alerts = await svc.getAlerts();
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0].message).toContain('Auto');
+    });
+  });
 });
