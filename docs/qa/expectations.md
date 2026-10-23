@@ -82,6 +82,7 @@ api: /api/budgets
 ## /savings
 
 shows: 2 comptes, total 20 330,00 €
+shows: dans la liste des mouvements du Livret A, un intérêt daté du 30 d'un mois de 30 jours (avril, juin, septembre ou novembre, dans la plage des relevés, jamais avant l'ouverture du compte) et un versement « Intérêts créditeurs » (L130)
 never: note de mouvement d'ajustement au relevé qui répète « Ajustement solde réel depuis relevé » ou « Solde recalibré depuis le relevé » (L129)
 api: /api/savings-accounts
 
