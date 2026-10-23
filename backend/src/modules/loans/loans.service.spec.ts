@@ -1350,6 +1350,20 @@ describe('LoansService', () => {
       expect(LoansService.getLoanHealth(loan, '2026-01-15')).toBe('partial');
     });
 
+    it('R1 — getLoanHealth installment : l\'échéance du jour n\'est pas échue (même borne que la carte)', () => {
+      const loan = {
+        kind: 'installment',
+        type: 'classic',
+        installmentSchedule: [
+          { dueDate: '2026-09-23', amount: 62.5, paid: true },
+          { dueDate: '2026-10-23', amount: 62.5, paid: false }, // le jour même
+        ],
+        occurrencesDetected: [],
+      } as any;
+      expect(LoansService.getLoanHealth(loan, '2026-10-23')).toBe('complete');
+      expect(LoansService.getLoanHealth(loan, '2026-10-24')).toBe('partial');
+    });
+
     it('getLoanHealth installment : partial (pas gap) si 0 paid — relevés bancaires manquent', () => {
       // Cas du contrat fraîchement importé sans relevé bancaire matchant :
       // matcher rétroactif n'a rien trouvé → schedule reste à 0/N paid.

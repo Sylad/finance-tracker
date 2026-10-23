@@ -68,7 +68,20 @@ describe('Crédits — la puce de santé dit ce qui manque (L138)', () => {
     expect(screen.getByText(/Importez le relevé bancaire/)).toBeInTheDocument();
   });
 
-  it('R6 — « Trou » est aussi une divulgation ; « Complet » reste une simple étiquette', () => {
+  it('R1 — paiement en N fois : l\'échéance du jour n\'est pas comptée échue (même borne que la carte)', () => {
+    const l = loan({
+      kind: 'installment', health: 'partial',
+      installmentSchedule: [
+        { dueDate: '2026-09-23', amount: 62.5, paid: true },
+        { dueDate: NOW, amount: 62.5, paid: false },
+      ],
+    });
+    render(<HealthChip now={NOW} loan={l} />);
+    fireEvent.click(screen.getByRole('button', { name: /Partiel/ }));
+    expect(screen.getByText(/Tenu : 0 échéance échue sur 1 non retrouvée/)).toBeInTheDocument();
+  });
+
+  it('R6 —« Trou » est aussi une divulgation ; « Complet » reste une simple étiquette', () => {
     const { unmount } = render(<HealthChip now={NOW} loan={loan({ health: 'gap' })} />);
     fireEvent.click(screen.getByRole('button', { name: /Trou/ }));
     expect(screen.getByText(/Manque : un tableau d'amortissement ou un relevé crédit/)).toBeInTheDocument();

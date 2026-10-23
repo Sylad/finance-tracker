@@ -1232,7 +1232,7 @@ export class LoansService {
     if (kind === 'installment') {
       const schedule = loan.installmentSchedule ?? [];
       if (schedule.length === 0) return 'gap';
-      const past = schedule.filter((l) => l.dueDate <= today);
+      const past = schedule.filter((l) => l.dueDate < today);
       if (past.length === 0) {
         // Aucune échéance encore due → schedule présent mais en attente
         return 'complete';

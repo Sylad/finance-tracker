@@ -6,6 +6,7 @@ import { buildDemoInstallmentLoan } from './demo-installment';
 import { DemoSeedService } from './demo-seed.service';
 import { RequestDataDirService } from './request-data-dir.service';
 import { Loan } from '../../models/loan.model';
+import { LoansService } from '../loans/loans.service';
 
 /**
  * L146 — la démo porte un paiement en plusieurs fois ACTIF, signature et
@@ -31,6 +32,11 @@ describe('démo — paiement en plusieurs fois actif (L146)', () => {
   it('R3 — le jour est ramené dans le mois (31 → 28 février) et passe l’année', () => {
     const loan = buildDemoInstallmentLoan(new Date('2026-12-31T10:00:00Z'));
     expect(loan.installmentSchedule!.map((l) => l.dueDate)).toEqual(['2026-11-30', '2026-12-31', '2027-01-31', '2027-02-28']);
+  });
+
+  it('R5 (L148) — le jour même, la deuxième échéance n’est pas échue : la démo n’est plus en « Partiel »', () => {
+    const loan = buildDemoInstallmentLoan(NOW);
+    expect(LoansService.getLoanHealth(loan, '2026-10-23')).toBe('complete');
   });
 
   it('R4 — la première échéance est payée, les suivantes ne sont pas en retard', () => {

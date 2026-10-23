@@ -40,7 +40,7 @@ function diagnose(loan: Loan, today: string): Diagnosis {
         action: 'Importez le contrat de paiement en plusieurs fois pour reconstituer l\'échéancier.',
       };
     }
-    const past = schedule.filter((l) => l.dueDate <= today);
+    const past = schedule.filter((l) => l.dueDate < today);
     const missing = past.filter((l) => !l.paid).length;
     return {
       criteria: [{
