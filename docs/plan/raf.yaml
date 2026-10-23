@@ -1660,3 +1660,4 @@ lots:
     estimate: 0.25
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant — 1 commit (0ee4d48), tsc propre, 102 tests demo et 1300 tests backend verts ; 1 note mineure (libellé du prélèvement dupliqué) — orchestré (vague 2026-10-23-fin-l148, 0 passe(s) de correction)", commit: 0ee4d48d96119d77a7e0f2b4b93351705bb38e0d }
