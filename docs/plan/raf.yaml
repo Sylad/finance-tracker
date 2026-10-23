@@ -1614,7 +1614,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
-    review: { date: 2026-10-23, verdict: "compliant — orchestré (vague 2026-10-23-fin-l145, 0 passe(s) de correction)", commit: 6838ae0a79331504640bc81b57d97b733c8252ef }
+    review: { date: 2026-10-23, verdict: "conforme (verdict inchangé de la vague 2026-10-23-fin-l145) — commit postérieur 9-lignes du lead : plan et journal Nouveautés recompilé (horodatage), sans code", commit: 1e4c31f862fca23cf9f7af7bd482abd3ed08b71e }
     ux: { date: 2026-10-23, verdict: "conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l145 et les captures regardées) — carte revolving « 6 mensualités prélevées », cohérente avec le panneau" }
     finished: 2026-10-23
   - id: L146
@@ -1623,7 +1623,7 @@ lots:
     estimate: 0.25
     created: 2026-10-23
     started: 2026-10-23
-    review: { date: 2026-10-23, verdict: "compliant after 0 blocking fix: 3 minor notes (recalage uniquement au démarrage, catch silencieux dans refreshInstallment, chiffres du diagnostic de démo déplacés) — orchestré (vague 2026-10-23-fin-l145, 0 passe(s) de correction)", commit: 5922a5c56eabf6bf568795c9b696af4203c5b8a5 }
+    review: { date: 2026-10-23, verdict: "conforme (verdict inchangé de la vague 2026-10-23-fin-l145) — commit postérieur 9-lignes du lead : plan et journal Nouveautés recompilé (horodatage), sans code", commit: 1e4c31f862fca23cf9f7af7bd482abd3ed08b71e }
     notes:
       - { date: 2026-10-23, text: "Mineurs 23-10 : le paiement ajouté pèse 62,50 €/mois dans mensualitesTotal (taux d'effort de démo déplacé ; exemple « 70,5 % » de expectations.md périmé)." }
     finished: 2026-10-23
