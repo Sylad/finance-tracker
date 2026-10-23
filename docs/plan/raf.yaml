@@ -1444,10 +1444,11 @@ lots:
   - id: L132
     title: "Crédits : boutons icône Modifier / Supprimer des cartes et × du formulaire sans nom accessible (aria-label et title nuls, WCAG 4.1.2) — aria-label et title « Modifier <nom> » / « Supprimer <nom> » ; test (revue UX L32)"
     public: "Crédits : boutons Modifier et Supprimer annoncés par les lecteurs d'écran"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
   - id: L133
     title: "Crédits : formulaire de crédit, Doublons et Suspects sans role=dialog — focus laissé derrière (Tab atteint la corbeille masquée par le formulaire, Entrée supprimerait BNP), Échap sans effet — composant Dialog commun (role=dialog, aria-modal, aria-labelledby, focus au premier champ, piège, Échap, retour du focus) ; tests (revue UX L32, WCAG 2.4.3, 2.4.11, 4.1.2)"
     public: "Crédits : fenêtres utilisables au clavier, fermées par Échap"
