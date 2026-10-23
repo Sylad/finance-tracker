@@ -31,7 +31,7 @@ source: la tuile « POINTS D'ATTENTION » lit le **diagnostic santé** (`/api/he
 
 ## /loans
 
-shows: « N crédits actifs » avec N ≥ 1, au moins 5 cartes crédit, au moins un crédit dont la santé n'est pas « Trou » (L63 : sans recalage tous passaient en « Trou » et FLOA en « 0 mois restants »)
+shows: « N crédits actifs » avec N ≥ 1, au moins 5 cartes crédit, au moins un crédit dont la santé n'est pas « Trou » (L63 : sans recalage tous passaient en « Trou » et FLOA en « 0 mois restants ») ; les six boutons d'action de l'en-tête (Importer PDF crédits, Détecter les crédits, Doublons, Suspects, Reset, Nouveau crédit) sont tous visibles, passés à la ligne si besoin ; à 390 px, `scrollWidth` = `clientWidth` (aucun défilement horizontal, L32)
 api: /api/loans, /api/loan-suggestions
 
 ## /history
