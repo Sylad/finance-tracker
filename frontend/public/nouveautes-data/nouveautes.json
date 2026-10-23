@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 09:10",
+  "generated": "2026-10-23 10:35",
   "entries": [
+    {
+      "slug": "2026-10-23-epargne-l-historique-des-mouvements-de-chaque-compte",
+      "title": "Épargne : l'historique des mouvements de chaque compte",
+      "date": "2026-10-23",
+      "lots": [
+        "L123"
+      ],
+      "captures": [
+        "captures/epargne-mouvements-1440.png",
+        "captures/epargne-mouvements-390.png"
+      ],
+      "alts": [
+        "Carte Livret A dépliée sur « Mouvements (5) » : date, nature, montant signé et note de chaque mouvement, du plus récent au plus ancien",
+        "La même liste au téléphone : date et montant sur une rangée, nature et note sur la suivante"
+      ],
+      "html": "<p>Sous la courbe de chaque compte épargne, un bouton « Mouvements (n) » déplie la liste de tous les mouvements du compte, du plus récent au plus ancien.</p>\n<p>Chaque ligne indique la date (jj/mm/aaaa), la nature du mouvement (Solde initial, Versement détecté, Retrait détecté, Ajustement au relevé, Intérêts ou Mouvement manuel), le montant avec son signe, aligné à droite, et la note quand il y en a une. Au téléphone, chaque mouvement tient sur deux rangées : date et montant, puis nature et note.</p>\n<p>La liste est repliée par défaut ; un second clic la referme. Un compte sans mouvement n'a pas ce bouton.</p>"
+    },
     {
       "slug": "2026-10-23-epargne-un-retrait-detecte-n-est-plus-appele-versement",
       "title": "Épargne : un retrait détecté n'est plus appelé versement",
