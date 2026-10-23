@@ -83,6 +83,47 @@ describe('SavingsService', () => {
     expect(updated.movements).toHaveLength(2);
   });
 
+  const baseInput = {
+    name: 'Livret A',
+    type: 'livret-a' as const,
+    initialBalance: 1000,
+    initialBalanceDate: '2026-05-01',
+    matchPattern: '',
+    interestRate: 0.015,
+    interestAnniversaryMonth: 12,
+  };
+
+  it('update : corriger la date du solde initial déplace le mouvement « initial » et l\'historique', async () => {
+    const acc = await svc.create(baseInput);
+    await svc.addMovement(acc.id, { date: '2026-07-10', amount: 50, source: 'detected' });
+    const updated = await svc.update(acc.id, { ...baseInput, initialBalanceDate: '2026-03-01' });
+    const initial = updated.movements.filter((m) => m.source === 'initial');
+    expect(initial).toHaveLength(1);
+    expect(initial[0].date).toBe('2026-03-01');
+    expect(updated.movements).toHaveLength(2);
+    expect(updated.currentBalance).toBe(1050);
+    const hist = await svc.getBalanceHistory(acc.id, 24);
+    expect(hist.find((h) => h.month === '2026-03')?.balance).toBe(1000);
+  });
+
+  it('update : corriger le solde initial recale le mouvement « initial » et le solde courant du même écart', async () => {
+    const acc = await svc.create(baseInput);
+    await svc.addMovement(acc.id, { date: '2026-07-10', amount: 50, source: 'detected' });
+    const updated = await svc.update(acc.id, { ...baseInput, initialBalance: 1200 });
+    expect(updated.movements.find((m) => m.source === 'initial')?.amount).toBe(1200);
+    expect(updated.currentBalance).toBe(1250);
+  });
+
+  it('update : compte ancien sans mouvement « initial » — rien n\'est inventé', async () => {
+    const acc = await svc.create(baseInput);
+    const all = JSON.parse(fs.readFileSync(path.join(tmpDir, 'savings-accounts.json'), 'utf8'));
+    all[0].movements = [];
+    fs.writeFileSync(path.join(tmpDir, 'savings-accounts.json'), JSON.stringify(all));
+    const updated = await svc.update(acc.id, { ...baseInput, initialBalanceDate: '2026-03-01' });
+    expect(updated.movements).toEqual([]);
+    expect(updated.currentBalance).toBe(1000);
+  });
+
   it('balanceHistory reflects movements over months', async () => {
     const acc = await svc.create({
       name: 'PEL',

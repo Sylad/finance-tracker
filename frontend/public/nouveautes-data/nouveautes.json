@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 08:55",
+  "generated": "2026-10-23 09:07",
   "entries": [
+    {
+      "slug": "2026-10-23-epargne-la-courbe-suit-la-date-d-ouverture-corrigee",
+      "title": "Épargne : la courbe suit la date d'ouverture corrigée",
+      "date": "2026-10-23",
+      "lots": [
+        "L124"
+      ],
+      "captures": [],
+      "html": "<p>Quand vous corrigez, dans la fiche d'un compte d'épargne, la date du solde initial (ou son montant), la courbe de la page Épargne en tient compte tout de suite : elle repart de la nouvelle date d'ouverture au lieu de garder l'ancienne et de ramener des mois à 0 €.</p>\n<p>Le solde affiché du compte est ajusté du même écart quand vous changez le montant du solde initial.</p>"
+    },
     {
       "slug": "2026-10-23-demo-solde-des-comptes-epargne-egal-a-la-somme-de-leurs-mouv",
       "title": "Démo : solde des comptes épargne égal à la somme de leurs mouvements",

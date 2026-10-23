@@ -104,12 +104,20 @@ export class SavingsService {
     const all = await this.getAll();
     const idx = all.findIndex((a) => a.id === id);
     if (idx === -1) throw new NotFoundException(`Compte épargne ${id} introuvable`);
+    // Le solde initial déclaré vit aussi dans le mouvement « initial » (create) : on le recale
+    // (date et montant) pour que l'historique suive, et le solde courant bouge du même écart.
+    let currentBalance = all[idx].currentBalance;
+    const movements = all[idx].movements.map((m) => {
+      if (m.source !== 'initial') return m;
+      currentBalance = Math.round((currentBalance + input.initialBalance - m.amount) * 100) / 100;
+      return { ...m, date: input.initialBalanceDate, amount: input.initialBalance };
+    });
     all[idx] = {
       ...all[idx],
       ...input,
       id: all[idx].id,
-      currentBalance: all[idx].currentBalance,
-      movements: all[idx].movements,
+      currentBalance,
+      movements,
       lastSyncedStatementId: all[idx].lastSyncedStatementId,
       createdAt: all[idx].createdAt,
       updatedAt: new Date().toISOString(),
