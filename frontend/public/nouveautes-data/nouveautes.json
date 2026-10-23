@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 18:00",
+  "generated": "2026-10-23 18:17",
   "entries": [
+    {
+      "slug": "2026-10-23-credits-dates-en-francais-sur-les-paiements-en-plusieurs-foi",
+      "title": "Crédits : dates en français sur les paiements en plusieurs fois",
+      "date": "2026-10-23",
+      "lots": [
+        "L141"
+      ],
+      "captures": [],
+      "html": "<p>Sur la page Crédits, la carte d'un paiement en plusieurs fois écrit désormais toutes ses dates au format français : « signé 05/03/2026 », la liste des échéances (« 1. 05/03/2026 ») et l'info-bulle de chaque pastille d'échéance. Elles s'affichaient jusque-là sous la forme 2026-03-05.</p>"
+    },
     {
       "slug": "2026-10-23-credits-une-suggestion-a-valider-se-voit-des-l-arrivee",
       "title": "Crédits : une suggestion à valider se voit dès l'arrivée",
