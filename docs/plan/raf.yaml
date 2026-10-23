@@ -1509,7 +1509,8 @@ lots:
     created: 2026-10-23
   - id: L140
     title: "Crédits : le sous-titre accorde « crédits actifs » sur items.length (tous les crédits, terminés compris) au lieu du nombre d'actifs — 1 actif + 1 terminé afficherait « 1 crédits actifs » (loans.tsx:142, lu dans le code par la revue UX L32) ; test"
-    status: todo
+    status: doing
     estimate: 0.1
     quickwin: true
     created: 2026-10-23
+    started: 2026-10-23
