@@ -187,7 +187,7 @@ export function LoansPage() {
             <button
               onClick={handleReset}
               disabled={resetLoans.isPending}
-              className="btn-secondary text-negative hover:bg-negative/10 hover:text-negative border-negative/30"
+              className="btn-secondary text-negative-fg hover:bg-negative/10 hover:text-negative-fg border-negative/30"
               title="Purge tous les crédits + reset suggestions à pending + replay auto-sync sur relevés existants avec invariant 1 débit/mois max"
             >
               {resetLoans.isPending ? (

@@ -160,4 +160,45 @@ describe('contraste des jetons de texte (WCAG 1.4.3)', () => {
     const select = /<select\b[\s\S]*?(?:\n\s*>|[^=]>[ \t]*\n)/.exec(src)?.[0] ?? '';
     expect(select).toMatch(/\bborder-input-border\b/);
   });
+  // L135 (revue UX L32, WCAG 1.4.3) : bouton Reset de /loans et carte de crédit terminé.
+  const loansSrc = fs.readFileSync(path.resolve(__dirname, '../routes/loans.tsx'), 'utf8');
+  const resetButton = /<button\s+onClick=\{handleReset\}[\s\S]*?>/.exec(loansSrc)?.[0] ?? '';
+  const closedSrc = fs.readFileSync(path.resolve(__dirname, '../components/loans/closed-card.tsx'), 'utf8');
+
+  it('L135 R1 — reproduit la mesure de la revue : texte negative sur surface-2 (bouton Reset) = 4,36:1', () => {
+    expect(contrast('negative', 'surface-2')).toBeCloseTo(4.36, 2);
+  });
+  it('L135 R2 — le texte du bouton Reset emploie negative-fg, sans retomber sur text-negative', () => {
+    expect(resetButton).toMatch(/\btext-negative-fg\b/);
+    expect(resetButton).not.toMatch(/(^|[\s:"])(hover:)?text-negative(?![-\w])/);
+  });
+  for (const state of ['repos', 'survol']) {
+    it(`L135 R3 — Reset (${state}) : negative-fg ≥ 4,5:1 sur le fond réel du bouton`, () => {
+      const base = hslToRgb(token('surface-2'));
+      const alpha = state === 'survol' ? 0.1 : 0;
+      const [h, s, l] = token('negative');
+      const tint = hslToRgb([h, s, l]);
+      const bg = tint.map((v, i) => Math.round(alpha * v + (1 - alpha) * base[i])) as [number, number, number];
+      expect(contrastRgb(hslToRgb(token('negative-fg')), bg)).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+  it('L135 R4 — opacity-80 sur la carte entière (texte et fond fondus dans la page) fait tomber fg-dim sous 4,5:1', () => {
+    const mix = (f: [number, number, number], b: [number, number, number]) =>
+      f.map((v, i) => Math.round(0.8 * v + 0.2 * b[i])) as [number, number, number];
+    const page = hslToRgb(token('bg'));
+    const card = mix(hslToRgb(token('surface')), page);
+    const text = mix(hslToRgb(token('fg-dim')), page);
+    expect(contrastRgb(text, card)).toBeLessThan(4.5);
+  });
+  it('L135 R5 — la carte terminée n\'est plus atténuée par opacity et garde sa bordure rouge', () => {
+    const root = /<div className="([^"]*)"/.exec(closedSrc)?.[1] ?? '';
+    expect(root).not.toMatch(/\bopacity-/);
+    expect(root).toMatch(/\bborder-l-negative\b/);
+  });
+  for (const t of ['fg-dim', 'fg-muted']) {
+    it(`L135 R6 — carte terminée : ${t} plein sur surface ≥ 4,5:1`, () => {
+      expect(closedSrc).toMatch(new RegExp(`text-${t}`));
+      expect(contrast(t, 'surface')).toBeGreaterThanOrEqual(4.5);
+    });
+  }
 });

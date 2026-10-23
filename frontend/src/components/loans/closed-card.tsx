@@ -9,7 +9,7 @@ export function ClosedCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () 
   const mensualites = mensualitesCount(loan);
   const totalRepaid = loan.occurrencesDetected.filter((o) => o.amount < 0).reduce((s, o) => s + Math.abs(o.amount), 0);
   return (
-    <div className="card p-5 border-l-4 border-l-negative opacity-80">
+    <div className="card p-5 border-l-4 border-l-negative">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-negative shrink-0 mt-1.5" />
