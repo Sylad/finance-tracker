@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { X } from 'lucide-react';
+import { useModalDialog } from '@/hooks/use-modal-dialog';
 import {
   type SubscriptionInput,
   type SubscriptionFrequency,
@@ -25,21 +26,32 @@ export function SubscriptionForm({
   busy: boolean;
 }) {
   const [form, setForm] = useState<SubscriptionInput>(init);
+  const titleId = useId();
+  const { dialogRef, initialFocusRef } = useModalDialog(onCancel);
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto animate-fade-in"
       onClick={onCancel}
     >
-      <div className="card max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="card max-w-lg w-full my-8 outline-none"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <h2 className="font-display font-semibold text-fg-bright">
+          <h2 id={titleId} className="font-display font-semibold text-fg-bright">
             {init.name ? 'Modifier l\'abonnement' : 'Nouvel abonnement'}
           </h2>
-          <button onClick={onCancel} className="btn-ghost p-1"><X className="h-4 w-4" /></button>
+          <button type="button" onClick={onCancel} aria-label="Fermer" className="btn-ghost p-1"><X className="h-4 w-4" aria-hidden="true" /></button>
         </div>
         <form className="p-5 space-y-3" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
           <Field label="Organisme (Netflix, EDF, ...)">
             <input
+              ref={initialFocusRef}
               className="input"
               value={form.creditor ?? ''}
               onChange={(e) => setForm({ ...form, creditor: e.target.value || undefined })}
@@ -54,7 +66,7 @@ export function SubscriptionForm({
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Catégorie">
               <select
                 className="input"
@@ -78,7 +90,7 @@ export function SubscriptionForm({
               </select>
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Montant mensualisé (€)">
               <input
                 className="input tabular"
@@ -106,7 +118,7 @@ export function SubscriptionForm({
               onChange={(e) => setForm({ ...form, matchPattern: e.target.value })}
             />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Date début">
               <input
                 className="input"

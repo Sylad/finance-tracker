@@ -14,7 +14,7 @@ import {
 } from '@/lib/queries';
 import { DedupeSubscriptionsModal } from '@/components/subscriptions/dedupe-subscriptions-modal';
 import { PageHeader } from '@/components/page-header';
-import { LoadingState, EmptyState } from '@/components/loading-state';
+import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
 import {
   type LoanSuggestion,
   type Subscription,
@@ -74,6 +74,18 @@ export function SubscriptionsPage() {
   };
 
   if (subs.isLoading || suggestions.isLoading) return <LoadingState />;
+  if (subs.isError && !subs.data) {
+    return (
+      <>
+        <PageHeader eyebrow="Abonnements & factures" title="Abonnements" />
+        <ErrorState
+          message="Impossible de charger les abonnements."
+          onRetry={() => { void subs.refetch(); }}
+          retrying={subs.isFetching}
+        />
+      </>
+    );
+  }
 
   const items = subs.data ?? [];
   const active = items.filter((s) => s.isActive);
@@ -209,6 +221,17 @@ export function SubscriptionsPage() {
           </div>
         }
       />
+
+      {suggestions.isError && !suggestions.data && (
+        <div className="mb-6">
+          <ErrorState
+            title="Suggestions indisponibles"
+            message="Les suggestions d'abonnements n'ont pas pu être chargées ; tes abonnements restent affichés."
+            onRetry={() => { void suggestions.refetch(); }}
+            retrying={suggestions.isFetching}
+          />
+        </div>
+      )}
 
       {dedupeOpen && <DedupeSubscriptionsModal onClose={() => setDedupeOpen(false)} />}
 
@@ -390,11 +413,11 @@ function SubscriptionRow({
         </div>
       </div>
       <div className="flex gap-1 shrink-0">
-        <button onClick={onEdit} className="btn-ghost p-1.5" title="Modifier">
-          <Pencil className="h-3.5 w-3.5" />
+        <button onClick={onEdit} aria-label={`Modifier ${sub.name}`} className="btn-ghost p-1.5" title="Modifier">
+          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
-        <button onClick={onDelete} className="btn-ghost p-1.5 text-negative hover:text-negative" title="Supprimer">
-          <Trash2 className="h-3.5 w-3.5" />
+        <button onClick={onDelete} aria-label={`Supprimer ${sub.name}`} className="btn-ghost p-1.5 text-negative hover:text-negative" title="Supprimer">
+          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -443,6 +466,7 @@ function SuggSection({
             <div className="flex gap-1 shrink-0">
               <button
                 onClick={() => onAccept(s)}
+                aria-label={`Enregistrer ${s.label}`}
                 title="Enregistrer comme abonnement"
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 hover:bg-accent/20 text-accent-bright text-xs font-medium border border-accent/30"
               >
@@ -450,6 +474,7 @@ function SuggSection({
               </button>
               <button
                 onClick={() => onSnooze(s.id)}
+                aria-label={`Connu, masquer ${s.label}`}
                 title="Tu reconnais cette charge. Elle disparaît mais peut revenir si Claude la redétecte avec des changements."
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-positive/10 hover:bg-positive/20 text-positive text-xs font-medium border border-positive/30"
               >
@@ -457,6 +482,7 @@ function SuggSection({
               </button>
               <button
                 onClick={() => onReject(s.id)}
+                aria-label={`Faux positif ${s.label}`}
                 title="Ce n'est pas un abonnement. Claude ne te la re-proposera plus jamais."
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-negative/10 hover:bg-negative/20 text-negative text-xs font-medium border border-negative/30"
               >
