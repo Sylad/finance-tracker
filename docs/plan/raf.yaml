@@ -1457,7 +1457,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
-    review: { date: 2026-10-23, verdict: "compliant — 0 bloquant, 0 majeur ; 1 note mineure (la justification « lucide rend déjà aria-hidden » est fausse en 0.453, sans effet sur le nom accessible) — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 820a7ebd0b99d55940b6eb725acb16ba81e12d2e }
+    review: { date: 2026-10-23, verdict: "conforme (verdict inchangé de la vague 2026-10-23-fin-l132) — le seul commit postérieur, 8227b9a, est un commit de plan (raf.yaml, plan.json, Nouveautés compilées), sans code", commit: 8227b9a2a84972253f261c919ada86fd06751cfe }
     ux: { date: 2026-10-23, verdict: conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l132 et les captures regardées) }
     finished: 2026-10-23
   - id: L133
@@ -1514,7 +1514,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
-    review: { date: 2026-10-23, verdict: "compliant — 2 minor notes (autres dates ISO sur la carte N×, raison de nocapture inexacte); no sub-task — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 482a863142a57d454a95fe392f5da2db52aa471e }
+    review: { date: 2026-10-23, verdict: "conforme (verdict inchangé de la vague 2026-10-23-fin-l132) — le seul commit postérieur, 8227b9a, est un commit de plan, sans code", commit: 8227b9a2a84972253f261c919ada86fd06751cfe }
     ux: { date: 2026-10-23, verdict: conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l132 et les captures regardées) — 2 mineurs en notes }
     notes:
       - { date: 2026-10-23, text: "Mineurs 23-10 : dates ISO restantes sur la carte N× (installment-card.tsx:44, 69, 86) ; raison de nocapture inexacte." }
