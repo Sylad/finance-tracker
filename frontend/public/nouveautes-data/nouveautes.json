@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 19:09",
+  "generated": "2026-10-23 19:31",
   "entries": [
+    {
+      "slug": "2026-10-23-credits-l-echeance-du-jour-d-un-paiement-en-plusieurs-fois-n",
+      "title": "Crédits : l'échéance du jour d'un paiement en plusieurs fois n'est plus comptée échue",
+      "date": "2026-10-23",
+      "lots": [
+        "L148"
+      ],
+      "captures": [],
+      "html": "<p>Sur la page Crédits, un paiement en plusieurs fois dont l'échéance tombe aujourd'hui n'est plus signalé « Partiel » avec « 1 échéance échue sur 2 non retrouvée » : l'échéance du jour est « à venir », comme l'indique déjà la carte. La puce et la carte utilisent désormais la même règle : une échéance n'est échue qu'à partir du lendemain de sa date.</p>"
+    },
     {
       "slug": "2026-10-23-credits-la-mention-partiel-d-un-credit-renouvelable-suit-sa",
       "title": "Crédits : la mention « Partiel » d'un crédit renouvelable suit sa carte",
