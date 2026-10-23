@@ -1552,7 +1552,7 @@ lots:
     quickwin: true
     created: 2026-10-23
     started: 2026-10-23
-    review: { date: 2026-10-23, verdict: "conforme : aucun constat bloquant ni majeur. Commit 24e56d9 : le sous-titre de /loans s'accorde sur le nombre d'actifs, les 3 tests L140 R1–R3 passent avec le type-check. Une note mineure : l'attente QA « N crédits actifs » avec N ≥ 1 ne couvre pas le singulier. — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 24e56d95d44104aea6c57ed7b742aed97c83cd17 }
+    review: { date: 2026-10-23, verdict: "conforme (verdict inchangé de sa vague) — le commit postérieur 8227b9a est un commit de plan seul du lead, sans code", commit: 8227b9a2a84972253f261c919ada86fd06751cfe }
     finished: 2026-10-23
   - id: L141
     title: "Crédits, carte N× : dates ISO restantes (« signé 2026-… », échéances « 1. 2026-… » et leur title, installment-card.tsx:44, 69, 86) — format fr-FR comme L137 ; test (revue L137)"
@@ -1562,7 +1562,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
-    review: { date: 2026-10-23, verdict: "compliant (1 minor note: formatDate dépend du fuseau, comme L137) — orchestré (vague 2026-10-23-fin-l141, 0 passe(s) de correction)", commit: f85e8bae4105ea2f400737b149cf0090d920b5b2 }
+    review: { date: 2026-10-23, verdict: "conforme (verdict inchangé de sa vague) — le commit postérieur 3e81df7 est un commit de plan seul du lead, sans code", commit: 3e81df7619cd8fa3b8dba33d3599f2a9de511276 }
     ux: { date: 2026-10-23, verdict: conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l141 et les captures regardées) }
     notes:
       - { date: 2026-10-23, text: "Mineur 23-10 : formatDate dépend du fuseau (new Date('AAAA-MM-JJ') lu en UTC) — décale d'un jour en fuseau négatif ; sans effet en France ni en CI." }
@@ -1601,7 +1601,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
-    review: { date: 2026-10-23, verdict: "conforme (1 note mineure : nocapture alors que l'appli de démo permet une capture) — orchestré (vague 2026-10-23-fin-l141, 1 passe(s) de correction)", commit: bea571c78ce0ab815246c00610e1e31a6841f6fa }
+    review: { date: 2026-10-23, verdict: "conforme (verdict inchangé de sa vague) — le commit postérieur 3e81df7 est un commit de plan seul du lead, sans code", commit: 3e81df7619cd8fa3b8dba33d3599f2a9de511276 }
     ux: { date: 2026-10-23, verdict: "conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l141 et les captures regardées) — dates empilées sous 400 px, année entière à 320 et 400" }
     notes:
       - { date: 2026-10-23, text: "Mineurs 23-10 : test R1 sur des noms de classes Tailwind, sans largeur mesurée ; raison du nocapture inexacte." }
