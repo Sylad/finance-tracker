@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
 import * as fs from 'fs';
@@ -10,9 +10,13 @@ import { capUploadDates, monthsToShift, shiftDemoFixtures } from './demo-date-sh
 import { buildDemoInstallmentLoan, DEMO_INSTALLMENT_ID } from './demo-installment';
 import { RequestDataDirService } from './request-data-dir.service';
 
+/** Un tick par heure suffit à suivre le changement de jour sans lire les fixtures à chaque requête. */
+const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
+
 @Injectable()
-export class DemoSeedService implements OnApplicationBootstrap {
+export class DemoSeedService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(DemoSeedService.name);
+  private timer?: NodeJS.Timeout;
 
   constructor(
     private readonly config: ConfigService,
@@ -55,9 +59,21 @@ export class DemoSeedService implements OnApplicationBootstrap {
   /**
    * Aucun client n'appelle `POST /demo/seed` sur une démo déjà amorcée : le
    * rattrapage L62 et le recalage des dates (L63) se jouent donc au démarrage
-   * du backend.
+   * du backend, puis toutes les heures (L147) — le paiement en plusieurs fois
+   * est daté du jour, sans cela son échéance passait « en retard » le lendemain
+   * d'un démarrage.
    */
   onApplicationBootstrap(): void {
+    this.refreshIfSeeded();
+    this.timer = setInterval(() => this.refreshIfSeeded(), REFRESH_INTERVAL_MS);
+    this.timer.unref();
+  }
+
+  onModuleDestroy(): void {
+    clearInterval(this.timer);
+  }
+
+  private refreshIfSeeded(): void {
     const demoDir = path.join(this.config.get<string>('dataDir')!, 'demo');
     if (!fs.existsSync(path.join(demoDir, '.seeded'))) return;
     try {
@@ -113,7 +129,7 @@ export class DemoSeedService implements OnApplicationBootstrap {
 
   /**
    * Le paiement en plusieurs fois (L146) est daté du jour, pas d'un décalage
-   * de mois : il est remplacé à chaque démarrage, le reste de loans.json intact.
+   * de mois : il est remplacé à chaque démarrage puis chaque heure, le reste de loans.json intact.
    */
   private refreshInstallment(demoDir: string, f: Record<string, unknown>): void {
     const file = path.join(demoDir, 'loans.json');
@@ -122,8 +138,8 @@ export class DemoSeedService implements OnApplicationBootstrap {
       const current = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
       if (!Array.isArray(current) || !fresh) return;
       atomicWriteJsonSync(file, [...current.filter((l: { id?: string }) => l?.id !== DEMO_INSTALLMENT_ID), fresh]);
-    } catch {
-      // loans.json absent ou illisible : rattrapé par la réécriture complète
+    } catch (e) {
+      this.logger.warn(`Recalage du paiement en plusieurs fois impossible : ${(e as Error).message}`);
     }
   }
 
