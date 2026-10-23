@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 09:07",
+  "generated": "2026-10-23 09:10",
   "entries": [
+    {
+      "slug": "2026-10-23-epargne-un-retrait-detecte-n-est-plus-appele-versement",
+      "title": "Épargne : un retrait détecté n'est plus appelé versement",
+      "date": "2026-10-23",
+      "lots": [
+        "L125"
+      ],
+      "captures": [],
+      "html": "<p>Sur la carte d'un compte d'épargne, quand le dernier mouvement détecté dans vos relevés est une sortie d'argent, la ligne sous le solde indique maintenant « Retrait détecté · 30/09 : −50,00 € » au lieu de « Versement détecté », en rouge comme avant. Un versement détecté garde son libellé « Versement détecté » et son montant en vert.</p>"
+    },
     {
       "slug": "2026-10-23-epargne-la-courbe-suit-la-date-d-ouverture-corrigee",
       "title": "Épargne : la courbe suit la date d'ouverture corrigée",

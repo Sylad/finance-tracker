@@ -12,8 +12,9 @@ describe('lastMovement (L120)', () => {
     expect(r?.text.replace(/\s/g, ' ')).toBe('Ajustement au relevé · 30/09 : −200,00 €');
   });
 
-  it("R2 — la nature suit la source : versement détecté, intérêts, mouvement manuel", () => {
+  it("R2 — la nature suit la source et le signe : versement ou retrait détecté, intérêts, mouvement manuel", () => {
     expect(lastMovement([mv({ source: 'detected', amount: 50 })])?.text).toMatch(/^Versement détecté · 30\/09 : \+50,00/);
+    expect(lastMovement([mv({ source: 'detected', amount: -50 })])?.text).toMatch(/^Retrait détecté · 30\/09 : −50,00/);
     expect(lastMovement([mv({ source: 'interest', amount: 12.5 })])?.text).toMatch(/^Intérêts · 30\/09 : \+12,50/);
     expect(lastMovement([mv({ source: 'manual', amount: -30 })])?.text).toMatch(/^Mouvement manuel · 30\/09 : −30,00/);
   });

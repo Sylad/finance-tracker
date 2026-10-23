@@ -431,7 +431,8 @@
     {
       "id": "L125",
       "title": "Épargne : un retrait détecté n'est plus appelé versement",
-      "status": "todo"
+      "status": "doing",
+      "started": "2026-10-23"
     }
   ]
 }
