@@ -1352,3 +1352,4 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant — orchestré (vague 2026-10-23-fin-epargne3, 0 passe(s) de correction)", commit: c47d84d69d260256a3f447e6ac0cbe6703860c1a }
