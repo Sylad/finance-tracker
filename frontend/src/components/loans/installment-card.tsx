@@ -30,7 +30,7 @@ export function InstallmentCard({ loan, onEdit, onDelete }: Props) {
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <ShoppingBag className="h-4 w-4 text-accent shrink-0" />
           <div className="flex-1 min-w-0">
-            <div className="font-display font-semibold text-fg-bright flex items-center gap-2 flex-wrap">
+            <div className="font-display font-semibold text-fg-bright flex items-start gap-2 flex-wrap">
               {loan.name}
               <HealthChip loan={loan} />
             </div>

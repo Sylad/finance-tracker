@@ -106,7 +106,7 @@ export function HealthChip({ loan, now }: Props) {
 
   const { criteria, action } = diagnose(loan, now ?? new Date().toISOString().slice(0, 10));
   return (
-    <span className="inline-flex flex-col items-start gap-1">
+    <span className="inline-flex flex-col items-start gap-1 align-top">
       <button
         type="button"
         className={`${base} cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
@@ -119,7 +119,7 @@ export function HealthChip({ loan, now }: Props) {
         <span aria-hidden>{open ? '▴' : '▾'}</span>
       </button>
       {open && (
-        <span id={panelId} className="block max-w-xs text-xs normal-case font-sans tracking-normal text-fg-muted space-y-1">
+        <span id={panelId} className="block max-w-xs text-xs font-normal normal-case font-sans tracking-normal text-fg-muted space-y-1">
           {criteria.map((c) => (
             <span key={c.text} className="block">
               {c.ok ? 'Tenu' : 'Manque'} : {c.text}
