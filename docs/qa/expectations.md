@@ -91,6 +91,7 @@ api: /api/savings-accounts
 ## /subscriptions
 
 shows: au moins 1 suggestion
+never: message « Impossible de charger les abonnements » ou « Suggestions indisponibles » (L33)
 api: /api/loan-suggestions, /api/subscriptions
 may be empty when aucun abonnement suivi (`/api/subscriptions`, démo)
 

@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 19:33",
+  "generated": "2026-10-23 23:02",
   "entries": [
+    {
+      "slug": "2026-10-23-abonnements-erreurs-signalees-boutons-annonces-formulaire-li",
+      "title": "Abonnements : erreurs signalées, boutons annoncés, formulaire lisible sur téléphone",
+      "date": "2026-10-23",
+      "lots": [
+        "L33"
+      ],
+      "captures": [
+        "captures/abonnements-formulaire-390.png",
+        "captures/abonnements-liste-1440.png"
+      ],
+      "alts": [
+        "Formulaire Nouvel abonnement à 390 px : champs sur une colonne, titre et boutons visibles",
+        "Page Abonnements à 1440 px"
+      ],
+      "html": "<p>Sur la page Abonnements, si la liste ne se charge pas, un message « Impossible de charger les abonnements » avec un bouton Réessayer remplace l'ancien écran « Aucun abonnement déclaré ». Si seules les suggestions échouent, un message « Suggestions indisponibles » s'affiche au-dessus de la liste, qui reste visible.</p>\n<p>Les boutons crayon et corbeille de chaque ligne, ainsi que Enregistrer, Connu, masquer et Faux positif de chaque suggestion, sont annoncés par les lecteurs d'écran avec le nom de l'abonnement ou de la suggestion concernée.</p>\n<p>Le formulaire Nouvel abonnement / Modifier l'abonnement est une vraie fenêtre : le curseur arrive sur le premier champ, la touche Échap la ferme et le focus revient au bouton d'origine. Sur téléphone, les champs passent sur une seule colonne et la fenêtre défile, de sorte que le titre et les boutons restent atteignables.</p>"
+    },
     {
       "slug": "2026-10-23-tableau-de-bord-plus-d-alerte-de-fin-pour-un-paiement-en-plu",
       "title": "Tableau de bord : plus d'alerte de fin pour un paiement en plusieurs fois",
