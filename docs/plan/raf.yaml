@@ -1426,9 +1426,13 @@ lots:
   - id: L131
     title: "Démo : l'intérêt recalé en 2026-2027 garde la note « Intérêts 2025 » (affiché « 30/04/2026 · Intérêts · 2025 (2,50 %) », demo-date-shift.ts:101-105 ne recale pas la note) — recaler l'année de la note avec la date (/^Intérêts \\d{4}/), assertion dans R5, captures de la Nouveauté L130 refaites (revue L130)"
     public: "Démo : l'année des intérêts suit leur date"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — orchestré (vague 2026-10-23-fin-l131, 0 passe(s) de correction)", commit: 9e5c63f3e85c1e7bd42a6ec6c61780e65a5dc74b }
+    ux: { date: 2026-10-23, verdict: "conforme — l'année de la note « Intérêts » suit la date de l'intérêt recalé, assertion dans R5, captures refaites ; 1 mineur en note (capture 390 pleine page)" }
+    notes:
+      - { date: 2026-10-23, text: "Mineur gardé en note (revue L131) : la capture 390 (demo-interets-annee-390.png, comme epargne-interets-390.png, 380×1585) est une pleine page : la barre de navigation fixe du bas apparaît au milieu de l'image." }
+    finished: 2026-10-23

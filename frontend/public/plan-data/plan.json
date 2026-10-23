@@ -476,8 +476,9 @@
     {
       "id": "L131",
       "title": "Démo : l'année des intérêts suit leur date",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     }
   ]
 }
