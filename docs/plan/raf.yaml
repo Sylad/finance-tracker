@@ -1338,18 +1338,22 @@ lots:
   - id: L124
     title: "Épargne : modifier la date du solde initial après coup ne déplace pas le mouvement « initial » (SavingsService.update, savings.service.ts:103-117, recopie movements) → la courbe L119 repart du plus ancien et ramène des 0 € ; README L119 faux sur la limite (« l'historique part de 0 + mouvements et ignore initialBalance » : create ajoute bien un mouvement source initial, l. 76-84) — update recale le mouvement initial, test, README corrigé (revue L119)"
     public: "Épargne : la courbe suit la date d'ouverture corrigée"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — orchestré (vague 2026-10-23-fin-epargne3, 0 passe(s) de correction)", commit: 3fead711d78454f954d85f2c5b9a9b903d8aecb7 }
+    ux: { date: 2026-10-23, verdict: "compliant — update recale le mouvement « initial » (date, montant) et le solde courant du même écart ; nocapture (la courbe ne change pas d'aspect) ; diff relu par le lead (validateSavingsAccountInput rend initialBalance et sa date obligatoires)" }
+    finished: 2026-10-23
   - id: L125
     title: "Épargne : un mouvement détecté négatif (auto-sync.service.ts:358 prend -t.amount) s'affiche « Versement détecté · 30/09 : −50,00 € » en rouge (savings-last-movement.ts:10) — libellé « Retrait détecté » pour un montant négatif, test R2 étendu au cas négatif (revue L120, Nielsen 2)"
     public: "Épargne : un retrait détecté n'est plus appelé versement"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — orchestré (vague 2026-10-23-fin-epargne3, 0 passe(s) de correction)", commit: c47d84d69d260256a3f447e6ac0cbe6703860c1a }
+    ux: { date: 2026-10-23, verdict: "compliant — « Retrait détecté » pour un mouvement détecté négatif, test R2 étendu ; nocapture (aucun retrait détecté dans la démo)" }
+    finished: 2026-10-23

@@ -425,14 +425,16 @@
     {
       "id": "L124",
       "title": "Épargne : la courbe suit la date d'ouverture corrigée",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L125",
       "title": "Épargne : un retrait détecté n'est plus appelé versement",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     }
   ]
 }
