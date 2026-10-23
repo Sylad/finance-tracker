@@ -1449,6 +1449,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant — 0 bloquant, 0 majeur ; 1 note mineure (la justification « lucide rend déjà aria-hidden » est fausse en 0.453, sans effet sur le nom accessible) — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 820a7ebd0b99d55940b6eb725acb16ba81e12d2e }
   - id: L133
     title: "Crédits : formulaire de crédit, Doublons et Suspects sans role=dialog — focus laissé derrière (Tab atteint la corbeille masquée par le formulaire, Entrée supprimerait BNP), Échap sans effet — composant Dialog commun (role=dialog, aria-modal, aria-labelledby, focus au premier champ, piège, Échap, retour du focus) ; tests (revue UX L32, WCAG 2.4.3, 2.4.11, 4.1.2)"
     public: "Crédits : fenêtres utilisables au clavier, fermées par Échap"
