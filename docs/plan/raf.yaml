@@ -1471,10 +1471,11 @@ lots:
   - id: L135
     title: "Crédits : contrastes sous 4,5:1 — texte du bouton Reset 4,36:1, textes atténués de la carte terminée 3,65:1 (opacity-80, closed-card.tsx:12) ; jeton plus clair pour Reset, carte terminée marquée par sa bordure rouge sans opacité ; test (revue UX L32, WCAG 1.4.3)"
     public: "Crédits : textes lisibles sur le bouton Reset et les crédits terminés"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
   - id: L136
     title: "Crédits : graphe des mensualités — séries nommées par créancier (COFIDIS deux fois, distinguées par la seule couleur ; « BNP PARIBAS PERSONAL FINANCE » contre la carte « BNP IMMOBILIER ») et svg sans alternative texte — nom du crédit comme sur la carte (loans-monthly-chart.tsx:84), role=img + aria-label de synthèse ou tableau masqué, axe Y au format fr-FR (« 1 100 € ») ; tests (revue UX L32, WCAG 1.4.1, 1.1.1)"
     public: "Crédits : graphe des mensualités lisible sans les couleurs"
