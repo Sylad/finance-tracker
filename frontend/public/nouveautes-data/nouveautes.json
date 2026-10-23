@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 18:43",
+  "generated": "2026-10-23 19:01",
   "entries": [
+    {
+      "slug": "2026-10-23-credits-la-mention-partiel-d-un-credit-renouvelable-suit-sa",
+      "title": "Crédits : la mention « Partiel » d'un crédit renouvelable suit sa carte",
+      "date": "2026-10-23",
+      "lots": [
+        "L145"
+      ],
+      "captures": [
+        "captures/credits-revolving-partiel-1440.png",
+        "captures/credits-revolving-partiel-390.png"
+      ],
+      "alts": [
+        "Carte d'un crédit renouvelable sur grand écran : la puce Partiel est ouverte, et la carte affiche « 6 mensualités prélevées »",
+        "La même carte au téléphone, avec le détail de la puce Partiel et le nombre de mensualités prélevées"
+      ],
+      "html": "<p>Sur la page Crédits, la puce « Partiel » d'un crédit renouvelable (revolving) citait « la carte compte 6 mensualités prélevées depuis le début », alors que la carte n'affichait aucun nombre de mensualités. La carte d'un crédit renouvelable montre désormais, sous la somme disponible, « 6 mensualités prélevées » : le nombre cité dans le détail de la puce se retrouve sur la carte. Cette ligne n'apparaît que lorsqu'au moins une mensualité a été prélevée.</p>"
+    },
     {
       "slug": "2026-10-23-credits-un-mois-sans-releve-n-apparait-plus-comme-un-mois-sa",
       "title": "Crédits : un mois sans relevé n'apparaît plus comme un mois sans mensualité",

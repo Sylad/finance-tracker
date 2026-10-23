@@ -560,7 +560,8 @@
     {
       "id": "L145",
       "title": "Crédits : la mention « Partiel » d'un crédit renouvelable suit sa carte",
-      "status": "todo"
+      "status": "doing",
+      "started": "2026-10-23"
     }
   ]
 }

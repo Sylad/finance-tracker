@@ -7,6 +7,7 @@ import { SplitButton } from './split-button';
 import { ImportStatementModal } from './import-statement-modal';
 import { HealthChip } from './health-chip';
 import { EarlyRepaymentsList } from './early-repayments-list';
+import { mensualitesCount } from './utils';
 
 export function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () => void; onDelete: () => void }) {
   const reset = useResetRevolving();
@@ -14,6 +15,7 @@ export function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: 
   const [importing, setImporting] = useState(false);
   const max = loan.maxAmount ?? 0;
   const used = loan.usedAmount ?? 0;
+  const mensualites = mensualitesCount(loan);
   const pct = max > 0 ? Math.round((used / max) * 100) : 0;
   const tone = pct >= 80 ? 'bg-negative' : pct >= 50 ? 'bg-warning' : 'bg-positive';
 
@@ -76,6 +78,11 @@ export function RevolvingCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: 
         <span className="text-fg-dim">/ {formatEUR(max)} ({pct}%)</span>
       </div>
       <div className="text-xs text-fg-muted tabular mt-1">{formatEUR(max - used)} disponibles</div>
+      {mensualites > 0 && (
+        <div className="text-xs text-fg-muted tabular mt-1">
+          {mensualites} mensualité{mensualites > 1 ? 's' : ''} prélevée{mensualites > 1 ? 's' : ''}
+        </div>
+      )}
       <EarlyRepaymentsList loan={loan} />
       <SplitButton loan={loan} />
       <button onClick={handleReset} className="btn-ghost text-xs mt-3">Recaler le solde</button>
