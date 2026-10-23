@@ -1553,3 +1553,24 @@ lots:
     estimate: 0.1
     visible: true
     created: 2026-10-23
+  - id: L142
+    title: "Crédits, puce Partiel : le panneau dit « 5 trouvés » quand la carte dit « 6 mensualités prélevées » (fenêtre de 180 j dans health-chip.tsx contre total de la carte) — même compte, ou fenêtre nommée « sur les 180 derniers jours » ; test (QA prod L132–L140)"
+    public: "Crédits : la mention « Partiel » compte les prélèvements comme la carte"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-23
+  - id: L143
+    title: "Crédits, graphe et tableau des mensualités : « 0,00 € » pour un mois sans relevé (Nov 25–Mar 26 et Oct 26 en démo) alors que les crédits courent — « — » ou mois hors relevés signalés, comme /yearly ; test (QA prod L132–L140)"
+    public: "Crédits : un mois sans relevé n'apparaît plus comme un mois sans mensualité"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
+  - id: L144
+    title: "Crédits, formulaire à 320 px : les champs Date début / Date fin coupent l'année (« 07/05/202 ») — dates sur une colonne ou largeur suffisante sous 360 px ; test (QA prod L132–L140)"
+    public: "Crédits : dates du formulaire lisibles sur petit téléphone"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-23

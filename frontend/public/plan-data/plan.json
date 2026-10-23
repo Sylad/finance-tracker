@@ -533,6 +533,21 @@
       "id": "L141",
       "title": "Crédits : dates en français sur les paiements en plusieurs fois",
       "status": "todo"
+    },
+    {
+      "id": "L142",
+      "title": "Crédits : la mention « Partiel » compte les prélèvements comme la carte",
+      "status": "todo"
+    },
+    {
+      "id": "L143",
+      "title": "Crédits : un mois sans relevé n'apparaît plus comme un mois sans mensualité",
+      "status": "todo"
+    },
+    {
+      "id": "L144",
+      "title": "Crédits : dates du formulaire lisibles sur petit téléphone",
+      "status": "todo"
     }
   ]
 }
