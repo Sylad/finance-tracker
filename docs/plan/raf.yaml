@@ -1512,6 +1512,7 @@ lots:
     visible: true
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant — 0 blocking, 0 major, 2 minor notes (smooth scroll without reduced-motion, R6 title) — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 90b08773256125821e5c273cbe9118210bd51ab2 }
   - id: L140
     title: "Crédits : le sous-titre accorde « crédits actifs » sur items.length (tous les crédits, terminés compris) au lieu du nombre d'actifs — 1 actif + 1 terminé afficherait « 1 crédits actifs » (loans.tsx:142, lu dans le code par la revue UX L32) ; test"
     status: doing
