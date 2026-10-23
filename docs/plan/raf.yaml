@@ -1444,80 +1444,112 @@ lots:
   - id: L132
     title: "Crédits : boutons icône Modifier / Supprimer des cartes et × du formulaire sans nom accessible (aria-label et title nuls, WCAG 4.1.2) — aria-label et title « Modifier <nom> » / « Supprimer <nom> » ; test (revue UX L32)"
     public: "Crédits : boutons Modifier et Supprimer annoncés par les lecteurs d'écran"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — 0 bloquant, 0 majeur ; 1 note mineure (la justification « lucide rend déjà aria-hidden » est fausse en 0.453, sans effet sur le nom accessible) — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 820a7ebd0b99d55940b6eb725acb16ba81e12d2e }
+    ux: { date: 2026-10-23, verdict: conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l132 et les captures regardées) }
+    finished: 2026-10-23
   - id: L133
     title: "Crédits : formulaire de crédit, Doublons et Suspects sans role=dialog — focus laissé derrière (Tab atteint la corbeille masquée par le formulaire, Entrée supprimerait BNP), Échap sans effet — composant Dialog commun (role=dialog, aria-modal, aria-labelledby, focus au premier champ, piège, Échap, retour du focus) ; tests (revue UX L32, WCAG 2.4.3, 2.4.11, 4.1.2)"
     public: "Crédits : fenêtres utilisables au clavier, fermées par Échap"
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — rien à signaler — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: b2531e00c93f4ae83e77b419e86f9bcc1b3916e8 }
+    ux: { date: 2026-10-23, verdict: "conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l132 et les captures regardées) — fenêtres avec titre, focus visible" }
+    finished: 2026-10-23
   - id: L134
     title: "Crédits : formulaire de crédit coupé sur petit téléphone (320×568 : haut à -66 px, Enregistrer à y=576, voile non défilable ; 375×667 titre rogné) — voile items-start overflow-y-auto comme Doublons et Suspects, ou panneau à hauteur max avec pied collant ; test (revue UX L32, WCAG 1.4.10)"
     public: "Crédits : formulaire enregistrable sur petit téléphone"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — le voile `items-start overflow-y-auto` + `my-8` rend titre et Enregistrer atteignables à 320×568 et 375×667 (mesuré), avec une note mineure sur les autres modales à voile centré — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 0dc2c3a032a156c8a49a8599da5b5e4ddaf8f877 }
+    ux: { date: 2026-10-23, verdict: "conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l132 et les captures regardées) — à 320 px le formulaire défile, Enregistrer visible" }
+    finished: 2026-10-23
   - id: L135
     title: "Crédits : contrastes sous 4,5:1 — texte du bouton Reset 4,36:1, textes atténués de la carte terminée 3,65:1 (opacity-80, closed-card.tsx:12) ; jeton plus clair pour Reset, carte terminée marquée par sa bordure rouge sans opacité ; test (revue UX L32, WCAG 1.4.3)"
     public: "Crédits : textes lisibles sur le bouton Reset et les crédits terminés"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — 0 blocking, 0 major, 1 minor (Nouveautés sans capture alors que l'application tournait) — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: edb91cfdaf1f64df68b874dd9af740ede7445f2c }
+    ux: { date: 2026-10-23, verdict: conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l132 et les captures regardées) }
+    finished: 2026-10-23
   - id: L136
     title: "Crédits : graphe des mensualités — séries nommées par créancier (COFIDIS deux fois, distinguées par la seule couleur ; « BNP PARIBAS PERSONAL FINANCE » contre la carte « BNP IMMOBILIER ») et svg sans alternative texte — nom du crédit comme sur la carte (loans-monthly-chart.tsx:84), role=img + aria-label de synthèse ou tableau masqué, axe Y au format fr-FR (« 1 100 € ») ; tests (revue UX L32, WCAG 1.4.1, 1.1.1)"
     public: "Crédits : graphe des mensualités lisible sans les couleurs"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — 3 minor notes (axe Y non testé dans le graphe, numérotation « (n) » absente des cartes, raison de nocapture inexacte); no sub-task — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 9e128ed68cd85da63e46309d483699f3778c851b }
+    ux: { date: 2026-10-23, verdict: "conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l132 et les captures regardées) — légende au nom des cartes, axe fr-FR ; 3 mineurs en notes" }
+    notes:
+      - { date: 2026-10-23, text: "Mineurs 23-10 : axe Y non testé dans le graphe (ResponsiveContainer simulé) ; numérotation « (n) » des doublons de nom absente des cartes ; raison de nocapture inexacte." }
+    finished: 2026-10-23
   - id: L137
     title: "Crédits : dates au format ISO (« Dernière mensualité : 2026-06-15 » sur la carte terminée, « dernière 2026-06-15 » dans Suspects) — format fr-FR comme le reste de l'app ; test (revue UX L32)"
     public: "Crédits : dates en français"
-    status: doing
+    status: done
     estimate: 0.1
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — 2 minor notes (autres dates ISO sur la carte N×, raison de nocapture inexacte); no sub-task — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 482a863142a57d454a95fe392f5da2db52aa471e }
+    ux: { date: 2026-10-23, verdict: conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l132 et les captures regardées) — 2 mineurs en notes }
+    notes:
+      - { date: 2026-10-23, text: "Mineurs 23-10 : dates ISO restantes sur la carte N× (installment-card.tsx:44, 69, 86) ; raison de nocapture inexacte." }
+    finished: 2026-10-23
   - id: L138
     title: "Crédits : puce « Partiel » sur les 5 crédits actifs sans dire ce qui manque (explication en title seul, puce non focalisable, trois causes possibles listées) — nommer le critère manquant à côté de la puce ou en faire une divulgation qui liste les critères et l'action ; test (revue UX L32, Nielsen 9)"
     public: "Crédits : la mention « Partiel » dit ce qui manque"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant (2 notes mineures, aucun bloquant ni majeur) — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: ab689341ab6b99897e96003bf8d023024db7136c }
+    ux: { date: 2026-10-23, verdict: "conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l132 et les captures regardées) — divulgation « Partiel » : manque, tenu, action" }
+    notes:
+      - { date: 2026-10-23, text: "Mineurs 23-10 : règle de santé recopiée du backend sans test qui les relie (health-chip.tsx:34 / loans.service.ts:1226) ; icône de carte centrée sur le bloc déplié (classic-card.tsx:41)." }
+    finished: 2026-10-23
   - id: L139
     title: "Crédits : la suggestion de Claude en attente est en bas de page (y≈1850 à 1440, 3,4 écrans à 390) sans signal en haut — « 1 suggestion à valider » dans l'en-tête avec ancre, ou bandeau sous l'en-tête ; test (revue UX L32, Nielsen 1)"
     public: "Crédits : une suggestion à valider se voit dès l'arrivée"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — 0 blocking, 0 major, 2 minor notes (smooth scroll without reduced-motion, R6 title) — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 90b08773256125821e5c273cbe9118210bd51ab2 }
+    ux: { date: 2026-10-23, verdict: conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l132 et les captures regardées) — bandeau « 1 suggestion à valider » en haut }
+    notes:
+      - { date: 2026-10-23, text: "Mineurs 23-10 : scrollIntoView smooth sans prefers-reduced-motion ; titre du test R6 plus fort que le test." }
+    finished: 2026-10-23
   - id: L140
     title: "Crédits : le sous-titre accorde « crédits actifs » sur items.length (tous les crédits, terminés compris) au lieu du nombre d'actifs — 1 actif + 1 terminé afficherait « 1 crédits actifs » (loans.tsx:142, lu dans le code par la revue UX L32) ; test"
-    status: doing
+    status: done
     estimate: 0.1
     quickwin: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "conforme : aucun constat bloquant ni majeur. Commit 24e56d9 : le sous-titre de /loans s'accorde sur le nombre d'actifs, les 3 tests L140 R1–R3 passent avec le type-check. Une note mineure : l'attente QA « N crédits actifs » avec N ≥ 1 ne couvre pas le singulier. — orchestré (vague 2026-10-23-fin-l132, 0 passe(s) de correction)", commit: 24e56d95d44104aea6c57ed7b742aed97c83cd17 }
+    finished: 2026-10-23
+  - id: L141
+    title: "Crédits, carte N× : dates ISO restantes (« signé 2026-… », échéances « 1. 2026-… » et leur title, installment-card.tsx:44, 69, 86) — format fr-FR comme L137 ; test (revue L137)"
+    public: "Crédits : dates en français sur les paiements en plusieurs fois"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-10-23

@@ -483,44 +483,56 @@
     {
       "id": "L132",
       "title": "Crédits : boutons Modifier et Supprimer annoncés par les lecteurs d'écran",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L133",
       "title": "Crédits : fenêtres utilisables au clavier, fermées par Échap",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L134",
       "title": "Crédits : formulaire enregistrable sur petit téléphone",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L136",
       "title": "Crédits : graphe des mensualités lisible sans les couleurs",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L137",
       "title": "Crédits : dates en français",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L138",
       "title": "Crédits : la mention « Partiel » dit ce qui manque",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
     },
     {
       "id": "L139",
       "title": "Crédits : une suggestion à valider se voit dès l'arrivée",
-      "status": "doing",
-      "started": "2026-10-23"
+      "status": "done",
+      "started": "2026-10-23",
+      "finished": "2026-10-23"
+    },
+    {
+      "id": "L141",
+      "title": "Crédits : dates en français sur les paiements en plusieurs fois",
+      "status": "todo"
     }
   ]
 }
