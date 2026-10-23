@@ -71,6 +71,25 @@ describe('Crédits — graphe des mensualités (L136, WCAG 1.4.1 / 1.1.1)', () =
     expect(screen.getByRole('img').getAttribute('aria-label')).toContain('10 mois sans relevé');
   });
 
+  it('R9 — la mention des mois sans relevé est visible (hors tableau masqué et hors image)', () => {
+    const couverts = new Set([monthKey(0), monthKey(1)]);
+    render(<LoansMonthlyChart loans={[cofidisA]} statementMonths={couverts} />);
+    const note = screen.getByTestId('loans-chart-uncovered-note');
+    expect(note.textContent).toContain('10 mois sans relevé');
+    expect(note.textContent).toContain('inconnu');
+    expect(note.closest('.sr-only')).toBeNull();
+    expect(note.closest('[role="img"]')).toBeNull();
+  });
+
+  it('R9 — aucune mention visible quand tous les mois ont un relevé ou que les relevés ne sont pas chargés', () => {
+    const couverts = new Set(Array.from({ length: 12 }, (_, i) => monthKey(i)));
+    const { unmount } = render(<LoansMonthlyChart loans={[cofidisA]} statementMonths={couverts} />);
+    expect(screen.queryByTestId('loans-chart-uncovered-note')).toBeNull();
+    unmount();
+    render(<LoansMonthlyChart loans={[cofidisA]} />);
+    expect(screen.queryByTestId('loans-chart-uncovered-note')).toBeNull();
+  });
+
   it('R7 — un mois couvert par un relevé sans mensualité garde « 0,00 € »', () => {
     const couverts = new Set(Array.from({ length: 12 }, (_, i) => monthKey(i)));
     render(<LoansMonthlyChart loans={[cofidisB]} statementMonths={couverts} />);

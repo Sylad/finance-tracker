@@ -8,7 +8,7 @@ import { LOAN_COLORS, chartSeriesNames, monthlyCharge } from './utils';
 /**
  * `statementMonths` : mois (YYYY-MM) couverts par un relevé. Un mois hors relevés
  * sans mensualité n'est pas « 0,00 € » (les crédits courent) : le tableau écrit
- * « — » et le signale, comme /yearly. Absent (relevés pas encore chargés) : rien n'est signalé.
+ * « — » et le signale, comme /yearly, et une note visible sous le graphe liste ces mois. Absent (relevés pas encore chargés) : rien n'est signalé.
  */
 export function LoansMonthlyChart({ loans, statementMonths }: { loans: Loan[]; statementMonths?: ReadonlySet<string> }) {
   const data = useMemo(() => {
@@ -38,6 +38,14 @@ export function LoansMonthlyChart({ loans, statementMonths }: { loans: Loan[]; s
 
   const isUncovered = (monthKey: string) => !!statementMonths && !statementMonths.has(monthKey);
   const uncoveredCount = data.filter((row) => isUncovered(row.month as string)).length;
+
+  const uncoveredLabels = data
+    .filter((row) => isUncovered(row.month as string))
+    .map((row) => {
+      const [y, mm] = (row.month as string).split('-');
+      return formatMonthShort(Number(mm), Number(y));
+    })
+    .join(', ');
 
   const names = useMemo(() => chartSeriesNames(visibleLoans), [visibleLoans]);
   const seriesName = (id: string) => names.get(id) ?? id;
@@ -107,6 +115,11 @@ export function LoansMonthlyChart({ loans, statementMonths }: { loans: Loan[]; s
           </BarChart>
         </ResponsiveContainer>
       </div>
+      {uncoveredCount > 0 && (
+        <p data-testid="loans-chart-uncovered-note" className="mt-2 text-xs text-fg-dim">
+          {uncoveredCount} mois sans relevé ({uncoveredLabels}) : montant inconnu, un mois vide n'est pas à 0 €.
+        </p>
+      )}
       <div className="sr-only">
         <table>
           <caption>Charge crédits par mois (12 mois glissants)</caption>
