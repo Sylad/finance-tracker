@@ -108,6 +108,7 @@ export function LoansPage() {
   const classics = items.filter((l) => kindOf(l) === 'classic' && l.isActive);
   const revolvings = items.filter((l) => kindOf(l) === 'revolving' && l.isActive);
   const closed = items.filter((l) => !l.isActive);
+  const activeCount = items.length - closed.length;
   const totalMonthly = items.filter((l) => l.isActive).reduce((s, l) => s + l.monthlyPayment, 0);
 
   const handleSave = async (input: LoanInput) => {
@@ -139,7 +140,7 @@ export function LoansPage() {
         className="sm:flex-col sm:items-start sm:justify-start"
         eyebrow="Crédits"
         title={`${formatEUR(totalMonthly)} / mois`}
-        subtitle={`${items.filter((l) => l.isActive).length} crédit${items.length > 1 ? 's' : ''} actif${items.length > 1 ? 's' : ''}`}
+        subtitle={`${activeCount} crédit${activeCount > 1 ? 's' : ''} actif${activeCount > 1 ? 's' : ''}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <input
