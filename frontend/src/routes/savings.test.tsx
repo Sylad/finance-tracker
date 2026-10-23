@@ -74,3 +74,16 @@ describe('<SavingsPage /> — courbe de la carte (L119)', () => {
     expect(screen.getByText('12 derniers mois')).toBeInTheDocument();
   });
 });
+
+describe('<SavingsPage /> — dernier mouvement (L120)', () => {
+  it("R6 — la carte écrit la nature, la date et le montant signé du dernier mouvement, sans « dernier mouvement » ni flèche", () => {
+    state.hist = [];
+    state.items = [account({ movements: [
+      { id: 'i', date: '2026-01-01', amount: 6800, source: 'initial', statementId: null, transactionId: null },
+      { id: 'b', date: '2026-09-30', amount: -200, source: 'bank-extract', statementId: 's', transactionId: null },
+    ] })];
+    render(<SavingsPage />);
+    expect(screen.getByText(/Ajustement au relevé · 30\/09 : −200,00/)).toBeInTheDocument();
+    expect(screen.queryByText(/dernier mouvement/)).not.toBeInTheDocument();
+  });
+});

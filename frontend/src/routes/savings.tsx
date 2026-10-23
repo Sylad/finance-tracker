@@ -20,6 +20,7 @@ import {
 } from '@/types/api';
 import { formatEUR, formatMonth, formatRatePercent, maskAccountNumber, ratePercentInput } from '@/lib/utils';
 import { savingsCurve } from '@/lib/savings-curve';
+import { lastMovement } from '@/lib/savings-last-movement';
 
 const TYPES: SavingsAccountType[] = ['livret-a', 'pel', 'cel', 'ldds', 'pea', 'other'];
 
@@ -125,9 +126,7 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
   const period = curve && hist
     ? (curve.points.length === hist.length ? `${hist.length} derniers mois` : `Depuis ${monthLabel(curve.startMonth)}`)
     : '';
-  const lastDelta = account.movements.length >= 2
-    ? account.movements[account.movements.length - 1].amount
-    : 0;
+  const last = lastMovement(account.movements);
 
   const handleResync = async () => {
     if (!confirm(`Re-scanner tous les relevés pour ${account.name} ? Les mouvements détectés et intérêts seront recalculés.`)) return;
@@ -158,9 +157,9 @@ function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; o
         </div>
       </div>
       <div className="mt-4 font-display tabular text-3xl font-bold text-fg-bright">{formatEUR(account.currentBalance)}</div>
-      {lastDelta !== 0 && (
-        <div className={lastDelta > 0 ? 'text-xs text-positive mt-1' : 'text-xs text-negative mt-1'}>
-          {lastDelta > 0 ? '↑' : '↓'} {formatEUR(Math.abs(lastDelta))} dernier mouvement
+      {last && (
+        <div className={`text-xs mt-1 ${last.tone === 'positive' ? 'text-positive' : last.tone === 'negative' ? 'text-negative' : 'text-fg-dim'}`}>
+          {last.text}
         </div>
       )}
       {curve && (
