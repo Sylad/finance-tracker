@@ -53,12 +53,12 @@ describe('<LoanForm /> — clavier (L133, WCAG 2.4.3 / 4.1.2)', () => {
 });
 
 describe('<LoanForm /> — dates à 320 px (L144)', () => {
-  it('R1 — Date début et Date fin sont sur une colonne sous 360 px, côte à côte au-dessus', () => {
+  it('R1 — Date début et Date fin sont sur une colonne sous 400 px, côte à côte au-dessus', () => {
     renderForm();
     const grid = screen.getByText('Date début').closest('.grid') as HTMLElement;
     expect(grid).toContainElement(screen.getByText('Date fin'));
     expect(grid.className).toContain('grid-cols-1');
-    expect(grid.className).toContain('min-[360px]:grid-cols-2');
+    expect(grid.className).toContain('min-[400px]:grid-cols-2');
     expect(grid.className).not.toMatch(/(^|\s)grid-cols-2(\s|$)/);
   });
 });

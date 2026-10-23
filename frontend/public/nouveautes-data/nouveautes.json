@@ -1,6 +1,6 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 18:25",
+  "generated": "2026-10-23 18:28",
   "entries": [
     {
       "slug": "2026-10-23-credits-dates-du-formulaire-lisibles-sur-petit-telephone",
@@ -10,7 +10,7 @@
         "L144"
       ],
       "captures": [],
-      "html": "<p>Dans le formulaire d'un crédit classique, les champs « Date début » et « Date fin » ne coupent plus l'année (« 07/05/202 ») sur un petit téléphone : sous 360 px de large, ils s'affichent l'un sous l'autre, chacun sur toute la largeur. Dès 360 px, ils restent côte à côte.</p>"
+      "html": "<p>Dans le formulaire d'un crédit classique, les champs « Date début » et « Date fin » ne coupent plus l'année (« 07/05/202 ») sur un petit téléphone : sous 400 px de large, ils s'affichent l'un sous l'autre, chacun sur toute la largeur. Dès 400 px, ils restent côte à côte.</p>"
     },
     {
       "slug": "2026-10-23-credits-la-mention-partiel-compte-les-prelevements-comme-la",
