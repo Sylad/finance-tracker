@@ -1399,3 +1399,17 @@ lots:
     review: { date: 2026-10-23, verdict: "compliant — aucun défaut ; commits 474b8e1 et 4060e73 relus, test de la lib 14/14 vert, tsc propre, et la note d'intérêts du backend (`Intérêts ${année} (x.xx%)`, source interest) garde son nettoyage ; les trois choix de l'auteur tiennent — orchestré (vague 2026-10-23-fin-l128, 0 passe(s) de correction)", commit: 4060e73c0fdfb66eb6c6bf7808bad7f3e0bd7fcd }
     ux: { date: 2026-10-23, verdict: "conforme — nettoyage « Intérêts » et taux limités à source interest, versement détecté « Auto: Intérêts créditeurs LDDS » gardé en entier, test du cas ; nocapture (cas absent de la démo)" }
     finished: 2026-10-23
+  - id: L129
+    title: "Épargne, notes d'ajustement au relevé : noteOf ne masque que la phrase exacte « Solde recalibré depuis le relevé » — la démo affiche « Ajustement au relevé · Ajustement solde réel depuis relevé (6750 vs 6800 calculé) » et « … · Solde recalibré depuis le relevé — écart dû aux intérêts capitalisés » → retirer la redite en tête de note d'ajustement (garder le reste utile), nombres au format français, corriger le nocapture de la Nouveauté L126 qui dit ces notes absentes de la démo ; ligne never: ajoutée à docs/qa/expectations.md ## /savings (QA prod 23-10)"
+    public: "Épargne : notes d'ajustement sans redite"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23
+  - id: L130
+    title: "Jeu de démo épargne : aucun mouvement d'intérêts ni versement détecté noté « Auto: Intérêts créditeurs … » → L126, L127 et L128 inobservables en QA ; ajouter un intérêt sur un mois de 30 jours et un tel versement, somme des mouvements = solde courant gardée (invariant L122) (QA prod 23-10)"
+    public: "Démo : épargne avec intérêts et versements annotés"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-23

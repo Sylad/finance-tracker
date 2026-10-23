@@ -458,6 +458,16 @@
       "status": "done",
       "started": "2026-10-23",
       "finished": "2026-10-23"
+    },
+    {
+      "id": "L129",
+      "title": "Épargne : notes d'ajustement sans redite",
+      "status": "todo"
+    },
+    {
+      "id": "L130",
+      "title": "Démo : épargne avec intérêts et versements annotés",
+      "status": "todo"
     }
   ]
 }
