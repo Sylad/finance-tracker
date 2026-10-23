@@ -1391,9 +1391,11 @@ lots:
   - id: L128
     title: "Épargne : noteOf (savings-last-movement.ts:44-53, L126) retire « Intérêts » en tête et convertit le taux pour TOUTES les sources — un versement détecté noté « Auto: Intérêts créditeurs LDDS » s'affiche « créditeurs LDDS » → nettoyage « Intérêts » et taux limités à source interest, test du cas détecté (revue L126)"
     public: "Épargne : notes des versements affichées en entier"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — aucun défaut ; commits 474b8e1 et 4060e73 relus, test de la lib 14/14 vert, tsc propre, et la note d'intérêts du backend (`Intérêts ${année} (x.xx%)`, source interest) garde son nettoyage ; les trois choix de l'auteur tiennent — orchestré (vague 2026-10-23-fin-l128, 0 passe(s) de correction)", commit: 4060e73c0fdfb66eb6c6bf7808bad7f3e0bd7fcd }
+    ux: { date: 2026-10-23, verdict: "conforme — nettoyage « Intérêts » et taux limités à source interest, versement détecté « Auto: Intérêts créditeurs LDDS » gardé en entier, test du cas ; nocapture (cas absent de la démo)" }
+    finished: 2026-10-23
