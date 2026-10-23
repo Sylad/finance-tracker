@@ -101,6 +101,8 @@ function snapInterestsToThirtyDayMonth(fixtures: Record<string, unknown>): void 
       const [y, mo] = [Math.floor(best / 12), (best % 12) + 1];
       m.date = `${y}-${pad(mo)}-30`;
       m.statementId = `${y}-${pad(mo)}`;
+      // la note « Intérêts <année> » nomme l'année de la date, pas celle des fixtures
+      if (typeof m.note === 'string') m.note = m.note.replace(/^(Intérêts )\d{4}/, `$1${y}`);
       // le mois anniversaire du compte (auto-sync) suit le mois de l'intérêt recalé
       account.interestAnniversaryMonth = mo;
     }

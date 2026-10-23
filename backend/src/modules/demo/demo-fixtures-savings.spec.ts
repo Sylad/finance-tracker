@@ -104,6 +104,8 @@ describe('demo-fixtures — épargne (L122)', () => {
         expect({ ...ctx, ouverture: m.date >= a.initialBalanceDate }).toEqual({ ...ctx, ouverture: true });
         expect({ ...ctx, plage: m.statementId >= first && m.statementId <= lastId }).toEqual({ ...ctx, plage: true });
         expect(stmtIds).toContain(m.statementId);
+        // la note « Intérêts <année> » suit l'année de la date recalée
+        expect({ ...ctx, note: m.note?.replace(/^(Intérêts )\d{4}/, `$1${y}`) === m.note }).toEqual({ ...ctx, note: true });
         // le mois anniversaire du compte suit le mois de l'intérêt recalé (R3, version recalée)
         expect({ ...ctx, anniversaire: a.interestAnniversaryMonth }).toEqual({ ...ctx, anniversaire: mo });
       }
