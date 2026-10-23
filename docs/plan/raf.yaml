@@ -1633,3 +1633,4 @@ lots:
     estimate: 0.25
     created: 2026-10-23
     started: 2026-10-23
+    review: { date: 2026-10-23, verdict: "compliant (2 minor notes) — recalage horaire en place, échec journalisé, tests R7–R9 verts (demo : 96/96, backend : 1290/1290, tsc propre) — orchestré (vague 2026-10-23-fin-l147, 0 passe(s) de correction)", commit: 3be6eaddf15d0272c277d7a675ec1959b99c6b10 }
