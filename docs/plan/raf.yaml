@@ -1640,25 +1640,34 @@ lots:
   - id: L148
     title: "Crédits, carte N× : la puce Partiel compte comme échue l'échéance du jour (health-chip dueDate <= today) alors que la carte la dit « à venir » (installment-card dueDate < today) — même borne des deux côtés et dans getLoanHealth (backend) ; la démo ALMA 4X ne doit plus être en Partiel permanent « 1 échéance échue sur 2 non retrouvée » ; tests (QA prod)"
     public: "Crédits : l'échéance du jour d'un paiement en N fois n'est plus échue"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant (1 mineur : titre de test R6 altéré dans health-chip.test.tsx) — orchestré (vague 2026-10-23-fin-l148, 0 passe(s) de correction)", commit: 15d954865715a24d4b0f80027f035bbeec7f0799 }
+    ux: { date: 2026-10-23, verdict: "conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l148 et les captures regardées) — ALMA 4X « Complet », échéance du jour « à venir »" }
+    notes:
+      - { date: 2026-10-23, text: "Mineur 23-10 : titre du test R6 de health-chip.test.tsx altéré (espace perdue avant « Trou »). Capture du graphe prise pendant l'animation de recharts (barres à mi-hauteur), sans défaut." }
+    finished: 2026-10-23
   - id: L149
     title: "Alertes du tableau de bord : « crédit se termine dans 60 jours » levée en permanence pour un paiement en plusieurs fois (ALMA 4X en démo) — exclure kind installment de la règle < 90 jours ou la reformuler pour lui ; attente / ajustée ; tests (QA prod)"
     public: "Tableau de bord : plus d'alerte de fin pour un paiement en plusieurs fois"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — orchestré (vague 2026-10-23-fin-l148, 0 passe(s) de correction)", commit: 1154d62ea118536ba22db67c6f009b3b8cdb885d }
+    ux: { date: 2026-10-23, verdict: conforme (verdict du lead d'après le rapport ux-reviewer de la vague 2026-10-23-fin-l148 et les captures regardées) }
+    finished: 2026-10-23
   - id: L150
     title: "Démo : l'échéance 1 de ALMA 4X est marquée payée sans débit ALMA dans le relevé du mois (graphique Charge crédits sans ALMA en septembre) — ajouter le débit au relevé recalé du mois ; expectations.md : remplacer l'exemple « Taux d'effort 70,5 % » de la ligne source de / par une formulation sans chiffre ; tests (QA prod)"
-    status: doing
+    status: done
     estimate: 0.25
     created: 2026-10-23
     started: 2026-10-23
     review: { date: 2026-10-23, verdict: "compliant — 1 commit (0ee4d48), tsc propre, 102 tests demo et 1300 tests backend verts ; 1 note mineure (libellé du prélèvement dupliqué) — orchestré (vague 2026-10-23-fin-l148, 0 passe(s) de correction)", commit: 0ee4d48d96119d77a7e0f2b4b93351705bb38e0d }
+    notes:
+      - { date: 2026-10-23, text: "Mineur 23-10 : libellé « PRELEVT ALMA 4X DARTY » écrit deux fois dans demo-installment.ts." }
+    finished: 2026-10-23
