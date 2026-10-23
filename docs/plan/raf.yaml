@@ -1549,10 +1549,11 @@ lots:
   - id: L141
     title: "Crédits, carte N× : dates ISO restantes (« signé 2026-… », échéances « 1. 2026-… » et leur title, installment-card.tsx:44, 69, 86) — format fr-FR comme L137 ; test (revue L137)"
     public: "Crédits : dates en français sur les paiements en plusieurs fois"
-    status: todo
+    status: doing
     estimate: 0.1
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
   - id: L142
     title: "Crédits, puce Partiel : le panneau dit « 5 trouvés » quand la carte dit « 6 mensualités prélevées » (fenêtre de 180 j dans health-chip.tsx contre total de la carte) — même compte, ou fenêtre nommée « sur les 180 derniers jours » ; test (QA prod L132–L140)"
     public: "Crédits : la mention « Partiel » compte les prélèvements comme la carte"
