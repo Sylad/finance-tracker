@@ -1338,10 +1338,11 @@ lots:
   - id: L124
     title: "Épargne : modifier la date du solde initial après coup ne déplace pas le mouvement « initial » (SavingsService.update, savings.service.ts:103-117, recopie movements) → la courbe L119 repart du plus ancien et ramène des 0 € ; README L119 faux sur la limite (« l'historique part de 0 + mouvements et ignore initialBalance » : create ajoute bien un mouvement source initial, l. 76-84) — update recale le mouvement initial, test, README corrigé (revue L119)"
     public: "Épargne : la courbe suit la date d'ouverture corrigée"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-23
+    started: 2026-10-23
   - id: L125
     title: "Épargne : un mouvement détecté négatif (auto-sync.service.ts:358 prend -t.amount) s'affiche « Versement détecté · 30/09 : −50,00 € » en rouge (savings-last-movement.ts:10) — libellé « Retrait détecté » pour un montant négatif, test R2 étendu au cas négatif (revue L120, Nielsen 2)"
     public: "Épargne : un retrait détecté n'est plus appelé versement"
