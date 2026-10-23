@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-23 08:51",
+  "generated": "2026-10-23 08:55",
   "entries": [
+    {
+      "slug": "2026-10-23-demo-solde-des-comptes-epargne-egal-a-la-somme-de-leurs-mouv",
+      "title": "Démo : solde des comptes épargne égal à la somme de leurs mouvements",
+      "date": "2026-10-23",
+      "lots": [
+        "L122"
+      ],
+      "captures": [],
+      "html": "<p>Dans la démo, le solde de chaque compte d'épargne est maintenant exactement la somme de ses mouvements. Le PEL affiche 13 580 € et le Livret A 6 750 €, comme avant, mais leur dernier ajustement au relevé est corrigé pour que le compte tombe juste : +980,00 € pour le PEL (intérêts capitalisés) et −50,00 € pour le Livret A, dont la note « 6750 vs 6800 calculé » est désormais exacte (elle portait −200,00 €).</p>"
+    },
     {
       "slug": "2026-10-23-epargne-dernier-mouvement-date-et-nomme-versement-ajustement",
       "title": "Épargne : dernier mouvement daté et nommé (versement, ajustement, intérêts)",
