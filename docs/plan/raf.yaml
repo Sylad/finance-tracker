@@ -398,11 +398,12 @@ lots:
     finished: 2026-10-22
   - id: L32
     title: Revue UX — Crédits
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-09-28
     notes:
       - { date: 2026-10-14, text: "QA L16 14-10 (390 px) : barre d'actions Importer/Détecter/Doublons/Suspects/Reset déborde à 738 px, Suspects et Reset hors écran — replier ou deux lignes ; attendu QA à ajouter : scrollWidth = clientWidth sur /loans (capture tmp/qa-finance-l16/overflow-loans-390.png)" }
+    started: 2026-10-23
   - id: L33
     title: Revue UX — Abonnements
     status: todo
