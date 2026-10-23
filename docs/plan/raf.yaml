@@ -1629,6 +1629,7 @@ lots:
     finished: 2026-10-23
   - id: L147
     title: "Démo : le paiement en plusieurs fois n'est recalé qu'au démarrage du backend — au lendemain, sans redémarrage, son échéance passe « en retard » (pastille orange, « ⚠ en retard ») ; recaler chaque jour ou à la lecture, et journaliser l'échec de refreshInstallment au lieu de l'avaler (catch vide, demo-seed.service.ts:125) ; tests"
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-10-23
+    started: 2026-10-23
