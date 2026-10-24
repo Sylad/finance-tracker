@@ -1684,3 +1684,5 @@ lots:
     estimate: 0.5
     visible: true
     created: 2026-10-23
+acknowledged:
+  - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
