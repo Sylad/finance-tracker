@@ -241,7 +241,7 @@ describe('état des sous-tâches (revue L50)', () => {
 
   it('le plan réel ne déclenche aucun avertissement', () => {
     const warn = vi.fn();
-    buildPlan(readPlan(join(root, 'docs/plan/raf.yaml')), { newsTitles: readNewsTitles(join(root, 'frontend/public/nouveautes-data/nouveautes.json')), warn });
+    buildPlan(readPlan(join(root, '.cadence/raf.yaml')), { newsTitles: readNewsTitles(join(root, 'frontend/public/nouveautes-data/nouveautes.json')), warn });
     expect(warn).not.toHaveBeenCalled();
   });
 });
@@ -336,9 +336,9 @@ describe('plan publié', () => {
   const committedText = () => readFileSync(`${root}/frontend/public/plan-data/plan.json`, 'utf8');
 
   const NEWS = `${root}/frontend/public/nouveautes-data/nouveautes.json`;
-  const realRaf = () => readPlan(`${root}/docs/plan/raf.yaml`);
+  const realRaf = () => readPlan(`${root}/.cadence/raf.yaml`);
 
-  it('frontend/public/plan-data/plan.json est à jour avec docs/plan/raf.yaml et nouveautes.json (npm run plan)', () => {
+  it('frontend/public/plan-data/plan.json est à jour avec .cadence/raf.yaml et nouveautes.json (npm run plan)', () => {
     const expected = renderPlan(buildPlan(realRaf(), { newsTitles: readNewsTitles(NEWS) }));
     expect(committedText()).toBe(expected);
   });

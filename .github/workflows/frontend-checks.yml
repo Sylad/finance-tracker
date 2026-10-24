@@ -1,7 +1,7 @@
 name: Contrôles frontend
 
 # L50 : rend le run ROUGE si le plan publié (frontend/public/plan-data/plan.json)
-# n'est plus à jour avec docs/plan/raf.yaml et le journal des Nouveautés — cas
+# n'est plus à jour avec .cadence/raf.yaml et le journal des Nouveautés — cas
 # typique : un commit qui ne touche que le plan (`raf done`) sans `npm run plan` —,
 # si un test Vitest échoue, ou si un texte privé du plan (note, verdict UX, raison,
 # titre brut) se retrouve dans le bundle (npm run build se termine par
@@ -41,7 +41,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Plan publié à jour (sinon npm run plan à la racine, puis commiter plan.json)
-        run: node scripts/plan-data.mjs --in ../docs/plan/raf.yaml --news public/nouveautes-data/nouveautes.json --out public/plan-data/plan.json --check
+        run: node scripts/plan-data.mjs --in ../.cadence/raf.yaml --news public/nouveautes-data/nouveautes.json --out public/plan-data/plan.json --check
 
       - name: Tests Vitest
         run: npx vitest run

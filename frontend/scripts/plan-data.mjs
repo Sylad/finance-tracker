@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // L48 — données PUBLIQUES de la page « Plan de travail », tirées du plan raf
-// (docs/plan/raf.yaml). Script Node autonome (seule dépendance : `yaml`),
+// (.cadence/raf.yaml). Script Node autonome (seule dépendance : `yaml`),
 // indépendant du framework : il sert de modèle aux autres sites.
 //
-//   node frontend/scripts/plan-data.mjs [--in docs/plan/raf.yaml]
+//   node frontend/scripts/plan-data.mjs [--in .cadence/raf.yaml]
 //        [--news frontend/public/nouveautes-data/nouveautes.json]
 //        [--out frontend/public/plan-data/plan.json] [--check]
-//   cd frontend && node scripts/plan-data.mjs --in ../docs/plan/raf.yaml
+//   cd frontend && node scripts/plan-data.mjs --in ../.cadence/raf.yaml
 //        --out public/plan-data/plan.json --leaks dist      (fin de npm run build, L50)
 //
 // --check n'écrit rien et sort en code 1 si le JSON versionné n'est plus à jour.
@@ -273,7 +273,7 @@ function main(argv) {
     const i = argv.indexOf(name);
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : def;
   };
-  const input = arg('--in', 'docs/plan/raf.yaml');
+  const input = arg('--in', '.cadence/raf.yaml');
   const output = arg('--out', 'frontend/public/plan-data/plan.json');
   const newsFile = arg('--news', 'frontend/public/nouveautes-data/nouveautes.json');
   if (argv.includes('--leaks')) {

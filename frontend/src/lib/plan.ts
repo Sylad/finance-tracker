@@ -1,7 +1,7 @@
 // L48 — logique PURE de la page « Plan de travail » : regroupement par état,
 // avancement des sous-tâches, dates et âges en français. Les données viennent
 // de /plan-data/plan.json, généré par `npm run plan` (frontend/scripts/plan-data.mjs)
-// depuis docs/plan/raf.yaml : lots visibles seulement, titres et états.
+// depuis .cadence/raf.yaml : lots visibles seulement, titres et états.
 import { formatNewsDay } from './news-data';
 
 export type PlanStatus = 'doing' | 'todo' | 'done';

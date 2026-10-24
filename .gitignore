@@ -50,4 +50,4 @@ desktop.ini
 data-local/
 
 # page générée par raf gantt
-docs/plan/gantt.html
+.cadence/gantt.html

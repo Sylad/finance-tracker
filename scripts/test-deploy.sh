@@ -88,11 +88,11 @@ setup() {
   (
     cd "$w/app"
     git config user.email t@t; git config user.name t
-    mkdir -p backend frontend docs/plan
+    mkdir -p backend frontend .cadence
     echo 0 > backend/a; echo 0 > frontend/a; git add .; git commit -qm C0
     echo 1 > backend/a; git commit -qam A
     git checkout -qb sœur HEAD~1; echo x > backend/a; git commit -qam X; git checkout -q -
-    echo plan > docs/plan/raf.yaml; git add docs; git commit -qm "chore(L9): plan"
+    echo plan > .cadence/raf.yaml; git add .cadence; git commit -qm "chore(L9): plan"
   )
   C0=$(git -C "$w/app" rev-parse HEAD~2); A=$(git -C "$w/app" rev-parse HEAD~1)
   B=$(git -C "$w/app" rev-parse HEAD); X=$(git -C "$w/app" rev-parse sœur)

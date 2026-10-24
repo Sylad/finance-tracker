@@ -24,7 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 
 // Données publiques générées par `npm run plan` (frontend/scripts/plan-data.mjs)
-// depuis docs/plan/raf.yaml : lots visibles, TITRES PUBLICS et états seulement.
+// depuis .cadence/raf.yaml : lots visibles, TITRES PUBLICS et états seulement.
 
 const STATUS_BADGE: Record<PlanStatus, { label: string; className: string }> = {
   doing: { label: 'En cours', className: 'badge-info' },

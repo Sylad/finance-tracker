@@ -88,11 +88,11 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
 
 ## Plan (raf)
 
-Le reste à faire vit dans `docs/plan/raf.yaml`, tenu par le CLI `raf`
+Le reste à faire vit dans `.cadence/raf.yaml`, tenu par le CLI `raf`
 ([cadence](https://github.com/Sylad/cadence)). Chaque commit cite son lot dans
 le message (`fix(L4): …`, `L2/t1`) ; `raf now` dit quoi faire ensuite,
 `raf check` repère les commits sans lot et les lots oubliés, `raf gantt`
-génère `docs/plan/gantt.html` (non versionné). Un lot se démarre
+génère `.cadence/gantt.html` (non versionné). Un lot se démarre
 (`raf start L4`) avant le premier commit et se ferme (`raf done L4`) une fois
 testé ; les décisions vont dans `raf note`.
 
