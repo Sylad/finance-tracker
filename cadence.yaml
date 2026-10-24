@@ -25,6 +25,8 @@ deliver:
 # DATA_DIR jetable hors data-local/ rempli depuis les fixtures versionnées. Un seul
 # groupe de processus, tué ensemble par le programme. Preuve : ux-demo.spec.ts.
 orchestrate:
+  # Précheck sur le modèle local (claude-local, hors quota) pour tout lot sans commit ; un « oui » local est confirmé par Sonnet (L146, L296 de cadence, 24-10).
+  precheck: local
   ux:
     command: ./local/ux-demo.sh
     url: http://localhost:5192
