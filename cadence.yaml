@@ -25,6 +25,9 @@ deliver:
 # DATA_DIR jetable hors data-local/ rempli depuis les fixtures versionnées. Un seul
 # groupe de processus, tué ensemble par le programme. Preuve : ux-demo.spec.ts.
 orchestrate:
+  # Escalade (L154, cadence L337 / 1.12.0) : avant de rendre un lot encore non conforme après ses passes, la vague joue
+  # une correction et une revue neuve en Fable (règle du lead depuis le 17-10, oubliée deux fois à la main).
+  escalation: { model: fable }
   # Précheck sur Sonnet pour tout lot sans commit (L153) : le modèle local (precheck: local) plantait 1 lot sur 3
   # et répondait « oui » à tort (cadence L328, 25-10).
   precheck: true
