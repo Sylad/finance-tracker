@@ -25,8 +25,19 @@ deliver:
 # DATA_DIR jetable hors data-local/ rempli depuis les fixtures versionnées. Un seul
 # groupe de processus, tué ensemble par le programme. Preuve : ux-demo.spec.ts.
 orchestrate:
-  # Précheck sur le modèle local (claude-local, hors quota) pour tout lot sans commit ; un « oui » local est confirmé par Sonnet (L146, L296 de cadence, 24-10).
-  precheck: local
+  # Précheck sur Sonnet pour tout lot sans commit (L153) : le modèle local (precheck: local) plantait 1 lot sur 3
+  # et répondait « oui » à tort (cadence L328, 25-10).
+  precheck: true
+  # Porte de tests de la vague (L153), lancée après chaque implement/fix : la CI « Contrôles frontend » a été rouge
+  # le 21-10 faute que la vague lance la suite. Commandes vérifiées vertes sur main le 25-10 : backend Jest
+  # 1300 tests (71 suites), frontend Vitest 748 tests (79 fichiers). Aucun test e2e ni lent à exclure aujourd'hui
+  # (le `test:e2e` du backend est un script à part, hors `npm test`) ; si l'un expire sous la charge de la suite
+  # complète, l'exclure ici avec `--exclude` et le dire dans ce commentaire. Les acceptations rouges (vert: false)
+  # ne vont jamais dans cette commande.
+  test: (cd backend && npm test) && (cd frontend && npx vitest run)
+  # Build backend (nest build) puis frontend (tsc -b + vite build + contrôle de fuite du plan), verts le 25-10.
+  # Ne touche ni data-local/ ni aux vraies données.
+  build: (cd backend && npm run build) && (cd frontend && npm run build)
   ux:
     command: ./local/ux-demo.sh
     url: http://localhost:5192
