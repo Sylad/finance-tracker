@@ -1695,11 +1695,14 @@ lots:
     finished: 2026-10-24
   - id: L153
     title: "config cadence : porte de tests et précheck Sonnet (comme warhammer L203) — orchestrate.test (suite backend jest et suite frontend vitest, chacune vérifiée verte sur main avant d'être déclarée ; une vague ne lançait jamais la suite, CI frontend rouge le 21-10 ; un test lent ou e2e qui expire sous charge est exclu et dit) et orchestrate.build (nest build puis build frontend, vérifié vert ; jamais toucher data-local/ ni les vraies données), dans cadence.yaml avec un commentaire ; precheck: true au lieu de local (cadence L328) ; les acceptations rouges restent hors de la commande ; CLAUDE.md si la section cadence le décrit"
-    status: doing
+    status: done
     estimate: 0.1
     created: 2026-10-25
     started: 2026-10-25
     review: { date: 2026-10-25, verdict: "compliant — orchestré (vague 2026-10-25-2110, 0 passe(s) de correction)", commit: fc6846c2028be630380bb5464ba8fbd167d3f2af }
+    finished: 2026-10-25
+    notes:
+      - { date: 2026-10-25, text: "Re-vérifié par le lead le 25-10 : test (jest 1300, vitest 748) et build verts à la main, raf check propre. Config seule : rien à livrer en prod." }
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
