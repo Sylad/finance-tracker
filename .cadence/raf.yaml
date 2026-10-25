@@ -1699,6 +1699,7 @@ lots:
     estimate: 0.1
     created: 2026-10-25
     started: 2026-10-25
+    review: { date: 2026-10-25, verdict: "compliant — orchestré (vague 2026-10-25-2110, 0 passe(s) de correction)", commit: fc6846c2028be630380bb5464ba8fbd167d3f2af }
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
