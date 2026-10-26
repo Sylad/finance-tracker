@@ -595,8 +595,14 @@
     {
       "id": "L155",
       "title": "Abonnements : échec de « Réafficher » signalé, focus gardé après confirmation",
-      "status": "doing",
-      "started": "2026-10-26"
+      "status": "done",
+      "started": "2026-10-26",
+      "finished": "2026-10-26"
+    },
+    {
+      "id": "L157",
+      "title": "Abonnements : focus clavier gardé après masquage",
+      "status": "todo"
     }
   ]
 }

@@ -1720,7 +1720,7 @@ lots:
   - id: L155
     title: "Abonnements, suites de L151 : « Réafficher » d'une suggestion masquée échoue sans message (unsnooze.mutate sans catch, subscriptions.tsx:410) — même bandeau role=alert que masquer/rejeter, test d'échec ; focus perdu sur BODY après confirmation de Reset (bouton d'origine désactivé) et de Supprimer (ligne retirée), mesuré à 390 et 1440 — rendre le focus à un élément présent (WCAG 2.4.3), test"
     public: "Abonnements : échec de « Réafficher » signalé, focus gardé après confirmation"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-26
@@ -1728,6 +1728,8 @@ lots:
       - { date: 2026-10-26, text: "à inclure (QA prod L151 26-10, aucun défaut) : lignes d'attente /subscriptions dans docs/qa/expectations.md — Doublons role=dialog nommé et focus rendu au bouton ; Reset en dialogue dans la page (aucun confirm natif) ; libellé « Motif cherché dans les libellés (expression régulière) »" }
     started: 2026-10-26
     review: { date: 2026-10-26, verdict: "conforme, 2 notes mineures (focus perdu après Réafficher/Masquer, défaut antérieur au lot ; R20 absent du README) — orchestré (vague 2026-10-26-1005, 2 passe(s) de correction)", commit: b028b94718ce658524f135b54fbb00ea9f4814e5 }
+    ux: { date: 2026-10-26, verdict: "conforme — verdict du lead sur le rapport mesuré du ux-reviewer (focus gardé après Reset/Supprimer, échec de Réafficher dit) ; pas de capture : focus et message d'échec ne se voient pas sur une image fixe" }
+    finished: 2026-10-26
   - id: L156
     title: Article finance-tracker à rafraîchir
     status: todo
@@ -1736,6 +1738,13 @@ lots:
     repos: [ { path: ../claude-code-codex, cite: finance-tracker } ]
     notes:
       - { date: 2026-10-26, text: "Livraison 6718f2f : titres publics livrés « Abonnements : dialogues et messages d'échec clairs ». Article : ../claude-code-codex/frontend/src/pages/case-studies/finance-tracker.astro. Sections à relire : (aucun titre trouvé : relire tout l'article). Réécrire ce que ces changements rendent faux ou incomplet, sans rien inventer ; les commits du dépôt ../claude-code-codex citent le lot et « finance-tracker »." }
+  - id: L157
+    title: "Abonnements, suite de L155 : focus sur <body> après « Réafficher » (réussi ou refusé) et « Connu, masquer » — la ligne retirée par la mise à jour optimiste emporte le bouton focalisé ; rendre le focus à un élément présent (WCAG 2.4.3), test ; keepFocus global à la page (deux suppressions qui se chevauchent), README L155 à compléter de R20"
+    public: "Abonnements : focus clavier gardé après masquage"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-26
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
