@@ -139,6 +139,13 @@ describe('textes privés et fuites (L50)', () => {
     expect(findLeaks(raf, renderPlan(plan), plan)).toEqual([]);
   });
 
+  it('L155 : le champ repos: (chemin et nom d\'un dépôt voisin, config et non texte) n\'est pas un texte privé', () => {
+    const withRepos = { ...raf, lots: [...raf.lots, { id: 'L900', title: 'Lot avec dépôt voisin', status: 'todo', repos: [{ path: '../claude-code-codex', cite: 'finance-tracker' }] }] };
+    const texts = privateTexts(withRepos, buildPlan(withRepos, { newsTitles: news }));
+    expect(texts).not.toContain('finance-tracker');
+    expect(texts).not.toContain('../claude-code-codex');
+  });
+
   const note = 'note privée 1234 €';
   it('findLeaks repère une note brute, échappée JSON, en \\uXXXX (minuscules et majuscules)', () => {
     expect(findLeaks(raf, `bundle ${note} fin`, plan)).toEqual([note]);

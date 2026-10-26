@@ -168,11 +168,11 @@ const MIN_TITLE = 20;
 
 /**
  * Champs d'un lot ou d'une sous-tâche qui ne portent pas de texte privé (identifiants,
- * états, dates, nombres, liens entre lots). TOUT autre champ texte — notes (liste ou
+ * états, dates, nombres, liens entre lots, dépôts voisins `repos:`). TOUT autre champ texte — notes (liste ou
  * simple chaîne), verdict et toute chaîne sous `ux:`, raison, champ inconnu — est
  * privé (revue L50) : la vérification ne dépend pas de la liste des champs connus.
  */
-const NOT_TEXT = new Set(['id', 'status', 'visible', 'estimate', 'quickwin', 'created', 'started', 'finished', 'date', 'after', 'parent', 'sha', 'shas', 'commits']);
+const NOT_TEXT = new Set(['id', 'status', 'visible', 'estimate', 'quickwin', 'created', 'started', 'finished', 'date', 'after', 'parent', 'sha', 'shas', 'commits', 'repos']);
 
 /**
  * Textes du plan qui ne doivent JAMAIS sortir (L50) : notes (lots et sous-tâches),
