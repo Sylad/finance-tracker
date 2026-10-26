@@ -30,8 +30,20 @@ const failing = (fn: ReturnType<typeof vi.fn>) => (arg: unknown, opts?: { onErro
 vi.mock('@/lib/queries', () => ({
   useSubscriptions: () => h.subs,
   useLoanSuggestions: () => h.sugg,
-  useCreateSubscription: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useUpdateSubscription: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateSubscription: () => ({
+    mutateAsync: async () => {
+      if (h.fail) throw new Error('Serveur indisponible');
+      return { id: 'new' };
+    },
+    isPending: false,
+  }),
+  useUpdateSubscription: () => ({
+    mutateAsync: async () => {
+      if (h.fail) throw new Error('Serveur indisponible');
+      return { id: 's1' };
+    },
+    isPending: false,
+  }),
   useDeleteSubscription: () => ({ mutate: failing(h.remove), isPending: false }),
   useResetSubscriptions: () => ({
     mutateAsync: async () => {
@@ -193,5 +205,34 @@ describe('Abonnements — restes de la revue L33 (L151)', () => {
     await userEvent.click(screen.getByRole('button', { name: /Fusionner/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Fusion impossible : Serveur indisponible');
     expect(nativeAlert).not.toHaveBeenCalled();
+  });
+
+  it('R13 — le message d\'échec reste visible quand la page est défilée (collant sous l\'en-tête)', async () => {
+    h.fail = true;
+    render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: 'Connu, masquer Spotify AB' }));
+    expect(screen.getByRole('alert').className).toMatch(/\bsticky\b/);
+  });
+
+  it('R14 — un enregistrement refusé est dit dans le formulaire (role=alert), le formulaire reste ouvert, sans alert natif', async () => {
+    h.fail = true;
+    render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: /Nouvel abonnement/ }));
+    await userEvent.type(screen.getByLabelText(/^Nom/), 'Disney');
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Enregistrement impossible : Serveur indisponible');
+    expect(nativeAlert).not.toHaveBeenCalled();
+  });
+
+  it('R15 — le message d\'enregistrement est effacé à l\'annulation : il ne reparaît pas à la réouverture', async () => {
+    h.fail = true;
+    render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: /Nouvel abonnement/ }));
+    await userEvent.type(screen.getByLabelText(/^Nom/), 'Disney');
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await screen.findByRole('alert');
+    await userEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+    await userEvent.click(screen.getByRole('button', { name: /Nouvel abonnement/ }));
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

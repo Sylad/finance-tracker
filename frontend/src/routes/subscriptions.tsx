@@ -252,7 +252,7 @@ export function SubscriptionsPage() {
         <div
           role={notice.kind === 'error' ? 'alert' : 'status'}
           className={cn(
-            'mb-6 card p-3 text-sm flex items-start justify-between gap-3 border-l-4',
+            'sticky top-16 lg:top-2 z-30 mb-6 card p-3 text-sm flex items-start justify-between gap-3 border-l-4',
             notice.kind === 'error' ? 'border-l-negative text-negative-fg' : 'border-l-positive text-fg-bright',
           )}
         >
