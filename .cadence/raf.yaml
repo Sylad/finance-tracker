@@ -1738,6 +1738,7 @@ lots:
     repos: [ { path: ../claude-code-codex, cite: finance-tracker } ]
     notes:
       - { date: 2026-10-26, text: "Livraison 6718f2f : titres publics livrés « Abonnements : dialogues et messages d'échec clairs ». Article : ../claude-code-codex/frontend/src/pages/case-studies/finance-tracker.astro. Sections à relire : (aucun titre trouvé : relire tout l'article). Réécrire ce que ces changements rendent faux ou incomplet, sans rien inventer ; les commits du dépôt ../claude-code-codex citent le lot et « finance-tracker »." }
+      - { date: 2026-10-26, text: "Livraison e275a3b : titres publics livrés « Abonnements : échec de « Réafficher » signalé, focus gardé après confirmation ». Article : ../claude-code-codex/frontend/src/pages/case-studies/finance-tracker.astro. Sections à relire : (aucun titre trouvé : relire tout l'article). Réécrire ce que ces changements rendent faux ou incomplet, sans rien inventer ; les commits du dépôt ../claude-code-codex citent le lot et « finance-tracker »." }
   - id: L157
     title: "Abonnements, suite de L155 : focus sur <body> après « Réafficher » (réussi ou refusé) et « Connu, masquer » — la ligne retirée par la mise à jour optimiste emporte le bouton focalisé ; rendre le focus à un élément présent (WCAG 2.4.3), test ; keepFocus global à la page (deux suppressions qui se chevauchent), README L155 à compléter de R20"
     public: "Abonnements : focus clavier gardé après masquage"
