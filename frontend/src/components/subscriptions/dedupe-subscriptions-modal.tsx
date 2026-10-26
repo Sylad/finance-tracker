@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { X, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Dialog } from '@/components/dialog';
 import {
   useSubscriptionDuplicates,
   useMergeSubscriptionDuplicates,
@@ -17,69 +18,71 @@ export function DedupeSubscriptionsModal({ onClose }: Props) {
   const { data: groups, isLoading, refetch } = useSubscriptionDuplicates();
   const merge = useMergeSubscriptionDuplicates();
   const [groupStatuses, setGroupStatuses] = useState<Record<string, 'idle' | 'merging' | 'merged' | 'error'>>({});
+  const [groupErrors, setGroupErrors] = useState<Record<string, string>>({});
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto animate-fade-in" onClick={onClose}>
-      <div className="card max-w-3xl w-full my-8" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <div>
-            <h2 className="font-display font-semibold text-fg-bright">Doublons d'abonnements</h2>
-            <p className="text-xs text-fg-muted">
-              Heuristique : nom slugifié identique OU mot commun + montant ±5% OU partage d'un mois d'occurrence (invariant 1 retrait/mois max).
-              Pour chaque ligne : <strong className="text-accent">Conserver</strong> · <strong className="text-warning">Merger</strong> · <strong className="text-fg-dim">Ignorer</strong>.
-            </p>
+    <Dialog
+      title="Doublons d'abonnements"
+      size="max-w-3xl"
+      onClose={onClose}
+      description={(
+        <>
+          Heuristique : nom slugifié identique OU mot commun + montant ±5% OU partage d'un mois d'occurrence (invariant 1 retrait/mois max).
+          Pour chaque ligne : <strong className="text-accent">Conserver</strong> · <strong className="text-warning">Merger</strong> · <strong className="text-fg-dim">Ignorer</strong>.
+        </>
+      )}
+    >
+      <div className="p-5 space-y-4">
+        {isLoading && <p className="text-sm text-fg-muted py-8 text-center">Analyse en cours…</p>}
+
+        {!isLoading && groups && groups.length === 0 && (
+          <div className="flex items-center gap-2 text-sm text-positive py-6 justify-center">
+            <CheckCircle2 className="h-5 w-5" />
+            <span>Aucun doublon détecté.</span>
           </div>
-          <button onClick={onClose} className="btn-ghost p-1" aria-label="Fermer"><X className="h-4 w-4" /></button>
-        </div>
+        )}
 
-        <div className="p-5 space-y-4">
-          {isLoading && <p className="text-sm text-fg-muted py-8 text-center">Analyse en cours…</p>}
-
-          {!isLoading && groups && groups.length === 0 && (
-            <div className="flex items-center gap-2 text-sm text-positive py-6 justify-center">
-              <CheckCircle2 className="h-5 w-5" />
-              <span>Aucun doublon détecté.</span>
-            </div>
-          )}
-
-          {!isLoading && groups && groups.map((group, idx) => {
-            const key = `${group.normalizedName}-${group.monthlyAmount}-${idx}`;
-            return (
-              <DedupeGroupCard
-                key={key}
-                group={group}
-                status={groupStatuses[key] ?? 'idle'}
-                onMerge={async (canonicalId, dupIds) => {
-                  setGroupStatuses((s) => ({ ...s, [key]: 'merging' }));
-                  try {
-                    await merge.mutateAsync({ canonicalId, duplicateIds: dupIds });
-                    setGroupStatuses((s) => ({ ...s, [key]: 'merged' }));
-                    refetch();
-                  } catch (err) {
-                    setGroupStatuses((s) => ({ ...s, [key]: 'error' }));
-                    alert(`Erreur : ${(err as Error).message}`);
-                  }
-                }}
-              />
-            );
-          })}
-        </div>
-
-        <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
-          <button onClick={onClose} className="btn-secondary">Fermer</button>
-        </div>
+        {!isLoading && groups && groups.map((group, idx) => {
+          const key = `${group.normalizedName}-${group.monthlyAmount}-${idx}`;
+          return (
+            <DedupeGroupCard
+              key={key}
+              group={group}
+              status={groupStatuses[key] ?? 'idle'}
+              error={groupErrors[key]}
+              onMerge={async (canonicalId, dupIds) => {
+                setGroupStatuses((s) => ({ ...s, [key]: 'merging' }));
+                setGroupErrors((s) => ({ ...s, [key]: '' }));
+                try {
+                  await merge.mutateAsync({ canonicalId, duplicateIds: dupIds });
+                  setGroupStatuses((s) => ({ ...s, [key]: 'merged' }));
+                  refetch();
+                } catch (err) {
+                  setGroupStatuses((s) => ({ ...s, [key]: 'error' }));
+                  setGroupErrors((s) => ({ ...s, [key]: `Fusion impossible : ${(err as Error).message}` }));
+                }
+              }}
+            />
+          );
+        })}
       </div>
-    </div>
+
+      <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
+        <button onClick={onClose} className="btn-secondary">Fermer</button>
+      </div>
+    </Dialog>
   );
 }
 
 function DedupeGroupCard({
   group,
   status,
+  error,
   onMerge,
 }: {
   group: SubscriptionDuplicateGroup;
   status: 'idle' | 'merging' | 'merged' | 'error';
+  error?: string;
   onMerge: (canonicalId: string, dupIds: string[]) => void;
 }) {
   // Le plus ancien est canonical par défaut (souvent le plus paramétré).
@@ -172,6 +175,7 @@ function DedupeGroupCard({
             })}
           </ul>
 
+          {error && <p role="alert" className="text-sm text-negative-fg mb-3">{error}</p>}
           <div className="flex items-center justify-between gap-2 text-xs text-fg-muted">
             <span>Le canonical conserve l'historique d'occurrences (dédupé).</span>
             <button

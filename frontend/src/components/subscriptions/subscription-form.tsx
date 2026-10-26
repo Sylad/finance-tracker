@@ -20,12 +20,14 @@ export function SubscriptionForm({
   onSave,
   onCancel,
   busy,
+  error,
 }: {
   init: SubscriptionInput;
   isEdit: boolean;
   onSave: (i: SubscriptionInput) => void;
   onCancel: () => void;
   busy: boolean;
+  error?: string;
 }) {
   const [form, setForm] = useState<SubscriptionInput>(init);
   const titleId = useId();
@@ -112,7 +114,7 @@ export function SubscriptionForm({
               />
             </Field>
           </div>
-          <Field label="Pattern (regex)">
+          <Field label="Motif cherché dans les libellés (expression régulière)">
             <input
               className="input font-mono text-xs"
               placeholder="NETFLIX|SPOTIFY"
@@ -146,6 +148,7 @@ export function SubscriptionForm({
             />
             <span>Actif</span>
           </label>
+          {error && <p role="alert" className="text-sm text-negative-fg">{error}</p>}
           <div className="flex items-center justify-end gap-2 pt-2">
             <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
             <button type="submit" disabled={busy} className="btn-primary">Enregistrer</button>

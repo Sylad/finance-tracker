@@ -12,6 +12,7 @@ import {
   useDeleteSubscription,
   useResetSubscriptions,
 } from '@/lib/queries';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DedupeSubscriptionsModal } from '@/components/subscriptions/dedupe-subscriptions-modal';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
@@ -56,21 +57,34 @@ export function SubscriptionsPage() {
   const [showHidden, setShowHidden] = useState(false);
   const [dedupeOpen, setDedupeOpen] = useState(false);
 
+  // Message d'échec ou de résultat d'une action hors formulaire, montré dans la page
+  // (jamais un alert natif) ; fermable.
+  const [notice, setNotice] = useState<{ kind: 'error' | 'info'; text: string } | null>(null);
+  const [saveError, setSaveError] = useState<string | undefined>();
+  const [toDelete, setToDelete] = useState<Subscription | null>(null);
+  const [resetAsked, setResetAsked] = useState(false);
+
+  const fail = (text: string) => setNotice({ kind: 'error', text });
+  const reason = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
   const handleReset = async () => {
-    if (!confirm(
-      'Reset des abonnements ?\n\n'
-      + 'Cette action :\n'
-      + '  • Supprime TOUS les abonnements actuels\n'
-      + '  • Reset les suggestions à pending\n\n'
-      + 'Tu pourras ensuite ré-accepter les suggestions propres avec l\'invariant "1 retrait/mois max".\n\n'
-      + 'Continuer ?'
-    )) return;
+    setResetAsked(false);
+    setNotice(null);
     try {
       const result = await resetSubs.mutateAsync();
-      alert(`${result.deletedSubscriptions} abonnement(s) supprimé(s), ${result.resetSuggestions} suggestion(s) reset à pending.`);
+      setNotice({
+        kind: 'info',
+        text: `${result.deletedSubscriptions} abonnement(s) supprimé(s), ${result.resetSuggestions} suggestion(s) remise(s) à trier.`,
+      });
     } catch (e) {
-      alert(`Erreur : ${(e as Error).message}`);
+      fail(`Réinitialisation impossible : ${reason(e)}`);
     }
+  };
+
+  const handleDelete = (sub: Subscription) => {
+    setToDelete(null);
+    setNotice(null);
+    remove.mutate(sub.id, { onError: (e) => fail(`Suppression de ${sub.name} impossible : ${reason(e)}`) });
   };
 
   if (subs.isLoading || suggestions.isLoading) return <LoadingState />;
@@ -88,6 +102,7 @@ export function SubscriptionsPage() {
   }
 
   const items = subs.data ?? [];
+  const suggestionsFailed = suggestions.isError && !suggestions.data;
   const active = items.filter((s) => s.isActive);
   const inactive = items.filter((s) => !s.isActive);
   const totalMonthly = active.reduce((sum, s) => sum + s.monthlyAmount, 0);
@@ -134,6 +149,7 @@ export function SubscriptionsPage() {
   const visibleUtils = pendingSugg.filter((s) => s.suggestedType === 'utility');
 
   const handleSave = async (input: SubscriptionInput) => {
+    setSaveError(undefined);
     try {
       let saved: Subscription;
       if (editing) saved = await update.mutateAsync({ id: editing.id, input });
@@ -150,8 +166,18 @@ export function SubscriptionsPage() {
       setCreating(false);
       setPrefilled(null);
     } catch (e) {
-      alert(`Erreur lors de l'enregistrement : ${(e as Error).message}`);
+      setSaveError(`Enregistrement impossible : ${reason(e)}`);
     }
+  };
+
+  const handleSnooze = (sugg: LoanSuggestion) => {
+    setNotice(null);
+    snooze.mutate(sugg.id, { onError: (e) => fail(`Masquage de ${sugg.label} impossible : ${reason(e)}`) });
+  };
+
+  const handleReject = (sugg: LoanSuggestion) => {
+    setNotice(null);
+    reject.mutate(sugg.id, { onError: (e) => fail(`Rejet de ${sugg.label} impossible : ${reason(e)}`) });
   };
 
   const handleAcceptSuggestion = (s: LoanSuggestion) => {
@@ -201,7 +227,7 @@ export function SubscriptionsPage() {
               <GitMerge className="h-4 w-4" /> Doublons
             </button>
             <button
-              onClick={handleReset}
+              onClick={() => setResetAsked(true)}
               disabled={resetSubs.isPending}
               className="btn-secondary text-negative-fg hover:bg-negative/10 hover:text-negative-fg border-negative/30"
               title="Purge tous les abonnements + reset suggestions à pending"
@@ -222,6 +248,21 @@ export function SubscriptionsPage() {
         }
       />
 
+      {notice && (
+        <div
+          role={notice.kind === 'error' ? 'alert' : 'status'}
+          className={cn(
+            'mb-6 card p-3 text-sm flex items-start justify-between gap-3 border-l-4',
+            notice.kind === 'error' ? 'border-l-negative text-negative-fg' : 'border-l-positive text-fg-bright',
+          )}
+        >
+          <span>{notice.text}</span>
+          <button type="button" onClick={() => setNotice(null)} aria-label="Fermer le message" className="btn-ghost p-1 shrink-0">
+            <XIcon className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
       {suggestions.isError && !suggestions.data && (
         <div className="mb-6">
           <ErrorState
@@ -233,12 +274,37 @@ export function SubscriptionsPage() {
         </div>
       )}
 
+      {toDelete && (
+        <ConfirmDialog
+          title={`Supprimer ${toDelete.name} ?`}
+          confirmLabel="Supprimer"
+          onConfirm={() => handleDelete(toDelete)}
+          onCancel={() => setToDelete(null)}
+        >
+          <p>{toDelete.isActive ? 'L’abonnement et son historique de prélèvements détectés seront supprimés.' : 'Cet abonnement inactif sera supprimé définitivement, avec son historique de prélèvements détectés.'}</p>
+        </ConfirmDialog>
+      )}
+
+      {resetAsked && (
+        <ConfirmDialog
+          title="Réinitialiser les abonnements ?"
+          confirmLabel="Réinitialiser"
+          onConfirm={() => { void handleReset(); }}
+          onCancel={() => setResetAsked(false)}
+        >
+          <p>Tous les abonnements actuels sont supprimés et les suggestions repassent à trier.</p>
+          <p>Tu pourras ensuite ré-accepter les suggestions propres, avec la règle « 1 retrait par mois au maximum ».</p>
+        </ConfirmDialog>
+      )}
+
       {dedupeOpen && <DedupeSubscriptionsModal onClose={() => setDedupeOpen(false)} />}
 
       {items.length === 0 && pendingSugg.length === 0 ? (
         <EmptyState
           title="Aucun abonnement déclaré"
-          hint="Importe un relevé pour que Claude détecte les charges récurrentes, ou ajoute un abonnement manuellement."
+          hint={suggestionsFailed
+            ? 'Les suggestions n’ont pas pu être chargées : réessaie avant d’en conclure qu’il n’y a rien à détecter, ou ajoute un abonnement manuellement.'
+            : 'Importe un relevé pour que Claude détecte les charges récurrentes, ou ajoute un abonnement manuellement.'}
         />
       ) : (
         <div className="space-y-8">
@@ -253,7 +319,7 @@ export function SubscriptionsPage() {
                     key={s.id}
                     sub={s}
                     onEdit={() => setEditing(s)}
-                    onDelete={() => confirm(`Supprimer ${s.name} ?`) && remove.mutate(s.id)}
+                    onDelete={() => setToDelete(s)}
                   />
                 ))}
               </div>
@@ -272,7 +338,7 @@ export function SubscriptionsPage() {
                     key={s.id}
                     sub={s}
                     onEdit={() => setEditing(s)}
-                    onDelete={() => confirm(`Supprimer définitivement ${s.name} ?`) && remove.mutate(s.id)}
+                    onDelete={() => setToDelete(s)}
                   />
                 ))}
               </div>
@@ -306,8 +372,8 @@ export function SubscriptionsPage() {
                   icon={Repeat2}
                   items={visibleSubs}
                   onAccept={handleAcceptSuggestion}
-                  onSnooze={(id) => snooze.mutate(id)}
-                  onReject={(id) => reject.mutate(id)}
+                  onSnooze={handleSnooze}
+                  onReject={handleReject}
                 />
               )}
               {visibleUtils.length > 0 && (
@@ -317,8 +383,8 @@ export function SubscriptionsPage() {
                   icon={Zap}
                   items={visibleUtils}
                   onAccept={handleAcceptSuggestion}
-                  onSnooze={(id) => snooze.mutate(id)}
-                  onReject={(id) => reject.mutate(id)}
+                  onSnooze={handleSnooze}
+                  onReject={handleReject}
                 />
               )}
             </>
@@ -359,12 +425,14 @@ export function SubscriptionsPage() {
           init={prefilled ?? (editing ? toSubscriptionInput(editing) : DEFAULT)}
           onSave={handleSave}
           onCancel={() => {
+            setSaveError(undefined);
             setCreating(false);
             setEditing(null);
             setPrefilled(null);
             setPendingSuggestionId(null);
           }}
           busy={create.isPending || update.isPending}
+          error={saveError}
         />
       )}
     </>
@@ -447,8 +515,8 @@ function SuggSection({
   icon: typeof Zap;
   items: LoanSuggestion[];
   onAccept: (s: LoanSuggestion) => void;
-  onSnooze: (id: string) => void;
-  onReject: (id: string) => void;
+  onSnooze: (s: LoanSuggestion) => void;
+  onReject: (s: LoanSuggestion) => void;
 }) {
   return (
     <section>
@@ -474,7 +542,7 @@ function SuggSection({
                 <Plus className="h-3 w-3" /> Enregistrer
               </button>
               <button
-                onClick={() => onSnooze(s.id)}
+                onClick={() => onSnooze(s)}
                 aria-label={`Connu, masquer ${s.label}`}
                 title="Tu reconnais cette charge. Elle disparaît mais peut revenir si Claude la redétecte avec des changements."
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-positive/10 hover:bg-positive/20 text-positive text-xs font-medium border border-positive/30"
@@ -482,7 +550,7 @@ function SuggSection({
                 <Check className="h-3 w-3" /> Connu, masquer
               </button>
               <button
-                onClick={() => onReject(s.id)}
+                onClick={() => onReject(s)}
                 aria-label={`Faux positif ${s.label}`}
                 title="Ce n'est pas un abonnement. Claude ne te la re-proposera plus jamais."
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-negative/10 hover:bg-negative/20 text-negative-fg text-xs font-medium border border-negative/30"
