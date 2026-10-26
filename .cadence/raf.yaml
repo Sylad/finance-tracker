@@ -1724,6 +1724,14 @@ lots:
     estimate: 0.25
     visible: true
     created: 2026-10-26
+  - id: L156
+    title: Article finance-tracker à rafraîchir
+    status: todo
+    estimate: 0.5
+    created: 2026-10-26
+    repos: [ { path: ../claude-code-codex, cite: finance-tracker } ]
+    notes:
+      - { date: 2026-10-26, text: "Livraison 6718f2f : titres publics livrés « Abonnements : dialogues et messages d'échec clairs ». Article : ../claude-code-codex/frontend/src/pages/case-studies/finance-tracker.astro. Sections à relire : (aucun titre trouvé : relire tout l'article). Réécrire ce que ces changements rendent faux ou incomplet, sans rien inventer ; les commits du dépôt ../claude-code-codex citent le lot et « finance-tracker »." }
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
