@@ -201,27 +201,6 @@
       ]
     },
     {
-      "id": "L85",
-      "title": "Déclarations : la fenêtre de saisie s'utilise au clavier et au téléphone",
-      "status": "done",
-      "started": "2026-10-19",
-      "finished": "2026-10-19"
-    },
-    {
-      "id": "L86",
-      "title": "Déclarations : la liste se lit en entier sur téléphone",
-      "status": "done",
-      "started": "2026-10-19",
-      "finished": "2026-10-19"
-    },
-    {
-      "id": "L87",
-      "title": "Déclarations : quand ça ne marche pas, la page te le dit",
-      "status": "done",
-      "started": "2026-10-19",
-      "finished": "2026-10-19"
-    },
-    {
       "id": "L88",
       "title": "Prévisions : le choix 3, 6 ou 12 mois change vraiment la vue",
       "status": "done",
@@ -245,20 +224,6 @@
     {
       "id": "L91",
       "title": "Prévisions : mois passés, en cours et prévus distingués en clair",
-      "status": "done",
-      "started": "2026-10-21",
-      "finished": "2026-10-21"
-    },
-    {
-      "id": "L92",
-      "title": "Prévisions : la courbe du solde se dessine d'un seul trait",
-      "status": "done",
-      "started": "2026-10-21",
-      "finished": "2026-10-21"
-    },
-    {
-      "id": "L96",
-      "title": "Crédits : les boutons du haut de page tiennent sur un téléphone",
       "status": "done",
       "started": "2026-10-21",
       "finished": "2026-10-21"
@@ -588,8 +553,14 @@
     {
       "id": "L151",
       "title": "Abonnements : dialogues et messages d'échec clairs",
-      "status": "doing",
-      "started": "2026-10-26"
+      "status": "done",
+      "started": "2026-10-26",
+      "finished": "2026-10-26"
+    },
+    {
+      "id": "L155",
+      "title": "Abonnements : échec de « Réafficher » signalé, focus gardé après confirmation",
+      "status": "todo"
     }
   ]
 }

@@ -1681,12 +1681,16 @@ lots:
   - id: L151
     title: "Abonnements, restes de la revue L33 : modale Doublons (rôle dialog, focus), confirm/alert natifs de Supprimer et Reset, libellé « Pattern (regex) », échecs de suppression/masquage/rejet silencieux (onError sans message), message contradictoire quand les suggestions échouent sans abonnement (« Aucun abonnement… importe un relevé »)"
     public: "Abonnements : dialogues et messages d'échec clairs"
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     created: 2026-10-23
     started: 2026-10-26
     review: { date: 2026-10-26, verdict: "conforme — 5 mineurs en note (Réafficher muet en échec, focus perdu après confirmation, infobulle Reset « pending », role=status inséré avec son texte, capture formulaire-390 de L33 non reprise) — orchestré (vague 2026-10-26-0830, 2 passe(s) de correction)", commit: 1b7e77266335f1089143f7df5a40cbed2781b9cc }
+    ux: { date: 2026-10-26, verdict: "conforme — captures vues par le lead : échec de masquage dit par un bandeau collant visible page défilée (390), dialogues Doublons/confirmation dans la page ; 5 mineurs en note, 2 bugs observables en lot de suite" }
+    finished: 2026-10-26
+    notes:
+      - { date: 2026-10-26, text: "mineurs de revue (26-10, non repris en lot) : bouton de confirmation destructive en btn-primary vert au lieu de .btn-danger (confirm-dialog.tsx:21) ; infobulle Reset « reset suggestions à pending » (subscriptions.tsx:233) ; message de résultat role=status inséré avec son texte (subscriptions.tsx:253, WCAG 4.1.3) ; capture abonnements-formulaire-390.png de L33 toujours périmée" }
   - id: L152
     title: "Plan déplacé vers .cadence/raf.yaml avec raf migrate (cadence L284, L305) : --dry-run d'abord, chaque lecteur du chemin (scripts plan-data, tests, CI, CLAUDE.md, skills) mis à jour ou signalé ; un lecteur non traité (chemin construit à la main) corrigé à la main dans le même lot ; tests, build et raf check verts ; l'avertissement « ancien emplacement » disparaît"
     status: done
@@ -1713,6 +1717,13 @@ lots:
     started: 2026-10-25
     review: { date: 2026-10-25, verdict: "conforme (lead : clé de config d'une ligne, lue sans erreur par cadence orchestrate --dry-run 1.12)", commit: 102fcbf63b49986eccdc5b9937a50c67cdbf6909 }
     finished: 2026-10-25
+  - id: L155
+    title: "Abonnements, suites de L151 : « Réafficher » d'une suggestion masquée échoue sans message (unsnooze.mutate sans catch, subscriptions.tsx:410) — même bandeau role=alert que masquer/rejeter, test d'échec ; focus perdu sur BODY après confirmation de Reset (bouton d'origine désactivé) et de Supprimer (ligne retirée), mesuré à 390 et 1440 — rendre le focus à un élément présent (WCAG 2.4.3), test"
+    public: "Abonnements : échec de « Réafficher » signalé, focus gardé après confirmation"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-26
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
