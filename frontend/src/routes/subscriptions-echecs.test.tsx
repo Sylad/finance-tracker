@@ -15,7 +15,7 @@ const h = vi.hoisted(() => ({
   dupes: {} as ReturnType<typeof q>,
   // Une mutation qui échoue : `mutateAsync` rejette.
   fail: false,
-  delays: [] as number[],
+  gates: [] as Promise<void>[],
   remove: vi.fn(),
   snooze: vi.fn(),
   reject: vi.fn(),
@@ -25,11 +25,11 @@ const h = vi.hoisted(() => ({
   merge: vi.fn(),
 }));
 
-// `h.delays` : délai (ms) de la réponse par appel successif, pour faire se chevaucher deux appels.
+// `h.gates` : promesse à attendre avant la réponse de chaque appel successif, pour faire se
+// chevaucher deux appels sans dépendre de l'horloge (la réponse part quand le test la libère).
 const failing = (fn: ReturnType<typeof vi.fn>) => async (arg: unknown) => {
   fn(arg);
-  const delay = h.delays.shift() ?? 0;
-  if (delay) await new Promise((r) => setTimeout(r, delay));
+  await h.gates.shift();
   if (h.fail) throw new Error('Serveur indisponible');
 };
 
@@ -102,7 +102,7 @@ beforeEach(() => {
   h.sugg = q({ data: [suggestion] });
   h.dupes = q({ data: [group] });
   h.fail = false;
-  h.delays = [];
+  h.gates = [];
   h.resetPending = false;
   for (const f of [h.remove, h.snooze, h.reject, h.reset, h.unsnooze, h.merge]) f.mockClear();
   nativeConfirm = vi.fn(() => true);
@@ -187,11 +187,15 @@ describe('Abonnements — restes de la revue L33 (L151)', () => {
 
   it('R16 — deux masquages d\'affilée qui échouent sont tous deux dits (le 1er échec n\'est pas perdu au profit du 2e)', async () => {
     h.fail = true;
-    h.delays = [60, 10];
+    let release1!: () => void;
+    let release2!: () => void;
+    h.gates = [new Promise<void>((r) => { release1 = r; }), new Promise<void>((r) => { release2 = r; })];
     h.sugg = q({ data: [suggestion, { ...suggestion, id: 'g2', label: 'Predica Assurance Vie' }] });
     render(<SubscriptionsPage />);
     await userEvent.click(screen.getByRole('button', { name: 'Connu, masquer Spotify AB' }));
     await userEvent.click(screen.getByRole('button', { name: 'Connu, masquer Predica Assurance Vie' }));
+    release2();
+    release1();
     const alert = await screen.findByRole('alert');
     await waitFor(() => {
       expect(alert).toHaveTextContent('Masquage de Spotify AB impossible : Serveur indisponible');
