@@ -1724,6 +1724,8 @@ lots:
     estimate: 0.25
     visible: true
     created: 2026-10-26
+    notes:
+      - { date: 2026-10-26, text: "à inclure (QA prod L151 26-10, aucun défaut) : lignes d'attente /subscriptions dans docs/qa/expectations.md — Doublons role=dialog nommé et focus rendu au bouton ; Reset en dialogue dans la page (aucun confirm natif) ; libellé « Motif cherché dans les libellés (expression régulière) »" }
   - id: L156
     title: Article finance-tracker à rafraîchir
     status: todo
