@@ -595,7 +595,8 @@
     {
       "id": "L155",
       "title": "Abonnements : échec de « Réafficher » signalé, focus gardé après confirmation",
-      "status": "todo"
+      "status": "doing",
+      "started": "2026-10-26"
     }
   ]
 }

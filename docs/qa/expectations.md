@@ -92,6 +92,8 @@ api: /api/savings-accounts
 
 shows: au moins 1 suggestion
 never: message « Impossible de charger les abonnements » ou « Suggestions indisponibles » (L33)
+shows: « Doublons » ouvre un role=dialog nommé « Doublons d'abonnements », le focus est rendu au bouton à la fermeture ; Reset ouvre un dialogue dans la page (aucun confirm natif) ; le champ du formulaire s'appelle « Motif cherché dans les libellés (expression régulière) » (L155)
+never: après confirmation de Reset ou de Supprimer, `document.activeElement` sur `<body>` (390 et 1440 px) (L155)
 api: /api/loan-suggestions, /api/subscriptions
 may be empty when aucun abonnement suivi (`/api/subscriptions`, démo)
 

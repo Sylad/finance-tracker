@@ -1,7 +1,17 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-26 08:27",
+  "generated": "2026-10-26 09:12",
   "entries": [
+    {
+      "slug": "2026-10-26-abonnements-echec-de-reafficher-signale-focus-garde-apres-co",
+      "title": "Abonnements : échec de « Réafficher » signalé, focus gardé après confirmation",
+      "date": "2026-10-26",
+      "lots": [
+        "L155"
+      ],
+      "captures": [],
+      "html": "<p>Sur la page <strong>Abonnements</strong>, un clic sur « Réafficher » (suggestion masquée) qui échoue n'est plus silencieux : un message d'erreur nomme la suggestion, comme pour « Masquer » et « Faux positif ».</p>\n<p>Le clavier ne perd plus sa place : après avoir confirmé <strong>Reset</strong> ou <strong>Supprimer</strong>, le focus reste sur un bouton de la page au lieu de disparaître, ce qui évite de devoir tout reparcourir au clavier ou au lecteur d'écran.</p>"
+    },
     {
       "slug": "2026-10-26-abonnements-dialogues-et-messages-d-echec-clairs",
       "title": "Abonnements : dialogues et messages d'échec clairs",

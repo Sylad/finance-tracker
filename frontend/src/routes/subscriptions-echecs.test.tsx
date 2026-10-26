@@ -20,6 +20,8 @@ const h = vi.hoisted(() => ({
   snooze: vi.fn(),
   reject: vi.fn(),
   reset: vi.fn(),
+  unsnooze: vi.fn(),
+  resetPending: false,
   merge: vi.fn(),
 }));
 
@@ -52,14 +54,17 @@ vi.mock('@/lib/queries', () => ({
   useResetSubscriptions: () => ({
     mutateAsync: async () => {
       h.reset();
+      h.resetPending = true;
+      await new Promise((r) => setTimeout(r, 20));
+      h.resetPending = false;
       if (h.fail) throw new Error('Serveur indisponible');
       return { deletedSubscriptions: 3, resetSuggestions: 2 };
     },
-    isPending: false,
+    isPending: h.resetPending,
   }),
   useSnoozeSuggestion: () => ({ mutateAsync: failing(h.snooze), isPending: false }),
   useRejectSuggestion: () => ({ mutateAsync: failing(h.reject), isPending: false }),
-  useUnsnoozeSuggestion: () => ({ mutate: vi.fn(), isPending: false }),
+  useUnsnoozeSuggestion: () => ({ mutateAsync: failing(h.unsnooze), isPending: false }),
   useAcceptSubscriptionSuggestion: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSubscriptionDuplicates: () => h.dupes,
   useMergeSubscriptionDuplicates: () => ({
@@ -98,7 +103,8 @@ beforeEach(() => {
   h.dupes = q({ data: [group] });
   h.fail = false;
   h.delays = [];
-  for (const f of [h.remove, h.snooze, h.reject, h.reset, h.merge]) f.mockClear();
+  h.resetPending = false;
+  for (const f of [h.remove, h.snooze, h.reject, h.reset, h.unsnooze, h.merge]) f.mockClear();
   nativeConfirm = vi.fn(() => true);
   nativeAlert = vi.fn();
   vi.stubGlobal('confirm', nativeConfirm);
@@ -253,5 +259,40 @@ describe('Abonnements — restes de la revue L33 (L151)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Annuler' }));
     await userEvent.click(screen.getByRole('button', { name: /Nouvel abonnement/ }));
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('Abonnements — suites de L151 (L155)', () => {
+  const hidden = { ...suggestion, id: 'g9', label: 'Deezer', status: 'snoozed' } as unknown as LoanSuggestion;
+
+  it('R17 — un « Réafficher » refusé est dit, en nommant la suggestion (role=alert)', async () => {
+    h.fail = true;
+    h.sugg = q({ data: [hidden] });
+    render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: /Voir les masqués/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Réafficher Deezer' }));
+    expect(h.unsnooze).toHaveBeenCalledWith('g9');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Réaffichage de Deezer impossible : Serveur indisponible');
+  });
+
+  it('R18 — après confirmation du Reset (bouton d\'origine désactivé le temps de l\'appel), le focus reste sur un élément présent', async () => {
+    render(<SubscriptionsPage />);
+    const reset = screen.getByRole('button', { name: /Reset/ });
+    await userEvent.click(reset);
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Réinitialiser' }));
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement?.isConnected).toBe(true);
+    await screen.findByRole('status');
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
+  it('R19 — après confirmation de la suppression (ligne retirée), le focus reste sur un élément présent', async () => {
+    h.remove.mockImplementation(() => { h.subs = q({ data: [] }); });
+    render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: 'Supprimer Netflix' }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Supprimer' }));
+    expect(screen.queryByText('Netflix')).toBeNull();
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement?.isConnected).toBe(true);
   });
 });

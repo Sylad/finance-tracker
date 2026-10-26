@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Zap, Check, X as XIcon, Repeat2, EyeOff, RotateCcw, Pencil, Trash2, GitMerge, Loader2 } from 'lucide-react';
 import {
   useLoanSuggestions,
@@ -69,6 +69,16 @@ export function SubscriptionsPage() {
     setNotice((prev) => ({ kind: 'error', text: prev?.kind === 'error' ? `${prev.text}\n${text}` : text }));
   const reason = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
+  // Après une confirmation qui retire l'élément d'origine (ligne supprimée), le focus tombait sur
+  // <body> : tant que `keepFocus` est levé, tout rendu qui le perd le rend à « Nouvel abonnement ».
+  const newButton = useRef<HTMLButtonElement>(null);
+  const keepFocus = useRef(false);
+  const restoreFocus = () => {
+    const a = document.activeElement;
+    if (keepFocus.current && (!a || a === document.body || !a.isConnected)) newButton.current?.focus();
+  };
+  useEffect(restoreFocus);
+
   const handleReset = async () => {
     setResetAsked(false);
     setNotice(null);
@@ -86,7 +96,10 @@ export function SubscriptionsPage() {
   const handleDelete = (sub: Subscription) => {
     setToDelete(null);
     setNotice(null);
-    remove.mutateAsync(sub.id).catch((e) => fail(`Suppression de ${sub.name} impossible : ${reason(e)}`));
+    keepFocus.current = true;
+    remove.mutateAsync(sub.id)
+      .catch((e) => fail(`Suppression de ${sub.name} impossible : ${reason(e)}`))
+      .finally(() => { restoreFocus(); keepFocus.current = false; });
   };
 
   if (subs.isLoading || suggestions.isLoading) return <LoadingState />;
@@ -182,6 +195,11 @@ export function SubscriptionsPage() {
     reject.mutateAsync(sugg.id).catch((e) => fail(`Rejet de ${sugg.label} impossible : ${reason(e)}`));
   };
 
+  const handleUnsnooze = (sugg: LoanSuggestion) => {
+    setNotice(null);
+    unsnooze.mutateAsync(sugg.id).catch((e) => fail(`Réaffichage de ${sugg.label} impossible : ${reason(e)}`));
+  };
+
   const handleAcceptSuggestion = (s: LoanSuggestion) => {
     setEditing(null);
     setCreating(true);
@@ -229,9 +247,9 @@ export function SubscriptionsPage() {
               <GitMerge className="h-4 w-4" /> Doublons
             </button>
             <button
-              onClick={() => setResetAsked(true)}
-              disabled={resetSubs.isPending}
-              className="btn-secondary text-negative-fg hover:bg-negative/10 hover:text-negative-fg border-negative/30"
+              onClick={() => { if (!resetSubs.isPending) setResetAsked(true); }}
+              aria-disabled={resetSubs.isPending}
+              className="btn-secondary text-negative-fg hover:bg-negative/10 hover:text-negative-fg border-negative/30 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
               title="Purge tous les abonnements + reset suggestions à pending"
             >
               {resetSubs.isPending ? (
@@ -241,6 +259,7 @@ export function SubscriptionsPage() {
               )}
             </button>
             <button
+              ref={newButton}
               onClick={() => { setCreating(true); setEditing(null); setPrefilled(null); }}
               className="btn-primary"
             >
@@ -407,7 +426,8 @@ export function SubscriptionsPage() {
                       </div>
                     </div>
                     <button
-                      onClick={() => unsnooze.mutate(s.id)}
+                      onClick={() => handleUnsnooze(s)}
+                      aria-label={`Réafficher ${s.label}`}
                       title="Remettre cette suggestion dans la liste à trier"
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-info/10 hover:bg-info/20 text-info text-xs font-medium border border-info/30"
                     >
