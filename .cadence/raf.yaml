@@ -1720,12 +1720,13 @@ lots:
   - id: L155
     title: "Abonnements, suites de L151 : « Réafficher » d'une suggestion masquée échoue sans message (unsnooze.mutate sans catch, subscriptions.tsx:410) — même bandeau role=alert que masquer/rejeter, test d'échec ; focus perdu sur BODY après confirmation de Reset (bouton d'origine désactivé) et de Supprimer (ligne retirée), mesuré à 390 et 1440 — rendre le focus à un élément présent (WCAG 2.4.3), test"
     public: "Abonnements : échec de « Réafficher » signalé, focus gardé après confirmation"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-26
     notes:
       - { date: 2026-10-26, text: "à inclure (QA prod L151 26-10, aucun défaut) : lignes d'attente /subscriptions dans docs/qa/expectations.md — Doublons role=dialog nommé et focus rendu au bouton ; Reset en dialogue dans la page (aucun confirm natif) ; libellé « Motif cherché dans les libellés (expression régulière) »" }
+    started: 2026-10-26
   - id: L156
     title: Article finance-tracker à rafraîchir
     status: todo
