@@ -64,7 +64,9 @@ export function SubscriptionsPage() {
   const [toDelete, setToDelete] = useState<Subscription | null>(null);
   const [resetAsked, setResetAsked] = useState(false);
 
-  const fail = (text: string) => setNotice({ kind: 'error', text });
+  // Plusieurs actions peuvent échouer en se chevauchant : les messages s'ajoutent, aucun n'est perdu.
+  const fail = (text: string) =>
+    setNotice((prev) => ({ kind: 'error', text: prev?.kind === 'error' ? `${prev.text}\n${text}` : text }));
   const reason = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
   const handleReset = async () => {
@@ -84,7 +86,7 @@ export function SubscriptionsPage() {
   const handleDelete = (sub: Subscription) => {
     setToDelete(null);
     setNotice(null);
-    remove.mutate(sub.id, { onError: (e) => fail(`Suppression de ${sub.name} impossible : ${reason(e)}`) });
+    remove.mutateAsync(sub.id).catch((e) => fail(`Suppression de ${sub.name} impossible : ${reason(e)}`));
   };
 
   if (subs.isLoading || suggestions.isLoading) return <LoadingState />;
@@ -172,12 +174,12 @@ export function SubscriptionsPage() {
 
   const handleSnooze = (sugg: LoanSuggestion) => {
     setNotice(null);
-    snooze.mutate(sugg.id, { onError: (e) => fail(`Masquage de ${sugg.label} impossible : ${reason(e)}`) });
+    snooze.mutateAsync(sugg.id).catch((e) => fail(`Masquage de ${sugg.label} impossible : ${reason(e)}`));
   };
 
   const handleReject = (sugg: LoanSuggestion) => {
     setNotice(null);
-    reject.mutate(sugg.id, { onError: (e) => fail(`Rejet de ${sugg.label} impossible : ${reason(e)}`) });
+    reject.mutateAsync(sugg.id).catch((e) => fail(`Rejet de ${sugg.label} impossible : ${reason(e)}`));
   };
 
   const handleAcceptSuggestion = (s: LoanSuggestion) => {
@@ -256,7 +258,7 @@ export function SubscriptionsPage() {
             notice.kind === 'error' ? 'border-l-negative text-negative-fg' : 'border-l-positive text-fg-bright',
           )}
         >
-          <span>{notice.text}</span>
+          <span className="whitespace-pre-line">{notice.text}</span>
           <button type="button" onClick={() => setNotice(null)} aria-label="Fermer le message" className="btn-ghost p-1 shrink-0">
             <XIcon className="h-4 w-4" aria-hidden="true" />
           </button>

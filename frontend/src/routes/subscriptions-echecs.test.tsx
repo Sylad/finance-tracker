@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { LoanSuggestion, Subscription } from '@/types/api';
 import { SubscriptionsPage } from './subscriptions';
@@ -13,8 +13,9 @@ const h = vi.hoisted(() => ({
   subs: {} as ReturnType<typeof q>,
   sugg: {} as ReturnType<typeof q>,
   dupes: {} as ReturnType<typeof q>,
-  // Une mutation qui échoue : `mutate` rappelle onError, `mutateAsync` rejette.
+  // Une mutation qui échoue : `mutateAsync` rejette.
   fail: false,
+  delays: [] as number[],
   remove: vi.fn(),
   snooze: vi.fn(),
   reject: vi.fn(),
@@ -22,9 +23,12 @@ const h = vi.hoisted(() => ({
   merge: vi.fn(),
 }));
 
-const failing = (fn: ReturnType<typeof vi.fn>) => (arg: unknown, opts?: { onError?: (e: Error) => void }) => {
+// `h.delays` : délai (ms) de la réponse par appel successif, pour faire se chevaucher deux appels.
+const failing = (fn: ReturnType<typeof vi.fn>) => async (arg: unknown) => {
   fn(arg);
-  if (h.fail) opts?.onError?.(new Error('Serveur indisponible'));
+  const delay = h.delays.shift() ?? 0;
+  if (delay) await new Promise((r) => setTimeout(r, delay));
+  if (h.fail) throw new Error('Serveur indisponible');
 };
 
 vi.mock('@/lib/queries', () => ({
@@ -44,7 +48,7 @@ vi.mock('@/lib/queries', () => ({
     },
     isPending: false,
   }),
-  useDeleteSubscription: () => ({ mutate: failing(h.remove), isPending: false }),
+  useDeleteSubscription: () => ({ mutateAsync: failing(h.remove), isPending: false }),
   useResetSubscriptions: () => ({
     mutateAsync: async () => {
       h.reset();
@@ -53,8 +57,8 @@ vi.mock('@/lib/queries', () => ({
     },
     isPending: false,
   }),
-  useSnoozeSuggestion: () => ({ mutate: failing(h.snooze), isPending: false }),
-  useRejectSuggestion: () => ({ mutate: failing(h.reject), isPending: false }),
+  useSnoozeSuggestion: () => ({ mutateAsync: failing(h.snooze), isPending: false }),
+  useRejectSuggestion: () => ({ mutateAsync: failing(h.reject), isPending: false }),
   useUnsnoozeSuggestion: () => ({ mutate: vi.fn(), isPending: false }),
   useAcceptSubscriptionSuggestion: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSubscriptionDuplicates: () => h.dupes,
@@ -93,6 +97,7 @@ beforeEach(() => {
   h.sugg = q({ data: [suggestion] });
   h.dupes = q({ data: [group] });
   h.fail = false;
+  h.delays = [];
   for (const f of [h.remove, h.snooze, h.reject, h.reset, h.merge]) f.mockClear();
   nativeConfirm = vi.fn(() => true);
   nativeAlert = vi.fn();
@@ -162,23 +167,37 @@ describe('Abonnements — restes de la revue L33 (L151)', () => {
     render(<SubscriptionsPage />);
     await userEvent.click(screen.getByRole('button', { name: 'Supprimer Netflix' }));
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Supprimer' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Suppression de Netflix impossible : Serveur indisponible');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Suppression de Netflix impossible : Serveur indisponible');
   });
 
   it('R8 — un masquage refusé et un rejet refusé sont dits, en nommant la suggestion', async () => {
     h.fail = true;
     render(<SubscriptionsPage />);
     await userEvent.click(screen.getByRole('button', { name: 'Connu, masquer Spotify AB' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Masquage de Spotify AB impossible : Serveur indisponible');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Masquage de Spotify AB impossible : Serveur indisponible');
     await userEvent.click(screen.getByRole('button', { name: 'Faux positif Spotify AB' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Rejet de Spotify AB impossible : Serveur indisponible');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Rejet de Spotify AB impossible : Serveur indisponible');
+  });
+
+  it('R16 — deux masquages d\'affilée qui échouent sont tous deux dits (le 1er échec n\'est pas perdu au profit du 2e)', async () => {
+    h.fail = true;
+    h.delays = [60, 10];
+    h.sugg = q({ data: [suggestion, { ...suggestion, id: 'g2', label: 'Predica Assurance Vie' }] });
+    render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: 'Connu, masquer Spotify AB' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Connu, masquer Predica Assurance Vie' }));
+    const alert = await screen.findByRole('alert');
+    await waitFor(() => {
+      expect(alert).toHaveTextContent('Masquage de Spotify AB impossible : Serveur indisponible');
+      expect(alert).toHaveTextContent('Masquage de Predica Assurance Vie impossible : Serveur indisponible');
+    });
   });
 
   it('R9 — le message d\'échec se ferme (bouton « Fermer le message »)', async () => {
     h.fail = true;
     render(<SubscriptionsPage />);
     await userEvent.click(screen.getByRole('button', { name: 'Connu, masquer Spotify AB' }));
-    await userEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Fermer le message' }));
+    await userEvent.click(within(await screen.findByRole('alert')).getByRole('button', { name: 'Fermer le message' }));
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -211,7 +230,7 @@ describe('Abonnements — restes de la revue L33 (L151)', () => {
     h.fail = true;
     render(<SubscriptionsPage />);
     await userEvent.click(screen.getByRole('button', { name: 'Connu, masquer Spotify AB' }));
-    expect(screen.getByRole('alert').className).toMatch(/\bsticky\b/);
+    expect((await screen.findByRole('alert')).className).toMatch(/\bsticky\b/);
   });
 
   it('R14 — un enregistrement refusé est dit dans le formulaire (role=alert), le formulaire reste ouvert, sans alert natif', async () => {
