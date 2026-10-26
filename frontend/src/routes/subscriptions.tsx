@@ -320,7 +320,7 @@ export function SubscriptionsPage() {
 
       {dedupeOpen && <DedupeSubscriptionsModal onClose={() => setDedupeOpen(false)} />}
 
-      {items.length === 0 && pendingSugg.length === 0 ? (
+      {items.length === 0 && pendingSugg.length === 0 && !(showHidden && hiddenSugg.length > 0) ? (
         <EmptyState
           title="Aucun abonnement déclaré"
           hint={suggestionsFailed

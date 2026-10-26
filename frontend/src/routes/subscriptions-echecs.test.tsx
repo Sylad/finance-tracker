@@ -275,6 +275,14 @@ describe('Abonnements — suites de L151 (L155)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Réaffichage de Deezer impossible : Serveur indisponible');
   });
 
+  it('R20 — sans abonnement ni suggestion à trier, « Voir les masqués » affiche bien la liste des masqués (et leur « Réafficher »)', async () => {
+    h.subs = q({ data: [] });
+    h.sugg = q({ data: [hidden] });
+    render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: /Voir les masqués/ }));
+    expect(screen.getByRole('button', { name: 'Réafficher Deezer' })).toBeTruthy();
+  });
+
   it('R18 — après confirmation du Reset (bouton d\'origine désactivé le temps de l\'appel), le focus reste sur un élément présent', async () => {
     render(<SubscriptionsPage />);
     const reset = screen.getByRole('button', { name: /Reset/ });
