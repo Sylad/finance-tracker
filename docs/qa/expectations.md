@@ -53,6 +53,7 @@ may be empty when aucune anomalie (`/anomalies`)
 ## /category-rules
 
 shows: 11 catégories prédéfinies
+never: message « Impossible de charger les règles de catégorisation » ; `scrollWidth` > `clientWidth` à 390 px (L34)
 api: /api/category-rules
 
 ## /income
