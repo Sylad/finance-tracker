@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -7,7 +7,9 @@ import { HeatmapPage } from './heatmap';
 const api = vi.hoisted(() => ({ get: vi.fn() }));
 vi.mock('@/lib/api', () => ({ api }));
 
-const year = new Date().getFullYear();
+// Horloge figée : la page s'ouvre sur « 12 derniers mois », la fixture doit y rester quelle que soit la date du jour.
+const NOW = new Date(2026, 5, 15, 12);
+const year = NOW.getFullYear();
 const statement = {
   id: 's1', year, month: 1,
   transactions: [
@@ -33,6 +35,12 @@ function route(summaries: unknown, detail: unknown = statement) {
     return detail;
   });
 }
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(NOW);
+});
+afterEach(() => vi.useRealTimers());
 
 describe('Heatmap des dépenses — revue UX (L36)', () => {
   beforeEach(() => {
