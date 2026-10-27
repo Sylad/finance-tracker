@@ -115,6 +115,7 @@ api: /api/import-logs
 
 shows: « N jours avec débit » avec N > 0
 api: /api/statements, /api/statements/<mois> (un appel par relevé)
+never: « Agrégation des relevés… » sans fin ; `scrollWidth` > `clientWidth` à 390 px (L36)
 
 ## /health
 
