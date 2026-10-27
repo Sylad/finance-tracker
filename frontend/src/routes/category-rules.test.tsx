@@ -149,16 +149,16 @@ describe('Règles de catégories — revue UX (L34)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Analyse impossible');
   });
   it.each([
-    ['Accepter', 'accepter'],
-    ['Rejeter', 'rejeter'],
-    ['Plus tard', 'reporter'],
-  ])('R11 — %s d’une suggestion en échec est dit (role=alert), pas silencieux', async (bouton, verbe) => {
+    ['Accepter', 'Impossible d’accepter'],
+    ['Rejeter', 'Impossible de rejeter'],
+    ['Plus tard', 'Impossible de reporter'],
+  ])('R11 — %s d’une suggestion en échec est dit (role=alert), avec l’élision correcte', async (bouton, debut) => {
     sugg.list = [{ id: 'g1', pattern: 'SPOTIFY', category: 'subscriptions', subcategory: '', occurrenceCount: 3, exampleDescriptions: [], status: 'pending', rationale: '' }];
     sugg.failOnMutate = true;
     renderPage();
     await userEvent.click(await screen.findByRole('button', { name: `${bouton} /SPOTIFY/i` }));
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(`Impossible de ${verbe} la suggestion /SPOTIFY/i`);
+    expect(alert).toHaveTextContent(`${debut} la suggestion /SPOTIFY/i`);
     expect(alert).toHaveTextContent('API 500');
   });
   it('R12 — une suppression de catégorie refusée affiche une alerte nommant la catégorie', async () => {
@@ -250,7 +250,7 @@ describe('Règles de catégories — revue UX (L34)', () => {
     renderPage();
     await userEvent.click(await screen.findByRole('button', { name: 'Accepter /SPOTIFY/i' }));
     expect(screen.getAllByRole('alert')).toHaveLength(1);
-    expect(screen.getByRole('alert')).toHaveTextContent('Impossible de accepter la suggestion /SPOTIFY/i');
+    expect(screen.getByRole('alert')).toHaveTextContent('Impossible d’accepter la suggestion /SPOTIFY/i');
     await userEvent.click(screen.getByRole('button', { name: 'Rejeter /DEEZER/i' }));
     expect(screen.getAllByRole('alert')).toHaveLength(1);
     expect(screen.getByRole('alert')).toHaveTextContent('Impossible de rejeter la suggestion /DEEZER/i');

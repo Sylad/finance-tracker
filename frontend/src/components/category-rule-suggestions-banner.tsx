@@ -21,6 +21,13 @@ function errorText(error: unknown): string {
 
 type SuggestionAction = 'accepter' | 'reporter' | 'rejeter';
 
+// Élision : « d’accepter » devant une voyelle, « de rejeter » / « de reporter » sinon.
+const ECHEC_DEBUT: Record<SuggestionAction, string> = {
+  accepter: 'd’accepter',
+  reporter: 'de reporter',
+  rejeter: 'de rejeter',
+};
+
 function labelForCategory(cat: string): string {
   if ((BUILTIN as string[]).includes(cat)) return CATEGORY_LABELS[cat as TransactionCategory];
   return cat;
@@ -112,7 +119,7 @@ export function CategoryRuleSuggestionsBanner() {
 
       {failed?.isError && lastAction && (
         <div role="alert" className="mb-3 p-2 rounded bg-negative/10 border border-negative/30 text-xs text-negative-fg">
-          Impossible de {lastAction} la suggestion
+          Impossible {ECHEC_DEBUT[lastAction]} la suggestion
           {failedSuggestion ? ` /${failedSuggestion.pattern}/i` : ''} : {errorText(failed.error)}.
         </div>
       )}
