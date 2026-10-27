@@ -83,8 +83,14 @@ export function CategoryRuleSuggestionsBanner() {
         </div>
       </div>
 
+      {generate.isError && (
+        <div role="alert" className="mb-3 p-2 rounded bg-negative/10 border border-negative/30 text-xs text-negative-fg">
+          Analyse impossible : {generate.error instanceof Error && generate.error.message ? generate.error.message : 'erreur inconnue'}.
+        </div>
+      )}
+
       {generate.isSuccess && generate.data && (
-        <div className="mb-3 p-2 rounded bg-positive/10 border border-positive/30 text-xs">
+        <div role="status" className="mb-3 p-2 rounded bg-positive/10 border border-positive/30 text-xs">
           {generate.data.created > 0
             ? `${generate.data.created} nouvelle${generate.data.created > 1 ? 's' : ''} suggestion${generate.data.created > 1 ? 's' : ''} sur ${generate.data.otherSeen} transactions analysées.`
             : `Aucune nouvelle règle proposée (${generate.data.otherSeen} transactions analysées).`}
@@ -136,6 +142,7 @@ export function CategoryRuleSuggestionsBanner() {
                 <div className="flex gap-1 shrink-0">
                   <button
                     onClick={() => accept.mutate(s.id)}
+                    aria-label={`Accepter /${s.pattern}/i`}
                     disabled={accept.isPending}
                     className="btn-primary text-xs"
                   >
@@ -143,6 +150,7 @@ export function CategoryRuleSuggestionsBanner() {
                   </button>
                   <button
                     onClick={() => snooze.mutate(s.id)}
+                    aria-label={`Plus tard /${s.pattern}/i`}
                     disabled={snooze.isPending}
                     className="btn-ghost text-xs"
                   >
@@ -150,6 +158,7 @@ export function CategoryRuleSuggestionsBanner() {
                   </button>
                   <button
                     onClick={() => reject.mutate(s.id)}
+                    aria-label={`Rejeter /${s.pattern}/i`}
                     disabled={reject.isPending}
                     className="btn-ghost text-xs hover:text-negative"
                   >
@@ -177,12 +186,14 @@ export function CategoryRuleSuggestionsBanner() {
               <div className="flex gap-1 shrink-0">
                 <button
                   onClick={() => accept.mutate(s.id)}
+                  aria-label={`Accepter /${s.pattern}/i`}
                   className="btn-ghost text-xs"
                 >
                   Accepter
                 </button>
                 <button
                   onClick={() => reject.mutate(s.id)}
+                  aria-label={`Rejeter /${s.pattern}/i`}
                   className="btn-ghost text-xs hover:text-negative"
                 >
                   Rejeter

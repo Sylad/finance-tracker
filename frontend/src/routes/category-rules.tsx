@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Trash2, RefreshCw, Loader2, Plus } from 'lucide-react';
+import { Trash2, RefreshCw, Loader2, Plus, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
-import { LoadingState } from '@/components/loading-state';
+import { LoadingState, ErrorState } from '@/components/loading-state';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { CategoryRuleSuggestionsBanner } from '@/components/category-rule-suggestions-banner';
 import { CATEGORY_LABELS, type TransactionCategory } from '@/types/api';
 
@@ -28,6 +29,10 @@ const BUILTIN: TransactionCategory[] = [
   'entertainment', 'subscriptions', 'savings', 'transfers', 'taxes', 'other',
 ];
 
+function reason(e: unknown): string {
+  return e instanceof Error && e.message ? e.message : 'erreur inconnue';
+}
+
 function labelFor(cat: string) {
   if ((BUILTIN as string[]).includes(cat)) return CATEGORY_LABELS[cat as TransactionCategory];
   return cat;
@@ -35,27 +40,44 @@ function labelFor(cat: string) {
 
 export function CategoryRulesPage() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery<Payload>({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery<Payload>({
     queryKey: ['category-rules'],
     queryFn: () => api.get<Payload>('/category-rules'),
   });
 
   const [newCatName, setNewCatName] = useState('');
+  const [failure, setFailure] = useState<string | null>(null);
+  const [ruleToDelete, setRuleToDelete] = useState<Rule | null>(null);
 
   const addCategory = useMutation({
     mutationFn: (name: string) => api.post('/category-rules/user-categories', { name }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['category-rules'] }),
+    onSuccess: () => {
+      setFailure(null);
+      setNewCatName('');
+      qc.invalidateQueries({ queryKey: ['category-rules'] });
+    },
+    onError: (e, name) => setFailure(`Ajout de la catégorie ${name} impossible : ${reason(e)}.`),
   });
   const deleteCategory = useMutation({
-    mutationFn: (id: string) => api.delete(`/category-rules/user-categories/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['category-rules'] }),
+    mutationFn: (c: UserCategory) => api.delete(`/category-rules/user-categories/${c.id}`),
+    onSuccess: () => {
+      setFailure(null);
+      qc.invalidateQueries({ queryKey: ['category-rules'] });
+    },
+    onError: (e, c) => setFailure(`Suppression de la catégorie ${c.name} impossible : ${reason(e)}.`),
   });
   const deleteRule = useMutation({
-    mutationFn: (id: string) => api.delete(`/category-rules/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['category-rules'] }),
+    mutationFn: (r: Rule) => api.delete(`/category-rules/${r.id}`),
+    onSuccess: () => {
+      setFailure(null);
+      qc.invalidateQueries({ queryKey: ['category-rules'] });
+    },
+    onError: (e, r) => setFailure(`Suppression de /${r.pattern}/${r.flags} impossible : ${reason(e)}.`),
   });
   const replayAll = useMutation({
     mutationFn: () => api.post<{ processed: number; updated: number }>('/category-rules/replay-all'),
+    onMutate: () => setFailure(null),
+    onError: (e) => setFailure(`Rejeu impossible : ${reason(e)}.`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['category-rules'] });
       qc.invalidateQueries({ queryKey: ['statement'] });
@@ -64,7 +86,19 @@ export function CategoryRulesPage() {
   });
 
   if (isLoading) return <LoadingState label="Chargement…" />;
-  const rules = data?.rules ?? [];
+  if (isError && !data) {
+    return (
+      <>
+        <PageHeader eyebrow="Personnalisation" title="Règles de catégorisation" />
+        <ErrorState
+          message="Impossible de charger les règles de catégorisation."
+          onRetry={() => { void refetch(); }}
+          retrying={isFetching}
+        />
+      </>
+    );
+  }
+  const rules = [...(data?.rules ?? [])].sort((a, b) => b.priority - a.priority);
   const userCats = data?.userCategories ?? [];
 
   return (
@@ -86,8 +120,17 @@ export function CategoryRulesPage() {
       />
 
       {replayAll.isSuccess && replayAll.data && (
-        <div className="mb-4 p-3 rounded-md bg-positive/10 border border-positive/40 text-sm">
+        <div role="status" className="mb-4 p-3 rounded-md bg-positive/10 border border-positive/40 text-sm">
           Replay terminé : {replayAll.data.updated} relevé(s) modifié(s) sur {replayAll.data.processed} analysé(s).
+        </div>
+      )}
+
+      {failure && (
+        <div role="alert" className="mb-4 p-3 rounded-md bg-negative/10 border border-negative/40 text-sm text-negative-fg flex items-start justify-between gap-3">
+          <span>{failure}</span>
+          <button type="button" onClick={() => setFailure(null)} aria-label="Fermer le message" className="btn-ghost p-1 shrink-0">
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
@@ -124,17 +167,20 @@ export function CategoryRulesPage() {
             <span key={c.id} className="badge-info text-xs flex items-center gap-1.5 pl-2.5 pr-1.5 py-1">
               {c.name}
               <button
-                onClick={() => deleteCategory.mutate(c.id)}
+                type="button"
+                onClick={() => deleteCategory.mutate(c)}
                 className="hover:text-negative"
+                aria-label={`Supprimer la catégorie ${c.name}`}
                 title="Supprimer"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-3 w-3" aria-hidden="true" />
               </button>
             </span>
           ))}
         </div>
         <div className="flex gap-2">
           <input
+            aria-label="Nom de la nouvelle catégorie"
             className="input text-sm flex-1 max-w-xs"
             placeholder="Nom (ex: Cadeaux, Animaux, Voyages…)"
             value={newCatName}
@@ -142,7 +188,6 @@ export function CategoryRulesPage() {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && newCatName.trim()) {
                 addCategory.mutate(newCatName.trim());
-                setNewCatName('');
               }
             }}
           />
@@ -151,7 +196,6 @@ export function CategoryRulesPage() {
             disabled={!newCatName.trim() || addCategory.isPending}
             onClick={() => {
               addCategory.mutate(newCatName.trim());
-              setNewCatName('');
             }}
           >
             <Plus className="h-4 w-4" /> Ajouter
@@ -171,23 +215,25 @@ export function CategoryRulesPage() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {rules.sort((a, b) => b.priority - a.priority).map((r) => (
-              <div key={r.id} className="grid grid-cols-12 gap-3 items-center px-2 py-2.5 text-sm">
-                <code className="col-span-5 font-mono text-xs text-fg-bright bg-surface-2 rounded px-2 py-1 truncate" title={r.pattern}>
+            {rules.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-2.5 text-sm">
+                <code className="basis-full sm:basis-auto sm:flex-1 min-w-0 font-mono text-xs text-fg-bright bg-surface-2 rounded px-2 py-1 break-all" title={r.pattern}>
                   /{r.pattern}/{r.flags}
                 </code>
-                <div className="col-span-3 text-fg">
+                <div className="text-fg flex-1 sm:flex-none sm:w-40">
                   {labelFor(r.category)}
                   {r.subcategory && <span className="text-xs text-fg-muted ml-1.5">· {r.subcategory}</span>}
                 </div>
-                <div className="col-span-2 text-xs text-fg-dim tabular text-right">priorité {r.priority}</div>
-                <div className="col-span-2 text-right">
+                <div className="text-xs text-fg-dim tabular sm:w-20 sm:text-right">priorité {r.priority}</div>
+                <div className="ml-auto">
                   <button
-                    onClick={() => deleteRule.mutate(r.id)}
-                    className="text-fg-muted hover:text-negative"
+                    type="button"
+                    onClick={() => setRuleToDelete(r)}
+                    className="text-fg-muted hover:text-negative p-1"
+                    aria-label={`Supprimer la règle /${r.pattern}/${r.flags}`}
                     title="Supprimer"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -195,6 +241,23 @@ export function CategoryRulesPage() {
           </div>
         )}
       </section>
+
+      {ruleToDelete && (
+        <ConfirmDialog
+          title="Supprimer cette règle ?"
+          confirmLabel="Supprimer la règle"
+          onCancel={() => setRuleToDelete(null)}
+          onConfirm={() => {
+            deleteRule.mutate(ruleToDelete);
+            setRuleToDelete(null);
+          }}
+        >
+          <p>
+            <code className="font-mono">/{ruleToDelete.pattern}/{ruleToDelete.flags}</code> → {labelFor(ruleToDelete.category)}.
+            Les transactions déjà catégorisées gardent leur catégorie ; les prochains imports n'appliqueront plus cette règle.
+          </p>
+        </ConfirmDialog>
+      )}
     </>
   );
 }
