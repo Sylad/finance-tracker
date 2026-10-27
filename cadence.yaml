@@ -2,6 +2,9 @@
 # l'entretien du plan (pas de lot à citer, ne compte pour aucun lot).
 plan:
   files: [frontend/public/plan-data/plan.json]
+  # Plan publié régénéré à chaque écriture du plan (plan.onWrite) : un raf ux/done du lead le laissait en retard
+  # et la CI « Plan publié à jour » refusait la livraison (vu sur warhammer40k L200, 27-10).
+  onWrite: { command: npm run plan, files: [frontend/public/plan-data/plan.json] }
 # Livraison par `cadence deliver` (https://github.com/Sylad/cadence) :
 # CI du sha poussé → bump du tag dans developpeur-gitops → vérification de l'effet.
 deliver:

@@ -1746,6 +1746,12 @@ lots:
     estimate: 0.25
     visible: true
     created: 2026-10-26
+  - id: L158
+    title: "cadence.yaml : plan.onWrite régénère frontend/public/plan-data/plan.json à chaque écriture du plan (même réglage que warhammer40k L206, livraison refusée par la CI « Plan publié à jour » le 27-10)"
+    status: doing
+    estimate: 0.05
+    created: 2026-10-27
+    started: 2026-10-27
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
