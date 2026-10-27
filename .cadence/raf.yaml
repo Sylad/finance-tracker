@@ -452,6 +452,9 @@ lots:
     estimate: 0.25
     created: 2026-09-28
     started: 2026-10-27
+    review: { date: 2026-10-27, verdict: "conforme après 2 corrections (revue Opus : 5 constats corrigés, contrastes recalculés 3,67–12:1 sur la case vide, 3,12:1 petits/gros jours ; README à jour, R17 Réessayer des détails et R15 vérifiés par mutation) ; mineur en note : la Nouveauté annonce l'échelle inversée", commit: 932d941821045c1f84a817602ff270cbdd96a80b }
+    notes:
+      - { date: 2026-10-27, text: "Hors périmètre de la revue (notes, pas des défauts du diff) : cases 12×14 px sous WCAG 2.5.8 sans anneau sur la case sélectionnée au toucher ; colonne des jours (L M J…) hors champ à 390 px (grille ouverte sur la fin, scrollLeft 458) ; vue de l'année en cours ouverte sur décembre (jours à venir) ; pas de h1 en échec et liste vide, état vide sans lien Importer. Question à Sylvain 27-10 : sens de l'échelle (clair = plus dépensé) avant raf ux." }
   - id: L37
     title: Revue UX — Santé financière
     status: todo
