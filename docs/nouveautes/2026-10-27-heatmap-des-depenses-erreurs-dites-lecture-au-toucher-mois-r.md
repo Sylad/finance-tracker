@@ -13,3 +13,5 @@ Sur la page Heatmap des dépenses, tu peux maintenant toucher ou cliquer une cas
 Si les relevés ne se chargent pas, un message « Impossible de charger la heatmap » avec un bouton Réessayer remplace le chargement qui tournait sans fin. Sans relevé importé, la page l'explique au lieu de tourner dans le vide.
 
 Les étiquettes de mois ne se chevauchent plus, les textes de l'axe et de la légende sont plus lisibles, le sélecteur de période porte un nom, et la grille est résumée en une phrase pour les lecteurs d'écran (jours avec débit, total, journée la plus dépensière).
+
+L'échelle de couleur a changé de sens : avant, plus la case était foncée, plus tu avais dépensé ; maintenant, plus la case est claire, plus tu as dépensé (le sous-titre de la page le rappelle).
