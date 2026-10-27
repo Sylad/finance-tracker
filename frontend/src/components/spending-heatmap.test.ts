@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHeatmapGrid, buildMonthTicks, dateKey, EMPTY_CELL_COLOR, heatmapColor } from './spending-heatmap';
+import { buildHeatmapGrid, buildMonthTicks, compareSpendingDays, dateKey, EMPTY_CELL_COLOR, heatmapColor, heatmapIntensity } from './spending-heatmap';
 
 // 2026-05-04 is a Monday → starts on column 0 (no leading null padding).
 // 2026-05-10 is a Sunday → fills exactly one column of 7 cells.
@@ -88,12 +88,40 @@ describe('heatmapColor — contraste de l’échelle (L36)', () => {
   it('R12 — chaque case avec débit tranche d’au moins 3:1 sur une case vide, et plus de dépense = plus clair', () => {
     expect(heatmapColor(0)).toBe(EMPTY_CELL_COLOR);
     let previous = 0;
-    for (const t of [0.05, 0.2, 0.4, 0.6, 0.8, 1]) {
+    for (const t of [0.01, 0.05, 0.2, 0.4, 0.6, 0.8, 1]) {
       const color = heatmapColor(t);
       expect(contrast(color, EMPTY_CELL_COLOR)).toBeGreaterThanOrEqual(3);
       const lum = luminance(color);
       expect(lum).toBeGreaterThan(previous);
       previous = lum;
     }
+  });
+
+  it('R12 — un petit jour (10 €) et le plus gros (1 200 €) se distinguent d’au moins 3:1, avec l’intensité réellement appliquée', () => {
+    const max = 1200;
+    const small = heatmapColor(heatmapIntensity(10, max));
+    const big = heatmapColor(heatmapIntensity(max, max));
+    expect(contrast(small, big)).toBeGreaterThanOrEqual(3);
+    // Le plus petit jour possible (1 €) reste lui aussi ≥ 3:1 sur la case vide…
+    expect(contrast(heatmapColor(heatmapIntensity(1, max)), EMPTY_CELL_COLOR)).toBeGreaterThanOrEqual(3);
+    // …et l'intensité est monotone, bornée à [0, 1].
+    expect(heatmapIntensity(0, max)).toBe(0);
+    expect(heatmapIntensity(max, max)).toBe(1);
+    expect(heatmapIntensity(100, max)).toBeGreaterThan(heatmapIntensity(10, max));
+    expect(heatmapIntensity(10, 0)).toBe(0);
+  });
+});
+
+describe('compareSpendingDays — départage partagé résumé / Top 5 (L36)', () => {
+  it('trie par montant décroissant puis, à égalité, du jour le plus récent au plus ancien', () => {
+    const days = [
+      { date: '2026-04-05', amount: 1200 },
+      { date: '2026-09-05', amount: 1200 },
+      { date: '2026-06-01', amount: 30 },
+      { date: '2026-05-05', amount: 1200 },
+    ];
+    expect([...days].sort(compareSpendingDays).map((d) => d.date)).toEqual([
+      '2026-09-05', '2026-05-05', '2026-04-05', '2026-06-01',
+    ]);
   });
 });

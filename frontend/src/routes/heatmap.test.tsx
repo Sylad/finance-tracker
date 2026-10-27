@@ -170,6 +170,38 @@ describe('Heatmap — Top 5 cohérent avec la grille (L36)', () => {
   });
 });
 
+describe('Heatmap — ligne de lecture et période (L36)', () => {
+  beforeEach(() => { vi.clearAllMocks(); routeMany({ early: EARLY, late: LATE }); });
+
+  it('R14 — changer de période efface le jour choisi, qui n’est plus affiché', async () => {
+    renderPage();
+    await screen.findByRole('img', { name: /Heatmap des dépenses/ });
+    await userEvent.click(document.querySelector('[data-date="2025-06-16"]') as HTMLElement);
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('16 juin 2025');
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Période' }), '2026');
+    expect(document.querySelector('[data-date="2025-06-16"]')).toBeNull();
+    expect(status).not.toHaveTextContent('2025');
+    expect(status).toHaveTextContent(/Touche ou survole/);
+  });
+});
+
+describe('Heatmap — départage à égalité (L36)', () => {
+  beforeEach(() => { vi.clearAllMocks(); routeMany({ early: EARLY, late: LATE }); });
+
+  it('R15 — à montant égal, le résumé et le Top 5 nomment la même journée (la plus récente)', async () => {
+    renderPage();
+    await screen.findByRole('img', { name: /Heatmap des dépenses/ });
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Période' }), '2026');
+    const label = screen.getByRole('img', { name: /Heatmap des dépenses/ }).getAttribute('aria-label') ?? '';
+    const summaryDay = label.match(/Journée la plus dépensière : ([^,]+),/)?.[1];
+    expect(summaryDay).toBe('jeudi 31 décembre 2026');
+    const rows = top5Rows();
+    expect(rows[0]).toContain('31 décembre 2026');
+    expect(rows[1]).toContain('30 décembre 2026');
+  });
+});
+
 describe('Heatmap — lecture au clavier (L36)', () => {
   it('R11 — un seul arrêt de tabulation sur la grille, les flèches lisent un jour quelconque', async () => {
     route([{ id: 's1' }]);

@@ -4,7 +4,7 @@ import { Calendar } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState, ErrorState, LoadingState } from '@/components/loading-state';
-import { dateKey, SpendingHeatmap } from '@/components/spending-heatmap';
+import { compareSpendingDays, dateKey, SpendingHeatmap } from '@/components/spending-heatmap';
 import type { MonthlyStatement, StatementSummary } from '@/types/api';
 import { formatEUR } from '@/lib/utils';
 
@@ -56,13 +56,14 @@ export function HeatmapPage() {
   }, [year]);
 
   // Top 5 : mêmes jours que la grille (clés YYYY-MM-DD comparées entre elles,
-  // jamais Date.parse — minuit UTC — contre des instants locaux).
+  // jamais Date.parse — minuit UTC — contre des instants locaux), même départage
+  // que le résumé de la grille.
   const topDays = useMemo(() => {
     const fromKey = dateKey(from);
     const toKey = dateKey(to);
     return Array.from(byDay.entries(), ([date, amount]) => ({ date, amount }))
       .filter(({ date }) => date >= fromKey && date <= toKey)
-      .sort((a, b) => b.amount - a.amount)
+      .sort(compareSpendingDays)
       .slice(0, 5);
   }, [byDay, from, to]);
 

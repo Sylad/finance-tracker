@@ -81,11 +81,33 @@ export const EMPTY_CELL_COLOR = 'hsl(220 12% 14%)';
 
 /**
  * Couleur d'une case selon son intensité (0 = aucun débit, 1 = maximum de la
- * période). Plus on dépense, plus la case est claire et vive : sur fond sombre
- * c'est ce qui la détache de la case vide (≥ 3:1, WCAG 1.4.11).
+ * période). Du rouge franc (petit jour) au saumon clair (plus gros jour) : sur
+ * fond sombre, la clarté est ce qui détache une case de la case vide (≥ 3:1 dès
+ * le plus petit montant, WCAG 1.4.11) et ce qui sépare les petits jours des gros
+ * (10 € contre 1 200 € ≥ 3:1). Mesuré par spending-heatmap.test.ts.
  */
 export function heatmapColor(t: number): string {
-  return t <= 0 ? EMPTY_CELL_COLOR : `hsl(0, 75%, ${50 + t * 15}%)`;
+  if (t <= 0) return EMPTY_CELL_COLOR;
+  const k = Math.min(1, t);
+  return `hsl(${Math.round(k * 18)}, 90%, ${(50 + k * 39).toFixed(1)}%)`;
+}
+
+/**
+ * Intensité d'un jour (0..1) par rapport au maximum de la période. Racine
+ * carrée : un pic isolé n'écrase pas les autres jours, sans tasser l'échelle
+ * comme le faisait la racine cubique (10 € et 1 200 € à 1,39:1).
+ */
+export function heatmapIntensity(amount: number, max: number): number {
+  if (max <= 0 || amount <= 0) return 0;
+  return Math.min(1, Math.sqrt(amount / max));
+}
+
+/**
+ * Ordre « journée la plus dépensière » partagé par le résumé de la grille et le
+ * Top 5 : montant décroissant, puis à égalité le jour le plus récent d'abord.
+ */
+export function compareSpendingDays(a: DayCell, b: DayCell): number {
+  return b.amount - a.amount || b.date.localeCompare(a.date);
 }
 
 export function SpendingHeatmap({ byDay, from, to }: Props) {
@@ -97,6 +119,16 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<DayCell | null>(null);
 
+  // Changement de période : le jour choisi n'est plus affiché, la ligne de
+  // lecture ne doit pas le garder (remise à zéro pendant le rendu, sans image
+  // intermédiaire).
+  const period = `${dateKey(from)}..${dateKey(to)}`;
+  const [shownPeriod, setShownPeriod] = useState(period);
+  if (shownPeriod !== period) {
+    setShownPeriod(period);
+    setSelected(null);
+  }
+
   // La grille démarre à gauche sur le mois le plus ancien : sur un téléphone les
   // mois récents seraient hors champ. On ouvre donc sur la fin.
   useEffect(() => {
@@ -106,7 +138,7 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
 
   const summary = useMemo(() => {
     let top: DayCell | null = null;
-    for (const col of columns) for (const c of col) if (c && c.amount > 0 && (!top || c.amount > top.amount)) top = c;
+    for (const col of columns) for (const c of col) if (c && c.amount > 0 && (!top || compareSpendingDays(c, top) < 0)) top = c;
     const base = `Heatmap des dépenses : ${daysCovered} jour${daysCovered > 1 ? 's' : ''} avec débit, total ${formatEUR(total)}`;
     return top ? `${base}. Journée la plus dépensière : ${formatDateLong(top.date)}, ${formatEUR(top.amount)}.` : `${base}.`;
   }, [columns, daysCovered, total]);
@@ -126,12 +158,6 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
   }
 
   const monthTicks = useMemo(() => buildMonthTicks(columns), [columns]);
-
-  function intensity(amount: number): number {
-    if (max <= 0 || amount <= 0) return 0;
-    // Smooth via cube-root for better visual spread (otherwise huge spikes flatten everything)
-    return Math.pow(amount / max, 1 / 3);
-  }
 
   return (
     <>
@@ -171,7 +197,7 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
               <div key={i} className="flex flex-col" style={{ width: 14 }}>
                 {col.map((cell, j) => {
                   if (!cell) return <div key={j} className="h-3.5" style={{ marginBottom: 2 }} />;
-                  const t = intensity(cell.amount);
+                  const t = heatmapIntensity(cell.amount, max);
                   const bg = heatmapColor(t);
                   const tip = cell.amount > 0
                     ? `${formatDateLong(cell.date)} : ${formatEUR(cell.amount)}`
