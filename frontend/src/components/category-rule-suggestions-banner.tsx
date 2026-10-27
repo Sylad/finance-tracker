@@ -130,7 +130,9 @@ export function CategoryRuleSuggestionsBanner() {
               <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
                 <div className="basis-full sm:basis-0 sm:flex-1 min-w-0">
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <code className="text-sm text-accent-bright font-mono">
+                    {/* break-all : un motif long sans espace (alternance de marchands) se coupe
+                        dans la largeur au lieu de faire défiler la page à 390 px (WCAG 1.4.10). */}
+                    <code className="text-sm text-accent-bright font-mono break-all">
                       /{s.pattern}/i
                     </code>
                     <span className="text-fg-dim text-xs">→</span>

@@ -198,4 +198,22 @@ describe('Règles de catégories — revue UX (L34)', () => {
     expect(texte.className).toContain('sm:basis-0');
     expect(accept.parentElement!.parentElement!.className).toContain('flex-wrap');
   });
+
+  it('R18 — un motif de suggestion long sans espace se coupe dans la largeur (break-all) au lieu de faire défiler la page à 390 px', async () => {
+    const pattern = 'SPOTIFY|DEEZER|APPLE\\.COM/BILL|AMAZON\\s+PRIME\\s+VIDEO';
+    sugg.list = [{ id: 'g1', pattern, category: 'subscriptions', subcategory: '', occurrenceCount: 3, exampleDescriptions: [], status: 'pending', rationale: '' }];
+    renderPage();
+    const code = await screen.findByText(`/${pattern}/i`);
+    expect(code.tagName).toBe('CODE');
+    expect(code.className).toContain('break-all');
+  });
+
+  it('R19 — l’alerte d’échec amenée à l’écran n’est pas recouverte par l’en-tête fixe du téléphone (scroll-mt-20 sous lg)', async () => {
+    api.delete.mockRejectedValue(new Error('refusé'));
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer la catégorie Animaux' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.className).toContain('scroll-mt-20');
+    expect(alert.className).toContain('lg:scroll-mt-6');
+  });
 });
