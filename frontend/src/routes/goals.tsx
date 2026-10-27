@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Target, Trash2, Plus, TrendingUp, Calendar, CheckCircle2 } from 'lucide-react';
+import { Target, Trash2, Plus, TrendingUp, Calendar, CheckCircle2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
-import { LoadingState } from '@/components/loading-state';
+import { LoadingState, ErrorState } from '@/components/loading-state';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { formatEUR, cn } from '@/lib/utils';
 
 type GoalType = 'savings_total' | 'net_worth';
@@ -29,9 +30,13 @@ const TYPE_LABELS: Record<GoalType, string> = {
   net_worth: 'Patrimoine net',
 };
 
+function reason(e: unknown): string {
+  return e instanceof Error && e.message ? e.message : 'erreur inconnue';
+}
+
 export function GoalsPage() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery<GoalWithProgress[]>({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery<GoalWithProgress[]>({
     queryKey: ['goals'],
     queryFn: () => api.get<GoalWithProgress[]>('/goals'),
   });
@@ -41,20 +46,44 @@ export function GoalsPage() {
   const [targetAmount, setTargetAmount] = useState('');
   const [targetDate, setTargetDate] = useState('');
 
+  const [goalToDelete, setGoalToDelete] = useState<GoalWithProgress | null>(null);
+  // Objet neuf à chaque échec : un même message répété doit de nouveau être amené à l'écran.
+  const [failure, setFailureState] = useState<{ text: string } | null>(null);
+  const setFailure = (text: string | null) => setFailureState(text === null ? null : { text });
+  const failureRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (failure) failureRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [failure]);
+
   const createGoal = useMutation({
-    mutationFn: (body: unknown) => api.post('/goals', body),
+    mutationFn: (body: { name: string; type: GoalType; targetAmount: number; targetDate: string | null }) =>
+      api.post('/goals', body),
+    onError: (e, body) => setFailure(`Création de l’objectif ${body.name} impossible : ${reason(e)}.`),
     onSuccess: () => {
+      setFailure(null);
       qc.invalidateQueries({ queryKey: ['goals'] });
       setShowForm(false);
       setName(''); setTargetAmount(''); setTargetDate('');
     },
   });
   const removeGoal = useMutation({
-    mutationFn: (id: string) => api.delete(`/goals/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['goals'] }),
+    mutationFn: (g: GoalWithProgress) => api.delete(`/goals/${g.id}`),
+    onError: (e, g) => setFailure(`Suppression de l’objectif ${g.name} impossible : ${reason(e)}.`),
+    onSuccess: () => {
+      setFailure(null);
+      qc.invalidateQueries({ queryKey: ['goals'] });
+    },
   });
 
   if (isLoading) return <LoadingState label="Chargement…" />;
+  if (isError && !data) {
+    return (
+      <>
+        <PageHeader eyebrow="Vision long terme" title="Objectifs" />
+        <ErrorState message="Impossible de charger les objectifs." onRetry={() => { void refetch(); }} retrying={isFetching} />
+      </>
+    );
+  }
   const goals = data ?? [];
 
   return (
@@ -70,34 +99,44 @@ export function GoalsPage() {
         }
       />
 
+      {failure && (
+        // scroll-mt-20 : sous l'en-tête fixe du téléphone (56 px), sinon scrollIntoView la place sous lui.
+        <div ref={failureRef} role="alert" className="mb-4 p-3 rounded-md scroll-mt-20 lg:scroll-mt-6 bg-negative/10 border border-negative/40 text-sm text-negative-fg flex items-start justify-between gap-3">
+          <span>{failure.text}</span>
+          <button type="button" onClick={() => setFailure(null)} aria-label="Fermer le message" className="btn-ghost p-1 shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {showForm && (
         <section className="card p-5 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Nom</label>
-              <input className="input text-sm mt-1.5 w-full" placeholder="ex: Apport pour appartement" value={name} onChange={(e) => setName(e.target.value)} />
+              <label htmlFor="goal-name" className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Nom</label>
+              <input id="goal-name" className="input text-sm mt-1.5 w-full" placeholder="ex: Apport pour appartement" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div>
-              <label className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Type</label>
-              <select className="input text-sm mt-1.5 w-full" value={type} onChange={(e) => setType(e.target.value as GoalType)}>
+              <label htmlFor="goal-type" className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Type</label>
+              <select id="goal-type" className="input text-sm mt-1.5 w-full" value={type} onChange={(e) => setType(e.target.value as GoalType)}>
                 <option value="savings_total">Épargne totale (cumul des comptes épargne)</option>
                 <option value="net_worth">Patrimoine net (épargne + courant − dettes)</option>
               </select>
             </div>
             <div>
-              <label className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Montant cible (€)</label>
-              <input className="input text-sm mt-1.5 w-full" type="number" placeholder="25000" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} />
+              <label htmlFor="goal-target" className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Montant cible (€)</label>
+              <input id="goal-target" className="input text-sm mt-1.5 w-full" type="number" min="1" inputMode="decimal" placeholder="25000" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} />
             </div>
             <div>
-              <label className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Date cible (optionnel)</label>
-              <input className="input text-sm mt-1.5 w-full" type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+              <label htmlFor="goal-date" className="text-xs uppercase tracking-wider text-fg-muted font-semibold">Date cible (optionnel)</label>
+              <input id="goal-date" className="input text-sm mt-1.5 w-full" type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <button onClick={() => setShowForm(false)} className="btn-ghost text-sm">Annuler</button>
             <button
-              onClick={() => createGoal.mutate({ name, type, targetAmount: Number(targetAmount), targetDate: targetDate || null })}
-              disabled={!name.trim() || !Number(targetAmount) || createGoal.isPending}
+              onClick={() => createGoal.mutate({ name: name.trim(), type, targetAmount: Number(targetAmount), targetDate: targetDate || null })}
+              disabled={!name.trim() || !(Number(targetAmount) > 0) || createGoal.isPending}
               className="btn-primary text-sm"
             >
               Créer
@@ -114,8 +153,19 @@ export function GoalsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {goals.map((g) => <GoalCard key={g.id} g={g} onDelete={() => removeGoal.mutate(g.id)} />)}
+          {goals.map((g) => <GoalCard key={g.id} g={g} onDelete={() => setGoalToDelete(g)} />)}
         </div>
+      )}
+
+      {goalToDelete && (
+        <ConfirmDialog
+          title="Supprimer cet objectif ?"
+          confirmLabel="Supprimer l’objectif"
+          onCancel={() => setGoalToDelete(null)}
+          onConfirm={() => { removeGoal.mutate(goalToDelete); setGoalToDelete(null); }}
+        >
+          <p>L’objectif « {goalToDelete.name} » sera supprimé. Tes comptes et tes relevés ne changent pas.</p>
+        </ConfirmDialog>
       )}
     </>
   );
@@ -137,6 +187,8 @@ function GoalCard({ g, onDelete }: { g: GoalWithProgress; onDelete: () => void }
     'no-deadline': 'Sans date cible',
   }[g.projection];
 
+  const pct = Math.min(100, Math.max(0, g.progressPct));
+
   return (
     <div className="card p-5">
       <div className="flex items-start justify-between gap-3">
@@ -148,8 +200,8 @@ function GoalCard({ g, onDelete }: { g: GoalWithProgress; onDelete: () => void }
           <span className={cn('text-[10px] uppercase tracking-wider font-bold border rounded-full px-2 py-0.5', projColor)}>
             {projLabel}
           </span>
-          <button onClick={onDelete} className="text-fg-muted hover:text-negative" title="Supprimer">
-            <Trash2 className="h-4 w-4" />
+          <button type="button" onClick={onDelete} className="text-fg-muted hover:text-negative p-1" aria-label={`Supprimer l’objectif ${g.name}`} title="Supprimer">
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -159,7 +211,14 @@ function GoalCard({ g, onDelete }: { g: GoalWithProgress; onDelete: () => void }
         <div className="text-sm text-fg-muted tabular">/ {formatEUR(g.targetAmount)}</div>
       </div>
 
-      <div className="mt-3 h-2 bg-surface-2 rounded-full overflow-hidden">
+      <div
+        role="progressbar"
+        aria-label={`Progression de l’objectif ${g.name}`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+        className="mt-3 h-2 bg-surface-2 rounded-full overflow-hidden"
+      >
         <div
           className={cn(
             'h-full transition-all',
@@ -167,7 +226,7 @@ function GoalCard({ g, onDelete }: { g: GoalWithProgress; onDelete: () => void }
               : g.projection === 'behind' ? 'bg-warning'
                 : 'bg-accent',
           )}
-          style={{ width: `${g.progressPct}%` }}
+          style={{ width: `${pct}%` }}
         />
       </div>
       <div className="mt-1 text-xs text-fg-muted flex items-center justify-between">
