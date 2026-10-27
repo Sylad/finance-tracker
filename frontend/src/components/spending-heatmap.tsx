@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatEUR } from '@/lib/utils';
 
 export interface DayCell {
@@ -63,6 +63,23 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
     [byDay, from, to],
   );
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [selected, setSelected] = useState<DayCell | null>(null);
+
+  // La grille démarre à gauche sur le mois le plus ancien : sur un téléphone les
+  // mois récents seraient hors champ. On ouvre donc sur la fin.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [columns]);
+
+  const summary = useMemo(() => {
+    let top: DayCell | null = null;
+    for (const col of columns) for (const c of col) if (c && c.amount > 0 && (!top || c.amount > top.amount)) top = c;
+    const base = `Heatmap des dépenses : ${daysCovered} jour${daysCovered > 1 ? 's' : ''} avec débit, total ${formatEUR(total)}`;
+    return top ? `${base}. Journée la plus dépensière : ${formatDateLong(top.date)}, ${formatEUR(top.amount)}.` : `${base}.`;
+  }, [columns, daysCovered, total]);
+
   // Find label positions: for each column, if its first cell starts a new month, label it
   const monthTicks = useMemo(() => {
     const ticks: { col: number; label: string }[] = [];
@@ -86,14 +103,15 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div ref={scrollRef} data-heatmap-scroll className="overflow-x-auto">
       <div className="inline-block">
+        <div role="img" aria-label={summary}>
         {/* Month axis */}
         <div className="flex" style={{ paddingLeft: 22 }}>
           {columns.map((_, i) => {
             const tick = monthTicks.find((t) => t.col === i);
             return (
-              <div key={i} style={{ width: 14 }} className="text-[10px] text-fg-dim h-4">
+              <div key={i} style={{ width: 14 }} className="text-[11px] text-fg-dim h-4">
                 {tick?.label ?? ''}
               </div>
             );
@@ -103,7 +121,7 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
         <div className="flex">
           <div className="flex flex-col mr-1.5" style={{ width: 16 }}>
             {DAY_LABELS.map((d, i) => (
-              <div key={i} className="h-3.5 text-[9px] text-fg-dim flex items-center" style={{ marginBottom: 2 }}>
+              <div key={i} className="h-3.5 text-[11px] text-fg-dim flex items-center" style={{ marginBottom: 2 }}>
                 {i % 2 === 1 ? d : ''}
               </div>
             ))}
@@ -124,7 +142,9 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
                     <div
                       key={j}
                       title={tip}
-                      className="h-3.5 rounded-sm transition-all hover:scale-125 hover:ring-1 hover:ring-accent cursor-default"
+                      data-date={cell.date}
+                      onClick={() => setSelected(cell)}
+                      className="h-3.5 rounded-sm transition-all hover:scale-125 hover:ring-1 hover:ring-accent cursor-pointer"
                       style={{ background: bg, marginRight: 2, marginBottom: 2, width: 12 }}
                     />
                   );
@@ -133,8 +153,15 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
             ))}
           </div>
         </div>
+        </div>
+        {/* Lecture d'une case touchée ou cliquée (le survol seul n'existe pas au toucher) */}
+        <div role="status" className="mt-3 min-h-5 text-xs text-fg-muted">
+          {selected
+            ? `${formatDateLong(selected.date)} : ${selected.amount > 0 ? formatEUR(selected.amount) : 'aucun débit'}`
+            : 'Touche ou survole une case pour lire le jour et son montant.'}
+        </div>
         {/* Legend */}
-        <div className="flex items-center justify-between mt-3 text-[10px] text-fg-dim">
+        <div className="flex items-center justify-between mt-3 text-[11px] text-fg-dim">
           <div>
             {daysCovered} jour{daysCovered > 1 ? 's' : ''} avec débit · total {formatEUR(total)}
           </div>

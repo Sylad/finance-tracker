@@ -3,25 +3,25 @@ import { useQuery } from '@tanstack/react-query';
 import { Calendar } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
-import { LoadingState } from '@/components/loading-state';
+import { EmptyState, ErrorState, LoadingState } from '@/components/loading-state';
 import { SpendingHeatmap } from '@/components/spending-heatmap';
 import type { MonthlyStatement, StatementSummary } from '@/types/api';
 import { formatEUR } from '@/lib/utils';
 
 export function HeatmapPage() {
-  const { data: summaries, isLoading: summariesLoading } = useQuery<StatementSummary[]>({
+  const { data: summaries, isLoading: summariesLoading, isError: summariesError, refetch: refetchSummaries } = useQuery<StatementSummary[]>({
     queryKey: ['statements'],
     queryFn: () => api.get<StatementSummary[]>('/statements'),
   });
 
   // Fetch all statement details in a single aggregated query
-  const { data: statements, isLoading: detailsLoading } = useQuery<MonthlyStatement[]>({
+  const { data: statements, isLoading: detailsLoading, isError: detailsError, refetch: refetchDetails, isFetching: detailsFetching } = useQuery<MonthlyStatement[]>({
     queryKey: ['statements', 'all-details', summaries?.map((s) => s.id).join(',')],
     queryFn: () => Promise.all((summaries ?? []).map((s) => api.get<MonthlyStatement>(`/statements/${s.id}`))),
     enabled: !!summaries && summaries.length > 0,
   });
   const isLoading = summariesLoading || detailsLoading;
-  const allReady = !!statements;
+  const hasError = summariesError || detailsError;
 
   // Aggregate debits by day across all statements
   const byDay = useMemo(() => {
@@ -66,8 +66,21 @@ export function HeatmapPage() {
       .slice(0, 5);
   }, [byDay, from, to]);
 
+  if (hasError) {
+    return (
+      <ErrorState
+        title="Impossible de charger la heatmap"
+        message="Les relevés n'ont pas pu être lus. Réessaie dans un instant."
+        retrying={detailsFetching}
+        onRetry={() => { void (summariesError ? refetchSummaries() : refetchDetails()); }}
+      />
+    );
+  }
   if (isLoading) return <LoadingState label="Chargement…" />;
-  if (!allReady) return <LoadingState label="Agrégation des relevés…" />;
+  if (summaries && summaries.length === 0) {
+    return <EmptyState title="Aucun relevé importé" hint="La heatmap se remplit dès qu'un relevé est importé." />;
+  }
+  if (!statements) return <LoadingState label="Agrégation des relevés…" />;
 
   return (
     <>
@@ -77,6 +90,7 @@ export function HeatmapPage() {
         subtitle="Une case par jour, plus c'est rouge plus tu as dépensé."
         actions={
           <select
+            aria-label="Période"
             value={year}
             onChange={(e) => setYear(e.target.value === 'rolling' ? 'rolling' : Number(e.target.value))}
             className="input text-sm"
