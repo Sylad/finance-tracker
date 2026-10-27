@@ -216,4 +216,18 @@ describe('Règles de catégories — revue UX (L34)', () => {
     expect(alert.className).toContain('scroll-mt-20');
     expect(alert.className).toContain('lg:scroll-mt-6');
   });
+  it('R21 — dans « Voir les masqués », un motif long se coupe dans la largeur (break-all, pas de truncate) et la colonne du motif prend la ligne sous 640 px', async () => {
+    const pattern = 'SPOTIFY|DEEZER|APPLE\\.COM/BILL|AMAZON\\s+PRIME\\s+VIDEO|NETFLIX\\.COM|DISNEY\\s*PLUS';
+    sugg.list = [{ id: 'g3', pattern, category: 'subscriptions', subcategory: '', occurrenceCount: 3, exampleDescriptions: [], status: 'snoozed', rationale: '' }];
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: /Voir les masqués/ }));
+    const code = screen.getByText(`/${pattern}/i`, { exact: false });
+    expect(code.tagName).toBe('CODE');
+    expect(code.className).toContain('break-all');
+    expect(code.className).not.toContain('truncate');
+    const colonne = code.parentElement!;
+    expect(colonne.className).toContain('basis-full');
+    expect(colonne.className).toContain('sm:basis-0');
+    expect(colonne.parentElement!.className).toContain('flex-wrap');
+  });
 });

@@ -196,8 +196,12 @@ export function CategoryRuleSuggestionsBanner() {
               key={s.id}
               className="p-2 bg-surface-2/20 rounded opacity-70 flex items-center justify-between gap-3 flex-wrap"
             >
-              <div className="flex-1 min-w-0">
-                <code className="text-xs text-fg-muted font-mono truncate">
+              {/* Comme la liste des suggestions en attente : la colonne du motif prend la ligne
+                  sous 640 px (boutons dessous) et le motif se coupe (break-all) au lieu de
+                  rester sur une ligne (`truncate` est sans effet sur un <code> inline) qui
+                  faisait défiler la page et recouvrait Accepter / Rejeter à 390 px (WCAG 1.4.10). */}
+              <div className="basis-full sm:basis-0 sm:flex-1 min-w-0">
+                <code className="text-xs text-fg-muted font-mono break-all">
                   /{s.pattern}/i → {labelForCategory(s.category)}
                 </code>
               </div>
