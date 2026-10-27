@@ -128,7 +128,7 @@ export function CategoryRuleSuggestionsBanner() {
               className="p-3 bg-surface-2/40 rounded border border-border/40"
             >
               <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
-                <div className="flex-1 min-w-0">
+                <div className="basis-full sm:basis-0 sm:flex-1 min-w-0">
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <code className="text-sm text-accent-bright font-mono">
                       /{s.pattern}/i

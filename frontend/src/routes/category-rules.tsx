@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trash2, RefreshCw, Loader2, Plus, X } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -46,7 +46,28 @@ export function CategoryRulesPage() {
   });
 
   const [newCatName, setNewCatName] = useState('');
-  const [failure, setFailure] = useState<string | null>(null);
+  // Objet neuf à chaque échec : un même message répété doit de nouveau être amené à l'écran.
+  const [failure, setFailureState] = useState<{ text: string } | null>(null);
+  const setFailure = (text: string | null) => setFailureState(text === null ? null : { text });
+  const failureRef = useRef<HTMLDivElement>(null);
+  // La corbeille peut être loin sous le haut de la page : l'alerte d'échec vient à l'écran.
+  useEffect(() => {
+    if (failure) failureRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [failure]);
+
+  // Après une suppression réussie, la ligne (et sa corbeille) disparaît à l'arrivée des données :
+  // le focus tombait sur <body>. On le rend à un point fixe de la même zone.
+  const rulesHeading = useRef<HTMLDivElement>(null);
+  const newCatInput = useRef<HTMLInputElement>(null);
+  const focusAfterRemoval = useRef<'rules' | 'categories' | null>(null);
+  useEffect(() => {
+    const target = focusAfterRemoval.current;
+    if (!target) return;
+    const a = document.activeElement;
+    if (a && a !== document.body && a.isConnected) return;
+    focusAfterRemoval.current = null;
+    (target === 'rules' ? rulesHeading : newCatInput).current?.focus();
+  }, [data]);
   const [ruleToDelete, setRuleToDelete] = useState<Rule | null>(null);
 
   const addCategory = useMutation({
@@ -62,6 +83,7 @@ export function CategoryRulesPage() {
     mutationFn: (c: UserCategory) => api.delete(`/category-rules/user-categories/${c.id}`),
     onSuccess: () => {
       setFailure(null);
+      focusAfterRemoval.current = 'categories';
       qc.invalidateQueries({ queryKey: ['category-rules'] });
     },
     onError: (e, c) => setFailure(`Suppression de la catégorie ${c.name} impossible : ${reason(e)}.`),
@@ -70,6 +92,7 @@ export function CategoryRulesPage() {
     mutationFn: (r: Rule) => api.delete(`/category-rules/${r.id}`),
     onSuccess: () => {
       setFailure(null);
+      focusAfterRemoval.current = 'rules';
       qc.invalidateQueries({ queryKey: ['category-rules'] });
     },
     onError: (e, r) => setFailure(`Suppression de /${r.pattern}/${r.flags} impossible : ${reason(e)}.`),
@@ -126,8 +149,8 @@ export function CategoryRulesPage() {
       )}
 
       {failure && (
-        <div role="alert" className="mb-4 p-3 rounded-md bg-negative/10 border border-negative/40 text-sm text-negative-fg flex items-start justify-between gap-3">
-          <span>{failure}</span>
+        <div ref={failureRef} role="alert" className="mb-4 p-3 rounded-md bg-negative/10 border border-negative/40 text-sm text-negative-fg flex items-start justify-between gap-3">
+          <span>{failure.text}</span>
           <button type="button" onClick={() => setFailure(null)} aria-label="Fermer le message" className="btn-ghost p-1 shrink-0">
             <X className="h-4 w-4" />
           </button>
@@ -180,6 +203,7 @@ export function CategoryRulesPage() {
         </div>
         <div className="flex gap-2">
           <input
+            ref={newCatInput}
             aria-label="Nom de la nouvelle catégorie"
             className="input text-sm flex-1 max-w-xs"
             placeholder="Nom (ex: Cadeaux, Animaux, Voyages…)"
@@ -204,7 +228,7 @@ export function CategoryRulesPage() {
       </section>
 
       <section className="card p-5">
-        <div className="stat-label mb-3">Règles actives</div>
+        <div ref={rulesHeading} tabIndex={-1} className="stat-label mb-3 outline-none">Règles actives</div>
         <p className="text-xs text-fg-muted mb-3">
           Chaque nouvelle import passe à travers ces règles, qui peuvent forcer une catégorie quand le motif (regex)
           matche la description normalisée d'une transaction. Les règles avec la priorité la plus élevée gagnent.

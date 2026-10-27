@@ -136,4 +136,66 @@ describe('Règles de catégories — revue UX (L34)', () => {
     expect(alert).toHaveTextContent(`Impossible de ${verbe} la suggestion`);
     expect(alert).toHaveTextContent('API 500');
   });
+  it('R12 — une suppression de catégorie refusée affiche une alerte nommant la catégorie', async () => {
+    api.delete.mockRejectedValueOnce(new Error('verrouillée'));
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer la catégorie Animaux' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Suppression de la catégorie Animaux impossible : verrouillée.');
+  });
+
+  it('R13 — « Fermer le message » retire l’alerte d’échec', async () => {
+    api.delete.mockRejectedValueOnce(new Error('refusé'));
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer la catégorie Animaux' }));
+    await screen.findByRole('alert');
+    await userEvent.click(screen.getByRole('button', { name: 'Fermer le message' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('R14 — l’alerte d’échec est amenée à l’écran (la page a pu défiler jusqu’à la corbeille)', async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    api.delete.mockRejectedValue(new Error('refusé'));
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer la catégorie Animaux' }));
+    const alert = await screen.findByRole('alert');
+    await waitFor(() => expect(scroll).toHaveBeenCalledTimes(1));
+    expect(scroll.mock.contexts[0]).toBe(alert);
+    // Même message, deuxième échec : l’alerte est de nouveau amenée à l’écran.
+    await userEvent.click(screen.getByRole('button', { name: 'Supprimer la catégorie Animaux' }));
+    await waitFor(() => expect(scroll).toHaveBeenCalledTimes(2));
+  });
+
+  it('R15 — après suppression d’une règle, le focus passe à « Règles actives » au lieu de tomber sur <body>', async () => {
+    renderPage();
+    const trash = await screen.findByRole('button', { name: 'Supprimer la règle /LIDL/i' });
+    trash.focus();
+    api.get.mockResolvedValue({ ...payload, rules: [payload.rules[0]] });
+    await userEvent.keyboard('{Enter}');
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Supprimer la règle' }));
+    await waitFor(() => expect(api.delete).toHaveBeenCalledWith('/category-rules/r2'));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Supprimer la règle /LIDL/i' })).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByText('Règles actives')));
+  });
+
+  it('R16 — après suppression d’une catégorie, le focus passe au champ de nom au lieu de tomber sur <body>', async () => {
+    renderPage();
+    const trash = await screen.findByRole('button', { name: 'Supprimer la catégorie Animaux' });
+    api.get.mockResolvedValue({ ...payload, userCategories: [] });
+    trash.focus();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(api.delete).toHaveBeenCalledWith('/category-rules/user-categories/c1'));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Nom de la nouvelle catégorie')));
+  });
+
+  it('R17 — une suggestion garde son motif lisible à 390 px : la colonne du motif prend la ligne, les boutons passent dessous', async () => {
+    sugg.list = [{ id: 'g1', pattern: 'SPOTIFY', category: 'subscriptions', subcategory: '', occurrenceCount: 3, exampleDescriptions: [], status: 'pending', rationale: '' }];
+    renderPage();
+    const accept = await screen.findByRole('button', { name: 'Accepter /SPOTIFY/i' });
+    const texte = screen.getByText('/SPOTIFY/i').closest('div')!.parentElement!;
+    expect(texte.className).toContain('basis-full');
+    expect(texte.className).toContain('sm:basis-0');
+    expect(accept.parentElement!.parentElement!.className).toContain('flex-wrap');
+  });
 });
