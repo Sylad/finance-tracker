@@ -8,13 +8,13 @@ const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), delete: vi.fn() }))
 vi.mock('@/lib/api', () => ({ api }));
 
 const idle = { mutate: vi.fn(), isPending: false, isSuccess: false, isError: false, error: null as unknown, data: undefined as unknown };
-const sugg = vi.hoisted(() => ({ list: [] as unknown[], generate: {} as Record<string, unknown>, accept: vi.fn() }));
+const sugg = vi.hoisted(() => ({ list: [] as unknown[], generate: {} as Record<string, unknown>, accept: vi.fn(), failed: {} as Record<string, unknown> }));
 vi.mock('@/lib/queries', () => ({
   useCategoryRuleSuggestions: () => ({ data: sugg.list }),
   useGenerateCategorySuggestions: () => sugg.generate,
-  useAcceptCategorySuggestion: () => ({ mutate: sugg.accept, isPending: false }),
-  useRejectCategorySuggestion: () => ({ mutate: vi.fn(), isPending: false }),
-  useSnoozeCategorySuggestion: () => ({ mutate: vi.fn(), isPending: false }),
+  useAcceptCategorySuggestion: () => ({ mutate: sugg.accept, isPending: false, ...sugg.failed.accept as object }),
+  useRejectCategorySuggestion: () => ({ mutate: vi.fn(), isPending: false, ...sugg.failed.reject as object }),
+  useSnoozeCategorySuggestion: () => ({ mutate: vi.fn(), isPending: false, ...sugg.failed.snooze as object }),
 }));
 
 const payload = {
@@ -38,6 +38,7 @@ describe('Règles de catégories — revue UX (L34)', () => {
     api.post.mockResolvedValue({});
     api.delete.mockResolvedValue({});
     sugg.list = [];
+    sugg.failed = {};
     sugg.generate = { ...idle, mutate: vi.fn() };
   });
 
@@ -122,5 +123,17 @@ describe('Règles de catégories — revue UX (L34)', () => {
     sugg.generate = { ...idle, isError: true, error: new Error('Claude indisponible') };
     renderPage();
     expect(await screen.findByRole('alert')).toHaveTextContent('Analyse impossible');
+  });
+  it.each([
+    ['accept', 'accepter'],
+    ['reject', 'rejeter'],
+    ['snooze', 'reporter'],
+  ])('R11 — %s d’une suggestion en échec est dit (role=alert), pas silencieux', async (key, verbe) => {
+    sugg.list = [{ id: 'g1', pattern: 'SPOTIFY', category: 'subscriptions', subcategory: '', occurrenceCount: 3, exampleDescriptions: [], status: 'pending', rationale: '' }];
+    sugg.failed = { [key]: { isError: true, error: new Error('API 500') } };
+    renderPage();
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(`Impossible de ${verbe} la suggestion`);
+    expect(alert).toHaveTextContent('API 500');
   });
 });

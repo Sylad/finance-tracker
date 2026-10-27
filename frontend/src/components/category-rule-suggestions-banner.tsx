@@ -15,6 +15,10 @@ const BUILTIN: TransactionCategory[] = [
   'entertainment', 'subscriptions', 'savings', 'transfers', 'taxes', 'other',
 ];
 
+function errorText(error: unknown): string {
+  return error instanceof Error && error.message ? error.message : 'erreur inconnue';
+}
+
 function labelForCategory(cat: string): string {
   if ((BUILTIN as string[]).includes(cat)) return CATEGORY_LABELS[cat as TransactionCategory];
   return cat;
@@ -85,8 +89,20 @@ export function CategoryRuleSuggestionsBanner() {
 
       {generate.isError && (
         <div role="alert" className="mb-3 p-2 rounded bg-negative/10 border border-negative/30 text-xs text-negative-fg">
-          Analyse impossible : {generate.error instanceof Error && generate.error.message ? generate.error.message : 'erreur inconnue'}.
+          Analyse impossible : {errorText(generate.error)}.
         </div>
+      )}
+
+      {([
+        [accept, 'accepter'],
+        [snooze, 'reporter'],
+        [reject, 'rejeter'],
+      ] as const).map(([mutation, verbe]) =>
+        mutation.isError ? (
+          <div key={verbe} role="alert" className="mb-3 p-2 rounded bg-negative/10 border border-negative/30 text-xs text-negative-fg">
+            Impossible de {verbe} la suggestion : {errorText(mutation.error)}.
+          </div>
+        ) : null,
       )}
 
       {generate.isSuccess && generate.data && (
