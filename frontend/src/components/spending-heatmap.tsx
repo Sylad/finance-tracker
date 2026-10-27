@@ -57,6 +57,26 @@ export function buildHeatmapGrid(byDay: Map<string, number>, from: Date, to: Dat
   return { columns: cells, max: currentMax, total, daysCovered: daysWithSpend };
 }
 
+/**
+ * Étiquettes de mois de l'axe : une par mois, posée sur la première colonne où
+ * il apparaît. Un mois entamé à la toute fin d'une colonne (moins de 3 colonnes
+ * avant le suivant) perd son étiquette, sinon elle écrase celle du mois suivant.
+ */
+export function buildMonthTicks(columns: (DayCell | null)[][]): { col: number; label: string }[] {
+  const ticks: { col: number; label: string }[] = [];
+  let lastMonth = -1;
+  columns.forEach((col, i) => {
+    const firstReal = col.find((c) => c) as DayCell | undefined;
+    if (!firstReal) return;
+    const m = Number(firstReal.date.slice(5, 7)) - 1;
+    if (m !== lastMonth) {
+      ticks.push({ col: i, label: MONTH_LABELS[m] });
+      lastMonth = m;
+    }
+  });
+  return ticks.filter((t, i) => i === ticks.length - 1 || ticks[i + 1].col - t.col >= 3);
+}
+
 export function SpendingHeatmap({ byDay, from, to }: Props) {
   const { columns, max, total, daysCovered } = useMemo(
     () => buildHeatmapGrid(byDay, from, to),
@@ -80,21 +100,7 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
     return top ? `${base}. Journée la plus dépensière : ${formatDateLong(top.date)}, ${formatEUR(top.amount)}.` : `${base}.`;
   }, [columns, daysCovered, total]);
 
-  // Find label positions: for each column, if its first cell starts a new month, label it
-  const monthTicks = useMemo(() => {
-    const ticks: { col: number; label: string }[] = [];
-    let lastMonth = -1;
-    columns.forEach((col, i) => {
-      const firstReal = col.find((c) => c) as DayCell | undefined;
-      if (!firstReal) return;
-      const m = Number(firstReal.date.slice(5, 7)) - 1;
-      if (m !== lastMonth) {
-        ticks.push({ col: i, label: MONTH_LABELS[m] });
-        lastMonth = m;
-      }
-    });
-    return ticks;
-  }, [columns]);
+  const monthTicks = useMemo(() => buildMonthTicks(columns), [columns]);
 
   function intensity(amount: number): number {
     if (max <= 0 || amount <= 0) return 0;

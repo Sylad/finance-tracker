@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHeatmapGrid, dateKey } from './spending-heatmap';
+import { buildHeatmapGrid, buildMonthTicks, dateKey } from './spending-heatmap';
 
 // 2026-05-04 is a Monday → starts on column 0 (no leading null padding).
 // 2026-05-10 is a Sunday → fills exactly one column of 7 cells.
@@ -56,5 +56,15 @@ describe('buildHeatmapGrid', () => {
     const lastCol = grid.columns[grid.columns.length - 1];
     expect(lastCol).toHaveLength(7);
     expect(lastCol.some((c) => c === null)).toBe(true);
+  });
+});
+
+describe('buildMonthTicks', () => {
+  it('R9 — un mois entamé en fin de colonne ne chevauche pas l’étiquette du suivant', () => {
+    // 2026-10-30 (vendredi) → l'étiquette « Oct » tomberait juste à gauche de « Nov »
+    const grid = buildHeatmapGrid(new Map(), new Date(2026, 9, 30), new Date(2026, 11, 20));
+    const ticks = buildMonthTicks(grid.columns);
+    expect(ticks.map((t) => t.label)).toEqual(['Nov', 'Déc']);
+    for (let i = 1; i < ticks.length; i++) expect(ticks[i].col - ticks[i - 1].col).toBeGreaterThanOrEqual(3);
   });
 });
