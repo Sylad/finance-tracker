@@ -149,7 +149,8 @@ export function CategoryRulesPage() {
       )}
 
       {failure && (
-        <div ref={failureRef} role="alert" className="mb-4 p-3 rounded-md bg-negative/10 border border-negative/40 text-sm text-negative-fg flex items-start justify-between gap-3">
+        // scroll-mt-20 : sous l'en-tête fixe du téléphone (56 px), sinon scrollIntoView la place sous lui.
+        <div ref={failureRef} role="alert" className="mb-4 p-3 rounded-md scroll-mt-20 lg:scroll-mt-6 bg-negative/10 border border-negative/40 text-sm text-negative-fg flex items-start justify-between gap-3">
           <span>{failure.text}</span>
           <button type="button" onClick={() => setFailure(null)} aria-label="Fermer le message" className="btn-ghost p-1 shrink-0">
             <X className="h-4 w-4" />
