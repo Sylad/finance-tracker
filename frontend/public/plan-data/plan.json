@@ -74,6 +74,21 @@
       "finished": "2026-10-23"
     },
     {
+      "id": "L34",
+      "title": "Règles de catégories : erreurs dites, suppression confirmée",
+      "status": "done",
+      "started": "2026-10-27",
+      "finished": "2026-10-27",
+      "tasks": [
+        {
+          "status": "todo"
+        },
+        {
+          "status": "todo"
+        }
+      ]
+    },
+    {
       "id": "L42",
       "title": "Le tableau de bord ne parle plus que de vos finances",
       "status": "done",

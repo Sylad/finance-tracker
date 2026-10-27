@@ -423,6 +423,7 @@ lots:
       - { date: 2026-10-23, text: "Nouveauté et captures (0889838) antérieures à 4702715 et 10a0a7a : la capture formulaire-390 montre encore une barre de défilement horizontale supprimée depuis ; à reprendre avec L151" }
   - id: L34
     title: Revue UX — Règles de catégories
+    public: "Règles de catégories : erreurs dites, suppression confirmée"
     status: done
     visible: true
     estimate: 0.25
