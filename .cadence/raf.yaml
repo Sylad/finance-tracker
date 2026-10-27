@@ -436,12 +436,14 @@ lots:
     finished: 2026-10-27
   - id: L35
     title: Revue UX — Objectifs
-    status: doing
+    status: done
     visible: true
     estimate: 0.25
     created: 2026-09-28
     started: 2026-10-27
     review: { date: 2026-10-27, verdict: "compliant after 1 fix: 0 blocking, 0 major, 3 minor (focus lost after confirmed deletion, raw backend message in the failure alert, « Créer » greyed with no reason) — orchestré (vague 2026-10-27-1950, 0 passe(s) de correction)", commit: 5bb83f96f5ea8513e64a89a9b6669a6f73c33cfd }
+    ux: { date: 2026-10-27, verdict: "lead (captures regardées : l'échec de suppression nomme l'objectif et la cause, alerte fermable en haut de liste à 390 px ; confirmation et erreur de chargement présentes) : conforme, 3 mineurs" }
+    finished: 2026-10-27
   - id: L36
     title: Revue UX — Heatmap des dépenses
     status: todo
