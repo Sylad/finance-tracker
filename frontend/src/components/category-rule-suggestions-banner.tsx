@@ -19,6 +19,8 @@ function errorText(error: unknown): string {
   return error instanceof Error && error.message ? error.message : 'erreur inconnue';
 }
 
+type SuggestionAction = 'accepter' | 'reporter' | 'rejeter';
+
 function labelForCategory(cat: string): string {
   if ((BUILTIN as string[]).includes(cat)) return CATEGORY_LABELS[cat as TransactionCategory];
   return cat;
@@ -37,9 +39,24 @@ export function CategoryRuleSuggestionsBanner() {
   const reject = useRejectCategorySuggestion();
   const snooze = useSnoozeCategorySuggestion();
   const [showHidden, setShowHidden] = useState(false);
+  // useMutation garde isError jusqu'au prochain mutate de la MÊME mutation : sans ceci, un
+  // Accepter, un Rejeter et un Plus tard refusés empilent trois alertes. On ne montre que
+  // l'échec de la dernière action lancée ; le suivant la remplace.
+  const [lastAction, setLastAction] = useState<SuggestionAction | null>(null);
 
   const pending = (data ?? []).filter((s) => s.status === 'pending');
   const snoozed = (data ?? []).filter((s) => s.status === 'snoozed');
+
+  const run = (action: SuggestionAction, id: string) => {
+    setLastAction(action);
+    ({ accepter: accept, reporter: snooze, rejeter: reject })[action].mutate(id);
+  };
+  const failed = lastAction
+    ? ({ accepter: accept, reporter: snooze, rejeter: reject })[lastAction]
+    : null;
+  const failedSuggestion = failed?.isError
+    ? (data ?? []).find((s) => s.id === failed.variables)
+    : undefined;
 
   return (
     <div className="card p-4 mb-6 border-l-4 border-l-accent-bright">
@@ -93,16 +110,11 @@ export function CategoryRuleSuggestionsBanner() {
         </div>
       )}
 
-      {([
-        [accept, 'accepter'],
-        [snooze, 'reporter'],
-        [reject, 'rejeter'],
-      ] as const).map(([mutation, verbe]) =>
-        mutation.isError ? (
-          <div key={verbe} role="alert" className="mb-3 p-2 rounded bg-negative/10 border border-negative/30 text-xs text-negative-fg">
-            Impossible de {verbe} la suggestion : {errorText(mutation.error)}.
-          </div>
-        ) : null,
+      {failed?.isError && lastAction && (
+        <div role="alert" className="mb-3 p-2 rounded bg-negative/10 border border-negative/30 text-xs text-negative-fg">
+          Impossible de {lastAction} la suggestion
+          {failedSuggestion ? ` /${failedSuggestion.pattern}/i` : ''} : {errorText(failed.error)}.
+        </div>
       )}
 
       {generate.isSuccess && generate.data && (
@@ -159,7 +171,7 @@ export function CategoryRuleSuggestionsBanner() {
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <button
-                    onClick={() => accept.mutate(s.id)}
+                    onClick={() => run('accepter', s.id)}
                     aria-label={`Accepter /${s.pattern}/i`}
                     disabled={accept.isPending}
                     className="btn-primary text-xs"
@@ -167,7 +179,7 @@ export function CategoryRuleSuggestionsBanner() {
                     Accepter
                   </button>
                   <button
-                    onClick={() => snooze.mutate(s.id)}
+                    onClick={() => run('reporter', s.id)}
                     aria-label={`Plus tard /${s.pattern}/i`}
                     disabled={snooze.isPending}
                     className="btn-ghost text-xs"
@@ -175,7 +187,7 @@ export function CategoryRuleSuggestionsBanner() {
                     Plus tard
                   </button>
                   <button
-                    onClick={() => reject.mutate(s.id)}
+                    onClick={() => run('rejeter', s.id)}
                     aria-label={`Rejeter /${s.pattern}/i`}
                     disabled={reject.isPending}
                     className="btn-ghost text-xs hover:text-negative"
@@ -207,14 +219,14 @@ export function CategoryRuleSuggestionsBanner() {
               </div>
               <div className="flex gap-1 shrink-0">
                 <button
-                  onClick={() => accept.mutate(s.id)}
+                  onClick={() => run('accepter', s.id)}
                   aria-label={`Accepter /${s.pattern}/i`}
                   className="btn-ghost text-xs"
                 >
                   Accepter
                 </button>
                 <button
-                  onClick={() => reject.mutate(s.id)}
+                  onClick={() => run('rejeter', s.id)}
                   aria-label={`Rejeter /${s.pattern}/i`}
                   className="btn-ghost text-xs hover:text-negative"
                 >

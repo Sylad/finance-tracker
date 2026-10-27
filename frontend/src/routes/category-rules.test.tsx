@@ -8,14 +8,37 @@ const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), delete: vi.fn() }))
 vi.mock('@/lib/api', () => ({ api }));
 
 const idle = { mutate: vi.fn(), isPending: false, isSuccess: false, isError: false, error: null as unknown, data: undefined as unknown };
-const sugg = vi.hoisted(() => ({ list: [] as unknown[], generate: {} as Record<string, unknown>, accept: vi.fn(), failed: {} as Record<string, unknown> }));
-vi.mock('@/lib/queries', () => ({
-  useCategoryRuleSuggestions: () => ({ data: sugg.list }),
-  useGenerateCategorySuggestions: () => sugg.generate,
-  useAcceptCategorySuggestion: () => ({ mutate: sugg.accept, isPending: false, ...sugg.failed.accept as object }),
-  useRejectCategorySuggestion: () => ({ mutate: vi.fn(), isPending: false, ...sugg.failed.reject as object }),
-  useSnoozeCategorySuggestion: () => ({ mutate: vi.fn(), isPending: false, ...sugg.failed.snooze as object }),
+const sugg = vi.hoisted(() => ({
+  list: [] as unknown[],
+  generate: {} as Record<string, unknown>,
+  accept: vi.fn(),
+  failed: {} as Record<string, unknown>,
+  // true : chaque mutate() des suggestions échoue (état gardé comme le fait useMutation :
+  // l'erreur reste jusqu'au prochain mutate de la MÊME mutation).
+  failOnMutate: false,
 }));
+vi.mock('@/lib/queries', async () => {
+  const { useState } = await import('react');
+  const useFakeMutation = (key: string, mutate: (id: string) => void) => {
+    const [state, setState] = useState<Record<string, unknown>>({});
+    return {
+      mutate: (id: string) => {
+        mutate(id);
+        setState(sugg.failOnMutate ? { isError: true, error: new Error('API 500'), variables: id } : {});
+      },
+      isPending: false,
+      ...(sugg.failed[key] as object),
+      ...state,
+    };
+  };
+  return {
+    useCategoryRuleSuggestions: () => ({ data: sugg.list }),
+    useGenerateCategorySuggestions: () => sugg.generate,
+    useAcceptCategorySuggestion: () => useFakeMutation('accept', sugg.accept),
+    useRejectCategorySuggestion: () => useFakeMutation('reject', vi.fn()),
+    useSnoozeCategorySuggestion: () => useFakeMutation('snooze', vi.fn()),
+  };
+});
 
 const payload = {
   rules: [
@@ -39,6 +62,7 @@ describe('Règles de catégories — revue UX (L34)', () => {
     api.delete.mockResolvedValue({});
     sugg.list = [];
     sugg.failed = {};
+    sugg.failOnMutate = false;
     sugg.generate = { ...idle, mutate: vi.fn() };
   });
 
@@ -125,15 +149,16 @@ describe('Règles de catégories — revue UX (L34)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Analyse impossible');
   });
   it.each([
-    ['accept', 'accepter'],
-    ['reject', 'rejeter'],
-    ['snooze', 'reporter'],
-  ])('R11 — %s d’une suggestion en échec est dit (role=alert), pas silencieux', async (key, verbe) => {
+    ['Accepter', 'accepter'],
+    ['Rejeter', 'rejeter'],
+    ['Plus tard', 'reporter'],
+  ])('R11 — %s d’une suggestion en échec est dit (role=alert), pas silencieux', async (bouton, verbe) => {
     sugg.list = [{ id: 'g1', pattern: 'SPOTIFY', category: 'subscriptions', subcategory: '', occurrenceCount: 3, exampleDescriptions: [], status: 'pending', rationale: '' }];
-    sugg.failed = { [key]: { isError: true, error: new Error('API 500') } };
+    sugg.failOnMutate = true;
     renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: `${bouton} /SPOTIFY/i` }));
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(`Impossible de ${verbe} la suggestion`);
+    expect(alert).toHaveTextContent(`Impossible de ${verbe} la suggestion /SPOTIFY/i`);
     expect(alert).toHaveTextContent('API 500');
   });
   it('R12 — une suppression de catégorie refusée affiche une alerte nommant la catégorie', async () => {
@@ -216,6 +241,24 @@ describe('Règles de catégories — revue UX (L34)', () => {
     expect(alert.className).toContain('scroll-mt-20');
     expect(alert.className).toContain('lg:scroll-mt-6');
   });
+  it('R20 — un seul message d’échec de suggestion à la fois : l’action suivante remplace le précédent, et il nomme la suggestion', async () => {
+    sugg.list = [
+      { id: 'g1', pattern: 'SPOTIFY', category: 'subscriptions', subcategory: '', occurrenceCount: 3, exampleDescriptions: [], status: 'pending', rationale: '' },
+      { id: 'g2', pattern: 'DEEZER', category: 'subscriptions', subcategory: '', occurrenceCount: 2, exampleDescriptions: [], status: 'pending', rationale: '' },
+    ];
+    sugg.failOnMutate = true;
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Accepter /SPOTIFY/i' }));
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getByRole('alert')).toHaveTextContent('Impossible de accepter la suggestion /SPOTIFY/i');
+    await userEvent.click(screen.getByRole('button', { name: 'Rejeter /DEEZER/i' }));
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getByRole('alert')).toHaveTextContent('Impossible de rejeter la suggestion /DEEZER/i');
+    await userEvent.click(screen.getByRole('button', { name: 'Plus tard /SPOTIFY/i' }));
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getByRole('alert')).toHaveTextContent('Impossible de reporter la suggestion /SPOTIFY/i');
+  });
+
   it('R21 — dans « Voir les masqués », un motif long se coupe dans la largeur (break-all, pas de truncate) et la colonne du motif prend la ligne sous 640 px', async () => {
     const pattern = 'SPOTIFY|DEEZER|APPLE\\.COM/BILL|AMAZON\\s+PRIME\\s+VIDEO|NETFLIX\\.COM|DISNEY\\s*PLUS';
     sugg.list = [{ id: 'g3', pattern, category: 'subscriptions', subcategory: '', occurrenceCount: 3, exampleDescriptions: [], status: 'snoozed', rationale: '' }];
