@@ -217,6 +217,21 @@ describe('Heatmap — Réessayer suit les deux requêtes (L36)', () => {
   });
 });
 
+describe('Heatmap — Réessayer relance aussi les détails (L36)', () => {
+  it('R17 — après un échec de /statements/:id, Réessayer relance les détails et la heatmap s’affiche', async () => {
+    vi.clearAllMocks();
+    route([{ id: 's1' }], new Error('détail'));
+    renderPage();
+    const button = await screen.findByRole('button', { name: /Réessayer/ });
+    api.get.mockClear();
+    route([{ id: 's1' }]);
+    await userEvent.click(button);
+    expect(await screen.findByText(/Top 5 journées/)).toBeTruthy();
+    // La liste n'a pas été redemandée : seul le détail l'a été.
+    expect(api.get.mock.calls.map((c) => c[0])).toEqual(['/statements/s1']);
+  });
+});
+
 describe('Heatmap — lecture au clavier (L36)', () => {
   it('R11 — un seul arrêt de tabulation sur la grille, les flèches lisent un jour quelconque', async () => {
     route([{ id: 's1' }]);
