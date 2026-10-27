@@ -130,6 +130,7 @@ api: /api/declarations
 ## /goals
 
 may be empty when démo (`/api/goals`)
+never: message « Impossible de charger les objectifs » ; `scrollWidth` > `clientWidth` à 390 px (L35)
 
 ## /about, /nouveautes, /plan
 

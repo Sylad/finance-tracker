@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-27 19:57",
+  "generated": "2026-10-27 20:49",
   "entries": [
+    {
+      "slug": "2026-10-27-objectifs-erreurs-signalees-suppression-confirmee",
+      "title": "Objectifs : erreurs signalées, suppression confirmée",
+      "date": "2026-10-27",
+      "lots": [
+        "L35"
+      ],
+      "captures": [
+        "captures/objectifs-liste-1440.png",
+        "captures/objectifs-echec-creation-390.png"
+      ],
+      "alts": [
+        "Page Objectifs à 1440 px : deux objectifs avec leur barre de progression",
+        "Page Objectifs à 390 px : message d'échec de création placé juste au-dessus du formulaire rempli"
+      ],
+      "html": "<p>Sur la page Objectifs, si la liste ne se charge pas, un message « Impossible de charger les objectifs » avec un bouton Réessayer remplace l'ancien affichage « Aucun objectif ».</p>\n<p>Supprimer un objectif demande maintenant une confirmation dans la page, qui précise que tes comptes et tes relevés ne changent pas. Quand une suppression ou une création échoue, un message le dit en nommant l'objectif ; en cas d'échec de création, le formulaire reste rempli.</p>\n<p>La corbeille cite l'objectif concerné, chaque champ du formulaire est relié à son libellé, la barre de progression est annoncée aux lecteurs d'écran, et un montant cible nul ou négatif ne permet plus de créer l'objectif.</p>"
+    },
     {
       "slug": "2026-10-27-regles-de-categories-erreurs-signalees-suppression-confirmee",
       "title": "Règles de catégories : erreurs signalées, suppression confirmée, lisible sur téléphone",
