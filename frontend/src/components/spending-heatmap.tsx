@@ -77,6 +77,17 @@ export function buildMonthTicks(columns: (DayCell | null)[][]): { col: number; l
   return ticks.filter((t, i) => i === ticks.length - 1 || ticks[i + 1].col - t.col >= 3);
 }
 
+export const EMPTY_CELL_COLOR = 'hsl(220 12% 14%)';
+
+/**
+ * Couleur d'une case selon son intensité (0 = aucun débit, 1 = maximum de la
+ * période). Plus on dépense, plus la case est claire et vive : sur fond sombre
+ * c'est ce qui la détache de la case vide (≥ 3:1, WCAG 1.4.11).
+ */
+export function heatmapColor(t: number): string {
+  return t <= 0 ? EMPTY_CELL_COLOR : `hsl(0, 75%, ${50 + t * 15}%)`;
+}
+
 export function SpendingHeatmap({ byDay, from, to }: Props) {
   const { columns, max, total, daysCovered } = useMemo(
     () => buildHeatmapGrid(byDay, from, to),
@@ -161,9 +172,7 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
                 {col.map((cell, j) => {
                   if (!cell) return <div key={j} className="h-3.5" style={{ marginBottom: 2 }} />;
                   const t = intensity(cell.amount);
-                  const bg = t === 0
-                    ? 'hsl(220 12% 14%)'
-                    : `hsl(0, 75%, ${Math.max(20, 70 - t * 50)}%)`;
+                  const bg = heatmapColor(t);
                   const tip = cell.amount > 0
                     ? `${formatDateLong(cell.date)} : ${formatEUR(cell.amount)}`
                     : `${formatDateLong(cell.date)} : aucun débit`;
@@ -205,7 +214,7 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
                 className="rounded-sm"
                 style={{
                   width: 10, height: 10,
-                  background: t === 0 ? 'hsl(220 12% 14%)' : `hsl(0, 75%, ${Math.max(20, 70 - t * 50)}%)`,
+                  background: heatmapColor(t),
                 }}
               />
             ))}

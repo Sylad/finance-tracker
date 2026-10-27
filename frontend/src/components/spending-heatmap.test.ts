@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHeatmapGrid, buildMonthTicks, dateKey } from './spending-heatmap';
+import { buildHeatmapGrid, buildMonthTicks, dateKey, EMPTY_CELL_COLOR, heatmapColor } from './spending-heatmap';
 
 // 2026-05-04 is a Monday → starts on column 0 (no leading null padding).
 // 2026-05-10 is a Sunday → fills exactly one column of 7 cells.
@@ -66,5 +66,34 @@ describe('buildMonthTicks', () => {
     const ticks = buildMonthTicks(grid.columns);
     expect(ticks.map((t) => t.label)).toEqual(['Nov', 'Déc']);
     for (let i = 1; i < ticks.length; i++) expect(ticks[i].col - ticks[i - 1].col).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('heatmapColor — contraste de l’échelle (L36)', () => {
+  function luminance(css: string): number {
+    const [h, s, l] = (css.match(/[\d.]+/g) ?? []).map(Number);
+    const a = (s / 100) * Math.min(l / 100, 1 - l / 100);
+    const f = (n: number) => {
+      const k = (n + h / 30) % 12;
+      const c = l / 100 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * f(0) + 0.7152 * f(8) + 0.0722 * f(4);
+  }
+  const contrast = (a: string, b: string) => {
+    const [x, y] = [luminance(a), luminance(b)].sort((m, n) => n - m);
+    return (x + 0.05) / (y + 0.05);
+  };
+
+  it('R12 — chaque case avec débit tranche d’au moins 3:1 sur une case vide, et plus de dépense = plus clair', () => {
+    expect(heatmapColor(0)).toBe(EMPTY_CELL_COLOR);
+    let previous = 0;
+    for (const t of [0.05, 0.2, 0.4, 0.6, 0.8, 1]) {
+      const color = heatmapColor(t);
+      expect(contrast(color, EMPTY_CELL_COLOR)).toBeGreaterThanOrEqual(3);
+      const lum = luminance(color);
+      expect(lum).toBeGreaterThan(previous);
+      previous = lum;
+    }
   });
 });
