@@ -125,6 +125,51 @@ describe('Heatmap — lecture visible sans défiler (L36)', () => {
   });
 });
 
+// Deux relevés : un jour au tout début de la fenêtre « 12 derniers mois » (2025-06-16,
+// NOW = 2026-06-15) et deux jours à égalité en fin d'année 2026 (31 et 30 décembre).
+const EARLY = { id: 'early', year: 2025, month: 6, transactions: [{ date: '2025-06-16', amount: -30 }] };
+const LATE = {
+  id: 'late', year: 2026, month: 12,
+  transactions: [
+    { date: '2026-12-31', amount: -70 },
+    { date: '2026-12-30', amount: -70 },
+    { date: '2026-12-01', amount: -5 },
+  ],
+};
+
+function routeMany(details: Record<string, unknown>) {
+  api.get.mockImplementation(async (url: string) => {
+    if (url === '/statements') return Object.keys(details).map((id) => ({ id }));
+    return details[url.replace('/statements/', '')];
+  });
+}
+
+const top5Rows = () => Array.from(document.querySelectorAll('.divide-y > div')).map((r) => r.textContent ?? '');
+
+describe('Heatmap — Top 5 cohérent avec la grille (L36)', () => {
+  // Le bug ne se voit qu'avec un fuseau à l'est d'UTC : Date.parse('YYYY-MM-DD') est minuit UTC,
+  // `to` (31 déc. minuit local) est AVANT. Fuseau forcé pour ce bloc, quel que soit celui de la machine.
+  const tz = process.env.TZ;
+  beforeEach(() => { process.env.TZ = 'Europe/Paris'; vi.clearAllMocks(); routeMany({ early: EARLY, late: LATE }); });
+  afterEach(() => { if (tz === undefined) delete process.env.TZ; else process.env.TZ = tz; });
+
+  it('R13 — en vue « année », le 31 décembre est dans le Top 5 comme dans la grille', async () => {
+    renderPage();
+    await screen.findByRole('img', { name: /Heatmap des dépenses/ });
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Période' }), '2026');
+    expect(document.querySelector('[data-date="2026-12-31"]')).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Heatmap des dépenses/ }).getAttribute('aria-label')).toContain('145,00');
+    expect(top5Rows().some((r) => r.includes('31 décembre 2026'))).toBe(true);
+  });
+
+  it('R13 — en « 12 derniers mois », le premier jour de la fenêtre est dans le Top 5 comme dans la grille', async () => {
+    renderPage();
+    await screen.findByRole('img', { name: /Heatmap des dépenses/ });
+    expect(document.querySelector('[data-date="2025-06-16"]')).toBeTruthy();
+    expect(top5Rows().some((r) => r.includes('16 juin 2025'))).toBe(true);
+  });
+});
+
 describe('Heatmap — lecture au clavier (L36)', () => {
   it('R11 — un seul arrêt de tabulation sur la grille, les flèches lisent un jour quelconque', async () => {
     route([{ id: 's1' }]);

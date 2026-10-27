@@ -4,7 +4,7 @@ import { Calendar } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState, ErrorState, LoadingState } from '@/components/loading-state';
-import { SpendingHeatmap } from '@/components/spending-heatmap';
+import { dateKey, SpendingHeatmap } from '@/components/spending-heatmap';
 import type { MonthlyStatement, StatementSummary } from '@/types/api';
 import { formatEUR } from '@/lib/utils';
 
@@ -55,14 +55,14 @@ export function HeatmapPage() {
     return { from: new Date(year, 0, 1), to: new Date(year, 11, 31) };
   }, [year]);
 
-  // Top 5 spending days
+  // Top 5 : mêmes jours que la grille (clés YYYY-MM-DD comparées entre elles,
+  // jamais Date.parse — minuit UTC — contre des instants locaux).
   const topDays = useMemo(() => {
-    return Array.from(byDay.entries())
-      .filter(([d]) => {
-        const t = Date.parse(d);
-        return t >= from.getTime() && t <= to.getTime();
-      })
-      .sort((a, b) => b[1] - a[1])
+    const fromKey = dateKey(from);
+    const toKey = dateKey(to);
+    return Array.from(byDay.entries(), ([date, amount]) => ({ date, amount }))
+      .filter(({ date }) => date >= fromKey && date <= toKey)
+      .sort((a, b) => b.amount - a.amount)
       .slice(0, 5);
   }, [byDay, from, to]);
 
@@ -114,7 +114,7 @@ export function HeatmapPage() {
           <p className="text-sm text-fg-dim italic py-2">Aucune dépense sur la période.</p>
         ) : (
           <div className="divide-y divide-border">
-            {topDays.map(([date, amount], i) => (
+            {topDays.map(({ date, amount }, i) => (
               <div key={date} className="flex items-center justify-between py-2.5 text-sm">
                 <span className="flex items-center gap-3">
                   <span className="font-display text-lg font-semibold text-fg-dim w-6">{i + 1}.</span>
