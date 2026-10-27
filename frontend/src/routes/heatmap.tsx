@@ -102,7 +102,7 @@ export function HeatmapPage() {
       <PageHeader
         eyebrow="Vue chronologique"
         title="Heatmap des dépenses"
-        subtitle="Une case par jour, plus c'est rouge plus tu as dépensé."
+        subtitle="Une case par jour, plus la case est claire, plus tu as dépensé."
         actions={
           <select
             aria-label="Période"
