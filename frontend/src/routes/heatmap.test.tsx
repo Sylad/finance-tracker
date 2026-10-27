@@ -116,3 +116,37 @@ describe('Heatmap — lecture visible sans défiler (L36)', () => {
     expect(scroller.contains(screen.getByText(/jours? avec débit · total/))).toBe(false);
   });
 });
+
+describe('Heatmap — lecture au clavier (L36)', () => {
+  it('R11 — un seul arrêt de tabulation sur la grille, les flèches lisent un jour quelconque', async () => {
+    route([{ id: 's1' }]);
+    renderPage();
+    await screen.findByRole('img', { name: /Heatmap des dépenses/ });
+    const scroller = document.querySelector('[data-heatmap-scroll]') as HTMLElement;
+    expect(scroller.tabIndex).toBe(0);
+    expect(scroller.getAttribute('aria-label')).toMatch(/flèches/);
+    // Un arrêt unique : les cases ne sont pas elles-mêmes tabulables.
+    expect(document.querySelectorAll('[data-date][tabindex]').length).toBe(0);
+    await userEvent.click(document.querySelector(`[data-date="${year}-01-10"]`) as HTMLElement);
+    scroller.focus();
+    const status = screen.getByRole('status');
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    expect(status).toHaveTextContent('12 janvier');
+    expect(status).toHaveTextContent('5,00');
+    await userEvent.keyboard('{ArrowUp}{ArrowUp}{ArrowRight}');
+    expect(status).toHaveTextContent('17 janvier');
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(status).toHaveTextContent('10 janvier');
+    expect(status).toHaveTextContent('50,00');
+    expect(document.querySelector(`[data-date="${year}-01-10"]`)?.getAttribute('data-selected')).toBe('true');
+  });
+
+  it('R11 — sans sélection, une flèche ouvre sur le jour le plus récent', async () => {
+    route([{ id: 's1' }]);
+    renderPage();
+    await screen.findByRole('img', { name: /Heatmap des dépenses/ });
+    (document.querySelector('[data-heatmap-scroll]') as HTMLElement).focus();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(screen.getByRole('status').textContent).not.toMatch(/Touche ou survole/);
+  });
+});

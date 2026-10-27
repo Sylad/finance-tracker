@@ -100,6 +100,20 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
     return top ? `${base}. Journée la plus dépensière : ${formatDateLong(top.date)}, ${formatEUR(top.amount)}.` : `${base}.`;
   }, [columns, daysCovered, total]);
 
+  const days = useMemo(() => columns.flat().filter((c): c is DayCell => c !== null), [columns]);
+
+  // Un seul arrêt de tabulation sur la zone : ←/→ changent de semaine, ↑/↓ de jour.
+  // Sans jour choisi, la première flèche ouvre sur le plus récent.
+  function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const step = { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -7, ArrowRight: 7 }[e.key];
+    if (step === undefined || days.length === 0) return;
+    e.preventDefault();
+    const at = selected ? days.findIndex((d) => d.date === selected.date) : -1;
+    const next = at < 0 ? days.length - 1 : Math.min(days.length - 1, Math.max(0, at + step));
+    setSelected(days[next]);
+    scrollRef.current?.querySelector(`[data-date="${days[next].date}"]`)?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  }
+
   const monthTicks = useMemo(() => buildMonthTicks(columns), [columns]);
 
   function intensity(amount: number): number {
@@ -110,7 +124,15 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
 
   return (
     <>
-    <div ref={scrollRef} data-heatmap-scroll className="overflow-x-auto">
+    <div
+      ref={scrollRef}
+      data-heatmap-scroll
+      role="group"
+      tabIndex={0}
+      aria-label="Grille des dépenses par jour : flèches gauche et droite pour changer de semaine, haut et bas pour changer de jour"
+      onKeyDown={onKeyDown}
+      className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+    >
       <div className="inline-block">
         <div role="img" aria-label={summary}>
         {/* Month axis */}
@@ -150,8 +172,9 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
                       key={j}
                       title={tip}
                       data-date={cell.date}
+                      data-selected={selected?.date === cell.date ? 'true' : undefined}
                       onClick={() => setSelected(cell)}
-                      className="h-3.5 rounded-sm transition-all hover:scale-125 hover:ring-1 hover:ring-accent cursor-pointer"
+                      className="h-3.5 rounded-sm transition-all hover:scale-125 hover:ring-1 hover:ring-accent cursor-pointer data-[selected=true]:ring-2 data-[selected=true]:ring-accent"
                       style={{ background: bg, marginRight: 2, marginBottom: 2, width: 12 }}
                     />
                   );
