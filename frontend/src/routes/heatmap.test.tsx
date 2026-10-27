@@ -126,13 +126,13 @@ describe('Heatmap — lecture visible sans défiler (L36)', () => {
 });
 
 // Deux relevés : un jour au tout début de la fenêtre « 12 derniers mois » (2025-06-16,
-// NOW = 2026-06-15) et deux jours à égalité en fin d'année 2026 (31 et 30 décembre).
+// NOW = 2026-06-15) et deux jours à égalité en fin d’année 2026 (30 puis 31 décembre, dans cet ordre : le plus ancien déclaré d’abord).
 const EARLY = { id: 'early', year: 2025, month: 6, transactions: [{ date: '2025-06-16', amount: -30 }] };
 const LATE = {
   id: 'late', year: 2026, month: 12,
   transactions: [
-    { date: '2026-12-31', amount: -70 },
     { date: '2026-12-30', amount: -70 },
+    { date: '2026-12-31', amount: -70 },
     { date: '2026-12-01', amount: -5 },
   ],
 };
