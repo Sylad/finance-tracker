@@ -54,6 +54,7 @@ may be empty when aucune anomalie (`/anomalies`)
 
 shows: 11 catégories prédéfinies
 never: message « Impossible de charger les règles de catégorisation » ; `scrollWidth` > `clientWidth` à 390 px (L34)
+390 only: après un ajout de catégorie refusé par le serveur (démo verrouillée), le centre du `role=alert` n'est jamais recouvert par l'en-tête fixe (`elementFromPoint` au centre de l'alerte tombe dans l'alerte, L34)
 api: /api/category-rules
 
 ## /income
