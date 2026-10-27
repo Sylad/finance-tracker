@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HeatmapPage } from './heatmap';
@@ -199,6 +199,21 @@ describe('Heatmap — départage à égalité (L36)', () => {
     const rows = top5Rows();
     expect(rows[0]).toContain('31 décembre 2026');
     expect(rows[1]).toContain('30 décembre 2026');
+  });
+});
+
+describe('Heatmap — Réessayer suit les deux requêtes (L36)', () => {
+  it('R16 — après un échec de la liste des relevés, Réessayer est désactivé et animé pendant le nouvel appel', async () => {
+    vi.clearAllMocks();
+    route(new Error('boom'));
+    renderPage();
+    const button = await screen.findByRole('button', { name: /Réessayer/ });
+    expect(button).toBeEnabled();
+    // Le nouvel appel reste en cours : le bouton doit l'attendre (un double clic = deux appels).
+    api.get.mockImplementation(() => new Promise(() => {}));
+    await userEvent.click(button);
+    await waitFor(() => expect(button).toBeDisabled());
+    expect(button.querySelector('svg')?.getAttribute('class')).toMatch(/animate-spin/);
   });
 });
 

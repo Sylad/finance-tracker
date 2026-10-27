@@ -9,7 +9,7 @@ import type { MonthlyStatement, StatementSummary } from '@/types/api';
 import { formatEUR } from '@/lib/utils';
 
 export function HeatmapPage() {
-  const { data: summaries, isLoading: summariesLoading, isError: summariesError, refetch: refetchSummaries } = useQuery<StatementSummary[]>({
+  const { data: summaries, isLoading: summariesLoading, isError: summariesError, refetch: refetchSummaries, isFetching: summariesFetching } = useQuery<StatementSummary[]>({
     queryKey: ['statements'],
     queryFn: () => api.get<StatementSummary[]>('/statements'),
   });
@@ -67,13 +67,27 @@ export function HeatmapPage() {
       .slice(0, 5);
   }, [byDay, from, to]);
 
-  if (hasError) {
+  // Réessayer : sans donnée, une requête relancée repasse en « pending » (TanStack
+  // Query) et l'état d'erreur disparaîtrait avec son bouton ; on le garde affiché
+  // le temps de la requête relancée, bouton désactivé et animé (un seul appel).
+  const [retrying, setRetrying] = useState(false);
+  const anyFetching = summariesFetching || detailsFetching;
+  async function retry() {
+    setRetrying(true);
+    try {
+      await (summariesError ? refetchSummaries() : refetchDetails());
+    } finally {
+      setRetrying(false);
+    }
+  }
+
+  if (hasError || (retrying && anyFetching)) {
     return (
       <ErrorState
         title="Impossible de charger la heatmap"
         message="Les relevés n'ont pas pu être lus. Réessaie dans un instant."
-        retrying={detailsFetching}
-        onRetry={() => { void (summariesError ? refetchSummaries() : refetchDetails()); }}
+        retrying={anyFetching}
+        onRetry={() => { void retry(); }}
       />
     );
   }
