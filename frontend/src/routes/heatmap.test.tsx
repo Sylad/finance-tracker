@@ -105,3 +105,14 @@ describe('Heatmap des dépenses — revue UX (L36)', () => {
     expect(document.body.innerHTML).not.toMatch(/text-\[(9|10)px\]/);
   });
 });
+
+describe('Heatmap — lecture visible sans défiler (L36)', () => {
+  it('R10 — la ligne de lecture et la légende restent hors de la zone qui défile', async () => {
+    route([{ id: 's1' }]);
+    renderPage();
+    await screen.findByRole('img', { name: /Heatmap des dépenses/ });
+    const scroller = document.querySelector('[data-heatmap-scroll]') as HTMLElement;
+    expect(scroller.contains(screen.getByRole('status'))).toBe(false);
+    expect(scroller.contains(screen.getByText(/jours? avec débit · total/))).toBe(false);
+  });
+});

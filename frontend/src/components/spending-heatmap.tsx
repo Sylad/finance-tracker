@@ -109,6 +109,7 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
   }
 
   return (
+    <>
     <div ref={scrollRef} data-heatmap-scroll className="overflow-x-auto">
       <div className="inline-block">
         <div role="img" aria-label={summary}>
@@ -160,14 +161,16 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
           </div>
         </div>
         </div>
-        {/* Lecture d'une case touchée ou cliquée (le survol seul n'existe pas au toucher) */}
+      </div>
+    </div>
+    {/* Lecture d'une case touchée ou cliquée (le survol seul n'existe pas au toucher) */}
         <div role="status" className="mt-3 min-h-5 text-xs text-fg-muted">
           {selected
             ? `${formatDateLong(selected.date)} : ${selected.amount > 0 ? formatEUR(selected.amount) : 'aucun débit'}`
             : 'Touche ou survole une case pour lire le jour et son montant.'}
         </div>
         {/* Legend */}
-        <div className="flex items-center justify-between mt-3 text-[11px] text-fg-dim">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mt-3 text-[11px] text-fg-dim">
           <div>
             {daysCovered} jour{daysCovered > 1 ? 's' : ''} avec débit · total {formatEUR(total)}
           </div>
@@ -186,8 +189,7 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
             Plus
           </div>
         </div>
-      </div>
-    </div>
+    </>
   );
 }
 
