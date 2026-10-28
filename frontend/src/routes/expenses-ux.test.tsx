@@ -6,6 +6,9 @@ import { api } from '@/lib/api';
 
 vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
 
+const demo = vi.hoisted(() => ({ forced: false }));
+vi.mock('@/lib/queries', () => ({ useDemoStatus: () => ({ data: { forced: demo.forced } }) }));
+
 vi.mock('@/lib/api', () => ({
   ApiError: class extends Error { status = 0; },
   api: { get: vi.fn(), post: vi.fn() },
@@ -39,7 +42,7 @@ function mockGet(opts: { breakdown?: () => Promise<unknown>; statements?: unknow
   }) as never);
 }
 
-beforeEach(() => { get.mockReset(); post.mockReset(); vi.restoreAllMocks(); });
+beforeEach(() => { demo.forced = false; get.mockReset(); post.mockReset(); vi.restoreAllMocks(); });
 
 describe('ExpensesPage — revue UX (L38)', () => {
   it('R1 — un chargement en échec dit l’erreur et propose Réessayer, jamais « Aucun relevé »', async () => {
@@ -122,5 +125,25 @@ describe('ExpensesPage — revue UX (L38)', () => {
     for (const card of [cell.closest('.card'), screen.getByText('Répartition des retraits').closest('.card')]) {
       expect(card?.className).toMatch(/\bmin-w-0\b/);
     }
+  });
+
+  it('R9 — en démo forcée, la page dit que l’analyse IA locale n’est pas disponible et ne lance pas l’appel', async () => {
+    demo.forced = true;
+    mockGet();
+    renderPage();
+    const button = await screen.findByRole('button', { name: /Proposer des coupes/ }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    const note = screen.getByText(/analyse par IA locale n’est pas disponible en démo/i);
+    expect(button.getAttribute('aria-describedby')).toBe(note.id);
+    fireEvent.click(button);
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('R9 — hors démo forcée, aucune note et le bouton est actif', async () => {
+    mockGet();
+    renderPage();
+    const button = await screen.findByRole('button', { name: /Proposer des coupes/ }) as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    expect(screen.queryByText(/n’est pas disponible en démo/)).toBeNull();
   });
 });

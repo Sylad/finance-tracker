@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import { Loader2, Sparkles, AlertCircle, Scissors, Repeat, ShoppingBag, HelpCircle } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
+import { useDemoStatus } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
 import { CATEGORY_LABELS, type StatementSummary, type TransactionCategory } from '@/types/api';
@@ -52,6 +53,7 @@ function monthLabel(id: string): string {
 }
 
 export function ExpensesPage() {
+  const forced = useDemoStatus().data?.forced === true;
   const [monthId, setMonthId] = useState<string | null>(null);
   const [activeSlice, setActiveSlice] = useState<string | null>(null);
   const [cutResult, setCutResult] = useState<CutResult | null>(null);
@@ -130,7 +132,8 @@ export function ExpensesPage() {
             </select>
             <button
               onClick={handleCuts}
-              disabled={proposeCuts.isPending}
+              disabled={proposeCuts.isPending || forced}
+              aria-describedby={forced ? 'expenses-demo-note' : undefined}
               className="btn-secondary"
               title="Analyse les 3 derniers mois avec l'IA locale (Ollama) et propose des dépenses à couper : abonnements, achats, autres. Crédits exclus."
             >
@@ -143,6 +146,12 @@ export function ExpensesPage() {
           </div>
         }
       />
+
+      {forced && (
+        <p id="expenses-demo-note" className="card p-4 mb-4 text-sm text-fg-muted">
+          L’analyse par IA locale n’est pas disponible en démo : elle tourne sur le PC de Sylvain (Ollama), pas sur ce site. Le reste de la page fonctionne.
+        </p>
+      )}
 
       {proposeCuts.isPending && (
         <p role="status" className="card p-4 mb-4 text-sm text-fg-muted">
