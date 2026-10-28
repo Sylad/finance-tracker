@@ -36,13 +36,21 @@ export function AdviceSection() {
       </div>
 
       {generate.isError && (
-        <div className="card p-4 mb-3 bg-negative/10 border-l-4 border-l-negative">
+        <div role="alert" className="card p-4 mb-3 bg-negative/10 border-l-4 border-l-negative">
           <div className="font-display font-semibold text-fg-bright mb-1">
             Conseils indisponibles — Ollama éteint ?
           </div>
           <p className="text-sm text-fg-muted">
             {generate.error instanceof ApiError ? generate.error.message : (generate.error as Error)?.message}
           </p>
+        </div>
+      )}
+
+      <p role="status" className="sr-only">{generate.isPending ? 'Génération des conseils en cours.' : ''}</p>
+
+      {advice.isError && (
+        <div role="alert" className="card p-4 mb-3 bg-negative/10 border-l-4 border-l-negative">
+          <p className="text-sm text-fg-muted">Impossible de lire les conseils déjà générés.</p>
         </div>
       )}
 
@@ -65,7 +73,8 @@ export function AdviceSection() {
         </>
       ) : (
         !generate.isPending &&
-        !generate.isError && (
+        !generate.isError &&
+        !advice.isError && (
           <p className="text-sm text-fg-dim italic">
             Aucun conseil généré pour l'instant. Clique sur « Générer les conseils » pour une analyse
             personnalisée par l'IA locale (peut prendre 30 à 90 secondes).

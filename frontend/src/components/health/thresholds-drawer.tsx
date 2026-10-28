@@ -3,6 +3,8 @@ import { Loader2, X } from 'lucide-react';
 import { useHealthThresholds, useUpdateThresholds, useResetThresholds } from '@/lib/queries';
 import type { HealthThresholds } from '@/types/api';
 import { cn } from '@/lib/utils';
+import { useModalDialog } from '@/hooks/use-modal-dialog';
+import { ErrorState } from '@/components/loading-state';
 
 // Miroir de `HealthThresholds` où chaque champ numérique édité peut être ''
 // pendant la saisie (l'utilisateur vide le champ) — on ne coerce JAMAIS '' en
@@ -104,8 +106,8 @@ function validateThresholdsForm(form: ThresholdsDraft): ValidationResult {
  * Panneau latéral « Ajuster les seuils ». Pas de composant sheet/dialog
  * partagé dans l'app (cf loan-form.tsx / import-statement-modal.tsx pour le
  * pattern overlay le plus proche) — panneau fixe simple en Tailwind, pas de
- * nouvelle dépendance. Escape + `role="dialog"` repris du pattern existant
- * (`auto-categorize-modal.tsx`).
+ * nouvelle dépendance. Le clavier (focus à l'ouverture, Tab bouclé, Échap, focus
+ * rendu au bouton d'origine) vient de `useModalDialog`, comme `Dialog`.
  *
  * `handleSave` envoie systématiquement les 6 sections COMPLÈTES du form
  * (state initialisé depuis le GET, jamais partiel) : le backend fait un
@@ -119,22 +121,22 @@ export function ThresholdsDrawer({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState<ThresholdsDraft | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [invalidKeys, setInvalidKeys] = useState<Set<FieldKey>>(new Set());
+  const { dialogRef } = useModalDialog(onClose);
 
   useEffect(() => {
     if (thresholds.data && !form) setForm(thresholds.data);
   }, [thresholds.data, form]);
 
+  // Un champ fautif prend le focus (le message d'erreur est en bas du tiroir, parfois hors de vue).
   useEffect(() => {
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onEsc);
-    return () => window.removeEventListener('keydown', onEsc);
-  }, [onClose]);
+    if (invalidKeys.size > 0) dialogRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [invalidKeys, dialogRef]);
 
   const patchForm = (patch: Partial<ThresholdsDraft>) => {
     if (!form) return;
     setForm({ ...form, ...patch });
+    updateThresholds.reset();
+    resetThresholds.reset();
     if (validationError) {
       setValidationError(null);
       setInvalidKeys(new Set());
@@ -157,8 +159,12 @@ export function ThresholdsDrawer({ onClose }: { onClose: () => void }) {
   const handleReset = async () => {
     setValidationError(null);
     setInvalidKeys(new Set());
-    const data = await resetThresholds.mutateAsync();
-    setForm(data);
+    updateThresholds.reset();
+    try {
+      setForm(await resetThresholds.mutateAsync());
+    } catch {
+      // L'échec est dit dans le tiroir (resetThresholds.isError), le formulaire reste tel quel.
+    }
   };
 
   return (
@@ -167,23 +173,33 @@ export function ThresholdsDrawer({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="thresholds-drawer-title"
-        className="card rounded-none border-l border-y-0 border-r-0 w-full max-w-md h-full overflow-y-auto"
+        tabIndex={-1}
+        className="card rounded-none border-l border-y-0 border-r-0 w-full max-w-md h-full overflow-y-auto outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3 sticky top-0 bg-surface z-10">
           <h2 id="thresholds-drawer-title" className="font-display font-semibold text-fg-bright">
             Ajuster les seuils
           </h2>
-          <button onClick={onClose} className="btn-ghost p-1">
-            <X className="h-4 w-4" />
+          <button type="button" onClick={onClose} className="btn-ghost p-1" aria-label="Fermer" title="Fermer">
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
-        {!form ? (
-          <div className="p-5 text-sm text-fg-dim">Chargement…</div>
+        {!form && thresholds.isError ? (
+          <div className="p-5">
+            <ErrorState
+              message="Impossible de charger les seuils."
+              onRetry={() => thresholds.refetch()}
+              retrying={thresholds.isFetching}
+            />
+          </div>
+        ) : !form ? (
+          <div className="p-5 text-sm text-fg-dim" role="status">Chargement…</div>
         ) : (
           <div className="p-5 space-y-5">
             <Section title="Reste à vivre">
@@ -267,13 +283,19 @@ export function ThresholdsDrawer({ onClose }: { onClose: () => void }) {
               </label>
             </Section>
 
-            {validationError && (
-              <div className="card p-3 bg-negative/10 border-l-4 border-l-negative">
-                <p className="text-xs text-negative font-medium">{validationError}</p>
-              </div>
-            )}
-            {updateThresholds.isSuccess && <p className="text-xs text-positive">Seuils enregistrés.</p>}
-            {updateThresholds.isError && <p className="text-xs text-negative">Échec de l'enregistrement.</p>}
+            {/* Zones annonçantes posées d'avance : un rôle ajouté avec son texte n'est pas annoncé de façon fiable. */}
+            <div role="status">
+              {updateThresholds.isSuccess && <p className="text-xs text-positive">Seuils enregistrés.</p>}
+            </div>
+            <div role="alert" className="space-y-2">
+              {validationError && (
+                <div id="thresholds-error" className="card p-3 bg-negative/10 border-l-4 border-l-negative">
+                  <p className="text-xs text-negative-fg font-medium">{validationError}</p>
+                </div>
+              )}
+              {updateThresholds.isError && <p className="text-xs text-negative-fg">Échec de l'enregistrement.</p>}
+              {resetThresholds.isError && <p className="text-xs text-negative-fg">Échec de la restauration des défauts.</p>}
+            </div>
 
             <div className="flex items-center justify-between gap-2 pt-3 border-t border-border">
               <button
@@ -330,6 +352,7 @@ function NumField({
         step="0.1"
         min="0"
         aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? 'thresholds-error' : undefined}
         className={cn('input tabular', invalid && 'border-negative focus:border-negative')}
         value={value}
         onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))}

@@ -67,35 +67,55 @@ function formatDetailValue(key: string, value: number | string | null): string {
 
 function ManualIncomeField() {
   const [value, setValue] = useState('');
+  const [invalid, setInvalid] = useState(false);
   const updateThresholds = useUpdateThresholds();
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     const n = Number(value);
-    if (!Number.isFinite(n) || n <= 0) return;
+    if (!Number.isFinite(n) || n <= 0) {
+      setInvalid(true);
+      return;
+    }
+    setInvalid(false);
     updateThresholds.mutate({ manualMonthlyIncome: n });
   };
 
+  // Message dans un conteneur dont le rôle est posé d'avance : un rôle ajouté en même temps que son texte n'est pas annoncé de façon fiable.
   return (
     <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2 mt-3">
+      <label className="sr-only" htmlFor="manual-income">Revenu mensuel (€)</label>
       <input
+        id="manual-income"
         type="number"
         step="0.01"
         min="0"
         placeholder="Revenu mensuel (€)"
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? 'manual-income-error' : undefined}
+        onChange={(e) => {
+          setValue(e.target.value);
+          setInvalid(false);
+        }}
         className="input text-sm w-48"
       />
       <button type="submit" className="btn-primary text-sm" disabled={updateThresholds.isPending}>
         {updateThresholds.isPending ? 'Enregistrement…' : 'Enregistrer'}
       </button>
-      {updateThresholds.isSuccess && (
-        <span className="text-xs text-positive">Revenu manuel enregistré.</span>
-      )}
-      {updateThresholds.isError && (
-        <span className="text-xs text-negative">Échec de l'enregistrement.</span>
-      )}
+      <div role="status">
+        {updateThresholds.isSuccess && !invalid && (
+          <span className="text-xs text-positive">Revenu manuel enregistré.</span>
+        )}
+      </div>
+      <div role="alert">
+        {invalid && (
+          <span id="manual-income-error" className="text-xs text-negative-fg">Saisis un montant supérieur à 0.</span>
+        )}
+        {!invalid && updateThresholds.isError && (
+          <span className="text-xs text-negative-fg">Échec de l'enregistrement.</span>
+        )}
+      </div>
     </form>
   );
 }
@@ -145,7 +165,7 @@ function BlockCard({
 }
 
 export function HealthPage() {
-  const { data, isLoading, isError } = useHealthDiagnostic();
+  const { data, isLoading, isError, refetch, isFetching } = useHealthDiagnostic();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const headerActions = (
@@ -155,7 +175,15 @@ export function HealthPage() {
   );
 
   if (isLoading) return <LoadingState />;
-  if (isError || !data) return <ErrorState message="Impossible de charger le diagnostic de santé financière." />;
+  if (isError || !data) {
+    return (
+      <ErrorState
+        message="Impossible de charger le diagnostic de santé financière."
+        onRetry={() => refetch()}
+        retrying={isFetching}
+      />
+    );
+  }
 
   const { verdict, causes, blocks, income, reliability } = data;
 
@@ -281,7 +309,11 @@ function TrajectoireCard({ block }: { block: HealthBlockResult }) {
       mainFigure={sumProjected !== null ? `${formatEUR(sumProjected)} projeté` : '—'}
     >
       {chartData.length > 0 && (
-        <div className="h-24 my-2">
+        <div
+          className="h-24 my-2"
+          role="img"
+          aria-label={`Encours actuel ${formatEUR(chartData[0].value)}, projeté ${formatEUR(chartData[1].value)}${horizonMonths !== null ? ` à ${horizonMonths} mois` : ''}`}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
               <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />

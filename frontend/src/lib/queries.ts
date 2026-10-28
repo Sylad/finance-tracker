@@ -990,7 +990,8 @@ export function useResetThresholds() {
 export function useHealthAdvice() {
   return useQuery({
     queryKey: qkHealth.advice(),
-    queryFn: () => api.get<HealthAdvice | undefined>('/health-check/advice'),
+    // null (pas undefined) : react-query v5 refuse un résultat undefined et passait la requête en erreur sur le 204.
+    queryFn: async () => (await api.get<HealthAdvice | undefined>('/health-check/advice')) ?? null,
   });
 }
 
