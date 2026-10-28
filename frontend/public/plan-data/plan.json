@@ -625,6 +625,12 @@
       "id": "L157",
       "title": "Abonnements : focus clavier gardé après masquage",
       "status": "todo"
+    },
+    {
+      "id": "L161",
+      "title": "Dépenses : en démo, la page dit que l'analyse IA n'est pas disponible",
+      "status": "doing",
+      "started": "2026-10-28"
     }
   ]
 }
