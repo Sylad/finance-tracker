@@ -111,4 +111,16 @@ describe('ExpensesPage — revue UX (L38)', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Alimentation|food/i }));
     expect(await screen.findByTitle(LONG)).toBeTruthy();
   });
+
+  it('R8 — à 390 px le détail ne fait pas déborder la page : cartes min-w-0, libellé borné plus court sur téléphone', async () => {
+    mockGet();
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: /Alimentation|food/i }));
+    const cell = await screen.findByTitle(LONG);
+    expect(cell.className).toMatch(/max-w-\[140px\]/);
+    expect(cell.className).toMatch(/sm:max-w-\[220px\]/);
+    for (const card of [cell.closest('.card'), screen.getByText('Répartition des retraits').closest('.card')]) {
+      expect(card?.className).toMatch(/\bmin-w-0\b/);
+    }
+  });
 });

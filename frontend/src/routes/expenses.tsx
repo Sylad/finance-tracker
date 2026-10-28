@@ -170,7 +170,7 @@ export function ExpensesPage() {
         <EmptyState title="Aucun relevé" hint="Importe un relevé bancaire pour voir tes dépenses." />
       ) : (
         <div className="grid lg:grid-cols-2 gap-4 mb-4">
-          <div className="card p-5">
+          <div className="card p-5 min-w-0">
             <h3 className="font-display text-sm font-semibold text-fg-bright mb-2">Répartition des retraits</h3>
             <div className="h-64">
               <ResponsiveContainer>
@@ -220,7 +220,7 @@ export function ExpensesPage() {
             </ul>
           </div>
 
-          <div className="card p-5">
+          <div className="card p-5 min-w-0">
             <h3 className="font-display text-sm font-semibold text-fg-bright mb-2">
               {active ? `${active.label} — ${active.transactions.length} retrait${active.transactions.length > 1 ? 's' : ''}` : 'Détail'}
             </h3>
@@ -237,7 +237,7 @@ export function ExpensesPage() {
                       {active.transactions.map((t) => (
                         <tr key={t.id} className="border-b border-border/50 last:border-0">
                           <td className="py-1.5 pr-3 text-fg-dim text-xs whitespace-nowrap">{formatDate(t.date)}</td>
-                          <td className="py-1.5 pr-3 text-fg truncate max-w-[220px]" title={t.description}>{t.description}</td>
+                          <td className="py-1.5 pr-3 text-fg truncate max-w-[140px] sm:max-w-[220px]" title={t.description}>{t.description}</td>
                           <td className="py-1.5 text-right font-mono text-negative whitespace-nowrap">{formatEUR(t.amount)}</td>
                         </tr>
                       ))}
