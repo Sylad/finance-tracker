@@ -4,9 +4,9 @@ import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import { Loader2, Sparkles, AlertCircle, Scissors, Repeat, ShoppingBag, HelpCircle } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
-import { LoadingState, EmptyState } from '@/components/loading-state';
+import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
 import { CATEGORY_LABELS, type StatementSummary, type TransactionCategory } from '@/types/api';
-import { formatEUR, formatDate, cn, chartTooltipProps } from '@/lib/utils';
+import { formatEUR, formatDate, formatMonth, cn, chartTooltipProps } from '@/lib/utils';
 
 interface ExpenseTx { id: string; date: string; description: string; amount: number }
 interface Breakdown {
@@ -45,17 +45,23 @@ const KIND_META = {
   autre: { label: 'Autres', icon: HelpCircle, color: 'text-fg-muted' },
 } as const;
 
+/** « 2026-09 » → « Septembre 2026 » ; un identifiant inattendu reste tel quel. */
+function monthLabel(id: string): string {
+  const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(id);
+  return m ? formatMonth(Number(m[2]), Number(m[1])) : id;
+}
+
 export function ExpensesPage() {
   const [monthId, setMonthId] = useState<string | null>(null);
   const [activeSlice, setActiveSlice] = useState<string | null>(null);
   const [cutResult, setCutResult] = useState<CutResult | null>(null);
-  const [ollamaDown, setOllamaDown] = useState<string | null>(null);
+  const [cutError, setCutError] = useState<{ title: string; message: string } | null>(null);
 
   const { data: statements } = useQuery<StatementSummary[]>({
     queryKey: ['statements'],
     queryFn: () => api.get<StatementSummary[]>('/statements'),
   });
-  const { data, isLoading } = useQuery<Breakdown>({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery<Breakdown>({
     queryKey: ['expenses-breakdown', monthId],
     queryFn: () => api.get<Breakdown>(`/expenses/breakdown${monthId ? `?monthId=${monthId}` : ''}`),
     placeholderData: keepPreviousData,
@@ -66,12 +72,14 @@ export function ExpensesPage() {
   });
 
   const handleCuts = async () => {
-    setOllamaDown(null);
+    setCutError(null);
     try {
       setCutResult(await proposeCuts.mutateAsync());
     } catch (e) {
-      if (e instanceof ApiError && e.status === 502) setOllamaDown(e.message);
-      else alert(`Erreur analyse : ${(e as Error).message}`);
+      const message = (e as Error).message;
+      setCutError(e instanceof ApiError && e.status === 502
+        ? { title: 'Analyse indisponible — Ollama éteint ?', message }
+        : { title: 'Analyse impossible', message });
     }
   };
 
@@ -107,9 +115,9 @@ export function ExpensesPage() {
       <PageHeader
         eyebrow="Dépenses"
         title={data ? `${formatEUR(data.totalDebits)} de retraits` : 'Dépenses'}
-        subtitle={data ? `Relevé ${data.monthId} — crédits, abonnements et opérations neutres isolés` : ''}
+        subtitle={data ? `Relevé de ${monthLabel(data.monthId).toLowerCase()} — crédits, abonnements et opérations neutres isolés` : ''}
         actions={
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center">
             <select
               aria-label="Mois du relevé"
               value={monthId ?? data?.monthId ?? ''}
@@ -117,17 +125,17 @@ export function ExpensesPage() {
               className="bg-surface-2 border border-input-border rounded-md px-3 py-2 text-sm text-fg"
             >
               {(statements ?? []).map((s) => (
-                <option key={s.id} value={s.id}>{s.id}</option>
+                <option key={s.id} value={s.id}>{monthLabel(s.id)}</option>
               ))}
             </select>
             <button
               onClick={handleCuts}
               disabled={proposeCuts.isPending}
               className="btn-secondary"
-              title="Analyse les 3 derniers mois via le LLM local (Ollama) et propose des dépenses à couper : abonnements, achats, autres. Crédits exclus. Peut durer 1-3 min."
+              title="Analyse les 3 derniers mois avec l'IA locale (Ollama) et propose des dépenses à couper : abonnements, achats, autres. Crédits exclus."
             >
               {proposeCuts.isPending ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Analyse en cours sur la 5090…</>
+                <><Loader2 className="h-4 w-4 animate-spin" /> Analyse en cours…</>
               ) : (
                 <><Sparkles className="h-4 w-4" /> Proposer des coupes (IA locale)</>
               )}
@@ -136,16 +144,29 @@ export function ExpensesPage() {
         }
       />
 
-      {ollamaDown && (
-        <div className="card p-4 mb-4 border-negative/40 text-sm">
+      {proposeCuts.isPending && (
+        <p role="status" className="card p-4 mb-4 text-sm text-fg-muted">
+          Analyse des 3 derniers mois en cours — compte de 1 à 3 minutes. Tu peux rester sur la page.
+        </p>
+      )}
+
+      {cutError && (
+        <div role="alert" className="card p-4 mb-4 border-negative/40 text-sm">
           <div className="flex items-center gap-2 text-negative font-semibold">
-            <AlertCircle className="h-4 w-4" /> Analyse indisponible — Ollama éteint ?
+            <AlertCircle className="h-4 w-4" /> {cutError.title}
           </div>
-          <p className="text-fg-muted text-xs mt-1">{ollamaDown}</p>
+          <p className="text-fg-muted text-xs mt-1">{cutError.message}</p>
         </div>
       )}
 
-      {!data ? (
+      {isError && !data ? (
+        <ErrorState
+          title="Impossible de charger les dépenses"
+          message="Le relevé demandé n'a pas pu être lu."
+          onRetry={() => refetch()}
+          retrying={isFetching}
+        />
+      ) : !data ? (
         <EmptyState title="Aucun relevé" hint="Importe un relevé bancaire pour voir tes dépenses." />
       ) : (
         <div className="grid lg:grid-cols-2 gap-4 mb-4">
@@ -181,6 +202,7 @@ export function ExpensesPage() {
                 <li key={s.id}>
                   <button
                     onClick={() => setActiveSlice((cur) => (cur === s.id ? null : s.id))}
+                    aria-pressed={activeSlice === s.id}
                     className={cn(
                       'w-full flex items-center gap-2 text-sm px-2 py-1 rounded-md transition-colors',
                       activeSlice === s.id ? 'bg-surface-2 text-fg-bright' : 'text-fg-muted hover:bg-surface-2/60',
@@ -190,7 +212,7 @@ export function ExpensesPage() {
                     <span className="flex-1 text-left truncate">{s.label}</span>
                     <span className="font-mono text-xs">{formatEUR(s.value)}</span>
                     <span className="text-[10px] text-fg-dim w-12 text-right">
-                      {((s.value / data.totalDebits) * 100).toFixed(1)} %
+                      {(data.totalDebits > 0 ? (s.value / data.totalDebits) * 100 : 0).toFixed(1).replace('.', ',')} %
                     </span>
                   </button>
                 </li>
@@ -215,7 +237,7 @@ export function ExpensesPage() {
                       {active.transactions.map((t) => (
                         <tr key={t.id} className="border-b border-border/50 last:border-0">
                           <td className="py-1.5 pr-3 text-fg-dim text-xs whitespace-nowrap">{formatDate(t.date)}</td>
-                          <td className="py-1.5 pr-3 text-fg truncate max-w-[220px]">{t.description}</td>
+                          <td className="py-1.5 pr-3 text-fg truncate max-w-[220px]" title={t.description}>{t.description}</td>
                           <td className="py-1.5 text-right font-mono text-negative whitespace-nowrap">{formatEUR(t.amount)}</td>
                         </tr>
                       ))}

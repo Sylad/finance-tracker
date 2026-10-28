@@ -53,7 +53,7 @@ describe('ExpensesPage — choix du mois (L84)', () => {
     expect(document.activeElement).toBe(select);
     expect(select.value).toBe('2026-08');
     pending.release!();
-    await waitFor(() => expect(screen.getByText(/Relevé 2026-08/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/Relevé de août 2026/)).toBeTruthy());
     expect(document.activeElement).toBe(select);
   });
 });
