@@ -316,7 +316,7 @@ function TrajectoireCard({ block }: { block: HealthBlockResult }) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="label" padding={{ left: 24, right: 24 }} interval={0} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis hide />
               <Tooltip {...chartTooltipProps} formatter={(v: number) => [formatEUR(v), 'Encours']} />
               <Line

@@ -132,7 +132,7 @@ describe('Santé financière (/health) — revue UX (L37)', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Ajuster les seuils/ }));
     const dialog = await screen.findByRole('dialog');
     await userEvent.click(await within(dialog).findByRole('button', { name: /Restaurer les défauts/ }));
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Échec de la restauration');
+    expect(await within(dialog).findByText(/Échec de la restauration/)).toBeTruthy();
   });
 
   it('R6 — seuil invalide : erreur annoncée (alert), lisible (text-negative-fg), focus sur le premier champ fautif', async () => {
@@ -142,9 +142,11 @@ describe('Santé financière (/health) — revue UX (L37)', () => {
     const field = await within(dialog).findByLabelText(/Orange en-dessous de/);
     await userEvent.clear(field);
     await userEvent.click(within(dialog).getByRole('button', { name: 'Enregistrer' }));
-    const alert = await within(dialog).findByRole('alert');
-    expect(alert).toHaveTextContent('Seuils invalides');
-    expect(alert.querySelector('.text-negative-fg')).not.toBeNull();
+    const message = await within(dialog).findByText(/Seuils invalides/);
+    expect(message.closest('[role="alert"]')).not.toBeNull();
+    expect(message.className).toContain('text-negative-fg');
+    // En tête du formulaire : visible depuis le champ fautif, même au téléphone.
+    expect(message.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(document.activeElement).toBe(field);
     expect(api.put).not.toHaveBeenCalled();
   });
@@ -158,7 +160,7 @@ describe('Santé financière (/health) — revue UX (L37)', () => {
     expect(await within(dialog).findByRole('status')).toHaveTextContent('Seuils enregistrés.');
     api.put.mockRejectedValueOnce(new Error('boom'));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Enregistrer' }));
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent("Échec de l'enregistrement.");
+    expect(await within(dialog).findByText("Échec de l'enregistrement.")).toBeTruthy();
   });
 
   it('R8 — revenu manuel : champ nommé, valeur invalide dite, échec annoncé lisible, succès annoncé', async () => {

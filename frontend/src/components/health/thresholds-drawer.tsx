@@ -202,6 +202,15 @@ export function ThresholdsDrawer({ onClose }: { onClose: () => void }) {
           <div className="p-5 text-sm text-fg-dim" role="status">Chargement…</div>
         ) : (
           <div className="p-5 space-y-5">
+            {/* En tête du formulaire : au téléphone le pied est hors de vue quand le focus saute sur le champ fautif. */}
+            <div role="alert">
+              {validationError && (
+                <div id="thresholds-error" className="card p-3 bg-negative/10 border-l-4 border-l-negative">
+                  <p className="text-xs text-negative-fg font-medium">{validationError}</p>
+                </div>
+              )}
+            </div>
+
             <Section title="Reste à vivre">
               <NumField
                 label="Orange en-dessous de (% du revenu)"
@@ -288,11 +297,6 @@ export function ThresholdsDrawer({ onClose }: { onClose: () => void }) {
               {updateThresholds.isSuccess && <p className="text-xs text-positive">Seuils enregistrés.</p>}
             </div>
             <div role="alert" className="space-y-2">
-              {validationError && (
-                <div id="thresholds-error" className="card p-3 bg-negative/10 border-l-4 border-l-negative">
-                  <p className="text-xs text-negative-fg font-medium">{validationError}</p>
-                </div>
-              )}
               {updateThresholds.isError && <p className="text-xs text-negative-fg">Échec de l'enregistrement.</p>}
               {resetThresholds.isError && <p className="text-xs text-negative-fg">Échec de la restauration des défauts.</p>}
             </div>
