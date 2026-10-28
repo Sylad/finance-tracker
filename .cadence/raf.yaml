@@ -468,6 +468,8 @@ lots:
     review: { date: 2026-10-28, verdict: "compliant after 0 fix; 3 minor notes (no « Réessayer » on advice read failure, stale useHealthAdvice comment, inconsistent contrast figures in README/Nouveautés); captures and browser checks not verified (no X server) — orchestré (vague 2026-10-28-1150f, 0 passe(s) de correction)", commit: 4653f6d09b5899422055f9ae439327d227824965 }
     ux: { date: 2026-10-28, verdict: "conforme (lead, captures 390 regardées : page Santé lisible, tiroir des seuils en erreur avec message en tête et champ fautif signalé) — relecteur UX sans navigateur, contrôle réel par la QA de prod ; 3 mineurs en note (pas de Réessayer sur la lecture des conseils, commentaire de useHealthAdvice périmé, chiffres de contraste différents entre README et Nouveauté)" }
     finished: 2026-10-28
+    notes:
+      - { date: 2026-10-28, text: "QA prod 28-10 (0672868) : conforme, 0 bloquant ; contrastes ≥ 4,91:1 (pastille « Rouge » au plus bas), tiroir au clavier conforme (Tab bouclé, Échap rend le focus) ; mineurs : fond du tiroir ni inert ni aria-hidden (aria-modal posé), flux « Dépendance aux tirages » négatif affiché en vert" }
   - id: L38
     title: Revue UX — Dépenses
     status: todo
