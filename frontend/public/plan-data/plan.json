@@ -629,8 +629,9 @@
     {
       "id": "L161",
       "title": "Dépenses : en démo, la page dit que l'analyse IA n'est pas disponible",
-      "status": "doing",
-      "started": "2026-10-28"
+      "status": "done",
+      "started": "2026-10-28",
+      "finished": "2026-10-28"
     }
   ]
 }

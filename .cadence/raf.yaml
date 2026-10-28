@@ -1808,12 +1808,14 @@ lots:
     finished: 2026-10-28
   - id: L161
     title: "Suites QA L38 : refaire la capture Nouveautés depenses-analyse-erreur-1440 en attendant ≥ 2 s (prise pendant l'animation du camembert) ; en démo forcée « Proposer des coupes » répond 403 « écritures désactivées » alors que le bandeau dit « Toutes les fonctionnalités sont actives » — expliquer sur la page que l'analyse IA locale n'est pas disponible en démo"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-28
     started: 2026-10-28
     review: { date: 2026-10-28, verdict: "compliant (0 blocking, 0 major, 1 minor note) — les commits a72a392 et 0c21062 respectent le but du lot, avec une réserve : la revue visuelle en direct n'a pas pu se faire (Playwright indisponible) — orchestré (vague 2026-10-28-2130, 0 passe(s) de correction)", commit: 0c210622c75afe984388d3cde8c3b003648c9b1b }
+    ux: { date: 2026-10-28, verdict: "conforme : captures regardées — démo : encart qui dit que l'analyse IA locale n'est pas disponible, bouton grisé, camembert dessiné ; capture d'erreur refaite après l'animation (camembert complet) ; mineur : le bandeau du haut dit encore « Toutes les fonctionnalités sont actives »" }
+    finished: 2026-10-28
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
