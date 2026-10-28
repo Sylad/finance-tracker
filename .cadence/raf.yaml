@@ -459,10 +459,11 @@ lots:
     finished: 2026-10-28
   - id: L37
     title: Revue UX — Santé financière
-    status: todo
+    status: doing
     visible: true
     estimate: 0.25
     created: 2026-09-28
+    started: 2026-10-28
   - id: L38
     title: Revue UX — Dépenses
     status: todo
