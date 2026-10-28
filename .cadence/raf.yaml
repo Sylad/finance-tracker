@@ -472,10 +472,11 @@ lots:
       - { date: 2026-10-28, text: "QA prod 28-10 (0672868) : conforme, 0 bloquant ; contrastes ≥ 4,91:1 (pastille « Rouge » au plus bas), tiroir au clavier conforme (Tab bouclé, Échap rend le focus) ; mineurs : fond du tiroir ni inert ni aria-hidden (aria-modal posé), flux « Dépendance aux tirages » négatif affiché en vert" }
   - id: L38
     title: Revue UX — Dépenses
-    status: todo
+    status: doing
     visible: true
     estimate: 0.25
     created: 2026-09-28
+    started: 2026-10-28
   - id: L39
     title: Revue UX — À propos et Nouveautés
     status: todo
