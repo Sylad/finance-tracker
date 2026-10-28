@@ -122,6 +122,7 @@ never: « Agrégation des relevés… » sans fin ; `scrollWidth` > `clientWidth
 shows: 4 indicateurs (Reste à vivre, Charge de la dette, Dépendance aux tirages, Trajectoire), verdict rouge/orange/vert
 api: /api/health-check/diagnostic, /api/health-check/advice
 may be empty when aucun conseil n'a encore été généré (`/api/health-check/advice` répond 204, corps vide)
+never: « Impossible de lire les conseils » quand le 204 est la réponse normale ; « Chargement… » sans fin dans le tiroir « Ajuster les seuils » ; `scrollWidth` > `clientWidth` à 390 px (L37)
 
 ## /declarations
 

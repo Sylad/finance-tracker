@@ -459,6 +459,7 @@ lots:
     finished: 2026-10-28
   - id: L37
     title: Revue UX — Santé financière
+    public: "Santé financière : tiroir des seuils au clavier, erreurs dites, conseils fiables"
     status: doing
     visible: true
     estimate: 0.25
