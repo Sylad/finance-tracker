@@ -430,11 +430,13 @@ lots:
     created: 2026-09-28
     started: 2026-10-27
     tasks:
-      - { id: t1, title: "Bandeau des suggestions : l'alerte d'échec d'Accepter / Plus tard / Rejeter est amenée à l'écran (scrollIntoView + scroll-mt-20 lg:scroll-mt-6) — à 390 px elle était 715 px au-dessus de la fenêtre avec 5 suggestions (revue Opus de L34, 27-10)", status: todo }
-      - { id: t2, title: "Bandeau des suggestions : un échec arrivé après le lancement d'une autre action (Accepter lent refusé puis Rejeter réussi) n'est jamais affiché — garder le dernier échec reçu, et tester qu'une action réussie après un échec efface l'alerte (revue Opus de L34, 27-10)", status: todo }
+      - { id: t1, title: "Bandeau des suggestions : l'alerte d'échec d'Accepter / Plus tard / Rejeter est amenée à l'écran (scrollIntoView + scroll-mt-20 lg:scroll-mt-6) — à 390 px elle était 715 px au-dessus de la fenêtre avec 5 suggestions (revue Opus de L34, 27-10)", status: done }
+      - { id: t2, title: "Bandeau des suggestions : un échec arrivé après le lancement d'une autre action (Accepter lent refusé puis Rejeter réussi) n'est jamais affiché — garder le dernier échec reçu, et tester qu'une action réussie après un échec efface l'alerte (revue Opus de L34, 27-10)", status: done }
     review: { date: 2026-10-27, verdict: "périmètre coupé par le lead (revue UX qui ne converge pas : chaque passe trouve un écart nouveau) : les 2 majeurs de l'escalade sont corrigés et vérifiés à 390 px (revue Opus neuve) ; le majeur restant (alerte de suggestion hors écran au téléphone) et le mineur (échec avalé) passent en L34/t1 et L34/t2", commit: 10cd0ac67f10fd40d6d2ef3adef11161ab42c2ea }
     ux: { date: 2026-10-27, verdict: "lead : conforme sur le périmètre coupé (débordement et empilement corrigés, mesurés à 390 px) ; alerte de suggestion hors écran → L34/t1" }
     finished: 2026-10-27
+    notes:
+      - { date: 2026-10-28, text: "28-10 (lead) : t1 faite par bf9d4b5 (alerte amenée à l'écran, scroll-mt-20), t2 par bcfffa5 (un seul message d'échec, remplacé à l'action suivante, test R20) — sous-tâches closes" }
   - id: L35
     title: Revue UX — Objectifs
     status: done
