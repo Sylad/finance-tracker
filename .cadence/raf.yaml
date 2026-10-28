@@ -472,12 +472,14 @@ lots:
       - { date: 2026-10-28, text: "QA prod 28-10 (0672868) : conforme, 0 bloquant ; contrastes ≥ 4,91:1 (pastille « Rouge » au plus bas), tiroir au clavier conforme (Tab bouclé, Échap rend le focus) ; mineurs : fond du tiroir ni inert ni aria-hidden (aria-modal posé), flux « Dépendance aux tirages » négatif affiché en vert" }
   - id: L38
     title: Revue UX — Dépenses
-    status: doing
+    status: done
     visible: true
     estimate: 0.25
     created: 2026-09-28
     started: 2026-10-28
     review: { date: 2026-10-28, verdict: "compliant after 3 minor notes (élision « d'août/d'avril/d'octobre », mois bruts dans le titre des coupes, test R8 limité à des classes CSS) — captures non produites (navigateur indisponible) — orchestré (vague 2026-10-28-2000, 0 passe(s) de correction)", commit: e34c57807d3ffe82d241dba77fc430fc728e60d2 }
+    ux: { date: 2026-10-28, verdict: "conforme : captures regardées + QA prod 7c372e2 (1440 et 390) — erreurs dites sur la page, mois en toutes lettres, légende 9 postes, pas de débordement ; camembert absent de depenses-analyse-erreur-1440.png = artefact d'animation (0 part pendant 400 ms, 9 parts ensuite, mesuré) ; suites en L-capture" }
+    finished: 2026-10-28
   - id: L39
     title: Revue UX — À propos et Nouveautés
     status: todo
@@ -1802,6 +1804,12 @@ lots:
     started: 2026-10-28
     review: { date: 2026-10-28, verdict: "conforme (lead) : config seule, 3 lignes relues ; dry-run de L37 sans étape precheck", commit: 4fe74b087732285926917a30dbd61650f12abe5c }
     finished: 2026-10-28
+  - id: L161
+    title: "Suites QA L38 : refaire la capture Nouveautés depenses-analyse-erreur-1440 en attendant ≥ 2 s (prise pendant l'animation du camembert) ; en démo forcée « Proposer des coupes » répond 403 « écritures désactivées » alors que le bandeau dit « Toutes les fonctionnalités sont actives » — expliquer sur la page que l'analyse IA locale n'est pas disponible en démo"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-10-28
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
