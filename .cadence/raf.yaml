@@ -477,6 +477,7 @@ lots:
     estimate: 0.25
     created: 2026-09-28
     started: 2026-10-28
+    review: { date: 2026-10-28, verdict: "compliant after 3 minor notes (élision « d'août/d'avril/d'octobre », mois bruts dans le titre des coupes, test R8 limité à des classes CSS) — captures non produites (navigateur indisponible) — orchestré (vague 2026-10-28-2000, 0 passe(s) de correction)", commit: e34c57807d3ffe82d241dba77fc430fc728e60d2 }
   - id: L39
     title: Revue UX — À propos et Nouveautés
     status: todo
