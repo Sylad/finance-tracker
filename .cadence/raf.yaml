@@ -1785,10 +1785,12 @@ lots:
     finished: 2026-10-28
   - id: L160
     title: "Précheck coupé (orchestrate.precheck: false) : 1 « oui » sur 236 lots du 22 au 28-10, 4,9 M tokens Sonnet pour ≈ 80 k évités"
-    status: doing
+    status: done
     estimate: 0.05
     created: 2026-10-28
     started: 2026-10-28
+    review: { date: 2026-10-28, verdict: "conforme (lead) : config seule, 3 lignes relues ; dry-run de L37 sans étape precheck", commit: 4fe74b087732285926917a30dbd61650f12abe5c }
+    finished: 2026-10-28
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
