@@ -186,7 +186,7 @@ export function BottomNav() {
                 aria-label={'short' in item ? item.label : undefined}
               >
                 <Icon className="h-[20px] w-[20px]" strokeWidth={active ? 2.25 : 1.75} />
-                <span className="text-[10px] font-medium tracking-wide">{'short' in item ? item.short : item.label}</span>
+                <span className="text-xs font-medium">{'short' in item ? item.short : item.label}</span>
               </Link>
             );
           })}
@@ -205,7 +205,7 @@ export function BottomNav() {
                 <NewsBadge badge={news.badge} label="" className="absolute -right-2.5 -top-2 ring-2 ring-surface" />
               )}
             </span>
-            <span className="text-[10px] font-medium tracking-wide">Plus</span>
+            <span className="text-xs font-medium">Plus</span>
             {!open && news.badge && <span className="sr-only"> ({news.label})</span>}
           </button>
         </div>

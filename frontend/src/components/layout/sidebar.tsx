@@ -94,7 +94,7 @@ export function Sidebar() {
             <div className="font-display text-base font-bold tracking-tight text-fg-bright leading-none">
               Finance Tracker
             </div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-fg-dim mt-1.5 font-semibold">
+            <div className="text-xs uppercase tracking-[0.14em] text-fg-dim mt-1.5 font-semibold">
               Vibe coded
             </div>
           </div>
@@ -135,13 +135,13 @@ export function Sidebar() {
           <div className="mx-3 mt-3 mb-2 h-px bg-border" />
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('finance:open-command-palette'))}
-            className="w-full px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-fg-dim flex items-center justify-between rounded-md hover:bg-surface-2/60 hover:text-fg transition-colors cursor-pointer"
+            className="w-full px-3 py-1 text-xs uppercase tracking-[0.14em] text-fg-dim flex items-center justify-between rounded-md hover:bg-surface-2/60 hover:text-fg transition-colors cursor-pointer"
             title="Ouvrir la recherche rapide (⌘K / Ctrl+K)"
           >
             <span>Recherche rapide</span>
             <kbd className="font-sans normal-case text-[10px] tracking-normal border border-border rounded px-1.5 py-[1px] text-fg-muted">⌘K</kbd>
           </button>
-          <div className="px-3 pt-2 text-[10px] uppercase tracking-[0.14em] text-fg-dim">v2.0</div>
+          <div className="px-3 pt-2 text-xs uppercase tracking-[0.14em] text-fg-dim">v2.0</div>
         </div>
         <div
           data-testid="sidebar-scroll-fade"
