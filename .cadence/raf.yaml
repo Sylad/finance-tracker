@@ -484,12 +484,15 @@ lots:
     finished: 2026-10-28
   - id: L39
     title: Revue UX — À propos et Nouveautés
-    status: doing
+    public: Pages À propos et Nouveautés plus lisibles
+    status: done
     visible: true
     estimate: 0.25
     created: 2026-09-28
     started: 2026-10-29
     review: { date: 2026-10-29, verdict: "compliant — 0 blocking, 0 major, 1 minor (note) — orchestré (vague 2026-10-29-ux, 0 passe(s) de correction)", commit: ccf2cbdc44f82a853e097c92d0480c10d80ba32b }
+    ux: { date: 2026-10-29, verdict: "conforme : vu par le lead (capture 390 px de À propos, revue UX 29-10) — liens externes annoncés, titres hiérarchisés, texte lisible ; note : « v2.0 » écrit en dur dans le pied" }
+    finished: 2026-10-29
   - id: L40
     title: "Revue UX — Gabarit commun : navigation, en-tête, pied, rendu téléphone"
     status: todo
