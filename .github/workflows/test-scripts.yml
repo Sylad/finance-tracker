@@ -12,11 +12,15 @@ on:
     paths:
       - 'scripts/deploy.sh'
       - 'scripts/test-deploy.sh'
+      - 'scripts/verify-cache.sh'
+      - 'scripts/test-verify-cache.sh'
       - '.github/workflows/test-scripts.yml'
   pull_request:
     paths:
       - 'scripts/deploy.sh'
       - 'scripts/test-deploy.sh'
+      - 'scripts/verify-cache.sh'
+      - 'scripts/test-verify-cache.sh'
       - '.github/workflows/test-scripts.yml'
   workflow_dispatch:
 
@@ -32,3 +36,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: scripts/test-deploy.sh
         run: ./scripts/test-deploy.sh
+
+  test-verify-cache:
+    name: Test verify-cache.sh (sonde Range)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: scripts/test-verify-cache.sh
+        run: ./scripts/test-verify-cache.sh
