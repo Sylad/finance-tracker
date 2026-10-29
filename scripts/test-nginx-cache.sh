@@ -16,7 +16,9 @@
 #      frontend/nginx.conf, montés en lecture seule ;
 #   3. interroge chaque cas avec `curl -sI` et compare statut, Content-Type et
 #      Cache-Control à l'attendu ;
-#   4. supprime le conteneur (trap), même en cas d'échec.
+#   4. rejoue scripts/verify-cache.sh contre des variantes dégradées de la
+#      configuration (contrôles négatifs : il doit échouer, pour la bonne raison) ;
+#   5. supprime les conteneurs (trap), même en cas d'échec.
 #
 # Le backend n'existe pas ici. La configuration est chargée telle quelle : le
 # nom `finance-backend` de ses proxy_pass est résolu par --add-host vers
@@ -48,7 +50,7 @@ docker version >/dev/null 2>&1 || { unset DOCKER_API_VERSION; docker version >/d
 
 TMP="$(mktemp -d)"
 cleanup() {
-  docker rm -f "$NAME" >/dev/null 2>&1 || true
+  docker rm -f "$NAME" "$NAME-neg" >/dev/null 2>&1 || true
   rm -rf "$TMP"
 }
 trap cleanup EXIT
@@ -141,6 +143,16 @@ expect "actif à empreinte (.css)" "$HASHED_CSS" 200 text/css "$IMMUTABLE"
 expect "actif absent /assets/absent-0000.js" /assets/absent-0000.js 404 text/html no-store
 expect "actif absent, avec query string" "/assets/absent-0000.css?v=1" 404 text/html no-store
 
+# Range : /assets/ ne sert jamais de morceau. La map du Cache-Control lit
+# $status avant le filtre Range de nginx : un 416 sortait donc en immutable
+# (gardé un an par Cloudflare), et un 206 n'était jamais vu. `max_ranges 0`
+# ignore l'en-tête Range : le fichier entier, 200, aucun 206 ni 416.
+expect "actif à empreinte, Range valide : fichier entier" "$HASHED_JS" 200 application/javascript "$IMMUTABLE" -H "Range: bytes=0-9"
+check "  … sans Content-Range" test -z "$(hdr content-range)"
+expect "actif à empreinte, Range hors fichier : fichier entier" "$HASHED_JS" 200 application/javascript "$IMMUTABLE" -H "Range: bytes=999999999-"
+check "  … sans Content-Range" test -z "$(hdr content-range)"
+expect "actif absent, avec Range" /assets/absent-0000.js 404 text/html no-store -H "Range: bytes=0-9"
+
 # Les fichiers statiques sans empreinte : pas plus longtemps que l'appli.
 expect "/sw.js (service worker)" /sw.js 200 application/javascript no-cache
 expect "/manifest.webmanifest" /manifest.webmanifest 200 application/octet-stream no-cache
@@ -189,9 +201,52 @@ fi
 # Toute empreinte de assets/ est bien une empreinte : le nom du fichier change
 # quand son contenu change (convention Vite <nom>-<hash 8 car.>.<ext>). Un
 # fichier copié tel quel dans assets/ serait gardé un an à tort.
-unhashed="$(find "$DIST/assets" -type f | grep -Ev -- '-[A-Za-z0-9_-]{8}\.[a-z0-9]+$' || true)"
+# Un vrai hash Vite (base64url) mêle majuscules, chiffres, « _ » ou « - » ; un
+# mot de 8 lettres minuscules (logo-standard.svg) n'en est pas un.
+not() { ! "$@"; }
+is_fingerprinted() { # nom de fichier
+  printf '%s\n' "$1" | grep -Eq -- '-[A-Za-z0-9_-]{8}\.[a-z0-9]+$' &&
+    ! printf '%s\n' "$1" | grep -Eq -- '-[a-z]{8}\.[a-z0-9]+$'
+}
+check "motif d'empreinte : refuse logo-standard.svg" not is_fingerprinted logo-standard.svg
+check "motif d'empreinte : refuse un fichier sans empreinte (logo.svg)" not is_fingerprinted logo.svg
+check "motif d'empreinte : accepte index-CLuMi1eX.js" is_fingerprinted index-CLuMi1eX.js
+check "motif d'empreinte : accepte un hash à « _ » et « - » (api-Dk9_JW-D.js)" is_fingerprinted api-Dk9_JW-D.js
+unhashed=""
+while IFS= read -r f; do
+  is_fingerprinted "$(basename "$f")" || unhashed="$unhashed$f
+"
+done < <(find "$DIST/assets" -type f | sort)
 check "assets/ ne contient que des fichiers à empreinte" test -z "$unhashed"
-[ -z "$unhashed" ] || echo "$unhashed" | sed 's/^/     | /'
+[ -z "$unhashed" ] || printf '%s' "$unhashed" | sed 's/^/     | /'
+
+# Contrôles négatifs de verify-cache.sh : un contrôle qui ne sait pas échouer
+# ne prouve rien. Chaque variante dégrade UNE règle de nginx.conf ; le script
+# doit alors sortir en erreur en nommant ce défaut.
+negative() { # libellé motif-sed message-attendu
+  local label=$1 expr=$2 want=$3 variant="$TMP/variant.conf" vname="$NAME-neg"
+  sed "$expr" "$CONF" > "$variant"
+  if cmp -s "$CONF" "$variant"; then
+    echo "FAIL négatif : $label — la variante est identique à nginx.conf (motif périmé)"; fails=$((fails + 1)); return
+  fi
+  docker rm -f "$vname" >/dev/null 2>&1 || true
+  docker run -d --name "$vname" --add-host finance-backend:127.0.0.1 -p 127.0.0.1::80 \
+    -v "$variant:/etc/nginx/conf.d/default.conf:ro" -v "$DIST:/usr/share/nginx/html:ro" "$IMAGE" >/dev/null
+  local vport; vport="$(docker port "$vname" 80/tcp | sed -n 's/.*:\([0-9]*\)$/\1/p' | head -1)"
+  for _ in $(seq 1 50); do curl -s -o /dev/null --max-time 2 "http://127.0.0.1:$vport/" && break; sleep 0.2; done
+  if VERIFY_BASE_URL="http://127.0.0.1:$vport" sh "$ROOT/scripts/verify-cache.sh" > "$TMP/neg" 2>&1; then
+    echo "FAIL négatif : $label — verify-cache.sh a réussi sur une configuration dégradée"; fails=$((fails + 1))
+  elif grep -q -- "$want" "$TMP/neg"; then
+    echo "ok   négatif : $label"
+  else
+    echo "FAIL négatif : $label — échec, mais pas pour la bonne raison (attendu « $want »)"; sed 's/^/     | /' "$TMP/neg"; fails=$((fails + 1))
+  fi
+  docker rm -f "$vname" >/dev/null 2>&1 || true
+}
+negative "document sans no-cache" 's/add_header Cache-Control "no-cache";//' "n'est pas servi en no-cache"
+negative "actif absent : repli HTML en 200" 's|try_files \$uri =404;|try_files $uri /index.html;|' "ne répond pas 404"
+negative "404 d'un actif absent sans no-store" 's|default  *"no-store";|default            "public, max-age=180";|' "pas en no-store"
+negative "actif à empreinte sans cache long" 's|public, max-age=31536000, immutable";$|public, max-age=60";|' "pas en cache long"
 
 echo
 [ "$fails" -eq 0 ] && echo "test-nginx-cache : tout est vert" || { echo "test-nginx-cache : $fails échec(s)"; exit 1; }

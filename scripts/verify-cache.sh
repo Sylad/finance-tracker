@@ -7,7 +7,8 @@
 #   1. le document « / » porte Cache-Control: no-cache — sinon un visiteur
 #      revenu garde l'ancienne appli après une livraison ;
 #   2. un actif absent sous /assets/ répond 404 — jamais le repli index.html
-#      en 200, que Cloudflare mettrait en cache sous un nom en .js ;
+#      en 200, que Cloudflare mettrait en cache sous un nom en .js — et ce 404
+#      porte no-store (sans consigne, Cloudflare le garde 3 minutes) ;
 #   3. l'actif à empreinte que le document référence existe tel qu'un visiteur
 #      le reçoit : 200 et du JavaScript (un repli HTML gardé par le CDN sous ce
 #      nom donnerait une page blanche avec une livraison verte) ;
@@ -55,6 +56,10 @@ asset=$(grep -o '/assets/[^"]*\.js' "$TMP/body" | head -1)
 
 probe "$BASE/assets/absent-$$.js?$BUST"
 [ "$status" = 404 ] || fail "un actif absent ($BASE/assets/absent-$$.js) ne répond pas 404"
+case "$cc" in
+  *no-store*) ;;
+  *) fail "le 404 d'un actif absent n'est pas en no-store (Cloudflare le garderait 3 minutes)" ;;
+esac
 
 probe "$BASE$asset"
 [ "$status" = 200 ] || fail "$BASE$asset ne répond pas 200"
