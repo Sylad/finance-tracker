@@ -23,23 +23,25 @@ interface Options {
 }
 
 export function installChunkReload({ target, storage, reload, now }: Options): void {
-  const reloadOnce = () => {
+  const reloadOnce = (): boolean => {
     let last: number;
     try {
       last = Number(storage.getItem(RELOAD_KEY)) || 0;
-      if (now() - last < MIN_GAP_MS) return;
+      if (now() - last < MIN_GAP_MS) return false;
       storage.setItem(RELOAD_KEY, String(now()));
     } catch {
       // Sans stockage on ne saurait pas qu'on vient de recharger : une boucle
       // de rechargements serait pire que la page figée, on s'abstient.
-      return;
+      return false;
     }
     reload();
+    return true;
   };
 
   target.addEventListener('vite:preloadError', (event) => {
-    event.preventDefault();
-    reloadOnce();
+    // Sans rechargement l'erreur reste telle quelle : empêcher l'événement
+    // ferait résoudre l'import à `undefined` et masquerait la vraie cause.
+    if (reloadOnce()) event.preventDefault();
   });
   target.addEventListener('unhandledrejection', (event) => {
     if (isChunkLoadFailure((event as PromiseRejectionEvent).reason)) {

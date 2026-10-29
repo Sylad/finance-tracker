@@ -40,6 +40,17 @@ describe('chunk-reload (un morceau d’une ancienne version répond 404)', () =>
     expect(ev.defaultPrevented).toBe(true);
   });
 
+  it('laisse l’erreur d’import visible quand il ne recharge pas (second échec dans la minute)', () => {
+    const first = setup(1_000_000);
+    first.target.dispatchEvent(preloadError());
+
+    const again = setup(1_000_000 + 30_000, first.storage.data);
+    const ev = preloadError();
+    again.target.dispatchEvent(ev);
+    expect(again.reload).not.toHaveBeenCalled();
+    expect(ev.defaultPrevented).toBe(false);
+  });
+
   it('recharge aussi sur un import dynamique refusé (Chrome, Firefox, Safari)', () => {
     for (const message of [
       'Failed to fetch dynamically imported module: https://x/assets/a-AAAAAAAA.js',
