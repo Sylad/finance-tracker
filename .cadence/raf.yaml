@@ -495,12 +495,15 @@ lots:
     finished: 2026-10-29
   - id: L40
     title: "Revue UX — Gabarit commun : navigation, en-tête, pied, rendu téléphone"
-    status: doing
+    public: Navigation, en-tête et barre du bas plus lisibles
+    status: done
     visible: true
     estimate: 0.25
     created: 2026-09-28
     started: 2026-10-29
     review: { date: 2026-10-29, verdict: "compliant — 0 blocking, 0 major, 1 minor (titre de la sous-page détail identique à celui de la liste) — orchestré (vague 2026-10-29-fin, 0 passe(s) de correction)", commit: d634c4cace0e43fa2ff4067f6432e440bd66d008 }
+    ux: { date: 2026-10-29, verdict: "conforme : vu par le lead (capture 390 px du gabarit et 1440 px du lien d'évitement, revue UX 29-10) — libellés de la barre du bas à 12 px, lien d'évitement, titres d'onglet ; note : sous-page détail d'un relevé au même titre que la liste" }
+    finished: 2026-10-29
   - id: L41
     title: "Livraison : deploy.sh prend la dernière image construite par service (HEAD sans run CI) et build.yml tourne sur chaque push"
     status: done
