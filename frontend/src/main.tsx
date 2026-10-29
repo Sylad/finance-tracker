@@ -3,8 +3,16 @@ import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/query-client';
 import { startLiveEvents } from './lib/live-events';
+import { installChunkReload } from './lib/chunk-reload';
 import { AppRouter } from './router';
 import './index.css';
+
+installChunkReload({
+  target: window,
+  storage: sessionStorage,
+  reload: () => window.location.reload(),
+  now: Date.now,
+});
 
 const root = document.getElementById('root');
 if (!root) throw new Error('root element not found');
