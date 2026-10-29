@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Link2 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
-import { EmptyState, LoadingState } from '@/components/loading-state';
+import { EmptyState, ErrorState, LoadingState } from '@/components/loading-state';
 import {
   NEWS_BASE as BASE,
   NEWS_QUERY_KEY,
@@ -169,6 +169,13 @@ export function NewsPage() {
       </p>
       {news.isLoading ? (
         <LoadingState />
+      ) : news.isError ? (
+        <ErrorState
+          title="Le journal des nouveautés n'a pas pu être chargé."
+          message="Vérifiez votre connexion, puis réessayez."
+          onRetry={() => void news.refetch()}
+          retrying={news.isFetching}
+        />
       ) : entries.length === 0 ? (
         <EmptyState title="Aucune nouveauté publiée pour l'instant." />
       ) : (
@@ -204,7 +211,7 @@ export function NewsPage() {
                     <div className="stat-label text-fg-dim flex flex-wrap items-center gap-x-2.5 gap-y-1">
                       <NewsDay day={e.date} />
                       {fresh[index] && (
-                        <span className="whitespace-nowrap rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] text-bg">
+                        <span className="whitespace-nowrap rounded-full bg-accent px-2 py-0.5 text-xs font-bold tracking-[0.08em] text-bg">
                           Nouveau
                         </span>
                       )}

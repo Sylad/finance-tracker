@@ -20,7 +20,9 @@ export interface NewsData {
 
 export async function fetchNews(): Promise<NewsData | null> {
   const res = await fetch(`${NEWS_BASE}/nouveautes.json`, { cache: 'no-cache' });
-  if (!res.ok) return null;
+  // 404 : aucun journal publié (page vide). Toute autre réponse en échec est une panne, dite comme telle.
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`nouveautes.json : HTTP ${res.status}`);
   return res.json();
 }
 

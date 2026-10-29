@@ -101,6 +101,38 @@ describe('<NewsPage />', () => {
     expect(await screen.findByText(/Aucune nouveauté publiée/)).toBeInTheDocument();
   });
 
+  it('R6 — journal en panne (HTTP 500) : erreur dite avec « Réessayer », jamais « Aucune nouveauté publiée » ; Réessayer relit le journal', async () => {
+    let up = false;
+    vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+      url.endsWith('/nouveautes.json')
+        ? (up ? { ok: true, status: 200, json: async () => NEWS } : { ok: false, status: 500, json: async () => null })
+        : { ok: false, status: 404, json: async () => null }));
+    renderPage();
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/n.a pas pu être chargé/);
+    expect(screen.queryByText(/Aucune nouveauté publiée/)).toBeNull();
+    up = true;
+    await userEvent.click(within(alert).getByRole('button', { name: /Réessayer/ }));
+    expect(await screen.findByText('Une page Plan de travail')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('R7 — réseau coupé (fetch rejeté) : même erreur dite, pas un journal vide', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    renderPage();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/n.a pas pu être chargé/);
+    expect(screen.queryByText(/Aucune nouveauté publiée/)).toBeNull();
+  });
+
+  it('R8 — la marque « Nouveau » et le reste de la page n’utilisent aucun texte sous 12 px', async () => {
+    remember({ date: '2026-01-01', slugs: [], seen: [], at: '2026-01-01T10:00:00.000Z' });
+    stubNews();
+    const { container } = renderPage();
+    await screen.findByText('Une page Plan de travail');
+    expect(screen.getAllByText('Nouveau').length).toBeGreaterThan(0);
+    expect(container.innerHTML).not.toMatch(/text-\[(?:[0-9]|1[01])px\]/);
+  });
+
   it('date en toutes lettres avec « 1er », jamais coupée en son milieu', async () => {
     stubNews();
     renderPage();

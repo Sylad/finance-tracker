@@ -73,9 +73,9 @@ export function AboutPage() {
 
       <section className="card p-6 mb-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex items-start gap-4 relative">
+        <div className="flex flex-col sm:flex-row items-start gap-4 relative">
           <BrandMark className="h-14 w-14 shrink-0" />
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h2 className="font-display text-xl font-bold text-fg-bright mb-3">
               L'histoire courte
             </h2>
@@ -88,9 +88,10 @@ export function AboutPage() {
             <p className="text-fg leading-relaxed mb-3">
               Toute l'appli (frontend React, backend NestJS, infra Docker) a été co-construite avec
               {' '}
-              <a href="https://claude.com/claude-code" target="_blank" rel="noopener" className="text-accent-bright hover:text-accent inline-flex items-center gap-1 font-medium">
+              <a href="https://claude.com/claude-code" target="_blank" rel="noopener" className="text-accent-bright hover:text-accent underline underline-offset-2 inline-flex items-center gap-1 font-medium">
                 Claude Code
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="h-3 w-3" aria-hidden />
+                <span className="sr-only"> (nouvel onglet)</span>
               </a>
               . Mon rôle : tracer la vision, valider les choix, repérer ce qui cloche.
               Le rôle de Claude : poser le code, expliquer, itérer.
@@ -98,9 +99,10 @@ export function AboutPage() {
             <p className="text-fg leading-relaxed">
               En amont,
               {' '}
-              <a href="https://chat.openai.com/" target="_blank" rel="noopener" className="text-info hover:underline inline-flex items-center gap-1 font-medium">
+              <a href="https://chat.openai.com/" target="_blank" rel="noopener" className="text-accent-bright hover:text-accent underline underline-offset-2 inline-flex items-center gap-1 font-medium">
                 ChatGPT
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="h-3 w-3" aria-hidden />
+                <span className="sr-only"> (nouvel onglet)</span>
               </a>
               {' '}a aidé à générer le logo et les premières maquettes UX qui ont guidé la construction.
               Une vraie collab à trois — humain + ChatGPT (visuels) + Claude Code (code) — l'occasion
@@ -127,7 +129,7 @@ export function AboutPage() {
             <div key={s.group} className="card p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Icon className="h-4 w-4 text-accent" />
-                <h3 className="font-display font-semibold text-fg-bright">{s.group}</h3>
+                <h2 className="font-display font-semibold text-fg-bright">{s.group}</h2>
               </div>
               <ul className="space-y-2 text-sm text-fg-muted">
                 {s.items.map((it) => (
@@ -143,7 +145,7 @@ export function AboutPage() {
       </section>
 
       <section className="card p-5 mb-6">
-        <h3 className="font-display text-lg font-semibold text-fg-bright mb-1">Sources d'inspiration</h3>
+        <h2 className="font-display text-lg font-semibold text-fg-bright mb-1">Sources d'inspiration</h2>
         <p className="text-sm text-fg-muted mb-5">
           Pas une copie, mais des principes que j'ai essayé d'appliquer.
         </p>
@@ -160,9 +162,10 @@ export function AboutPage() {
                 <span className="font-display font-semibold text-fg-bright group-hover:text-accent-bright transition-colors">
                   {i.name}
                 </span>
-                <ExternalLink className="h-3.5 w-3.5 text-fg-dim group-hover:text-accent-bright" />
+                <ExternalLink className="h-3.5 w-3.5 text-fg-dim group-hover:text-accent-bright" aria-hidden />
+                <span className="sr-only"> (nouvel onglet)</span>
               </div>
-              <span className="text-[10px] uppercase tracking-wider text-fg-dim">par {i.by}</span>
+              <span className="text-xs uppercase tracking-wider text-fg-dim">par {i.by}</span>
               <p className="text-xs text-fg-muted leading-relaxed mt-1">{i.why}</p>
             </a>
           ))}
@@ -170,7 +173,7 @@ export function AboutPage() {
       </section>
 
       <section className="card p-5 mb-6">
-        <h3 className="font-display text-lg font-semibold text-fg-bright mb-1">Mes autres sites</h3>
+        <h2 className="font-display text-lg font-semibold text-fg-bright mb-1">Mes autres sites</h2>
         <p className="text-sm text-fg-muted mb-5">
           Quatre autres apps perso vibe-codées avec Claude Code, puis enrichies au fil des sessions
           avec Codex. Toutes en open-source.
@@ -189,7 +192,8 @@ export function AboutPage() {
                 <span className="block font-display font-semibold text-fg-bright group-hover:text-accent-bright transition-colors">{s.name}</span>
                 <span className="block text-xs text-fg-muted">{s.desc}</span>
               </span>
-              <ExternalLink className="h-3.5 w-3.5 text-fg-dim group-hover:text-accent-bright shrink-0" />
+              <ExternalLink className="h-3.5 w-3.5 text-fg-dim group-hover:text-accent-bright shrink-0" aria-hidden />
+              <span className="sr-only"> (nouvel onglet)</span>
             </a>
           ))}
         </div>
@@ -201,7 +205,7 @@ export function AboutPage() {
           le problème en langage naturel, et itère. Tu seras surpris de ce qu'on peut construire en
           quelques sessions.
         </div>
-        <div className="text-[10px] uppercase tracking-[0.2em] text-fg-dim mt-4">
+        <div className="text-xs uppercase tracking-[0.2em] text-fg-dim mt-4">
           Made with curiosity · Runs on Kubernetes (k3s) · v2.0
         </div>
       </section>
