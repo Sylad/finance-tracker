@@ -1848,6 +1848,7 @@ lots:
     estimate: 0.25
     created: 2026-10-29
     started: 2026-10-29
+    review: { date: 2026-10-29, verdict: "compliant after 2 minor notes (en-tête « six GET » faux, clé de cache `-r` non commentée) — 0 blocking, 0 major; test-nginx-cache.sh rejoué: tout vert dont le négatif « Range réactivé » — orchestré (vague 2026-10-29-fi16x, 0 passe(s) de correction)", commit: 6230f47c3ffc83249ba422f47e48ea2d741074f1 }
   - id: L164
     title: Écran d'erreur par défaut de TanStack « Something went wrong! Show Error » (anglais) quand un morceau reste absent après le rechargement unique de chunk-reload — errorComponent en français avec un bouton Recharger (QA prod L55, 29-10)
     status: doing
