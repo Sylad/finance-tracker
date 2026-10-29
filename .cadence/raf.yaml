@@ -1849,11 +1849,12 @@ lots:
     created: 2026-10-29
   - id: L164
     title: Écran d'erreur par défaut de TanStack « Something went wrong! Show Error » (anglais) quand un morceau reste absent après le rechargement unique de chunk-reload — errorComponent en français avec un bouton Recharger (QA prod L55, 29-10)
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     screen: component
     created: 2026-10-29
+    started: 2026-10-29
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
