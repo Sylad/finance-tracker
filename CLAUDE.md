@@ -30,13 +30,13 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   (`sw.js`, manifest, icônes, `nouveautes-data/`, `plan-data/`) partent en
   `Cache-Control: no-cache` (gardés mais revalidés, 304 possible) : sans cela le
   navigateur montrait l'ancienne appli après une livraison. `/assets/` (sorties Vite à
-  empreinte) : un an `immutable` ; un fichier absent y répond **404** `no-store`, jamais
+  empreinte) : un an `immutable`, `max_ranges 0` (la map lit `$status` avant le filtre Range : sans cela un 416 sortait en immutable) ; un fichier absent y répond **404** `no-store`, jamais
   le repli HTML (Cloudflare le mettait en cache sous un nom en `.js`). Un fichier copié
   tel quel va donc dans `public/`, jamais dans `assets/`. `sw.js` est réseau d'abord et
   ne sert son cache qu'hors ligne : il dépend de ce `no-cache` pour ne pas recevoir un
   vieil `index.html` du cache HTTP. Preuve sur un vrai nginx :
-  `scripts/test-nginx-cache.sh` (Docker, `frontend/dist` construit) ; effet en prod :
-  `scripts/verify-cache.sh`, joué par `cadence deliver`.
+  `scripts/test-nginx-cache.sh` (Docker, `frontend/dist` construit ; joué par la CI dans `frontend-checks.yml` après le build ; un nom de 8 lettres minuscules comme `logo-standard.svg` n'est pas une empreinte ; contrôles négatifs : 4 variantes dégradées de nginx.conf sur lesquelles `verify-cache.sh` doit échouer) ; effet en prod :
+  `scripts/verify-cache.sh` (exige `no-store` sur le 404 d'un actif absent), joué par `cadence deliver`. Côté navigateur, `lib/chunk-reload.ts` recharge la page une fois par minute quand un morceau d'une ancienne version répond 404 (`vite:preloadError`, import dynamique refusé) ; sans stockage de session il s'abstient (pas de boucle).
 - **Plan de travail public** (`/plan`, L48) : après TOUT `raf` qui modifie le plan
   (`add`, `start`, `done`, `drop`…) ou une nouvelle entrée Nouveautés, lancer
   `npm run plan` (régénère `frontend/public/plan-data/plan.json`, versionné : la CI
