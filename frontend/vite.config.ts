@@ -12,6 +12,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    // dist/.vite/manifest.json : la liste des fichiers que le build a produits,
+    // lue par scripts/test-nginx-cache.sh pour distinguer les actifs à empreinte
+    // d'un fichier copié tel quel dans assets/ (plutôt que deviner par regex).
+    manifest: true,
     // Scope `modulepreload` hints so transitive lazy deps (recharts, route
     // chunks) are not eagerly fetched on the HTML entry. Only the tanstack
     // chunk (statically imported by the entry) is preloaded. Without this

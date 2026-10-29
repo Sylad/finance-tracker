@@ -198,32 +198,42 @@ else
   echo "FAIL scripts/verify-cache.sh contre le conteneur"; sed 's/^/     | /' "$TMP/verify"; fails=$((fails + 1))
 fi
 
-# Toute empreinte de assets/ est bien une empreinte : le nom du fichier change
-# quand son contenu change (convention Vite <nom>-<hash 8 car.>.<ext>). Un
-# fichier copié tel quel dans assets/ serait gardé un an à tort.
-# Un vrai hash Vite (base64url) mêle majuscules, chiffres, « _ » ou « - » ; un
-# mot de 8 lettres minuscules (logo-standard.svg), un segment kebab-case
-# (icon-arrow-up.svg), 8 chiffres (banner-20261029.png) ou 8 majuscules n'en est
-# pas un : le segment doit mêler au moins deux familles. Reste accepté, faute de
-# mieux sans refuser de vrais hashs : un mot capitalisé (photo-Portrait.png).
+# Tout fichier de assets/ est bien une sortie du build : le nom d'un actif à
+# empreinte change quand son contenu change, ce que seul Vite sait — pas une
+# regex. Le build écrit donc dist/.vite/manifest.json (vite.config.ts,
+# build.manifest) ; il liste chaque fichier qu'il a produit (`file`, `css` et
+# `assets` de chaque entrée). Un fichier de assets/ absent du manifeste a été
+# copié tel quel (nom sans empreinte) et serait gardé un an à tort.
+MANIFEST="$DIST/.vite/manifest.json"
+[ -f "$MANIFEST" ] ||
+  { echo "test-nginx-cache : $MANIFEST absent — frontend/vite.config.ts doit activer build.manifest" >&2; exit 2; }
 not() { ! "$@"; }
-is_fingerprinted() { # nom de fichier
-  printf '%s\n' "$1" | grep -Eq -- '-[A-Za-z0-9_-]{8}\.[a-z0-9]+$' &&
-    ! printf '%s\n' "$1" | grep -Eq -- '-([a-z-]{8}|[0-9]{8}|[A-Z-]{8})\.[a-z0-9]+$'
+built_files() { # manifeste → un chemin relatif à dist/ par ligne
+  node -e '
+    const m = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+    for (const e of Object.values(m)) for (const f of [e.file, ...(e.css ?? []), ...(e.assets ?? [])]) console.log(f);
+  ' "$1"
 }
-check "motif d'empreinte : refuse logo-standard.svg" not is_fingerprinted logo-standard.svg
-check "motif d'empreinte : refuse un fichier sans empreinte (logo.svg)" not is_fingerprinted logo.svg
-check "motif d'empreinte : refuse un nom kebab-case (icon-arrow-up.svg)" not is_fingerprinted icon-arrow-up.svg
-check "motif d'empreinte : refuse un nom à 8 chiffres (banner-20261029.png)" not is_fingerprinted banner-20261029.png
-check "motif d'empreinte : refuse un nom en majuscules (logo-STANDARD.svg)" not is_fingerprinted logo-STANDARD.svg
-check "motif d'empreinte : accepte index-CLuMi1eX.js" is_fingerprinted index-CLuMi1eX.js
-check "motif d'empreinte : accepte un hash à « _ » et « - » (api-Dk9_JW-D.js)" is_fingerprinted api-Dk9_JW-D.js
+is_built() { # manifeste chemin-relatif-à-dist
+  built_files "$1" | grep -Fxq -- "$2"
+}
+fake="$TMP/manifest.json"
+echo '{"src/main.tsx":{"file":"assets/main-abcdefgh.js","css":["assets/main-ABCD1234.css"],"assets":["assets/icon-arrow-up.svg"]}}' > "$fake"
+check "manifeste : accepte le fichier d'une entrée" is_built "$fake" assets/main-abcdefgh.js
+check "manifeste : accepte un css listé" is_built "$fake" assets/main-ABCD1234.css
+check "manifeste : accepte un actif listé, quelle que soit la forme du nom" is_built "$fake" assets/icon-arrow-up.svg
+check "manifeste : refuse un fichier copié tel quel (assets/logo-standard.svg)" not is_built "$fake" assets/logo-standard.svg
+check "manifeste : refuse un nom qui n'est qu'un préfixe d'un fichier listé" not is_built "$fake" assets/main-abcdefg.js
+echo '{}' > "$fake"
+check "manifeste vide : rien n'est accepté" not is_built "$fake" assets/main-abcdefgh.js
 unhashed=""
+built="$(built_files "$MANIFEST")"
 while IFS= read -r f; do
-  is_fingerprinted "$(basename "$f")" || unhashed="$unhashed$f
+  rel="${f#"$DIST"/}"
+  printf '%s\n' "$built" | grep -Fxq -- "$rel" || unhashed="$unhashed$f
 "
 done < <(find "$DIST/assets" -type f | sort)
-check "assets/ ne contient que des fichiers à empreinte" test -z "$unhashed"
+check "assets/ ne contient que des fichiers produits par le build (manifeste Vite)" test -z "$unhashed"
 [ -z "$unhashed" ] || printf '%s' "$unhashed" | sed 's/^/     | /'
 
 # Contrôles négatifs de verify-cache.sh : un contrôle qui ne sait pas échouer
