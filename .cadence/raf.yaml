@@ -1836,11 +1836,24 @@ lots:
     finished: 2026-10-28
   - id: L162
     title: "scripts/test-nginx-cache.sh:212 is_fingerprinted : le motif resserré par L55 rejette à tort 0,20 % des vrais hashs Vite par fichier (2 000 000 tirages, revue de L55) — sur ~30 actifs, CI rouge sans cause quelques % des builds ; lire l'empreinte depuis le manifeste Vite (dist/.vite/manifest.json) ou les noms produits par le build plutôt que deviner par regex"
-    status: doing
+    status: done
     estimate: 0.25
     created: 2026-10-29
     started: 2026-10-29
     review: { date: 2026-10-29, verdict: "compliant — orchestré (vague 2026-10-29-fi162, 0 passe(s) de correction)", commit: 8729ca3fc1925ca140c197e7d78cd69eb112fffa }
+    finished: 2026-10-29
+  - id: L163
+    title: "Suite de L55 : /assets/ répond 206 (et 416 en cache immutable) à travers Cloudflare alors que l'origine sert 200 entier (max_ranges 0) — le cache CF découpe lui-même ; ajouter une sonde Range à verify-cache.sh et trancher : règle Cloudflare (pas de Range sur /assets/) ou critère « entier à l'origine » assumé et documenté (QA prod L55, 29-10)"
+    status: todo
+    estimate: 0.25
+    created: 2026-10-29
+  - id: L164
+    title: Écran d'erreur par défaut de TanStack « Something went wrong! Show Error » (anglais) quand un morceau reste absent après le rechargement unique de chunk-reload — errorComponent en français avec un bouton Recharger (QA prod L55, 29-10)
+    status: todo
+    estimate: 0.25
+    visible: true
+    screen: component
+    created: 2026-10-29
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
