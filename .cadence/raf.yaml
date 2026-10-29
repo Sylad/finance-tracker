@@ -648,6 +648,7 @@ lots:
     estimate: 0.5
     created: 2026-10-03
     started: 2026-10-29
+    review: { date: 2026-10-29, verdict: "conforme — les 3 constats mineurs sont corrigés (preloadError n'est plus empêché sans rechargement, le test CI vise la ligne run:, le motif refuse kebab-case, 8 chiffres et 8 majuscules) ; test-nginx-cache.sh vert en local (41 ok, 4 contrôles négatifs compris), 8 tests ciblés verts ; 2 notes mineures : faux rejets du motif à 0,20 %/fichier mesurés, chemin unhandledrejection non aligné — orchestré (vague 2026-10-29-fi55, 0 passe(s) de correction + passe des mineurs)", commit: 159289aef483ebdfc5538afc660aa16f6229c6dc }
   - id: L56
     title: "verify-cache.sh : commentaire faux depuis le 03-10 — la zone Cloudflare est passée sur « Respect Existing Headers », /sw.js arrive en no-cache"
     status: done
