@@ -1844,9 +1844,10 @@ lots:
     finished: 2026-10-29
   - id: L163
     title: "Suite de L55 : /assets/ répond 206 (et 416 en cache immutable) à travers Cloudflare alors que l'origine sert 200 entier (max_ranges 0) — le cache CF découpe lui-même ; ajouter une sonde Range à verify-cache.sh et trancher : règle Cloudflare (pas de Range sur /assets/) ou critère « entier à l'origine » assumé et documenté (QA prod L55, 29-10)"
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-10-29
+    started: 2026-10-29
   - id: L164
     title: Écran d'erreur par défaut de TanStack « Something went wrong! Show Error » (anglais) quand un morceau reste absent après le rechargement unique de chunk-reload — errorComponent en français avec un bouton Recharger (QA prod L55, 29-10)
     status: doing
