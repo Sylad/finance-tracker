@@ -495,10 +495,11 @@ lots:
     finished: 2026-10-29
   - id: L40
     title: "Revue UX — Gabarit commun : navigation, en-tête, pied, rendu téléphone"
-    status: todo
+    status: doing
     visible: true
     estimate: 0.25
     created: 2026-09-28
+    started: 2026-10-29
   - id: L41
     title: "Livraison : deploy.sh prend la dernière image construite par service (HEAD sans run CI) et build.yml tourne sur chaque push"
     status: done
