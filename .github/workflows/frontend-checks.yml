@@ -48,3 +48,11 @@ jobs:
 
       - name: Build (avec vérification de fuite du plan)
         run: npm run build
+
+      # L55 : la configuration nginx jouée sur un vrai nginx (Docker, présent
+      # sur ubuntu-latest) contre le dist/ qui vient d'être construit — en-têtes
+      # de cache, 404 d'un actif absent, Range, et les contrôles de
+      # scripts/verify-cache.sh (positifs et négatifs).
+      - name: Cache HTTP sur un vrai nginx (scripts/test-nginx-cache.sh)
+        working-directory: .
+        run: ./scripts/test-nginx-cache.sh
