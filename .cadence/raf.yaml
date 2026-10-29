@@ -644,11 +644,14 @@ lots:
     finished: 2026-10-03
   - id: L55
     title: "Cache HTTP, suites de la relecture du 03-10 : exiger no-store sur le 404 d'un actif absent ; jouer test-nginx-cache.sh en CI ; map sur $status évaluée avant le filtre Range (416 en immutable, 206 jamais vu) ; motif d'empreinte du test trop large (logo-standard.svg accepté) ; contrôles négatifs de verify-cache.sh ; recharger la page quand un morceau d'une ancienne version répond 404"
-    status: doing
+    status: done
     estimate: 0.5
     created: 2026-10-03
     started: 2026-10-29
     review: { date: 2026-10-29, verdict: "conforme — les 3 constats mineurs sont corrigés (preloadError n'est plus empêché sans rechargement, le test CI vise la ligne run:, le motif refuse kebab-case, 8 chiffres et 8 majuscules) ; test-nginx-cache.sh vert en local (41 ok, 4 contrôles négatifs compris), 8 tests ciblés verts ; 2 notes mineures : faux rejets du motif à 0,20 %/fichier mesurés, chemin unhandledrejection non aligné — orchestré (vague 2026-10-29-fi55, 0 passe(s) de correction + passe des mineurs)", commit: 159289aef483ebdfc5538afc660aa16f6229c6dc }
+    notes:
+      - { date: 2026-10-29, text: "Mineur de la revue (note) : chunk-reload.ts:47, unhandledrejection appelle preventDefault() sans condition, donc un rejet d'import sans rechargement disparaît de la console" }
+    finished: 2026-10-29
   - id: L56
     title: "verify-cache.sh : commentaire faux depuis le 03-10 — la zone Cloudflare est passée sur « Respect Existing Headers », /sw.js arrive en no-cache"
     status: done
@@ -1831,6 +1834,11 @@ lots:
     review: { date: 2026-10-28, verdict: "compliant (0 blocking, 0 major, 1 minor note) — les commits a72a392 et 0c21062 respectent le but du lot, avec une réserve : la revue visuelle en direct n'a pas pu se faire (Playwright indisponible) — orchestré (vague 2026-10-28-2130, 0 passe(s) de correction)", commit: 0c210622c75afe984388d3cde8c3b003648c9b1b }
     ux: { date: 2026-10-28, verdict: "conforme : captures regardées — démo : encart qui dit que l'analyse IA locale n'est pas disponible, bouton grisé, camembert dessiné ; capture d'erreur refaite après l'animation (camembert complet) ; mineur : le bandeau du haut dit encore « Toutes les fonctionnalités sont actives »" }
     finished: 2026-10-28
+  - id: L162
+    title: "scripts/test-nginx-cache.sh:212 is_fingerprinted : le motif resserré par L55 rejette à tort 0,20 % des vrais hashs Vite par fichier (2 000 000 tirages, revue de L55) — sur ~30 actifs, CI rouge sans cause quelques % des builds ; lire l'empreinte depuis le manifeste Vite (dist/.vite/manifest.json) ou les noms produits par le build plutôt que deviner par regex"
+    status: todo
+    estimate: 0.25
+    created: 2026-10-29
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
