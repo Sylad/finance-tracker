@@ -646,6 +646,12 @@
       "status": "done",
       "started": "2026-10-28",
       "finished": "2026-10-28"
+    },
+    {
+      "id": "L164",
+      "title": "Un écran d’erreur en français avec un bouton Recharger",
+      "status": "doing",
+      "started": "2026-10-29"
     }
   ]
 }
