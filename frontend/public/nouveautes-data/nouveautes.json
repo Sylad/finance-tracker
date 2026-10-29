@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-29 12:04",
+  "generated": "2026-10-29 19:08",
   "entries": [
+    {
+      "slug": "2026-10-29-un-ecran-d-erreur-en-francais-avec-un-bouton-recharger",
+      "title": "Un écran d’erreur en français avec un bouton Recharger",
+      "date": "2026-10-29",
+      "lots": [
+        "L164"
+      ],
+      "captures": [
+        "captures/2026-10-29-ecran-erreur-francais-1440.png",
+        "captures/2026-10-29-ecran-erreur-francais-390.png"
+      ],
+      "alts": [
+        "Écran d’erreur en français avec le bouton Recharger, sur grand écran",
+        "Le même écran sur téléphone"
+      ],
+      "html": "<p>Quand une page ne parvient pas à se charger (par exemple juste après une mise à jour de l’application), vous voyez désormais un message en français, « Cette page n’a pas pu s’afficher », avec un bouton <strong>Recharger</strong>. Auparavant, c’était un écran d’erreur en anglais (« Something went wrong! »).</p>"
+    },
     {
       "slug": "2026-10-29-navigation-lien-d-evitement-titres-d-onglet-par-page-textes",
       "title": "Navigation : lien d'évitement, titres d'onglet par page, textes lisibles",

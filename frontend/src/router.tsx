@@ -8,6 +8,7 @@ import {
 import { Navigate } from '@tanstack/react-router';
 import { Root } from './components/layout/root';
 import { LoadingState } from '@/components/loading-state';
+import { RouteError } from '@/components/route-error';
 
 // Route components are lazy-loaded so each becomes its own chunk. The Root
 // layout shell, providers and LoadingState stay on the critical path.
@@ -246,6 +247,7 @@ const routeTree = rootRoute.addChildren([
 export const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
+  defaultErrorComponent: RouteError,
 });
 
 declare module '@tanstack/react-router' {

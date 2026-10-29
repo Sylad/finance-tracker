@@ -25,11 +25,13 @@ export function ErrorState({
   message,
   onRetry,
   retrying = false,
+  retryLabel = 'Réessayer',
 }: {
   title?: string;
   message?: string;
   onRetry?: () => void;
   retrying?: boolean;
+  retryLabel?: string;
 }) {
   return (
     <div role="alert" className="card border-negative/30 p-6 text-center">
@@ -37,7 +39,7 @@ export function ErrorState({
       {message && <div className="text-fg-muted text-xs mt-1.5">{message}</div>}
       {onRetry && (
         <button type="button" onClick={onRetry} disabled={retrying} className="btn-secondary mt-4 inline-flex">
-          <RotateCw className={retrying ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} /> Réessayer
+          <RotateCw className={retrying ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} /> {retryLabel}
         </button>
       )}
     </div>
