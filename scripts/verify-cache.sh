@@ -1,7 +1,7 @@
 #!/bin/sh
 # Vérification appelée par `cadence deliver` : l'instance DÉPLOYÉE applique-t-elle
 # la politique de cache de frontend/nginx.conf, vue à travers Cloudflare ?
-# (réessayée par cadence jusqu'au délai). Lecture seule : cinq GET publics,
+# (réessayée par cadence jusqu'au délai). Lecture seule : six GET publics,
 # aucune connexion à l'appli.
 #
 #   1. le document « / » porte Cache-Control: no-cache — sinon un visiteur
@@ -13,7 +13,15 @@
 #      le reçoit : 200 et du JavaScript (un repli HTML gardé par le CDN sous ce
 #      nom donnerait une page blanche avec une livraison verte) ;
 #   4. le même actif, lu à l'origine, est servi en cache long ;
-#   5. /sw.js répond 200 en JavaScript.
+#   5. /sw.js répond 200 en JavaScript ;
+#   6. une requête Range sur ce même actif (valide, puis hors fichier) ne
+#      reçoit jamais de 416 ni d'autre statut que 200 ou 206, et garde le cache
+#      long. Règle assumée (L163) : le critère est « entier à l'origine »
+#      (`max_ranges 0`, prouvé par scripts/test-nginx-cache.sh, qui exige 200
+#      strict), pas « aucun 206 à travers Cloudflare » : son cache découpe
+#      lui-même un fichier qu'il a en entrée et répond 206 ; on ne l'interdit
+#      pas, on interdit le 416 (qui sortait en immutable, un an) et la perte du
+#      cache long.
 #
 # Les sondes 2 et 4 portent une query string unique : la clé de cache de
 # Cloudflare en dépend, la réponse vient donc de l'origine et pas d'une entrée
@@ -36,9 +44,10 @@ BUST="verif=$(date +%s)-$$"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-probe() { # url → $status, $cc (Cache-Control en minuscules), corps dans $TMP/body
-  status=$(curl -sS -o "$TMP/body" -D "$TMP/headers" -w '%{http_code}' --max-time 20 "$1") ||
-    { echo "verify: $1 injoignable" >&2; exit 1; }
+probe() { # url [options curl…] → $status, $cc (Cache-Control en minuscules), corps dans $TMP/body
+  url=$1; shift
+  status=$(curl -sS -o "$TMP/body" -D "$TMP/headers" -w '%{http_code}' --max-time 20 "$@" "$url") ||
+    { echo "verify: $url injoignable" >&2; exit 1; }
   cc=$(tr -d '\r' < "$TMP/headers" | sed -n 's/^[Cc]ache-[Cc]ontrol: *//p' | tail -1 | tr 'A-Z' 'a-z')
   ct=$(tr -d '\r' < "$TMP/headers" | sed -n 's/^[Cc]ontent-[Tt]ype: *//p' | tail -1 | tr 'A-Z' 'a-z')
 }
@@ -75,6 +84,18 @@ case "$cc" in
   *) fail "l'actif à empreinte $BASE$asset n'est pas en cache long à l'origine" ;;
 esac
 
+for range in 0-9 999999999-; do
+  probe "$BASE$asset?$BUST-r" -H "Range: bytes=$range"
+  case "$status" in
+    200|206) ;;
+    *) fail "Range bytes=$range sur $BASE$asset : ni 200 ni 206 (jamais de 416, gardé un an en immutable)" ;;
+  esac
+  case "$cc" in
+    *max-age=31536000*immutable*) ;;
+    *) fail "Range bytes=$range sur $BASE$asset : le cache long est perdu" ;;
+  esac
+done
+
 probe "$BASE/sw.js?$BUST"
 [ "$status" = 200 ] || fail "$BASE/sw.js ne répond pas 200"
 case "$ct" in
@@ -82,4 +103,4 @@ case "$ct" in
   *) fail "$BASE/sw.js n'est pas du JavaScript (reçu « ${ct:-absent} »)" ;;
 esac
 
-echo "verify: cache — document en no-cache, actif absent en 404, $asset servi en JavaScript et en cache long à l'origine"
+echo "verify: cache — document en no-cache, actif absent en 404, $asset servi en JavaScript et en cache long à l'origine, Range sans 416"

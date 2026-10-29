@@ -262,6 +262,7 @@ negative() { # libellé motif-sed message-attendu
 negative "document sans no-cache" 's/add_header Cache-Control "no-cache";//' "n'est pas servi en no-cache"
 negative "actif absent : repli HTML en 200" 's|try_files \$uri =404;|try_files $uri /index.html;|' "ne répond pas 404"
 negative "404 d'un actif absent sans no-store" 's|default  *"no-store";|default            "public, max-age=180";|' "pas en no-store"
+negative "Range réactivé sur /assets/ (max_ranges retiré)" '/max_ranges 0;/d' "Range bytes="
 negative "actif à empreinte sans cache long" 's|public, max-age=31536000, immutable";$|public, max-age=60";|' "pas en cache long"
 
 echo
