@@ -484,10 +484,11 @@ lots:
     finished: 2026-10-28
   - id: L39
     title: Revue UX — À propos et Nouveautés
-    status: todo
+    status: doing
     visible: true
     estimate: 0.25
     created: 2026-09-28
+    started: 2026-10-29
   - id: L40
     title: "Revue UX — Gabarit commun : navigation, en-tête, pied, rendu téléphone"
     status: todo
