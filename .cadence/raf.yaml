@@ -1865,12 +1865,15 @@ lots:
     finished: 2026-10-29
   - id: L165
     title: "Livraison f3b95b8 rouge : la sonde Range de L163 (verify-cache.sh) refuse le 416 que Cloudflare sert pour bytes=999999999- (cache CF, l'origine sert 200 entier) alors que L163 a assumé « entier à l'origine » — rendre la sonde cohérente avec ce critère (416 hors fichier toléré à travers CF et documenté, ou sonde à l'origine), sans masquer un 416 de l'origine ; livraison verte attendue (29-10)"
-    status: doing
+    status: done
     estimate: 0.1
     quickwin: true
     created: 2026-10-29
     started: 2026-10-29
     review: { date: 2026-10-29, verdict: "compliant — orchestré (vague 2026-10-29-fa1, 0 passe(s) de correction)", commit: 7ad225a1572f8927d3ce82bbebaeea4c9f4d0d8d }
+    notes:
+      - { date: 2026-10-29, text: "Mesuré par le lead le 29-10 : Cloudflare sert aussi 416 en MISS sur une clé neuve hors fichier ; la sonde passe parce que la plage valide (206, MISS) sur la même clé remplit le cache avant la plage hors fichier (HIT). Tolérance fragile si CF ne met pas l'objet en cache" }
+    finished: 2026-10-29
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
