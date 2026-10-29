@@ -202,14 +202,20 @@ fi
 # quand son contenu change (convention Vite <nom>-<hash 8 car.>.<ext>). Un
 # fichier copié tel quel dans assets/ serait gardé un an à tort.
 # Un vrai hash Vite (base64url) mêle majuscules, chiffres, « _ » ou « - » ; un
-# mot de 8 lettres minuscules (logo-standard.svg) n'en est pas un.
+# mot de 8 lettres minuscules (logo-standard.svg), un segment kebab-case
+# (icon-arrow-up.svg), 8 chiffres (banner-20261029.png) ou 8 majuscules n'en est
+# pas un : le segment doit mêler au moins deux familles. Reste accepté, faute de
+# mieux sans refuser de vrais hashs : un mot capitalisé (photo-Portrait.png).
 not() { ! "$@"; }
 is_fingerprinted() { # nom de fichier
   printf '%s\n' "$1" | grep -Eq -- '-[A-Za-z0-9_-]{8}\.[a-z0-9]+$' &&
-    ! printf '%s\n' "$1" | grep -Eq -- '-[a-z]{8}\.[a-z0-9]+$'
+    ! printf '%s\n' "$1" | grep -Eq -- '-([a-z-]{8}|[0-9]{8}|[A-Z-]{8})\.[a-z0-9]+$'
 }
 check "motif d'empreinte : refuse logo-standard.svg" not is_fingerprinted logo-standard.svg
 check "motif d'empreinte : refuse un fichier sans empreinte (logo.svg)" not is_fingerprinted logo.svg
+check "motif d'empreinte : refuse un nom kebab-case (icon-arrow-up.svg)" not is_fingerprinted icon-arrow-up.svg
+check "motif d'empreinte : refuse un nom à 8 chiffres (banner-20261029.png)" not is_fingerprinted banner-20261029.png
+check "motif d'empreinte : refuse un nom en majuscules (logo-STANDARD.svg)" not is_fingerprinted logo-STANDARD.svg
 check "motif d'empreinte : accepte index-CLuMi1eX.js" is_fingerprinted index-CLuMi1eX.js
 check "motif d'empreinte : accepte un hash à « _ » et « - » (api-Dk9_JW-D.js)" is_fingerprinted api-Dk9_JW-D.js
 unhashed=""
