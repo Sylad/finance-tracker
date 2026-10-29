@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-29 11:45",
+  "generated": "2026-10-29 12:04",
   "entries": [
+    {
+      "slug": "2026-10-29-navigation-lien-d-evitement-titres-d-onglet-par-page-textes",
+      "title": "Navigation : lien d'évitement, titres d'onglet par page, textes lisibles",
+      "date": "2026-10-29",
+      "lots": [
+        "L40"
+      ],
+      "captures": [
+        "captures/2026-10-29-gabarit-lien-evitement.png",
+        "captures/2026-10-29-gabarit-390.png"
+      ],
+      "alts": [
+        "Page Santé au bureau : le lien « Aller au contenu » apparaît en haut à gauche quand on appuie sur Tab",
+        "Page Santé au téléphone : barre du bas aux libellés agrandis"
+      ],
+      "html": "<p>Au clavier, un premier appui sur Tab fait apparaître « Aller au contenu » : un second appui sur Entrée vous amène directement à la page, sans repasser par tout le menu.</p>\n<p>L'onglet du navigateur porte désormais le nom de la page affichée (« Crédits — Finance Tracker »), ce qui aide à s'y retrouver quand plusieurs onglets sont ouverts et à l'écoute d'un lecteur d'écran.</p>\n<p>Les petits libellés du menu (barre du bas au téléphone, « Recherche rapide » et version dans la barre latérale) passent de 10 à 12 px. Le bandeau du mode démo est annoncé aux lecteurs d'écran et son bouton « Quitter » est assez grand pour le doigt.</p>"
+    },
     {
       "slug": "2026-10-29-a-propos-et-nouveautes-liens-annonces-texte-plus-lisible-pan",
       "title": "À propos et Nouveautés : liens annoncés, texte plus lisible, panne du journal dite",
