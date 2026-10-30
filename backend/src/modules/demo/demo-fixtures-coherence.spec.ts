@@ -39,8 +39,12 @@ describe('demo-fixtures — cohérence patrimoine, endettement et score (L73)', 
       expect(rent[0].description).not.toMatch(/IMMOBILIER|BNP/i);
     }
     const txIds = new Set(statements.flatMap((s) => s.transactions.map((t: any) => t.id)));
+    const txById = new Map(statements.flatMap((s) => s.transactions.map((t: any) => [t.id, t])));
     for (const l of loans) {
-      for (const o of l.occurrencesDetected ?? []) expect(txIds.has(o.transactionId)).toBe(true);
+      for (const o of l.occurrencesDetected ?? []) {
+        expect(txIds.has(o.transactionId)).toBe(true);
+        expect(txById.get(o.transactionId).subcategory).not.toBe('rent');
+      }
     }
   });
 
@@ -55,6 +59,14 @@ describe('demo-fixtures — cohérence patrimoine, endettement et score (L73)', 
         if (/endettement|remboursements/i.test(t)) expect(Number(m[1])).toBeLessThan(40);
       }
     }
+  });
+
+  it('R4b — les commentaires ne datent pas d’événement (les dates sont recalées) et chiffrent les crédits comme la tuile (~30 %)', () => {
+    for (const s of statements) {
+      expect(s.healthScore?.claudeComment ?? '').not.toMatch(/en (janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)/i);
+    }
+    const last = statements[statements.length - 1].healthScore.claudeComment as string;
+    expect(last).toMatch(/environ 30\s*% du salaire/);
   });
 
   it('R5 — le relevé reste équilibré : ouverture + crédits − débits = clôture', () => {
