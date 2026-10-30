@@ -40,12 +40,12 @@
         {
           "id": "demo-tx-2025-10-003",
           "date": "2025-10-05",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678",
-          "normalizedDescription": "prelevt bnp immobilier n° 12345678",
+          "description": "PRELEVT LOYER AGENCE DEMO",
+          "normalizedDescription": "prelevt loyer agence demo",
           "amount": -1200.0,
           "currency": "EUR",
           "category": "housing",
-          "subcategory": "mortgage",
+          "subcategory": "rent",
           "isRecurring": true,
           "confidence": 1
         },
@@ -314,7 +314,7 @@
           "irregularSpending": 80
         },
         "trend": "insufficient_data",
-        "claudeComment": "Premier mois analysé. Le poids des remboursements (43% du salaire) est élevé mais maîtrisé. L'épargne automatique de 150€/mois est un bon réflexe à maintenir."
+        "claudeComment": "Premier mois analysé. Le poids des remboursements (30% du salaire) est maîtrisé. L'épargne automatique de 150€/mois est un bon réflexe à maintenir."
       },
       "recurringCredits": [
         {
@@ -374,12 +374,12 @@
         {
           "id": "demo-tx-2025-11-003",
           "date": "2025-11-05",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678",
-          "normalizedDescription": "prelevt bnp immobilier n° 12345678",
+          "description": "PRELEVT LOYER AGENCE DEMO",
+          "normalizedDescription": "prelevt loyer agence demo",
           "amount": -1200.0,
           "currency": "EUR",
           "category": "housing",
-          "subcategory": "mortgage",
+          "subcategory": "rent",
           "isRecurring": true,
           "confidence": 1
         },
@@ -624,7 +624,7 @@
           "irregularSpending": 60
         },
         "trend": "declining",
-        "claudeComment": "Le voyage à Barcelone (480€) explique le recul du solde de 271€. Les charges fixes restent sous contrôle mais une dépense exceptionnelle laisse peu de marge avec ce niveau d'endettement."
+        "claudeComment": "Le voyage à Barcelone (480€) explique le recul du solde de 271€. Les charges fixes restent sous contrôle mais une dépense exceptionnelle laisse peu de marge malgré un endettement raisonnable."
       },
       "recurringCredits": [
         {
@@ -684,12 +684,12 @@
         {
           "id": "demo-tx-2025-12-003",
           "date": "2025-12-05",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678",
-          "normalizedDescription": "prelevt bnp immobilier n° 12345678",
+          "description": "PRELEVT LOYER AGENCE DEMO",
+          "normalizedDescription": "prelevt loyer agence demo",
           "amount": -1200.0,
           "currency": "EUR",
           "category": "housing",
-          "subcategory": "mortgage",
+          "subcategory": "rent",
           "isRecurring": true,
           "confidence": 1
         },
@@ -1006,12 +1006,12 @@
         {
           "id": "demo-tx-2026-01-003",
           "date": "2026-01-05",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678",
-          "normalizedDescription": "prelevt bnp immobilier n° 12345678",
+          "description": "PRELEVT LOYER AGENCE DEMO",
+          "normalizedDescription": "prelevt loyer agence demo",
           "amount": -1200.0,
           "currency": "EUR",
           "category": "housing",
-          "subcategory": "mortgage",
+          "subcategory": "rent",
           "isRecurring": true,
           "confidence": 1
         },
@@ -1280,7 +1280,7 @@
           "irregularSpending": 80
         },
         "trend": "improving",
-        "claudeComment": "Le remboursement mutuelle (89€) et la fin de Klarna contribuent positivement. Le nouveau crédit Younited alourdit néanmoins les charges. Taux d'endettement à 53%."
+        "claudeComment": "Le remboursement mutuelle (89€) et la fin de Klarna contribuent positivement. Le nouveau crédit Younited alourdit néanmoins les charges. Taux d'endettement à 33%."
       },
       "recurringCredits": [
         {
@@ -1340,12 +1340,12 @@
         {
           "id": "demo-tx-2026-02-003",
           "date": "2026-02-05",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678",
-          "normalizedDescription": "prelevt bnp immobilier n° 12345678",
+          "description": "PRELEVT LOYER AGENCE DEMO",
+          "normalizedDescription": "prelevt loyer agence demo",
           "amount": -1200.0,
           "currency": "EUR",
           "category": "housing",
-          "subcategory": "mortgage",
+          "subcategory": "rent",
           "isRecurring": true,
           "confidence": 1
         },
@@ -1690,12 +1690,12 @@
         {
           "id": "demo-tx-2026-03-003",
           "date": "2026-03-05",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678",
-          "normalizedDescription": "prelevt bnp immobilier n° 12345678",
+          "description": "PRELEVT LOYER AGENCE DEMO",
+          "normalizedDescription": "prelevt loyer agence demo",
           "amount": -1200.0,
           "currency": "EUR",
           "category": "housing",
-          "subcategory": "mortgage",
+          "subcategory": "rent",
           "isRecurring": true,
           "confidence": 1
         },
@@ -1964,7 +1964,7 @@
           "irregularSpending": 84
         },
         "trend": "improving",
-        "claudeComment": "Meilleur mois depuis octobre. Dépenses variables bien contrôlées (230€). Le PEL (13 580€) et le Livret A (6 750€) forment une épargne de précaution, mais le crédit immobilier et les crédits à la consommation pèsent bien plus lourd : le patrimoine net reste négatif et le reste à vivre est serré."
+        "claudeComment": "Meilleur mois depuis octobre. Dépenses variables bien contrôlées (230€). Le PEL (13 580€) et le Livret A (6 750€) forment une épargne de précaution ; les crédits à la consommation (environ 28% du salaire) restent supportables et la fin du FLOA en septembre allégera encore le reste à vivre."
       },
       "recurringCredits": [
         {
@@ -2172,72 +2172,6 @@
     }
   ],
   "loans": [
-    {
-      "id": "demo-loan-mortgage",
-      "name": "BNP IMMOBILIER",
-      "type": "classic",
-      "category": "mortgage",
-      "monthlyPayment": 1200,
-      "matchPattern": "PRELEVT.*BNP.*IMMOBILIER",
-      "isActive": true,
-      "creditor": "BNP PARIBAS PERSONAL FINANCE",
-      "contractRef": "12345678",
-      "startDate": "2020-01-05",
-      "endDate": "2045-01-05",
-      "initialPrincipal": 250000,
-      "occurrencesDetected": [
-        {
-          "id": "occ-mortgage-2025-10",
-          "statementId": "2025-10",
-          "date": "2025-10-05",
-          "amount": -1200,
-          "transactionId": "demo-tx-2025-10-003",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678"
-        },
-        {
-          "id": "occ-mortgage-2025-11",
-          "statementId": "2025-11",
-          "date": "2025-11-05",
-          "amount": -1200,
-          "transactionId": "demo-tx-2025-11-003",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678"
-        },
-        {
-          "id": "occ-mortgage-2025-12",
-          "statementId": "2025-12",
-          "date": "2025-12-05",
-          "amount": -1200,
-          "transactionId": "demo-tx-2025-12-003",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678"
-        },
-        {
-          "id": "occ-mortgage-2026-01",
-          "statementId": "2026-01",
-          "date": "2026-01-05",
-          "amount": -1200,
-          "transactionId": "demo-tx-2026-01-003",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678"
-        },
-        {
-          "id": "occ-mortgage-2026-02",
-          "statementId": "2026-02",
-          "date": "2026-02-05",
-          "amount": -1200,
-          "transactionId": "demo-tx-2026-02-003",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678"
-        },
-        {
-          "id": "occ-mortgage-2026-03",
-          "statementId": "2026-03",
-          "date": "2026-03-05",
-          "amount": -1200,
-          "transactionId": "demo-tx-2026-03-003",
-          "description": "PRELEVT BNP IMMOBILIER N° 12345678"
-        }
-      ],
-      "createdAt": "2025-10-01T00:00:00Z",
-      "updatedAt": "2026-03-09T00:00:00Z"
-    },
     {
       "id": "demo-loan-auto",
       "name": "CETELEM (240,00 €/mois)",
