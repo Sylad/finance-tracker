@@ -1805,10 +1805,11 @@ lots:
   - id: L157
     title: "Abonnements, suite de L155 : focus sur <body> après « Réafficher » (réussi ou refusé) et « Connu, masquer » — la ligne retirée par la mise à jour optimiste emporte le bouton focalisé ; rendre le focus à un élément présent (WCAG 2.4.3), test ; keepFocus global à la page (deux suppressions qui se chevauchent), README L155 à compléter de R20"
     public: "Abonnements : focus clavier gardé après masquage"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-10-26
+    started: 2026-10-30
   - id: L158
     title: "cadence.yaml : plan.onWrite régénère frontend/public/plan-data/plan.json à chaque écriture du plan (même réglage que warhammer40k L206, livraison refusée par la CI « Plan publié à jour » le 27-10)"
     status: done
