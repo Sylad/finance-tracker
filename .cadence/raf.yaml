@@ -1892,9 +1892,10 @@ lots:
       - { date: 2026-10-30, text: "QA du 30-10 : vue par défaut conforme (Bilan 2026, avr.–sept.), mais le bilan 2025 du 23/10 reste servi et offert dans l'onglet 2025 → lot suivant. Mineur UX : à 390 px l'axe des graphiques saute « Aoû » (amincissement des graduations, non vérifié)." }
   - id: L167
     title: "Démo /yearly : le seed ne purge pas les bilans annuels d'une autre année que celle des relevés — après L166 (394d76e), /api/statements/yearly sert encore 2025 (généré le 23/10, fichier resté sur le volume de démo) à côté de 2026, et l'onglet « 2025 » de /yearly affiche des mois absents de /history ; le seed (ou le recalage) supprime tout yearly/<année>.json hors des années écrites ; test : après un seed sur un dossier qui contient déjà yearly/2025.json, la liste ne contient que l'année des relevés ; ligne never: dans docs/qa/expectations.md (QA L166 du 30-10)"
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-10-30
+    started: 2026-10-30
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
