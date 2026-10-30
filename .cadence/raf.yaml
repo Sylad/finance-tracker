@@ -621,9 +621,10 @@ lots:
     finished: 2026-10-03
   - id: L52
     title: "Nettoyage récurrent des fichiers de travail devenus inutiles (consigne Sylvain 02-10) : dossier tmp partagé (captures, scripts de mesure, builds de démonstration), documents périmés (specs et plans de lots livrés, audits dépassés), scripts jetables, captures non référencées, dépendances et fichiers générés orphelins — lister avant de supprimer, ne rien effacer hors tmp sans l'avoir regardé, garder ce que les Nouveautés ou la doc référencent ; à refaire à chaque clôture de vague, rouvrir ce lot ou en créer un nouveau"
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-10-02
+    started: 2026-10-30
   - id: L53
     title: "CI : lancer les tests Jest du backend à chaque push (aucun workflow ne les exécute — le test de build de L49 ne protège rien hors poste local)"
     status: done
