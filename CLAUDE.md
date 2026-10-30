@@ -74,7 +74,7 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   réparé (`gh run rerun <id> --failed` vert, ou commit qui touche `backend/`) ; l'image
   frontend déjà poussée part avec cette réparation. Le job est borné à 15 min
   (`timeout-minutes`) et son checkout ne garde pas le jeton (`persist-credentials:
-  false`) : `npm ci` et Jest y tournent sous `packages: write`. Des étapes dans le job, pas un job à part en `needs` : un build sauté (`skipped`)
+  false`) : `npm ci` et Jest y tournent sous `packages: write`. **Risque résiduel accepté (L58)** : les tests ne passent pas dans l'étape builder du Dockerfile (suite lente à chaque `docker build`, tests qui lisent le dépôt hors de `backend/`) ; bornes : `npm ci --ignore-scripts` côté runner, jeton lu par la seule étape de login (après les tests), checkout sans jeton, job à 15 min — verrouillées par `frontend/src/lib/ci-workflows.test.ts` (L58 R1–R4). Des étapes dans le job, pas un job à part en `needs` : un build sauté (`skipped`)
   n'est pas un build rouge pour `deploy.sh`.
 - **Où vivent les liens Nouveautés / Plan de travail / À propos** (L50) : dans le pied
   FIXE de la barre latérale (`SECONDARY_ITEMS`, avec la pastille « nouveau » de L47, et

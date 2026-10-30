@@ -112,13 +112,28 @@ jobs:
       - name: Dépendances (tests backend)
         if: matrix.service == 'backend'
         working-directory: backend
-        run: npm ci --no-audit --no-fund
+        # L58 — --ignore-scripts : aucun script preinstall/postinstall d'une
+        # dépendance ne tourne sur le runner (le Dockerfile, lui, relance
+        # `npm ci` avec ses scripts dans un conteneur sans accès au jeton).
+        # Les dépendances du backend n'en ont pas besoin pour la suite Jest.
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Tests Jest backend (rouge = pas d'image)
         if: matrix.service == 'backend'
         working-directory: backend
         run: npm test
 
+      # L58 — décision : les tests restent ICI, pas dans l'étape builder du
+      # Dockerfile (suite lente à chaque `docker build` local et de
+      # docker-compose, tests qui lisent le dépôt hors de backend/). Risque
+      # résiduel accepté : un code de dépendance exécuté par Jest pourrait
+      # laisser un processus en arrière-plan qui lit ~/.docker/config.json
+      # écrit par le login ci-dessous. Bornes : jeton absent de l'environnement
+      # des étapes de test (lu seulement par le login), pas de jeton dans
+      # .git/config, scripts d'installation coupés, job limité à 15 min, jeton
+      # limité à ce dépôt (packages finance-tracker-*), déploiement par tag
+      # sha-<shortsha> bumpé par deploy.sh, jamais par :latest.
+      # R1–R4 du test frontend/src/lib/ci-workflows.test.ts verrouillent ces bornes.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
