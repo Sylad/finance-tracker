@@ -365,6 +365,18 @@ describe('Abonnements — focus gardé après masquage (L157)', () => {
     await waitFor(focusIsPresent);
   });
 
+  it('R25 — « Faux positif » : la suggestion retirée ne laisse pas le focus sur <body>', async () => {
+    const release = gate();
+    const { rerender } = render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: 'Faux positif Spotify AB' }));
+    h.sugg = q({ data: [{ ...suggestion, status: 'rejected' }] });
+    rerender(<SubscriptionsPage />);
+    expect(screen.queryByRole('button', { name: 'Faux positif Spotify AB' })).toBeNull();
+    focusIsPresent();
+    release();
+    await waitFor(focusIsPresent);
+  });
+
   it('R24 — deux suppressions qui se chevauchent : la fin de la première ne retire pas la garde de la seconde', async () => {
     const second = { ...suggestion, id: 'g2', label: 'Deezer Premium' } as unknown as LoanSuggestion;
     h.sugg = q({ data: [suggestion, second] });
