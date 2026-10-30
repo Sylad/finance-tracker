@@ -307,4 +307,80 @@ describe('Abonnements — suites de L151 (L155)', () => {
     expect(document.activeElement).not.toBe(document.body);
     expect(document.activeElement?.isConnected).toBe(true);
   });
+
+});
+
+describe('Abonnements — focus gardé après masquage (L157)', () => {
+  const hidden = { ...suggestion, id: 'g9', label: 'Deezer', status: 'snoozed' } as unknown as LoanSuggestion;
+  const gate = () => {
+    let release!: () => void;
+    h.gates.push(new Promise<void>((r) => { release = r; }));
+    return release;
+  };
+  const focusIsPresent = () => {
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement?.isConnected).toBe(true);
+  };
+
+  it('R21 — « Réafficher » réussi : la ligne retirée par la mise à jour optimiste ne laisse pas le focus sur <body>', async () => {
+    h.sugg = q({ data: [hidden] });
+    const release = gate();
+    const { rerender } = render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: /Voir les masqués/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Réafficher Deezer' }));
+    h.sugg = q({ data: [{ ...hidden, status: 'pending' }] });
+    rerender(<SubscriptionsPage />);
+    expect(screen.queryByRole('button', { name: 'Réafficher Deezer' })).toBeNull();
+    focusIsPresent();
+    release();
+    await waitFor(focusIsPresent);
+  });
+
+  it('R22 — « Réafficher » refusé : le focus reste sur un élément présent, pendant la ligne retirée et après le retour arrière', async () => {
+    h.fail = true;
+    h.sugg = q({ data: [hidden] });
+    const release = gate();
+    const { rerender } = render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: /Voir les masqués/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Réafficher Deezer' }));
+    h.sugg = q({ data: [] });
+    rerender(<SubscriptionsPage />);
+    focusIsPresent();
+    release();
+    await screen.findByRole('alert');
+    h.sugg = q({ data: [hidden] });
+    rerender(<SubscriptionsPage />);
+    focusIsPresent();
+  });
+
+  it('R23 — « Connu, masquer » : la suggestion retirée ne laisse pas le focus sur <body>', async () => {
+    const release = gate();
+    const { rerender } = render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: 'Connu, masquer Spotify AB' }));
+    h.sugg = q({ data: [{ ...suggestion, status: 'snoozed' }] });
+    rerender(<SubscriptionsPage />);
+    expect(screen.queryByRole('button', { name: 'Connu, masquer Spotify AB' })).toBeNull();
+    focusIsPresent();
+    release();
+    await waitFor(focusIsPresent);
+  });
+
+  it('R24 — deux suppressions qui se chevauchent : la fin de la première ne retire pas la garde de la seconde', async () => {
+    const second = { ...suggestion, id: 'g2', label: 'Deezer Premium' } as unknown as LoanSuggestion;
+    h.sugg = q({ data: [suggestion, second] });
+    const release1 = gate();
+    const release2 = gate();
+    const { rerender } = render(<SubscriptionsPage />);
+    await userEvent.click(screen.getByRole('button', { name: 'Connu, masquer Spotify AB' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Connu, masquer Deezer Premium' }));
+    release1();
+    await waitFor(() => expect(h.gates).toHaveLength(0));
+    await new Promise((r) => setTimeout(r, 0));
+    screen.getByRole('button', { name: 'Connu, masquer Deezer Premium' }).focus();
+    h.sugg = q({ data: [] });
+    rerender(<SubscriptionsPage />);
+    focusIsPresent();
+    release2();
+    await waitFor(focusIsPresent);
+  });
 });

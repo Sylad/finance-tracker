@@ -70,14 +70,25 @@ export function SubscriptionsPage() {
   const reason = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
   // Après une confirmation qui retire l'élément d'origine (ligne supprimée), le focus tombait sur
-  // <body> : tant que `keepFocus` est levé, tout rendu qui le perd le rend à « Nouvel abonnement ».
+  // <body> : même chose pour « Réafficher » et « Connu, masquer », dont la ligne est retirée par la
+  // mise à jour optimiste. `keepFocus` compte les appels en cours (deux qui se chevauchent : la fin
+  // du premier ne lève pas la garde du second) ; tant qu'il est > 0, tout rendu qui perd le focus
+  // le rend à « Nouvel abonnement ».
   const newButton = useRef<HTMLButtonElement>(null);
-  const keepFocus = useRef(false);
+  const keepFocus = useRef(0);
   const restoreFocus = () => {
     const a = document.activeElement;
-    if (keepFocus.current && (!a || a === document.body || !a.isConnected)) newButton.current?.focus();
+    if (keepFocus.current > 0 && (!a || a === document.body || !a.isConnected)) newButton.current?.focus();
   };
   useEffect(restoreFocus);
+
+  // Lance l'appel en gardant le focus sur un élément présent jusqu'à sa réponse (réussie ou refusée).
+  const keepingFocus = (call: Promise<unknown>, failure: (e: unknown) => string) => {
+    keepFocus.current += 1;
+    return call
+      .catch((e) => fail(failure(e)))
+      .finally(() => { restoreFocus(); keepFocus.current -= 1; });
+  };
 
   const handleReset = async () => {
     setResetAsked(false);
@@ -96,10 +107,7 @@ export function SubscriptionsPage() {
   const handleDelete = (sub: Subscription) => {
     setToDelete(null);
     setNotice(null);
-    keepFocus.current = true;
-    remove.mutateAsync(sub.id)
-      .catch((e) => fail(`Suppression de ${sub.name} impossible : ${reason(e)}`))
-      .finally(() => { restoreFocus(); keepFocus.current = false; });
+    void keepingFocus(remove.mutateAsync(sub.id), (e) => `Suppression de ${sub.name} impossible : ${reason(e)}`);
   };
 
   if (subs.isLoading || suggestions.isLoading) return <LoadingState />;
@@ -187,17 +195,17 @@ export function SubscriptionsPage() {
 
   const handleSnooze = (sugg: LoanSuggestion) => {
     setNotice(null);
-    snooze.mutateAsync(sugg.id).catch((e) => fail(`Masquage de ${sugg.label} impossible : ${reason(e)}`));
+    void keepingFocus(snooze.mutateAsync(sugg.id), (e) => `Masquage de ${sugg.label} impossible : ${reason(e)}`);
   };
 
   const handleReject = (sugg: LoanSuggestion) => {
     setNotice(null);
-    reject.mutateAsync(sugg.id).catch((e) => fail(`Rejet de ${sugg.label} impossible : ${reason(e)}`));
+    void keepingFocus(reject.mutateAsync(sugg.id), (e) => `Rejet de ${sugg.label} impossible : ${reason(e)}`);
   };
 
   const handleUnsnooze = (sugg: LoanSuggestion) => {
     setNotice(null);
-    unsnooze.mutateAsync(sugg.id).catch((e) => fail(`Réaffichage de ${sugg.label} impossible : ${reason(e)}`));
+    void keepingFocus(unsnooze.mutateAsync(sugg.id), (e) => `Réaffichage de ${sugg.label} impossible : ${reason(e)}`);
   };
 
   const handleAcceptSuggestion = (s: LoanSuggestion) => {
