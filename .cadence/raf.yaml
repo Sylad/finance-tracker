@@ -1882,9 +1882,10 @@ lots:
     finished: 2026-10-29
   - id: L166
     title: "Démo /yearly : le bilan annuel affiche 2025 (avr.–sept. 2025, « généré le 23/10/2026ʼ) alors que les relevés de la démo vont d'avril à septembre 2026 — recaler le bilan seed sur les relevés ou le calculer depuis eux, et ajouter à docs/qa/expectations.md la ligne « /yearly : mois du bilan = mois de /history » (QA L71 du 30-10)"
-    status: todo
+    status: doing
     estimate: 0.25
     created: 2026-10-30
+    started: 2026-10-30
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
