@@ -625,6 +625,7 @@ lots:
     estimate: 0.25
     created: 2026-10-02
     started: 2026-10-30
+    review: { date: 2026-10-30, verdict: "compliant — orchestré (vague 2026-10-30-1740-fi, 0 passe(s) de correction)", commit: c1cfd0bfbfdb0b59c37f49b43218b3dc0bdf86e2 }
   - id: L53
     title: "CI : lancer les tests Jest du backend à chaque push (aucun workflow ne les exécute — le test de build de L49 ne protège rien hors poste local)"
     status: done
