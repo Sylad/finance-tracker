@@ -2,6 +2,8 @@ import { Outlet, useRouterState, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { authStore } from '@/lib/auth';
 import { AppShell } from './app-shell';
+import { queryClient } from '@/lib/query-client';
+import { pageWillReload, startLiveEvents } from '@/lib/live-events';
 import { LoadingState } from '@/components/loading-state';
 
 export function Root() {
@@ -24,6 +26,14 @@ export function Root() {
       })
       .catch(() => setForced(false));
   }, []);
+
+  // Flux SSE (L71) : ouvert une fois la page définitive, jamais avant le
+  // rechargement de la démo forcée ci-dessous.
+  const reloading = pageWillReload(forced, authed);
+  useEffect(() => {
+    if (reloading || typeof EventSource === 'undefined') return;
+    return startLiveEvents(queryClient);
+  }, [reloading]);
 
   useEffect(() => {
     if (forced === null) return; // wait for status

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
-import { EVENT_QUERY_KEYS, startLiveEvents } from './live-events';
+import { EVENT_QUERY_KEYS, startLiveEvents, pageWillReload } from './live-events';
 
 class FakeSource {
   onmessage: ((e: { data: string }) => void) | null = null;
@@ -317,5 +317,22 @@ describe('startLiveEvents — une seule connexion pour tous les onglets', () => 
     await new Promise((r) => setTimeout(r, 0));
     expect(opened[0].closed).toBe(true);
     expect(opened).toHaveLength(2);
+  });
+});
+
+describe('pageWillReload (L71 — une seule réponse /api/events par page)', () => {
+  it('R1 — démo forcée sans PIN : la page se recharge, le flux ne doit pas être ouvert avant', () => {
+    expect(pageWillReload(true, false)).toBe(true);
+  });
+  it('R1 — démo forcée avec PIN factice (après rechargement) : flux autorisé', () => {
+    expect(pageWillReload(true, true)).toBe(false);
+  });
+  it('R1 — hôte non forcé : aucun rechargement, flux autorisé, connecté ou non', () => {
+    expect(pageWillReload(false, false)).toBe(false);
+    expect(pageWillReload(false, true)).toBe(false);
+  });
+  it('R1 — statut de démo encore inconnu (null) : on attend, pas de flux', () => {
+    expect(pageWillReload(null, false)).toBe(true);
+    expect(pageWillReload(null, true)).toBe(true);
   });
 });

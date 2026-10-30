@@ -84,6 +84,18 @@ function browserEnv(): LiveEventsEnv {
 }
 
 /**
+ * L71 — la page est-elle sur le point d'être rechargée (ou son état encore
+ * inconnu) ? Sur un hôte en démo forcée, `Root` pose un PIN factice puis
+ * recharge la page : un flux ouvert avant ce rechargement est coupé aussitôt
+ * (ERR_ABORTED) et un second s'ouvre après. `Root` n'ouvre donc le flux que
+ * quand cette fonction renvoie false (`forced` : null tant que
+ * /api/demo/status n'a pas répondu).
+ */
+export function pageWillReload(forced: boolean | null, authed: boolean): boolean {
+  return forced === null || (forced && !authed);
+}
+
+/**
  * Une seule connexion SSE par navigateur, pas une par onglet : en HTTP/1.1
  * (local/run.sh, Vite) la limite est de 6 connexions par hôte, et des flux
  * permanents dans chaque onglet bloqueraient les pages et requêtes /api.
