@@ -205,7 +205,14 @@ export class DemoSeedService implements OnApplicationBootstrap, OnModuleDestroy 
     // depuis les mêmes relevés que /history (mêmes mois, même année).
     const years = new Set(statements.map((s) => s.year));
     const revolved = [...years].filter((y) => y < lastYear);
-    for (const year of revolved.length > 0 ? revolved : [lastYear]) {
+    const wanted = revolved.length > 0 ? revolved : [lastYear];
+    // Un bilan d'une autre année (reste d'un recalage ou d'une démo plus
+    // ancienne) sortirait dans /yearly avec des mois absents de /history.
+    for (const f of fs.readdirSync(path.join(demoDir, 'yearly'))) {
+      const m = /^(\d{4})\.json$/.exec(f);
+      if (m && !wanted.includes(Number(m[1]))) fs.rmSync(path.join(demoDir, 'yearly', f));
+    }
+    for (const year of wanted) {
       const summary = buildYearlySummary(
         year,
         statements.filter((s) => s.year === year).sort((a, b) => a.month - b.month),

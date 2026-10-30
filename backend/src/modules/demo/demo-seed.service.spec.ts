@@ -175,6 +175,22 @@ describe('DemoSeedService — recalage des dates (L63)', () => {
     expect(fs.existsSync(path.join(demoDir, 'yearly', '2025.json'))).toBe(false);
   });
 
+  it("R3 — un bilan d'une autre année déjà sur le volume est purgé, au seed comme à l'amorçage déjà fait", async () => {
+    setNow('2026-10-11T10:00:00Z');
+    const stale = path.join(demoDir, 'yearly', '2025.json');
+    const keep = path.join(demoDir, 'yearly', 'notes.json');
+    await service.seed(true);
+    fs.writeFileSync(stale, '{"year":2025,"monthlyCashFlow":[],"savingsDeposited":0}');
+    fs.writeFileSync(keep, '{}');
+    await service.seed(true);
+    expect(fs.readdirSync(path.join(demoDir, 'yearly')).sort()).toEqual(['2026.json', 'notes.json']);
+    // démo déjà amorcée, empreintes à jour : le chemin « rattrapage » purge aussi
+    fs.writeFileSync(stale, '{"year":2025,"monthlyCashFlow":[],"savingsDeposited":0}');
+    await service.seed();
+    expect(fs.existsSync(stale)).toBe(false);
+    expect(fs.existsSync(path.join(demoDir, 'yearly', '2026.json'))).toBe(true);
+  });
+
   it('R2 — le bilan est calculé depuis les relevés écrits : mêmes entrées', async () => {
     setNow('2026-10-11T10:00:00Z');
     await service.seed();
