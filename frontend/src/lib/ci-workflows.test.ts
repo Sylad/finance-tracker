@@ -39,12 +39,13 @@ describe('L58 — build.yml : la suite Jest ne voit jamais le jeton GHCR', () =>
   });
 
   it('R2 — secrets.GITHUB_TOKEN n’est lu que par l’étape de login', () => {
-    const uses = yml.match(/secrets\.GITHUB_TOKEN/g) ?? [];
+    // `github.token` est le même jeton (packages: write) sous un autre nom.
+    const uses = yml.match(/secrets\.GITHUB_TOKEN|github\.token/g) ?? [];
     expect(uses).toHaveLength(1);
-    expect(yml.search(/secrets\.GITHUB_TOKEN/)).toBeGreaterThan(login);
+    expect(yml.search(/secrets\.GITHUB_TOKEN|github\.token/)).toBeGreaterThan(login);
     // Aucun env: / token: au niveau du workflow ou du job qui l’exposerait
     // aux étapes de test avant le login.
-    expect(yml.slice(0, login)).not.toMatch(/GITHUB_TOKEN|GHCR_TOKEN/);
+    expect(yml.slice(0, login)).not.toMatch(/GITHUB_TOKEN|GHCR_TOKEN|github\.token/);
   });
 
   it('R3 — npm ci des tests n’exécute aucun script d’installation des dépendances', () => {
@@ -53,5 +54,9 @@ describe('L58 — build.yml : la suite Jest ne voit jamais le jeton GHCR', () =>
 
   it('R4 — le checkout ne laisse pas le jeton dans .git/config', () => {
     expect(yml).toMatch(/actions\/checkout@v4\s*\n\s*with:\s*\n\s*persist-credentials:\s*false/);
+  });
+
+  it('R5 — le job de build est borné à 15 minutes', () => {
+    expect(yml).toMatch(/^\s*timeout-minutes:\s*15\s*$/m);
   });
 });

@@ -101,8 +101,9 @@ jobs:
       # cette réparation. Étapes DANS ce job, pas un job à part en `needs` :
       # un job de build sauté (skipped) n'est pas un build rouge pour
       # deploy.sh, et le frontend aurait attendu les tests du backend.
-      # Mêmes `npm ci` + `npm test` que backend-checks.yml (qui, lui, tourne à
-      # chaque push et ajoute `npm run typecheck`, absent d'ici) ; node_modules est écarté du contexte Docker par .dockerignore.
+      # Mêmes tests que backend-checks.yml (qui, lui, tourne à chaque push,
+      # ajoute `npm run typecheck` et garde les scripts d'installation :
+      # ici `npm ci --ignore-scripts`, cf. L58) ; node_modules est écarté du contexte Docker par .dockerignore.
       - name: Node (tests backend)
         if: matrix.service == 'backend'
         uses: actions/setup-node@v4
@@ -133,7 +134,11 @@ jobs:
       # .git/config, scripts d'installation coupés, job limité à 15 min, jeton
       # limité à ce dépôt (packages finance-tracker-*), déploiement par tag
       # sha-<shortsha> bumpé par deploy.sh, jamais par :latest.
-      # R1–R4 du test frontend/src/lib/ci-workflows.test.ts verrouillent ces bornes.
+      # R1–R5 du test frontend/src/lib/ci-workflows.test.ts verrouillent les
+      # quatre premières bornes (jeton hors des étapes de test, checkout sans
+      # jeton, scripts coupés, 15 min) ; les deux dernières (portée du jeton,
+      # tag sha) ne sont pas testées. Le jeton reste lisible par checkout et
+      # setup-node (entrée `token` par défaut), pas par npm ci ni Jest.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
