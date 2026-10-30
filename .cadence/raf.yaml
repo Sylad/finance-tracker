@@ -897,6 +897,7 @@ lots:
     screen: component
     created: 2026-10-15
     started: 2026-10-30
+    review: { date: 2026-10-30, verdict: "compliant after 1 minor note (compiler la Nouveauté avec `npm run news` puis `npm run plan` avant `raf done`) — orchestré (vague 2026-10-30-1440-fin, 0 passe(s) de correction)", commit: 1296a47654693454848aceaeb445f7bdebe7a84c }
   - id: L78
     title: "Relevé détaillé à 390 px : lignes de transaction tronquées à droite — date « 02/09/20 », libellé, « · récurrent » et le signe € des montants hors de l'écran (10 spans mesurés right 397–525 pour 390, ligne en overflow:hidden, statement.$id.tsx:522) ; faire passer le montant sur toute sa largeur ou la ligne sur deux rangées (QA prod L72 15-10, à rapprocher de L23)"
     public: "Relevé détaillé : lignes de transaction lisibles au téléphone"
