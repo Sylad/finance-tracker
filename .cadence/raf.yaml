@@ -830,6 +830,7 @@ lots:
     visible: true
     created: 2026-10-15
     started: 2026-10-30
+    review: { date: 2026-10-30, verdict: "conforme, 5 remarques mineures (textes datés « depuis octobre » / « sept. 2026 » toujours visibles après recalage, R4b plus faible que son titre, doc « 5 crédits » pour 6 servis) — orchestré (vague 2026-10-30-1440-fin, 1 passe(s) de correction + passe des mineurs)", commit: 97dfbc3b33c3be7b4fb6bc7b6be23d511a5eae4d }
   - id: L74
     title: Taux d'« Autres » par relevé et marchands non catégorisés les plus fréquents, affichés sur le relevé et en tuile du tableau de bord — mesure de la qualité de catégorisation avant toute amélioration (Sylvain 15-10)
     public: "Relevés : part des transactions sans catégorie et marchands à classer"
