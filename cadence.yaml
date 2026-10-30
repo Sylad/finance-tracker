@@ -28,6 +28,8 @@ deliver:
 # DATA_DIR jetable hors data-local/ rempli depuis les fixtures versionnées. Un seul
 # groupe de processus, tué ensemble par le programme. Preuve : ux-demo.spec.ts.
 orchestrate:
+  # Un test de la porte lit le plan (plan publié / page Plan) : verify --gate rejoue sous des commits de plan seuls (cadence L450, 30-10).
+  gate: { readsPlan: true }
   # Escalade (L154, cadence L337 / 1.12.0) : avant de rendre un lot encore non conforme après ses passes, la vague joue
   # une correction et une revue neuve en Fable (règle du lead depuis le 17-10, oubliée deux fois à la main).
   escalation: { model: fable }
