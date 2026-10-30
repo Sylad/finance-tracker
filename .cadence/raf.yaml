@@ -825,10 +825,11 @@ lots:
   - id: L73
     title: "Démo cohérente : le jeu de données porte un prêt immobilier de 250 k€ sans actif en face (patrimoine net −255 k€ pour 20 k€ d'épargne) et 1 975 €/mois de crédits pour 2 800 € de revenus (70 % d'endettement, verdict santé rouge) alors que le score du mois affiche 75/100 — recaler les fixtures (endettement ~30 %, actif immobilier compté ou prêt retiré) et libeller le patrimoine net « hors immobilier » ou compter le bien (remarque de Sylvain 15-10, basse priorité)"
     public: "Démo : chiffres cohérents entre patrimoine, crédits et score du mois"
-    status: todo
+    status: doing
     estimate: 0.5
     visible: true
     created: 2026-10-15
+    started: 2026-10-30
   - id: L74
     title: Taux d'« Autres » par relevé et marchands non catégorisés les plus fréquents, affichés sur le relevé et en tuile du tableau de bord — mesure de la qualité de catégorisation avant toute amélioration (Sylvain 15-10)
     public: "Relevés : part des transactions sans catégorie et marchands à classer"
