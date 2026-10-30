@@ -1810,6 +1810,7 @@ lots:
     visible: true
     created: 2026-10-26
     started: 2026-10-30
+    review: { date: 2026-10-30, verdict: "conforme — orchestré (vague 2026-10-30-1440-fin, 2 passe(s) de correction)", commit: 8cff91e0a489bd21f879485fe95f419b883300cc }
   - id: L158
     title: "cadence.yaml : plan.onWrite régénère frontend/public/plan-data/plan.json à chaque écriture du plan (même réglage que warhammer40k L206, livraison refusée par la CI « Plan publié à jour » le 27-10)"
     status: done
