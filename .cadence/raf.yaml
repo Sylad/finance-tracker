@@ -621,11 +621,12 @@ lots:
     finished: 2026-10-03
   - id: L52
     title: "Nettoyage récurrent des fichiers de travail devenus inutiles (consigne Sylvain 02-10) : dossier tmp partagé (captures, scripts de mesure, builds de démonstration), documents périmés (specs et plans de lots livrés, audits dépassés), scripts jetables, captures non référencées, dépendances et fichiers générés orphelins — lister avant de supprimer, ne rien effacer hors tmp sans l'avoir regardé, garder ce que les Nouveautés ou la doc référencent ; à refaire à chaque clôture de vague, rouvrir ce lot ou en créer un nouveau"
-    status: doing
+    status: done
     estimate: 0.25
     created: 2026-10-02
     started: 2026-10-30
     review: { date: 2026-10-30, verdict: "compliant — orchestré (vague 2026-10-30-1740-fi, 0 passe(s) de correction)", commit: c1cfd0bfbfdb0b59c37f49b43218b3dc0bdf86e2 }
+    finished: 2026-10-30
   - id: L53
     title: "CI : lancer les tests Jest du backend à chaque push (aucun workflow ne les exécute — le test de build de L49 ne protège rien hors poste local)"
     status: done
@@ -675,11 +676,12 @@ lots:
     finished: 2026-10-03
   - id: L58
     title: "build.yml : la suite Jest tourne dans le job qui reçoit ensuite le jeton GHCR (login après les tests) — décider si les tests passent dans l'étape builder du Dockerfile ou si le risque résiduel est accepté (relecture de L53)"
-    status: doing
+    status: done
     estimate: 0.5
     created: 2026-10-03
     started: 2026-10-30
     review: { date: 2026-10-30, verdict: "Conforme : les constats mineurs de la revue complète sont corrigés et la passe de correction n'a rien cassé. Commits relus : 6c38b6c (feat(L58), décision et durcissement) et 41b5c3d (fix(L58), corrections). Constat 1 : j'ai vérifié que R5 (`^\\s*timeout-minutes:\\s*15\\s*$`, ci-workflows.test.ts:59) cible bien la seule borne `timeout-minutes` du fichier (build.yml:77). R2 détecte aussi `github.token` dans le code avant le login. Le commentaire build.yml:137-141 sépare bien les bornes testées (R1–R5) de celles qui ne le sont pas (portée du jeton, tag sha), et il ne prétend plus le contraire. Constat 2 : la réserve « checkout et setup-node reçoivent le jeton par leur entrée `token` » figure dans le commentaire de build.yml et dans CLAUDE.md:77. Elle est exacte : c'est la valeur par défaut de ces deux actions, et ce jeton n'est pas exporté vers les étapes `run` suivantes. Constat 3 : le commentaire build.yml:104-106 et CLAUDE.md:69 et :77 décrivent maintenant `npm ci --ignore-scripts` dans build.yml et l'installation avec scripts dans backend-checks.yml (vérifié dans ce fichier : `npm ci --no-audit --no-fund`, sans jeton d'écriture puisque `permissions: contents: read`). Le reste du lot tient. La décision d'accepter le risque résiduel est motivée et documentée, comme l'objectif du lot le demande. L'affirmation « les dépendances n'ont pas besoin de leurs scripts » est confirmée : `grep hasInstallScript backend/package-lock.json` ne trouve rien. Le Dockerfile garde un `npm ci` avec scripts dans le builder. Les commentaires `#` sont retirés avant les assertions, donc la mention de `GITHUB_TOKEN` en commentaire à la ligne 150 ne fausse pas R2. Aucun constat nouveau. — orchestré (vague 2026-10-30-1740-fi, 0 passe(s) de correction + passe des mineurs)", commit: 41b5c3d96469ccb88cb8cd27d274ce9e298b26c5 }
+    finished: 2026-10-30
   - id: L59
     title: "Type-check backend : 49 erreurs tsc --noEmit dans des specs antérieures (44 dans auto-sync.service.spec.ts, littéraux non typés Transaction/Loan/SavingsAccount ; 1 à 2 dans credit-detection, health) — corriger les fixtures typées et ajouter tsc --noEmit à la CI backend"
     status: done
