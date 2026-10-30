@@ -806,6 +806,7 @@ lots:
     estimate: 0.1
     created: 2026-10-14
     started: 2026-10-30
+    review: { date: 2026-10-30, verdict: "compliant — commit ef8a96c : le flux SSE n'est plus ouvert avant le rechargement de la démo forcée (cause : coupure par demoStore.enable()), README à jour ; 2 notes mineures (câblage de Root non testé, double montage StrictMode en dev seulement) — orchestré (vague 2026-10-30-0900-fin, 0 passe(s) de correction)", commit: ef8a96cdd39ec8230dae312bfb2f6e4552f50467 }
   - id: L72
     title: "Historique des relevés à 390 px : la barre Export CSV / Recalculer les scores / champ de recherche (w-64) déborde — scrollWidth 513 pour 390 ; attendu : aucun défilement horizontal (QA prod 15-10 après L69)"
     public: "Historique des relevés : plus de débordement au téléphone"
