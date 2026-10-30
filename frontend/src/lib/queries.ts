@@ -824,6 +824,8 @@ export interface AutoCategorizeSuggestion {
   confidence: number;
   reasoning: string;
   proposedRulePattern: string | null;
+  /** Origine : dictionnaire de marchands local ou Claude. */
+  source?: 'dictionary' | 'claude';
 }
 
 export interface AutoCategorizePreview {

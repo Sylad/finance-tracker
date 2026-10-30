@@ -25,6 +25,17 @@ interface Row {
 
 const MIN_CONFIDENCE_FOR_AUTO_APPLY = 0.6;
 
+// Le motif d'une suggestion du dictionnaire désigne l'enseigne reconnue, pour
+// la catégorie du dictionnaire : sous une autre catégorie il détournerait
+// toutes les opérations de cette enseigne (\bVINCI\b → Logement, les péages).
+function contradictsDictionary(r: Row): boolean {
+  return r.s.source === 'dictionary' && r.category !== r.s.suggestedCategory;
+}
+
+function defaultCreateRule(s: AutoCategorizeSuggestion): boolean {
+  return !!s.proposedRulePattern && s.confidence >= 0.75;
+}
+
 function categoryLabel(cat: string): string {
   if ((CATEGORY_LABELS as Record<string, string>)[cat]) {
     return CATEGORY_LABELS[cat as TransactionCategory];
@@ -60,7 +71,7 @@ export function AutoCategorizeModal({ statementId, onClose }: Props) {
         res.suggestions.map((s) => ({
           s,
           apply: s.confidence >= MIN_CONFIDENCE_FOR_AUTO_APPLY,
-          createRule: !!s.proposedRulePattern && s.confidence >= 0.75,
+          createRule: defaultCreateRule(s),
           rulePattern: s.proposedRulePattern ?? '',
           replayAll: false,
           category: s.suggestedCategory,
@@ -73,6 +84,21 @@ export function AutoCategorizeModal({ statementId, onClose }: Props) {
 
   const toggle = (idx: number, patch: Partial<Row>) => {
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  };
+
+  // Changer la catégorie d'une suggestion du dictionnaire hors de celle du
+  // dictionnaire retire la règle ; y revenir remet l'état d'origine.
+  const changeCategory = (idx: number, category: string) => {
+    setRows((prev) =>
+      prev.map((r, i) => {
+        if (i !== idx) return r;
+        const next = { ...r, category };
+        if (r.s.source !== 'dictionary') return next;
+        return contradictsDictionary(next)
+          ? { ...next, createRule: false, replayAll: false }
+          : { ...next, createRule: defaultCreateRule(r.s), replayAll: false };
+      }),
+    );
   };
 
   const decisions: AutoCategorizeDecision[] = useMemo(
@@ -160,6 +186,7 @@ export function AutoCategorizeModal({ statementId, onClose }: Props) {
                       row={r}
                       availableCategories={previewData.availableCategories}
                       onChange={(patch) => toggle(i, patch)}
+                      onCategory={(c) => changeCategory(i, c)}
                     />
                   ))}
                 </div>
@@ -258,11 +285,14 @@ function SuggestionRow({
   row,
   availableCategories,
   onChange,
+  onCategory,
 }: {
   row: Row;
   availableCategories: string[];
   onChange: (patch: Partial<Row>) => void;
+  onCategory: (category: string) => void;
 }) {
+  const contradicts = contradictsDictionary(row);
   const tone = confidenceTone(row.s.confidence);
   return (
     <div className={cn('rounded-md border px-3 py-2.5 transition-colors', row.apply ? 'bg-surface-2 border-accent/30' : 'bg-surface border-border')}>
@@ -289,7 +319,7 @@ function SuggestionRow({
         <div className="col-span-4 space-y-2">
           <select
             value={row.category}
-            onChange={(e) => onChange({ category: e.target.value })}
+            onChange={(e) => onCategory(e.target.value)}
             className="input text-xs py-1 w-full"
           >
             {availableCategories.map((c) => (
@@ -298,7 +328,7 @@ function SuggestionRow({
               </option>
             ))}
           </select>
-          {row.s.proposedRulePattern && (
+          {row.s.proposedRulePattern && !contradicts && (
             <label className="flex items-start gap-1.5 cursor-pointer text-[11px] text-fg-muted">
               <input
                 type="checkbox"
@@ -313,6 +343,11 @@ function SuggestionRow({
                 </code>
               </span>
             </label>
+          )}
+          {contradicts && (
+            <p className="text-[11px] text-fg-dim">
+              Pas de règle : cette catégorie contredit le marchand reconnu.
+            </p>
           )}
           {row.createRule && (
             <label className="flex items-start gap-1.5 cursor-pointer text-[11px] text-fg-muted ml-4">
