@@ -39,7 +39,7 @@ describe('demo-fixtures — cohérence patrimoine, endettement et score (L73)', 
       expect(rent[0].description).not.toMatch(/IMMOBILIER|BNP/i);
     }
     const txIds = new Set(statements.flatMap((s) => s.transactions.map((t: any) => t.id)));
-    const txById = new Map(statements.flatMap((s) => s.transactions.map((t: any) => [t.id, t])));
+    const txById = new Map<string, any>(statements.flatMap((s) => s.transactions.map((t: any): [string, any] => [t.id, t])));
     for (const l of loans) {
       for (const o of l.occurrencesDetected ?? []) {
         expect(txIds.has(o.transactionId)).toBe(true);
