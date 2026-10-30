@@ -116,6 +116,10 @@ pas son entrée. Puis `npm run news` régénère `frontend/public/nouveautes-dat
 sinon l'arrivée sur `/nouveautes#<slug>` dérive ; un test échoue si une capture n'a pas
 de taille).
 
+## Nettoyage des fichiers de travail (L52, à refaire à chaque clôture de vague)
+
+Lister avant de supprimer, ne rien effacer hors `tmp/` sans l'avoir lu. Se garde : tout ce que le README, `docs/HOW-IT-WORKS.md`, ce fichier ou une Nouveauté référence (`docs/superpowers/*/2026-05-02-finance-tracker-v3*`, `.claude/output/apex/04-*` et `05-*`, `docs/screenshots/`, `docs/qa/`, `finance-tracker.ico` lu par `local/install-shortcuts.ps1`) et les captures de `docs/nouveautes/captures/` (miroir versionné dans `frontend/public/nouveautes-data/captures/`). Se supprime : specs et plans de lots livrés, notes APEX non citées, scripts jetables à chemin en dur. Le `tmp/` partagé du parent (22 Go, tous projets confondus : sauvegardes SQL, jeux de données d'autres apps) n'est vidé que par Sylvain ; une session ne retire que son propre sous-dossier.
+
 ## Variables d'env requises (`backend/.env`)
 
 ```
