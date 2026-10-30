@@ -175,8 +175,9 @@
     {
       "id": "L73",
       "title": "Démo : chiffres cohérents entre patrimoine, crédits et score du mois",
-      "status": "doing",
-      "started": "2026-10-30"
+      "status": "done",
+      "started": "2026-10-30",
+      "finished": "2026-10-30"
     },
     {
       "id": "L74",
@@ -195,8 +196,9 @@
     {
       "id": "L77",
       "title": "Auto-catégorisation : la règle proposée suit la catégorie que vous choisissez",
-      "status": "doing",
-      "started": "2026-10-30"
+      "status": "done",
+      "started": "2026-10-30",
+      "finished": "2026-10-30"
     },
     {
       "id": "L78",
@@ -640,8 +642,9 @@
     {
       "id": "L157",
       "title": "Abonnements : focus clavier gardé après masquage",
-      "status": "doing",
-      "started": "2026-10-30"
+      "status": "done",
+      "started": "2026-10-30",
+      "finished": "2026-10-30"
     },
     {
       "id": "L161",

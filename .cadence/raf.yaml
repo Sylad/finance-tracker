@@ -825,12 +825,14 @@ lots:
   - id: L73
     title: "Démo cohérente : le jeu de données porte un prêt immobilier de 250 k€ sans actif en face (patrimoine net −255 k€ pour 20 k€ d'épargne) et 1 975 €/mois de crédits pour 2 800 € de revenus (70 % d'endettement, verdict santé rouge) alors que le score du mois affiche 75/100 — recaler les fixtures (endettement ~30 %, actif immobilier compté ou prêt retiré) et libeller le patrimoine net « hors immobilier » ou compter le bien (remarque de Sylvain 15-10, basse priorité)"
     public: "Démo : chiffres cohérents entre patrimoine, crédits et score du mois"
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     created: 2026-10-15
     started: 2026-10-30
     review: { date: 2026-10-30, verdict: "conforme, 5 remarques mineures (textes datés « depuis octobre » / « sept. 2026 » toujours visibles après recalage, R4b plus faible que son titre, doc « 5 crédits » pour 6 servis) — orchestré (vague 2026-10-30-1440-fin, 1 passe(s) de correction + passe des mineurs)", commit: 97dfbc3b33c3be7b4fb6bc7b6be23d511a5eae4d }
+    ux: { date: 2026-10-30, verdict: "conforme, capture 390 regardée par le lead (patrimoine net positif 14 639,95 €, relevés et budgets cohérents) ; mineurs : textes datés « depuis octobre » / « sept. 2026 » après recalage, doc « 5 crédits » pour 6 servis" }
+    finished: 2026-10-30
   - id: L74
     title: Taux d'« Autres » par relevé et marchands non catégorisés les plus fréquents, affichés sur le relevé et en tuile du tableau de bord — mesure de la qualité de catégorisation avant toute amélioration (Sylvain 15-10)
     public: "Relevés : part des transactions sans catégorie et marchands à classer"
@@ -891,13 +893,15 @@ lots:
   - id: L77
     title: "Modal d'auto-catégorisation : changer la catégorie d'une suggestion du dictionnaire (select) ne recalcule pas le motif proposé — \\bVINCI\\b → Logement partirait avec « Créer la règle » pré-cochée et détournerait les péages ; recalculer ou décocher la règle quand la catégorie contredit le dictionnaire (revue L75, 15-10)"
     public: "Auto-catégorisation : la règle proposée suit la catégorie que vous choisissez"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     screen: component
     created: 2026-10-15
     started: 2026-10-30
     review: { date: 2026-10-30, verdict: "compliant after 1 minor note (compiler la Nouveauté avec `npm run news` puis `npm run plan` avant `raf done`) — orchestré (vague 2026-10-30-1440-fin, 0 passe(s) de correction)", commit: 1296a47654693454848aceaeb445f7bdebe7a84c }
+    ux: { date: 2026-10-30, verdict: "conforme, capture 390 regardée par le lead (changer la catégorie d'une suggestion recalcule la règle : « Pas de règle : cette catégorie contredit le marchand reconnu »)" }
+    finished: 2026-10-30
   - id: L78
     title: "Relevé détaillé à 390 px : lignes de transaction tronquées à droite — date « 02/09/20 », libellé, « · récurrent » et le signe € des montants hors de l'écran (10 spans mesurés right 397–525 pour 390, ligne en overflow:hidden, statement.$id.tsx:522) ; faire passer le montant sur toute sa largeur ou la ligne sur deux rangées (QA prod L72 15-10, à rapprocher de L23)"
     public: "Relevé détaillé : lignes de transaction lisibles au téléphone"
@@ -1805,12 +1809,14 @@ lots:
   - id: L157
     title: "Abonnements, suite de L155 : focus sur <body> après « Réafficher » (réussi ou refusé) et « Connu, masquer » — la ligne retirée par la mise à jour optimiste emporte le bouton focalisé ; rendre le focus à un élément présent (WCAG 2.4.3), test ; keepFocus global à la page (deux suppressions qui se chevauchent), README L155 à compléter de R20"
     public: "Abonnements : focus clavier gardé après masquage"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-10-26
     started: 2026-10-30
     review: { date: 2026-10-30, verdict: "conforme — orchestré (vague 2026-10-30-1440-fin, 2 passe(s) de correction)", commit: 8cff91e0a489bd21f879485fe95f419b883300cc }
+    ux: { date: 2026-10-30, verdict: "conforme : ux-reviewer — le focus ne tombe plus sur <body> après « Réafficher » (réussi ou refusé) et « Connu, masquer »" }
+    finished: 2026-10-30
   - id: L158
     title: "cadence.yaml : plan.onWrite régénère frontend/public/plan-data/plan.json à chaque écriture du plan (même réglage que warhammer40k L206, livraison refusée par la CI « Plan publié à jour » le 27-10)"
     status: done
