@@ -101,7 +101,8 @@ may be empty when aucun abonnement suivi (`/api/subscriptions`, démo)
 
 ## /yearly
 
-shows: au moins un bilan annuel d'une **année révolue** (calculé depuis les relevés de la démo ; l'année dépend du recalage, ne pas attendre 2025)
+shows: au moins un bilan annuel (calculé depuis les relevés de la démo ; l'année dépend du recalage, ne pas attendre 2025)
+shows: /yearly : mois du bilan = mois de /history — chaque mois du bilan affiché est un relevé de `/history` de la même année (L166 ; jamais un bilan 2025 quand les relevés sont de 2026)
 never: état vide « aucun bilan »
 api: /api/statements/yearly, /api/statements/yearly/<année> (détail de l'année affichée)
 

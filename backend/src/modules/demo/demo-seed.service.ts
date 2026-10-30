@@ -200,15 +200,15 @@ export class DemoSeedService implements OnApplicationBootstrap, OnModuleDestroy 
     write(path.join(demoDir, 'import-logs.json'), f['import-logs']);
     const statements = f.statements as MonthlyStatement[];
     const lastYear = Math.max(...statements.map((s) => s.year));
-    // Recalée, la démo peut tenir toute dans l'année en cours : le bilan de
-    // l'année révolue est alors celui des mêmes relevés un an plus tôt.
-    const past = statements.some((s) => s.year < lastYear)
-      ? statements
-      : (shiftDemoFixtures({ statements }, -12).statements as MonthlyStatement[]);
-    for (const year of new Set(past.map((s) => s.year).filter((y) => y < lastYear))) {
+    // Bilan de chaque année révolue ; recalée, la démo peut tenir toute dans
+    // l'année en cours : le bilan est alors celui de cette année, calculé
+    // depuis les mêmes relevés que /history (mêmes mois, même année).
+    const years = new Set(statements.map((s) => s.year));
+    const revolved = [...years].filter((y) => y < lastYear);
+    for (const year of revolved.length > 0 ? revolved : [lastYear]) {
       const summary = buildYearlySummary(
         year,
-        past.filter((s) => s.year === year).sort((a, b) => a.month - b.month),
+        statements.filter((s) => s.year === year).sort((a, b) => a.month - b.month),
       );
       if (summary) writeYearly(path.join(demoDir, 'yearly', `${year}.json`), summary);
     }

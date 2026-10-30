@@ -165,12 +165,21 @@ describe('DemoSeedService — recalage des dates (L63)', () => {
     }
   });
 
-  it("garde un bilan de l'année révolue quand tous les relevés tiennent dans l'année", async () => {
+  it("R1 — tenant tous dans l'année, le bilan porte l'année des relevés et leurs mois (ceux de /history)", async () => {
     setNow('2026-10-11T10:00:00Z');
     await service.seed();
-    const y = read<YearlySummary>('yearly', '2025.json');
+    const y = read<YearlySummary>('yearly', '2026.json');
+    expect(y.year).toBe(2026);
     expect(y.monthsCovered).toEqual([4, 5, 6, 7, 8, 9]);
-    expect(fs.existsSync(path.join(demoDir, 'yearly', '2026.json'))).toBe(false);
+    expect(y.monthsCovered).toEqual(stmtIds().map((id) => Number(id.slice(5, 7))));
+    expect(fs.existsSync(path.join(demoDir, 'yearly', '2025.json'))).toBe(false);
+  });
+
+  it('R2 — le bilan est calculé depuis les relevés écrits : mêmes entrées', async () => {
+    setNow('2026-10-11T10:00:00Z');
+    await service.seed();
+    const credits = stmtIds().reduce((a, id) => a + read<{ totalCredits: number }>('statements', id).totalCredits, 0);
+    expect(read<YearlySummary>('yearly', '2026.json').totalCredits).toBeCloseTo(credits, 2);
   });
 
   it('à cheval sur deux années, le bilan vient des relevés révolus', async () => {
@@ -201,10 +210,10 @@ describe('DemoSeedService — recalage des dates (L63)', () => {
   it('au recalage, les bilans annuels périmés sont retirés', async () => {
     setNow('2026-10-11T10:00:00Z');
     await service.seed();
-    expect(fs.existsSync(path.join(demoDir, 'yearly', '2025.json'))).toBe(true);
-    setNow('2027-02-05T10:00:00Z');
+    expect(fs.readdirSync(path.join(demoDir, 'yearly'))).toEqual(['2026.json']);
+    setNow('2027-11-02T10:00:00Z');
     service.onApplicationBootstrap();
-    expect(fs.readdirSync(path.join(demoDir, 'yearly')).sort()).toEqual(['2026.json']);
+    expect(fs.readdirSync(path.join(demoDir, 'yearly'))).toEqual(['2027.json']);
   });
 
   it("aucun import n'est daté dans le futur (du 1er au 8 du mois)", async () => {
