@@ -907,7 +907,7 @@ lots:
     screen: component
     created: 2026-10-15
     started: 2026-10-30
-    review: { date: 2026-10-30, verdict: "compliant after 1 minor note (compiler la Nouveauté avec `npm run news` puis `npm run plan` avant `raf done`) — orchestré (vague 2026-10-30-1440-fin, 0 passe(s) de correction)", commit: 1296a47654693454848aceaeb445f7bdebe7a84c }
+    review: { date: 2026-11-16, verdict: "conforme : le seul commit après la revue (3ae1daa) ne régénère que Nouveautés et le plan publié, CI verte sur ce commit", commit: 3ae1daa6d848240bd33e2d6259500c9630f101aa }
     ux: { date: 2026-10-30, verdict: "conforme, capture 390 regardée par le lead (changer la catégorie d'une suggestion recalcule la règle : « Pas de règle : cette catégorie contredit le marchand reconnu »)" }
     finished: 2026-10-30
   - id: L78
@@ -1826,7 +1826,7 @@ lots:
     visible: true
     created: 2026-10-26
     started: 2026-10-30
-    review: { date: 2026-10-30, verdict: "conforme — orchestré (vague 2026-10-30-1440-fin, 2 passe(s) de correction)", commit: 8cff91e0a489bd21f879485fe95f419b883300cc }
+    review: { date: 2026-11-16, verdict: "conforme : le seul commit après la revue (3ae1daa) ne régénère que Nouveautés et le plan publié, CI verte sur ce commit", commit: 3ae1daa6d848240bd33e2d6259500c9630f101aa }
     ux: { date: 2026-10-30, verdict: "conforme : ux-reviewer — le focus ne tombe plus sur <body> après « Réafficher » (réussi ou refusé) et « Connu, masquer »" }
     finished: 2026-10-30
   - id: L158
