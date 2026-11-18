@@ -8,7 +8,7 @@ import {
   createRootRoute,
   createRouter,
 } from '@tanstack/react-router';
-import { BottomNav } from './bottom-nav';
+import { BottomNav, isPlusPath } from './bottom-nav';
 import { NAV_ITEMS, SECONDARY_ITEMS } from './sidebar';
 
 // L47 : la barre lit le journal des Nouveautés (pastille) ; ici, aucun journal.
@@ -165,5 +165,51 @@ describe('<BottomNav /> (L21/t8)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Plus' }));
     expect(within(screen.getByRole('dialog')).getByRole('link', { name: 'Tableau de bord' })).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/Dashboard/);
+  });
+
+  // L172 (Nielsen 1) : l'onglet actif dit où l'on est ; une route qui ne correspond à
+  // aucune page (404) n'en allume aucun, « Plus » compris.
+  const isActive = (el: HTMLElement) => /(^| )text-accent-bright( |$)/.test(el.className);
+  const activeTabs = (nav: HTMLElement) =>
+    [...within(nav).getAllByRole('link'), within(nav).getByRole('button', { name: 'Plus' })]
+      .filter(isActive)
+      .map((el) => el.textContent?.trim());
+
+  it.each(['/page-inexistante', '/plans', '/historyx', '/login'])(
+    'L172 : route %s sans onglet → aucun onglet actif',
+    async (path) => {
+      const nav = await renderNav(path);
+      expect(activeTabs(nav)).toEqual([]);
+    },
+  );
+
+  it.each([
+    ['/', 'Tableau'],
+    ['/history', 'Historique'],
+    ['/history/2026-03', 'Historique'],
+    ['/upload', 'Importer'],
+    ['/loans', 'Plus'],
+    ['/plan', 'Plus'],
+    ['/about', 'Plus'],
+  ])('L172 : sur %s, seul « %s » est actif', async (path, tab) => {
+    const nav = await renderNav(path);
+    expect(activeTabs(nav)).toEqual([tab]);
+  });
+
+  it('L172 : sur une 404, ouvrir le panneau allume « Plus », le fermer l’éteint', async () => {
+    const nav = await renderNav('/page-inexistante');
+    const plus = within(nav).getByRole('button', { name: 'Plus' });
+    await userEvent.click(plus);
+    expect(isActive(plus)).toBe(true);
+    await userEvent.keyboard('{Escape}');
+    expect(isActive(plus)).toBe(false);
+  });
+
+  it('L172 : « Plus » correspond exactement aux pages du panneau sans onglet direct', () => {
+    const direct = ['/', '/history', '/budget', '/upload'];
+    for (const i of [...NAV_ITEMS, ...SECONDARY_ITEMS]) {
+      expect(isPlusPath(i.to)).toBe(!direct.includes(i.to));
+    }
+    expect(isPlusPath('/page-inexistante')).toBe(false);
   });
 });

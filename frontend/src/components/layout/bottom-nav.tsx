@@ -24,6 +24,21 @@ const MOBILE_ITEMS = [
 // travail et À propos dans une BANDE COLLANTE en bas du panneau, juste au-dessus de la
 // barre du bas — miroir du pied fixe du bureau, visible sans défiler à 320×568.
 
+// Une route « correspond » à une entrée si elle est cette page ou l'une de ses sous-pages
+// (/history/$id → Historique) ; jamais par simple préfixe (/plans ne serait pas /plan).
+function matches(path: string, to: string, exact = false): boolean {
+  if (path === to) return true;
+  return !exact && path.startsWith(`${to}/`);
+}
+
+// L172 (Nielsen 1, visibilité de l'état) : « Plus » n'est actif que si son panneau est
+// ouvert ou si la page courante est l'une de celles qu'il propose sans onglet direct.
+// Une route inconnue (404) n'allume AUCUN onglet.
+export function isPlusPath(path: string): boolean {
+  if (MOBILE_ITEMS.some((i) => matches(path, i.to, i.exact))) return false;
+  return [...NAV_ITEMS, ...SECONDARY_ITEMS].some((i) => matches(path, i.to, 'exact' in i && i.exact));
+}
+
 export function BottomNav() {
   const { location } = useRouterState();
   const path = location.pathname;
@@ -73,7 +88,7 @@ export function BottomNav() {
     'flex flex-col items-center justify-center gap-1 py-2.5 transition-colors',
     active ? 'text-accent-bright' : 'text-fg-muted',
   );
-  const plusActive = open || !MOBILE_ITEMS.some((i) => (i.exact ? path === i.to : path.startsWith(i.to)));
+  const plusActive = open || isPlusPath(path);
 
   return (
     <>
@@ -106,7 +121,7 @@ export function BottomNav() {
               <ul aria-label="Pages" className="grid grid-cols-2 gap-1">
                 {NAV_ITEMS.map((item, i) => {
                   const Icon = item.icon;
-                  const active = item.exact ? path === item.to : path.startsWith(item.to);
+                  const active = matches(path, item.to, item.exact);
                   return (
                     <li key={item.to}>
                       <Link
@@ -139,7 +154,7 @@ export function BottomNav() {
               <ul aria-label="Application" className="grid grid-cols-3">
                 {SECONDARY_ITEMS.map((item) => {
                   const Icon = item.icon;
-                  const active = path.startsWith(item.to);
+                  const active = matches(path, item.to);
                   const isNews = item.to === '/nouveautes';
                   return (
                     <li key={item.to}>
@@ -176,7 +191,7 @@ export function BottomNav() {
       >
         <div className="grid grid-cols-5">
           {MOBILE_ITEMS.map((item) => {
-            const active = !open && (item.exact ? path === item.to : path.startsWith(item.to));
+            const active = !open && matches(path, item.to, item.exact);
             const Icon = item.icon;
             return (
               <Link
