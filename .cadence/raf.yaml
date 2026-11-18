@@ -1970,6 +1970,9 @@ lots:
     created: 2026-11-18
     started: 2026-11-18
     review: { date: 2026-11-18, verdict: "conforme : aucun défaut (revue r1, 13 tests ciblés, échouent sur l'ancien code)", commit: 99180e34ac26e356704772be7c513e9622c77fed }
+    ux: { date: 2026-11-18, verdict: "conforme : grille 5/5, aucun onglet allumé sur 404, /plans, /historyx ; « Plus » seul sur /loans, /plan, /about, /nouveautes ; captures 375-1440 vues par le lead" }
+    notes:
+      - { date: 2026-11-18, text: "Revue UX 18-11, mineur antérieur au lot : aucun aria-current dans la barre du bas quand « Plus » est allumé (/loans, /plan, /about, /nouveautes) — un lecteur d'écran n'apprend pas la page courante (WCAG 1.3.1) ; correctif S : texte sr-only dans « Plus »" }
   - id: L173
     title: Titre d'onglet du détail d'un relevé « Octobre 2026 — Historique » au lieu de « Historique » seul (WCAG 2.4.2, revue UX L169)
     status: todo
