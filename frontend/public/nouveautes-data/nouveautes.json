@@ -1,7 +1,22 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-10-30 13:07",
+  "generated": "2026-11-18 14:23",
   "entries": [
+    {
+      "slug": "2026-11-18-page-introuvable-aucun-onglet-allume",
+      "title": "Page introuvable : plus aucun onglet allumé au téléphone",
+      "date": "2026-11-18",
+      "lots": [
+        "L172"
+      ],
+      "captures": [
+        "captures/2026-11-18-404-aucun-onglet-actif-390.png"
+      ],
+      "alts": [
+        "Page introuvable au téléphone : les cinq onglets de la barre du bas, Plus compris, sont gris"
+      ],
+      "html": "<p>Au téléphone, la barre du bas ne fait plus croire que tu es dans « Plus » quand l'adresse ne mène à aucune page. Sur la page « Page introuvable », les cinq onglets restent gris : aucun ne prétend être l'endroit où tu te trouves.</p>\n<p>« Plus » s'allume toujours quand son panneau est ouvert, ou quand tu es sur l'une des pages qu'il propose (Crédits, Santé, Nouveautés…).</p>"
+    },
     {
       "slug": "2026-10-30-abonnements-focus-clavier-garde-apres-masquage",
       "title": "Abonnements : focus clavier gardé après masquage",
