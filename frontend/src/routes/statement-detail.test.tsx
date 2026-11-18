@@ -26,7 +26,7 @@ let current: typeof statement = statement;
 vi.mock('@tanstack/react-router', () => ({
   useParams: () => ({ id: '2025-09' }),
   useNavigate: () => () => {},
-  Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
+  Link: ({ children, className }: { children: React.ReactNode; className?: string }) => <a href="#" className={className}>{children}</a>,
 }));
 vi.mock('@/lib/queries', () => ({
   useStatement: (id?: string) => ({ isLoading: false, data: id === '2025-09' ? current : undefined }),
@@ -36,7 +36,9 @@ vi.mock('@/lib/queries', () => ({
 vi.mock('@/lib/api', () => ({ api: { get: async () => ({ anomalies: [{ type: 'duplicate', severity: 'info', title: 'Doublon', detail: 'x', transactionIds: [] }] }) } }));
 vi.mock('recharts', () => ({
   PieChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Pie: () => null, Cell: () => null, Tooltip: () => null,
+  // Le camembert rendu porte l'ordre de tabulation que recharts donnerait à son <g> racine (rootTabIndex, 0 par défaut).
+  Pie: ({ rootTabIndex = 0 }: { rootTabIndex?: number }) => <svg data-testid="camembert" tabIndex={rootTabIndex} />,
+  Cell: () => null, Tooltip: () => null,
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
@@ -139,5 +141,19 @@ describe('StatementDetailPage — accessibilité et lisibilité (L23)', () => {
   it('t7 — le champ Filtrer a un nom accessible indépendant de son texte d’aide', async () => {
     await renderPage();
     expect(screen.getByRole('textbox', { name: 'Filtrer les transactions' })).toBeTruthy();
+  });
+});
+
+describe('StatementDetailPage — clavier et lecteur d’écran (L169)', () => {
+  it('le camembert, doublé par la liste des catégories, est masqué aux lecteurs d’écran et hors tabulation', async () => {
+    await renderPage();
+    const pie = screen.getByTestId('camembert');
+    expect(pie.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(pie.tabIndex).toBe(-1);
+  });
+
+  it('le retour « Historique » est une cible d’au moins 24 px (min-h-6)', async () => {
+    await renderPage();
+    expect(screen.getByRole('link', { name: /Historique/ }).className).toMatch(/(^| )min-h-6( |$)/);
   });
 });

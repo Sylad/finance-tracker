@@ -68,6 +68,21 @@ describe('<AppShell /> (L40)', () => {
     for (const p of paths) expect(pageTitle(p.replace('$id', '2026-03')), p).not.toMatch(/introuvable/);
   });
 
+  it('R2 (L169) — un sous-chemin inconnu d’une page connue (/plan/x, /loans/x) est « Page introuvable », pas la page parente', async () => {
+    expect(pageTitle('/plan/L12')).toBe('Page introuvable — Finance Tracker');
+    expect(pageTitle('/loans/x')).toBe('Page introuvable — Finance Tracker');
+    expect(pageTitle('/history/2026-03/x')).toBe('Page introuvable — Finance Tracker');
+    expect(pageTitle('/history/')).toBe('Historique — Finance Tracker');
+    // Toute page du routeur suivie d'un segment que le routeur ne connaît pas.
+    const { router } = await import('@/router');
+    const known = new Set(Object.keys(router.routesByPath));
+    for (const p of known) {
+      const sub = `${p === '/' ? '' : p.replace('$id', '2026-03')}/inconnu`;
+      if (known.has(sub) || known.has(`${p}/$id`)) continue; // /history/<id> est une vraie page
+      expect(pageTitle(sub), sub).toBe('Page introuvable — Finance Tracker');
+    }
+  });
+
   it('R3 — le bandeau démo (forcé) est annoncé en role=status', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, headers: new Headers({ 'content-type': 'application/json' }), json: async () => ({ forced: true, seeded: true, available: true }) })));
     await renderShell();

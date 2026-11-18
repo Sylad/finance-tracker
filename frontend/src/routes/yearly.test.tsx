@@ -215,4 +215,14 @@ describe('<YearlyPage /> (L65)', () => {
     const left = Number(screen.getByTestId('score-chart').getAttribute('data-margin-left'));
     expect(width + left).toBeGreaterThanOrEqual(30);
   });
+
+  it('L169 — au téléphone, le tableau défile dans une région nommée et focalisable au clavier (WCAG 2.1.1)', () => {
+    state.detail = { data: summary([{ month: 1, credits: 1000, debits: 1100, net: -100 }]) };
+    render(<YearlyPage />);
+    const region = screen.getByRole('region', { name: 'Détail mois par mois' });
+    expect(region.tabIndex).toBe(0);
+    expect(region.className).toMatch(/(^| )overflow-x-auto( |$)/);
+    expect(within(region).getByRole('table', { name: 'Détail mois par mois' })).toBeTruthy();
+  });
 });
+
