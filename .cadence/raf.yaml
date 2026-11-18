@@ -1999,11 +1999,12 @@ lots:
     finished: 2026-11-18
   - id: L175
     title: "Démo : donner un tableau d'amortissement à un crédit classique des données de démo (QA de L170 : le graphique d'amortissement n'a pu être vérifié, aucun crédit de démo n'a d'échéancier) — données fictives seulement"
-    status: doing
+    status: done
     estimate: 0.1
     created: 2026-11-18
     started: 2026-11-18
     review: { date: 2026-11-18, verdict: "conforme (r1) : calculs refaits au centime (5,065 %, TAEG 5,184 %), recalage des dates vérifié, 135 tests ciblés verts, tsc 0. Rapport scratchpad/revues/finance-L175-r1.md", commit: 6d69e15434a39a5f3bb24c61db34d36eb65e2454 }
+    finished: 2026-11-18
   - id: L176
     title: Article finance-tracker à rafraîchir
     status: todo
