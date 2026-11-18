@@ -666,6 +666,12 @@
       "status": "done",
       "started": "2026-11-18",
       "finished": "2026-11-18"
+    },
+    {
+      "id": "L173",
+      "title": "Relevé : l'onglet du navigateur nomme le mois affiché",
+      "status": "doing",
+      "started": "2026-11-18"
     }
   ]
 }
