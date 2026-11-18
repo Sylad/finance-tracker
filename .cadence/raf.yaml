@@ -1953,10 +1953,11 @@ lots:
     finished: 2026-11-18
   - id: L171
     title: "Un h1 qui nomme la page sur Revenus, Épargne, Crédits, Abonnements et Dépenses (WCAG 2.4.6, revue UX L169) : le h1 est aujourd'hui un montant"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-11-18
+    started: 2026-11-18
   - id: L172
     title: "Barre du bas à 390 px : « Plus » ne doit pas paraître actif sur la 404 (Nielsen 1, revue UX L169)"
     status: todo
@@ -1980,6 +1981,11 @@ lots:
     review: { date: 2026-11-18, verdict: "conforme (revue du lead, 2 lignes de classes + test) : -m-1 p-1 et -my-1 py-1 donnent 24 px cliquables sans bouger la mise en page ; test l174-targets recompose la boîte depuis le thème résolu et échoue sur classe inconnue", commit: 6a2ac0759b5ba02e268fe2c44a57a0719b213421 }
     ux: { date: 2026-11-18, verdict: "conforme (lead) : seules les zones cliquables grandissent (marges négatives compensatoires), aspect visuel inchangé ; mesuré par le test" }
     finished: 2026-11-18
+  - id: L175
+    title: "Démo : donner un tableau d'amortissement à un crédit classique des données de démo (QA de L170 : le graphique d'amortissement n'a pu être vérifié, aucun crédit de démo n'a d'échéancier) — données fictives seulement"
+    status: todo
+    estimate: 0.1
+    created: 2026-11-18
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
