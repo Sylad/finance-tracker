@@ -1999,9 +1999,10 @@ lots:
     finished: 2026-11-18
   - id: L175
     title: "Démo : donner un tableau d'amortissement à un crédit classique des données de démo (QA de L170 : le graphique d'amortissement n'a pu être vérifié, aucun crédit de démo n'a d'échéancier) — données fictives seulement"
-    status: todo
+    status: doing
     estimate: 0.1
     created: 2026-11-18
+    started: 2026-11-18
   - id: L176
     title: Article finance-tracker à rafraîchir
     status: todo
