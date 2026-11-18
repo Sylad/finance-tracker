@@ -1942,13 +1942,14 @@ lots:
     finished: 2026-11-18
   - id: L170
     title: "Graduations et légendes des graphiques à 12 px minimum (revue UX L169) : fontSize 9 à 11 dans amortization-chart, yearly-charts, loans-monthly-chart, balance-trend, score-trend…"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-11-18
     started: 2026-11-18
     review: { date: 2026-11-18, verdict: "conforme : 0 bloquant ; graduations et légendes à 12 px via une constante de thème ; note : chart-theme.test.ts ne scanne pas yearly-chart-marks.tsx (légende à 12 px aujourd'hui)", commit: b3de501aaa6dc5c99aa1592eacdafc339b5d46f5 }
     ux: { date: 2026-11-18, verdict: "conforme (lead, captures regardées sur données de démo) : graduations et légendes des graphiques lisibles à 390 et 1440 px, sans chevauchement" }
+    finished: 2026-11-18
   - id: L171
     title: "Un h1 qui nomme la page sur Revenus, Épargne, Crédits, Abonnements et Dépenses (WCAG 2.4.6, revue UX L169) : le h1 est aujourd'hui un montant"
     status: todo
