@@ -2182,9 +2182,228 @@
       "isActive": true,
       "creditor": "CETELEM",
       "contractRef": "9876543210",
-      "startDate": "2024-03-07",
-      "endDate": "2027-03-07",
-      "initialPrincipal": 8640,
+      "startDate": "2025-09-07",
+      "endDate": "2028-09-07",
+      "initialPrincipal": 8000,
+      "taeg": 5.18,
+      "amortizationSchedule": [
+        {
+          "date": "2025-10-07",
+          "capitalRemaining": 7793.77,
+          "capitalPaid": 206.23,
+          "interestPaid": 33.77
+        },
+        {
+          "date": "2025-11-07",
+          "capitalRemaining": 7586.66,
+          "capitalPaid": 207.11,
+          "interestPaid": 32.89
+        },
+        {
+          "date": "2025-12-07",
+          "capitalRemaining": 7378.68,
+          "capitalPaid": 207.98,
+          "interestPaid": 32.02
+        },
+        {
+          "date": "2026-01-07",
+          "capitalRemaining": 7169.82,
+          "capitalPaid": 208.86,
+          "interestPaid": 31.14
+        },
+        {
+          "date": "2026-02-07",
+          "capitalRemaining": 6960.08,
+          "capitalPaid": 209.74,
+          "interestPaid": 30.26
+        },
+        {
+          "date": "2026-03-07",
+          "capitalRemaining": 6749.46,
+          "capitalPaid": 210.62,
+          "interestPaid": 29.38
+        },
+        {
+          "date": "2026-04-07",
+          "capitalRemaining": 6537.95,
+          "capitalPaid": 211.51,
+          "interestPaid": 28.49
+        },
+        {
+          "date": "2026-05-07",
+          "capitalRemaining": 6325.54,
+          "capitalPaid": 212.41,
+          "interestPaid": 27.59
+        },
+        {
+          "date": "2026-06-07",
+          "capitalRemaining": 6112.24,
+          "capitalPaid": 213.3,
+          "interestPaid": 26.7
+        },
+        {
+          "date": "2026-07-07",
+          "capitalRemaining": 5898.04,
+          "capitalPaid": 214.2,
+          "interestPaid": 25.8
+        },
+        {
+          "date": "2026-08-07",
+          "capitalRemaining": 5682.93,
+          "capitalPaid": 215.11,
+          "interestPaid": 24.89
+        },
+        {
+          "date": "2026-09-07",
+          "capitalRemaining": 5466.92,
+          "capitalPaid": 216.01,
+          "interestPaid": 23.99
+        },
+        {
+          "date": "2026-10-07",
+          "capitalRemaining": 5249.99,
+          "capitalPaid": 216.93,
+          "interestPaid": 23.07
+        },
+        {
+          "date": "2026-11-07",
+          "capitalRemaining": 5032.15,
+          "capitalPaid": 217.84,
+          "interestPaid": 22.16
+        },
+        {
+          "date": "2026-12-07",
+          "capitalRemaining": 4813.39,
+          "capitalPaid": 218.76,
+          "interestPaid": 21.24
+        },
+        {
+          "date": "2027-01-07",
+          "capitalRemaining": 4593.71,
+          "capitalPaid": 219.68,
+          "interestPaid": 20.32
+        },
+        {
+          "date": "2027-02-07",
+          "capitalRemaining": 4373.1,
+          "capitalPaid": 220.61,
+          "interestPaid": 19.39
+        },
+        {
+          "date": "2027-03-07",
+          "capitalRemaining": 4151.56,
+          "capitalPaid": 221.54,
+          "interestPaid": 18.46
+        },
+        {
+          "date": "2027-04-07",
+          "capitalRemaining": 3929.08,
+          "capitalPaid": 222.48,
+          "interestPaid": 17.52
+        },
+        {
+          "date": "2027-05-07",
+          "capitalRemaining": 3705.66,
+          "capitalPaid": 223.42,
+          "interestPaid": 16.58
+        },
+        {
+          "date": "2027-06-07",
+          "capitalRemaining": 3481.3,
+          "capitalPaid": 224.36,
+          "interestPaid": 15.64
+        },
+        {
+          "date": "2027-07-07",
+          "capitalRemaining": 3255.99,
+          "capitalPaid": 225.31,
+          "interestPaid": 14.69
+        },
+        {
+          "date": "2027-08-07",
+          "capitalRemaining": 3029.73,
+          "capitalPaid": 226.26,
+          "interestPaid": 13.74
+        },
+        {
+          "date": "2027-09-07",
+          "capitalRemaining": 2802.52,
+          "capitalPaid": 227.21,
+          "interestPaid": 12.79
+        },
+        {
+          "date": "2027-10-07",
+          "capitalRemaining": 2574.35,
+          "capitalPaid": 228.17,
+          "interestPaid": 11.83
+        },
+        {
+          "date": "2027-11-07",
+          "capitalRemaining": 2345.22,
+          "capitalPaid": 229.13,
+          "interestPaid": 10.87
+        },
+        {
+          "date": "2027-12-07",
+          "capitalRemaining": 2115.12,
+          "capitalPaid": 230.1,
+          "interestPaid": 9.9
+        },
+        {
+          "date": "2028-01-07",
+          "capitalRemaining": 1884.05,
+          "capitalPaid": 231.07,
+          "interestPaid": 8.93
+        },
+        {
+          "date": "2028-02-07",
+          "capitalRemaining": 1652.0,
+          "capitalPaid": 232.05,
+          "interestPaid": 7.95
+        },
+        {
+          "date": "2028-03-07",
+          "capitalRemaining": 1418.97,
+          "capitalPaid": 233.03,
+          "interestPaid": 6.97
+        },
+        {
+          "date": "2028-04-07",
+          "capitalRemaining": 1184.96,
+          "capitalPaid": 234.01,
+          "interestPaid": 5.99
+        },
+        {
+          "date": "2028-05-07",
+          "capitalRemaining": 949.96,
+          "capitalPaid": 235.0,
+          "interestPaid": 5.0
+        },
+        {
+          "date": "2028-06-07",
+          "capitalRemaining": 713.97,
+          "capitalPaid": 235.99,
+          "interestPaid": 4.01
+        },
+        {
+          "date": "2028-07-07",
+          "capitalRemaining": 476.98,
+          "capitalPaid": 236.99,
+          "interestPaid": 3.01
+        },
+        {
+          "date": "2028-08-07",
+          "capitalRemaining": 238.99,
+          "capitalPaid": 237.99,
+          "interestPaid": 2.01
+        },
+        {
+          "date": "2028-09-07",
+          "capitalRemaining": 0.0,
+          "capitalPaid": 238.99,
+          "interestPaid": 1.01
+        }
+      ],
       "occurrencesDetected": [
         {
           "id": "occ-auto-2025-10",
