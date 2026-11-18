@@ -1977,13 +1977,14 @@ lots:
     finished: 2026-11-18
   - id: L173
     title: Titre d'onglet du détail d'un relevé « Octobre 2026 — Historique » au lieu de « Historique » seul (WCAG 2.4.2, revue UX L169)
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-11-18
     started: 2026-11-18
     review: { date: 2026-11-18, verdict: "conforme : e8a47ec (phrase Nouveautés nuancée d'après la revue UX) relu par le lead, docs seules", commit: e8a47ec809553b79f3b6a4b5d1a05d98a53d17d4 }
     ux: { date: 2026-11-18, verdict: "conforme (lead, d'après ux-reviewer) : titre d'onglet mesuré 1440/390 px — chargement, chargé, introuvable, navigation entre relevés, précédent/suivant, sortie ; 8 autres pages inchangées ; mineur (Nouveauté trop affirmative sur le lecteur d'écran) corrigé en e8a47ec" }
+    finished: 2026-11-18
   - id: L174
     title: "Cibles de 16 px (QA de L169, WCAG 2.5.8) : « Fermer » du bandeau d'installation et « Détails » sur /health — zone cliquable de 24 px au moins"
     status: done
