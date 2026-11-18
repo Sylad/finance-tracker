@@ -1980,6 +1980,7 @@ lots:
     status: done
     estimate: 0.25
     visible: true
+    delivered: { date: 2026-11-18, sha: 63aea44b3f363f278ec7ec713bc4a1ccc610510d }
     created: 2026-11-18
     started: 2026-11-18
     review: { date: 2026-11-18, verdict: "conforme : e8a47ec (phrase Nouveautés nuancée d'après la revue UX) relu par le lead, docs seules", commit: e8a47ec809553b79f3b6a4b5d1a05d98a53d17d4 }
