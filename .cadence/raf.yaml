@@ -1969,6 +1969,7 @@ lots:
     visible: true
     created: 2026-11-18
     started: 2026-11-18
+    review: { date: 2026-11-18, verdict: "conforme : aucun défaut (revue r1, 13 tests ciblés, échouent sur l'ancien code)", commit: 99180e34ac26e356704772be7c513e9622c77fed }
   - id: L173
     title: Titre d'onglet du détail d'un relevé « Octobre 2026 — Historique » au lieu de « Historique » seul (WCAG 2.4.2, revue UX L169)
     status: todo
