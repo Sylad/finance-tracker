@@ -1945,6 +1945,7 @@ lots:
     status: done
     estimate: 0.25
     visible: true
+    delivered: { date: 2026-11-18, sha: 31b7ff7ff6f33e8d3d2e31897d256c11d364681a }
     created: 2026-11-18
     started: 2026-11-18
     review: { date: 2026-11-18, verdict: "conforme : 0 bloquant ; graduations et légendes à 12 px via une constante de thème ; note : chart-theme.test.ts ne scanne pas yearly-chart-marks.tsx (légende à 12 px aujourd'hui)", commit: b3de501aaa6dc5c99aa1592eacdafc339b5d46f5 }
