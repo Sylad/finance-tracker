@@ -1967,6 +1967,7 @@ lots:
     status: done
     estimate: 0.25
     visible: true
+    delivered: { date: 2026-11-18, sha: 99180e34ac26e356704772be7c513e9622c77fed }
     created: 2026-11-18
     started: 2026-11-18
     review: { date: 2026-11-18, verdict: "conforme : aucun défaut (revue r1, 13 tests ciblés, échouent sur l'ancien code)", commit: 99180e34ac26e356704772be7c513e9622c77fed }
