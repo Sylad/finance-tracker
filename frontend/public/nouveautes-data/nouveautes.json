@@ -10,7 +10,7 @@
         "L173"
       ],
       "captures": [],
-      "html": "<p>Quand tu ouvres un relevé, l'onglet du navigateur dit lequel : « Octobre 2026 — Historique — Finance Tracker » au lieu de « Historique » seul. Avec plusieurs relevés ouverts côte à côte, chaque onglet se reconnaît, et un lecteur d'écran annonce le mois dès l'arrivée sur la page.</p>\n<p>Si l'adresse mène à un relevé qui n'existe pas (ou plus), l'onglet le dit aussi : « Relevé introuvable — Historique ». En revenant à la liste ou en changeant de page, l'onglet reprend le nom de la page.</p>"
+      "html": "<p>Quand tu ouvres un relevé, l'onglet du navigateur dit lequel : « Octobre 2026 — Historique — Finance Tracker » au lieu de « Historique » seul. Avec plusieurs relevés ouverts côte à côte, chaque onglet se reconnaît. Un lecteur d'écran lit ce titre, donc le mois, quand la page s'ouvre : adresse saisie, lien ouvert dans un nouvel onglet, rechargement. Quand tu passes d'un relevé à l'autre sans quitter l'application, il ne l'annonce en général pas de lui-même.</p>\n<p>Si l'adresse mène à un relevé qui n'existe pas (ou plus), l'onglet le dit aussi : « Relevé introuvable — Historique ». En revenant à la liste ou en changeant de page, l'onglet reprend le nom de la page.</p>"
     },
     {
       "slug": "2026-11-18-page-introuvable-aucun-onglet-allume",

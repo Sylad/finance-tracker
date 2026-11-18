@@ -12,3 +12,4 @@
 
 ## Décisions (L173)
 - Titre d'onglet du détail d'un relevé : « <Mois Année> — Historique — Finance Tracker » (« Relevé introuvable — Historique » si absent, titre parent pendant le chargement) ; nom posé par `usePageTitleDetail`, lu par AppShell. README.md (paragraphe L169) décrit ce titre.
+- Texte de la Nouveauté L173 : le titre d'onglet est lu par un lecteur d'écran à l'OUVERTURE de la page (URL directe, nouvel onglet, rechargement), pas en navigation interne : l'app n'a ni annonceur de route ni focus déplacé (focus sur BODY après un clic, revue UX L173). Un annonceur de route serait un lot à part, pour toute l'app.
