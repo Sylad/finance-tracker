@@ -1974,6 +1974,7 @@ lots:
     status: done
     estimate: 0.1
     visible: true
+    delivered: { date: 2026-11-18, sha: 94901bda6bf99dff884a65a9acf0375d8bf0ea4d }
     created: 2026-11-18
     started: 2026-11-18
     review: { date: 2026-11-18, verdict: "conforme (revue du lead, 2 lignes de classes + test) : -m-1 p-1 et -my-1 py-1 donnent 24 px cliquables sans bouger la mise en page ; test l174-targets recompose la boîte depuis le thème résolu et échoue sur classe inconnue", commit: 6a2ac0759b5ba02e268fe2c44a57a0719b213421 }
