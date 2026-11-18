@@ -1,7 +1,22 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-11-18 15:04",
+  "generated": "2026-11-18 17:38",
   "entries": [
+    {
+      "slug": "2026-11-18-amortissement-courbe-reel-dernier-prelevement",
+      "title": "Crédits : la courbe « Réel » s'arrête au dernier prélèvement connu",
+      "date": "2026-11-18",
+      "lots": [
+        "L177"
+      ],
+      "captures": [
+        "captures/2026-11-18-amortissement-reel-dernier-prelevement.png"
+      ],
+      "alts": [
+        "Graphique d'amortissement du crédit CETELEM : la courbe verte Réel (estimé) s'arrête en octobre 2026 sur un point, la courbe grise Prévu continue jusqu'en 2029 ; l'infobulle de novembre 2028 ne montre que Prévu."
+      ],
+      "html": "<p>Dans le tableau d'amortissement d'un crédit, la courbe verte « Réel (estimé) » s'arrête désormais au dernier prélèvement retrouvé dans tes relevés, marqué d'un point. Avant, elle restait plate jusqu'à la fin du crédit, comme si le capital ne baissait plus.</p>\n<p>Sous le graphique, une ligne dit jusqu'à quel mois la courbe réelle est connue (ou qu'aucun prélèvement n'a été trouvé). Au survol d'un mois sans prélèvement, l'infobulle ne donne que le montant prévu : plus de valeur « Réel » devinée.</p>"
+    },
     {
       "slug": "2026-11-18-releve-onglet-du-navigateur-nomme-le-mois",
       "title": "Relevé : l'onglet du navigateur nomme le mois affiché",
