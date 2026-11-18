@@ -1930,13 +1930,14 @@ lots:
     created: 2026-11-16
   - id: L169
     title: "Revue UX — bonnes pratiques d'une appli web standard (D-13 du registre parent) : chaque page en vrai navigateur à 390 et 1440 px, au clavier, contre WCAG 2.2 AA, les heuristiques de Nielsen et la skill interface-utilisable (tailles de texte en rem ≥ 12 px, cibles ≥ 24 px, contrastes, focus visible, états vides et d'erreur) ; constats mesurés, sous-lots proposés"
-    status: doing
+    status: done
     estimate: 0.5
     visible: true
     created: 2026-11-18
     started: 2026-11-18
     review: { date: 2026-11-18, verdict: "conforme : seconde revue après b1f4a0a — 3 constats corrigés, 8/36 tests + test R2 rouges sans les corrections ; aucune vraie donnée ni vrai PIN ; garde PIN intacte", commit: b1f4a0a66714f9511abe38c8957610006c70b375 }
     ux: { date: 2026-11-18, verdict: "conforme (lead, captures regardées sur l'instance de démo) : 404 en français, titres d'onglet, texte ≥ 12 px hors graphiques, cibles ≥ 24 px ; restes ouverts en L170-L173" }
+    finished: 2026-11-18
   - id: L170
     title: "Graduations et légendes des graphiques à 12 px minimum (revue UX L169) : fontSize 9 à 11 dans amortization-chart, yearly-charts, loans-monthly-chart, balance-trend, score-trend…"
     status: todo
