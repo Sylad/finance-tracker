@@ -2022,6 +2022,14 @@ lots:
     visible: true
     created: 2026-11-18
     started: 2026-11-18
+    review: { date: 2026-11-18, verdict: "conforme (r1) : courbe arrêtée au dernier prélèvement, prélèvement décalé et virement entrant testés, légende et unités justes ; 6/6 tests ciblés. Mineurs reportés en lot. Rapport scratchpad/revues/finance-L177-r1.md", commit: 7ac53c052b6541a29c0b236b3556460cc790c2ae }
+    ux: { date: 2026-11-18, verdict: "conforme (lead, captures 1440/390) : courbe Réel arrêtée en 10/2026 avec point, phrase sous le graphique, infobulle « Prévu » seul après le dernier prélèvement ; rien ne déborde au téléphone" }
+  - id: L178
+    title: "Graphique d'amortissement : dire l'absence de prélèvement d'un mois manquant au milieu de la courbe Réel (infobulle muette, la ligne traverse le trou) ; et dernier prélèvement tombé dans un mois sans échéance : point absent, phrase qui cite un mois trop tôt (revue r1 de L177)"
+    status: todo
+    estimate: 1
+    visible: true
+    created: 2026-11-18
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
