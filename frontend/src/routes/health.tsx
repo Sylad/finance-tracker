@@ -2,6 +2,7 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { SlidersHorizontal } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { chartTick } from '@/lib/chart-theme';
 import { useHealthDiagnostic, useUpdateThresholds } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, ErrorState } from '@/components/loading-state';
@@ -316,7 +317,7 @@ function TrajectoireCard({ block }: { block: HealthBlockResult }) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
-              <XAxis dataKey="label" padding={{ left: 24, right: 24 }} interval={0} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="label" padding={{ left: 24, right: 24 }} interval={0} tick={chartTick} axisLine={false} tickLine={false} />
               <YAxis hide />
               <Tooltip {...chartTooltipProps} formatter={(v: number) => [formatEUR(v), 'Encours']} />
               <Line

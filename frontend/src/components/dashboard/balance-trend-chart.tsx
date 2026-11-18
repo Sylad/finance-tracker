@@ -1,4 +1,5 @@
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { chartTick } from '@/lib/chart-theme';
 import { formatEUR, formatEURCompact, chartTooltipProps } from '@/lib/utils';
 import { summarizeTrend } from './chart-summaries';
 
@@ -32,8 +33,8 @@ export function BalanceTrendChart({
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={series} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={64} allowDecimals={false} tickFormatter={formatEURCompact} />
+              <XAxis dataKey="label" tick={chartTick} axisLine={false} tickLine={false} />
+              <YAxis tick={chartTick} axisLine={false} tickLine={false} width={64} allowDecimals={false} tickFormatter={formatEURCompact} />
               <Tooltip
                 {...chartTooltipProps}
                 formatter={(v: number) => [formatEUR(v), 'Solde']}

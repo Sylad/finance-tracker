@@ -1,4 +1,5 @@
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { chartTick } from '@/lib/chart-theme';
 import { ScoreBadge } from '@/components/score-ring';
 import { chartTooltipProps } from '@/lib/utils';
 import { summarizeTrend } from './chart-summaries';
@@ -34,8 +35,8 @@ export function ScoreTrendChart({ series, currentScore }: { series: ScorePoint[]
                   <stop offset="100%" stopColor="hsl(160 84% 50%)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={36} />
+              <XAxis dataKey="label" tick={chartTick} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={chartTick} axisLine={false} tickLine={false} width={36} />
               <Tooltip {...chartTooltipProps} />
               <Area type="monotone" dataKey="score" stroke="hsl(160 84% 50%)" strokeWidth={2} fill="url(#score-grad)" />
             </AreaChart>

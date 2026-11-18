@@ -1,4 +1,5 @@
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { chartTick } from '@/lib/chart-theme';
 import { CATEGORY_LABELS, type TransactionCategory } from '@/types/api';
 import { formatEUR, formatEURCompact, formatMonthShort, chartTooltipProps } from '@/lib/utils';
 import { summarizeInOut } from './chart-summaries';
@@ -40,10 +41,10 @@ export function YearlyCharts({ data }: { data: YearlyData }) {
             <BarChart data={data.monthly}>
               <XAxis
                 dataKey="month"
-                tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }}
+                tick={chartTick}
                 tickFormatter={monthLabel}
               />
-              <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 10 }} width={64} allowDecimals={false} tickFormatter={formatEURCompact} />
+              <YAxis tick={chartTick} width={64} allowDecimals={false} tickFormatter={formatEURCompact} />
               <Tooltip
                 {...chartTooltipProps}
                 labelFormatter={monthLabel}

@@ -10,6 +10,7 @@ import {
   Legend,
   CartesianGrid,
 } from 'recharts';
+import { CHART_FONT_SIZE, chartTickCurrentColor, chartLegendStyle } from '@/lib/chart-theme';
 import type { Loan } from '@/types/api';
 import { formatEUR } from '@/lib/utils';
 import { computeLoanState } from '@/lib/loan-state';
@@ -74,23 +75,23 @@ export function AmortizationChart({ loan }: Props) {
               <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.05)" />
               <XAxis
                 dataKey="month"
-                tick={{ fontSize: 9, fill: 'currentColor' }}
+                tick={chartTickCurrentColor}
                 tickLine={false}
                 axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fontSize: 9, fill: 'currentColor' }}
+                tick={chartTickCurrentColor}
                 tickLine={false}
                 axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                 tickFormatter={(v: number) => `${Math.round(v / 1000)}k`}
-                width={28}
+                width={40}
               />
               <Tooltip
-                contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid rgba(148,163,184,0.2)', fontSize: 12 }}
+                contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid rgba(148,163,184,0.2)', fontSize: CHART_FONT_SIZE }}
                 formatter={(v: number) => formatEUR(v)}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Legend wrapperStyle={chartLegendStyle} />
               <Line type="monotone" dataKey="prevu" name="Prévu" stroke="#94a3b8" strokeWidth={1.5} dot={false} />
               <Line type="monotone" dataKey="reel" name="Réel (estimé)" stroke="#10b981" strokeWidth={2} dot={false} connectNulls />
             </LineChart>

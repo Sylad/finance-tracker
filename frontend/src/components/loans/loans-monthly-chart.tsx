@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { chartTick, chartLegendStyle } from '@/lib/chart-theme';
 import type { Loan } from '@/types/api';
 import { formatEUR, formatEURCompact, chartTooltipProps, formatMonthShort } from '@/lib/utils';
 import { LOAN_COLORS, chartSeriesNames, monthlyCharge } from './utils';
@@ -79,14 +80,14 @@ export function LoansMonthlyChart({ loans, statementMonths }: { loans: Loan[]; s
           <BarChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
             <XAxis
               dataKey="month"
-              tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }}
+              tick={chartTick}
               tickFormatter={(m: string) => {
                 const [y, mm] = m.split('-');
                 return formatMonthShort(Number(mm), Number(y));
               }}
             />
             <YAxis
-              tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }}
+              tick={chartTick}
               width={64}
               allowDecimals={false}
               tickFormatter={(v: number) => formatEURCompact(v)}
@@ -100,7 +101,7 @@ export function LoansMonthlyChart({ loans, statementMonths }: { loans: Loan[]; s
               formatter={(v: number, name: string) => [formatEUR(v), seriesName(name)]}
             />
             <Legend
-              wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+              wrapperStyle={{ ...chartLegendStyle, paddingTop: 8 }}
               formatter={(value: string) => <span className="text-fg-muted">{seriesName(value)}</span>}
             />
             {visibleLoans.map((loan, i) => (

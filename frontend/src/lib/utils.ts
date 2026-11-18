@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { CHART_FONT_SIZE } from './chart-theme';
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
@@ -76,7 +77,7 @@ export const chartTooltipProps = {
     background: 'hsl(var(--surface-2))',
     border: '1px solid hsl(var(--border))',
     borderRadius: 6,
-    fontSize: 12,
+    fontSize: CHART_FONT_SIZE,
     color: 'hsl(var(--fg))',
   },
   labelStyle: { color: 'hsl(var(--fg))' },

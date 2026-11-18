@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts';
+import { chartTick } from '@/lib/chart-theme';
 import { Link } from '@tanstack/react-router';
 import { useForecast } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
@@ -112,9 +113,9 @@ export function ForecastPage() {
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }} stackOffset="sign">
-              <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="label" tick={chartTick} axisLine={false} tickLine={false} />
               <YAxis
-                tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }}
+                tick={chartTick}
                 axisLine={false}
                 tickLine={false}
                 width={60}

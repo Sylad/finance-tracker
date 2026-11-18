@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Trophy, Frown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, AreaChart, Area } from 'recharts';
+import { chartTick } from '@/lib/chart-theme';
 import { useYearlySummaries, useYearlySummary } from '@/lib/queries';
 import { PageHeader } from '@/components/page-header';
 import { LoadingState, EmptyState, ErrorState } from '@/components/loading-state';
@@ -184,8 +185,8 @@ export function YearlyPage() {
                         <stop offset="100%" stopColor="hsl(160 84% 50%)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={36} />
+                    <XAxis dataKey="label" tick={chartTick} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 100]} tick={chartTick} axisLine={false} tickLine={false} width={36} />
                     <Tooltip {...chartTooltipProps} />
                     <Area type="monotone" dataKey="score" stroke="hsl(160 84% 50%)" strokeWidth={2} fill="url(#yscore-grad)" />
                   </AreaChart>
@@ -233,8 +234,8 @@ export function YearlyPage() {
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={cashFlow} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
-                    <XAxis dataKey="label" tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: 'hsl(var(--fg-dim))', fontSize: 11 }} axisLine={false} tickLine={false} width={64} allowDecimals={false} tickFormatter={formatEURCompact} />
+                    <XAxis dataKey="label" tick={chartTick} axisLine={false} tickLine={false} />
+                    <YAxis tick={chartTick} axisLine={false} tickLine={false} width={64} allowDecimals={false} tickFormatter={formatEURCompact} />
                     <Tooltip {...chartTooltipProps} formatter={(v: number) => formatEUR(v)} />
                     <Legend content={<CashFlowLegend />} />
                     <Line type="monotone" name="Entrées" dataKey="credits" stroke="hsl(160 84% 50%)" strokeWidth={2} dot={{ r: 3 }} />
