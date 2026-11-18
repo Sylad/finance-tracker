@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatementDetailPage } from './statement.$id';
+import { pageTitleDetailStore } from '@/components/layout/page-title';
 
 const COMMENT = 'Ce mois-ci le solde progresse malgré un loyer élevé, les dépenses courantes restent stables et la trajectoire de l’épargne est positive sur la période.';
 const tx = (id: string, amount: number, category: string, description: string) => ({
@@ -155,5 +156,31 @@ describe('StatementDetailPage — clavier et lecteur d’écran (L169)', () => {
   it('le retour « Historique » est une cible d’au moins 24 px (min-h-6)', async () => {
     await renderPage();
     expect(screen.getByRole('link', { name: /Historique/ }).className).toMatch(/(^| )min-h-6( |$)/);
+  });
+});
+
+describe('StatementDetailPage — titre d’onglet (L173, WCAG 2.4.2)', () => {
+  afterEach(() => { current = statement; pageTitleDetailStore.set(null); });
+
+  it('nomme le relevé affiché (« Septembre 2025 »), pas seulement « Historique »', async () => {
+    await renderPage();
+    expect(pageTitleDetailStore.get()).toBe('Septembre 2025');
+  });
+
+  it('un relevé introuvable garde un titre explicite', async () => {
+    current = undefined as unknown as typeof statement;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <StatementDetailPage />
+      </QueryClientProvider>,
+    );
+    await screen.findByText('Relevé introuvable');
+    expect(pageTitleDetailStore.get()).toBe('Relevé introuvable');
+  });
+
+  it('quitter la page retire le nom du relevé', async () => {
+    const view = await renderPage();
+    view.unmount();
+    expect(pageTitleDetailStore.get()).toBeNull();
   });
 });

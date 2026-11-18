@@ -3,9 +3,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from '@tanstack/react-router';
+import { RouterProvider, createMemoryHistory, createRootRoute, createRouter, useRouterState } from '@tanstack/react-router';
 import { AppShell } from './app-shell';
-import { pageTitle } from './page-title';
+import { pageTitle, pageTitleDetailStore, usePageTitleDetail } from './page-title';
 
 beforeEach(() => {
   localStorage.clear();
@@ -107,5 +107,46 @@ describe('<AppShell /> (L40)', () => {
         .filter((el) => !el.hasAttribute('data-news-badge'));
       expect(small.map((e) => e.textContent)).toEqual([]);
     }
+  });
+});
+
+describe('Titre d’onglet d’une page de détail (L173, WCAG 2.4.2)', () => {
+  afterEach(() => { pageTitleDetailStore.set(null); });
+
+  it('pageTitle : une sous-page nomme son objet devant sa page parente', () => {
+    expect(pageTitle('/history/2026-10', 'Octobre 2026')).toBe('Octobre 2026 — Historique — Finance Tracker');
+    expect(pageTitle('/history/x', 'Relevé introuvable')).toBe('Relevé introuvable — Historique — Finance Tracker');
+    // Sans nom (chargement), le titre reste celui de la page parente.
+    expect(pageTitle('/history/2026-10', null)).toBe('Historique — Finance Tracker');
+  });
+
+  it('pageTitle : un nom resté d’une page de détail ne s’applique jamais hors d’une sous-page', () => {
+    expect(pageTitle('/loans', 'Octobre 2026')).toBe('Crédits — Finance Tracker');
+    expect(pageTitle('/history', 'Octobre 2026')).toBe('Historique — Finance Tracker');
+    expect(pageTitle('/inconnue', 'Octobre 2026')).toBe('Page introuvable — Finance Tracker');
+  });
+
+  it('le gabarit affiche le nom posé par la page, puis le retire en quittant la page', async () => {
+    function Detail() { usePageTitleDetail('Octobre 2026'); return <p>contenu de la page</p>; }
+    const router = createRouter({
+      routeTree: createRootRoute({
+        component: function Root() {
+          const onDetail = useRouterState({ select: (st) => st.location.pathname.startsWith('/history/') });
+          return <AppShell>{onDetail ? <Detail /> : <p>contenu de la page</p>}</AppShell>;
+        },
+      }),
+      history: createMemoryHistory({ initialEntries: ['/history/2026-10'] }),
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+    await screen.findByText('contenu de la page');
+    expect(document.title).toBe('Octobre 2026 — Historique — Finance Tracker');
+    await act(async () => { await router.navigate({ to: '/loans' as never }); });
+    expect(document.title).toBe('Crédits — Finance Tracker');
+    expect(pageTitleDetailStore.get()).toBeNull();
   });
 });

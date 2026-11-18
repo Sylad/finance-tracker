@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { useRouterState } from '@tanstack/react-router';
 import { useDemoStatus } from '@/lib/queries';
 import { Sidebar } from './sidebar';
@@ -8,14 +8,15 @@ import { CommandPalette } from '../command-palette';
 import { InstallPrompt } from '../install-prompt';
 import { demoStore } from '@/lib/demo';
 import { cn } from '@/lib/utils';
-import { pageTitle } from './page-title';
+import { pageTitle, pageTitleDetailStore } from './page-title';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const status = useDemoStatus();
   const forced = status.data?.forced === true;
   const showBanner = forced || demoStore.isActive();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  useEffect(() => { document.title = pageTitle(pathname); }, [pathname]);
+  const detail = useSyncExternalStore(pageTitleDetailStore.subscribe, pageTitleDetailStore.get);
+  useEffect(() => { document.title = pageTitle(pathname, detail); }, [pathname, detail]);
   return (
     <div className="min-h-screen">
       {/* Lien d'évitement (WCAG 2.4.1) : visible au focus seulement, avant la barre latérale. */}

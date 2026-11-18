@@ -31,6 +31,7 @@ import {
   type Transaction,
   type TransactionCategory,
 } from '@/types/api';
+import { usePageTitleDetail } from '@/components/layout/page-title';
 import { formatEUR, formatMonth, cn, chartTooltipProps, prevMonthId } from '@/lib/utils';
 import { transactionMatchesSearch } from '@/lib/category-label';
 
@@ -55,6 +56,10 @@ function categoryTotalsFor(transactions: Transaction[]): Map<TransactionCategory
 export function StatementDetailPage() {
   const { id } = useParams({ from: '/history/$id' });
   const { data, isLoading } = useStatement(id);
+  // Titre d'onglet (WCAG 2.4.2, L173) : « Octobre 2026 — Historique — Finance Tracker ».
+  usePageTitleDetail(
+    isLoading ? null : data ? formatMonth(data.month, data.year) : 'Relevé introuvable',
+  );
   // Le cadre défilant de la liste (lg:overflow-auto) n'existe qu'à partir de lg : c'est là seulement
   // qu'il est un arrêt de tabulation utile (WCAG 2.1.1) ; en dessous, la liste ne défile pas.
   const framed = useMediaQuery(LG_QUERY);
