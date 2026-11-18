@@ -623,6 +623,7 @@ lots:
     title: "Nettoyage récurrent des fichiers de travail devenus inutiles (consigne Sylvain 02-10) : dossier tmp partagé (captures, scripts de mesure, builds de démonstration), documents périmés (specs et plans de lots livrés, audits dépassés), scripts jetables, captures non référencées, dépendances et fichiers générés orphelins — lister avant de supprimer, ne rien effacer hors tmp sans l'avoir regardé, garder ce que les Nouveautés ou la doc référencent ; à refaire à chaque clôture de vague, rouvrir ce lot ou en créer un nouveau"
     status: done
     estimate: 0.25
+    delivered: { date: 2026-11-18, sha: a103936b6afbab48c9dd961a856788a6c7e68c9e }
     created: 2026-10-02
     started: 2026-10-30
     review: { date: 2026-10-30, verdict: "compliant — orchestré (vague 2026-10-30-1740-fi, 0 passe(s) de correction)", commit: c1cfd0bfbfdb0b59c37f49b43218b3dc0bdf86e2 }
@@ -1933,6 +1934,7 @@ lots:
     status: done
     estimate: 0.5
     visible: true
+    delivered: { date: 2026-11-18, sha: a103936b6afbab48c9dd961a856788a6c7e68c9e }
     created: 2026-11-18
     started: 2026-11-18
     review: { date: 2026-11-18, verdict: "conforme : seconde revue après b1f4a0a — 3 constats corrigés, 8/36 tests + test R2 rouges sans les corrections ; aucune vraie donnée ni vrai PIN ; garde PIN intacte", commit: b1f4a0a66714f9511abe38c8957610006c70b375 }
