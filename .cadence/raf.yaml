@@ -1964,10 +1964,11 @@ lots:
     finished: 2026-11-18
   - id: L172
     title: "Barre du bas à 390 px : « Plus » ne doit pas paraître actif sur la 404 (Nielsen 1, revue UX L169)"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-11-18
+    started: 2026-11-18
   - id: L173
     title: Titre d'onglet du détail d'un relevé « Octobre 2026 — Historique » au lieu de « Historique » seul (WCAG 2.4.2, revue UX L169)
     status: todo
