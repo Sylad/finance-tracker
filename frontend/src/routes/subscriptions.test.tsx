@@ -1,3 +1,4 @@
+import { expectPageHeading } from '@/test/page-heading';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -133,5 +134,14 @@ describe('Abonnements — revue UX (L33)', () => {
       expect(cls).toMatch(/\btext-negative-fg\b/);
       expect(cls).not.toMatch(/(^|\s)(hover:)?text-negative(\s|$)/);
     }
+  });
+});
+
+describe('Abonnements — h1 = nom de la page (L171)', () => {
+  it('le h1 est « Abonnements », le total mensuel est le chiffre clé dessous', () => {
+    state.subs = q({ data: [netflix] });
+    state.sugg = q({ data: [] });
+    render(<SubscriptionsPage />);
+    expectPageHeading('/subscriptions', /13,49\s€ \/ mois/);
   });
 });

@@ -1,3 +1,4 @@
+import { expectPageHeading } from '@/test/page-heading';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -147,5 +148,18 @@ describe('<IncomePage /> — revue UX L25', () => {
     expect(screen.getByText('Aucun revenu récurrent détecté pour l’instant.')).toBeInTheDocument();
     expect(screen.queryByText(/crédit récurrent/)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Importer un relevé' })).toHaveAttribute('href', '/upload');
+  });
+});
+
+describe('<IncomePage /> — h1 = nom de la page (L171)', () => {
+  it('le h1 est « Revenus », le total mensuel est le chiffre clé dessous', () => {
+    setData([credit({ id: 'a', monthlyAmount: 500 })]);
+    render(<IncomePage />);
+    expectPageHeading('/income', /500,00\s€ \/ mois/);
+  });
+  it('sans revenu, le h1 reste « Revenus »', () => {
+    setData([]);
+    render(<IncomePage />);
+    expectPageHeading('/income');
   });
 });

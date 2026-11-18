@@ -1,3 +1,4 @@
+import { expectPageHeading } from '@/test/page-heading';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { LoansPage } from './loans';
@@ -102,5 +103,13 @@ describe('<LoansPage /> — suggestion en attente signalée en haut (L139)', () 
     state.suggestions = [];
     render(<LoansPage />);
     expect(screen.queryByText(/à valider/)).toBeNull();
+  });
+});
+
+describe('<LoansPage /> — h1 = nom de la page (L171)', () => {
+  it('le h1 est « Crédits », la charge mensuelle est le chiffre clé dessous', () => {
+    state.loans = [{ id: 'a', name: 'a', type: 'classic', monthlyPayment: 250, isActive: true }];
+    render(<LoansPage />);
+    expectPageHeading('/loans', /250,00\s€ \/ mois/);
   });
 });

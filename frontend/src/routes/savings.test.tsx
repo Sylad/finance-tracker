@@ -1,3 +1,4 @@
+import { expectPageHeading } from '@/test/page-heading';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -138,5 +139,13 @@ describe('<SavingsPage /> — mouvements du compte (L123)', () => {
     state.items = [account({ movements: [] })];
     render(<SavingsPage />);
     expect(screen.queryByRole('button', { name: /Mouvements/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('<SavingsPage /> — h1 = nom de la page (L171)', () => {
+  it('le h1 est « Comptes épargne », le total est le chiffre clé dessous', () => {
+    state.items = [account({ id: 'a', currentBalance: 1234 })];
+    render(<SavingsPage />);
+    expectPageHeading('/savings', /1\s?234,00\s€/);
   });
 });

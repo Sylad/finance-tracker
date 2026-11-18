@@ -47,7 +47,7 @@ export function SavingsPage() {
   if (isError && !data) {
     return (
       <>
-        <PageHeader eyebrow="Comptes épargne" title="Épargne" />
+        <PageHeader title="Comptes épargne" />
         <ErrorState
           message="Impossible de charger les comptes épargne."
           onRetry={() => { void refetch(); }}
@@ -69,8 +69,8 @@ export function SavingsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Comptes épargne"
-        title={formatEUR(total)}
+        title="Comptes épargne"
+        figure={formatEUR(total)}
         subtitle={`${items.length} compte${items.length > 1 ? 's' : ''} suivi${items.length > 1 ? 's' : ''}`}
         actions={
           <button onClick={() => { setCreating(true); setEditing(null); }} className="btn-primary">

@@ -115,8 +115,8 @@ export function ExpensesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Dépenses"
-        title={data ? `${formatEUR(data.totalDebits)} de retraits` : 'Dépenses'}
+        title="Dépenses"
+        figure={data ? `${formatEUR(data.totalDebits)} de retraits` : undefined}
         subtitle={data ? `Relevé de ${monthLabel(data.monthId).toLowerCase()} — crédits, abonnements et opérations neutres isolés` : ''}
         actions={
           <div className="flex flex-wrap gap-2 items-center">

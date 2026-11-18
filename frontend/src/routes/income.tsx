@@ -80,7 +80,7 @@ export function IncomePage() {
   if (isError && !data) {
     return (
       <>
-        <PageHeader eyebrow="Revenus" title="Revenus" />
+        <PageHeader title="Revenus" />
         <ErrorState
           message="Impossible de charger les revenus récurrents."
           onRetry={() => { void refetch(); }}
@@ -102,7 +102,7 @@ export function IncomePage() {
 
   return (
     <>
-      <PageHeader eyebrow="Revenus" title={`${formatEUR(total)} / mois`} subtitle={subtitle} />
+      <PageHeader title="Revenus" figure={`${formatEUR(total)} / mois`} subtitle={subtitle} />
 
       {items.length === 0 ? (
         <EmptyState

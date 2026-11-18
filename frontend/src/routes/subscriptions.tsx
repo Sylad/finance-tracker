@@ -114,7 +114,7 @@ export function SubscriptionsPage() {
   if (subs.isError && !subs.data) {
     return (
       <>
-        <PageHeader eyebrow="Abonnements & factures" title="Abonnements" />
+        <PageHeader title="Abonnements" />
         <ErrorState
           message="Impossible de charger les abonnements."
           onRetry={() => { void subs.refetch(); }}
@@ -228,8 +228,8 @@ export function SubscriptionsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Abonnements & factures"
-        title={`${formatEUR(totalMonthly)} / mois`}
+        title="Abonnements"
+        figure={`${formatEUR(totalMonthly)} / mois`}
         subtitle={`${active.length} abonnement${active.length > 1 ? 's' : ''} actif${active.length > 1 ? 's' : ''}${pendingSugg.length > 0 ? ` · ${pendingSugg.length} suggestion${pendingSugg.length > 1 ? 's' : ''} à trier` : ''}`}
         actions={
           <>

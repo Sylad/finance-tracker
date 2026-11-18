@@ -1,3 +1,4 @@
+import { expectPageHeading } from '@/test/page-heading';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -55,5 +56,13 @@ describe('ExpensesPage — choix du mois (L84)', () => {
     pending.release!();
     await waitFor(() => expect(screen.getByText(/Relevé de août 2026/)).toBeTruthy());
     expect(document.activeElement).toBe(select);
+  });
+});
+
+describe('ExpensesPage — h1 = nom de la page (L171)', () => {
+  it('le h1 est « Dépenses », le total des retraits est le chiffre clé dessous', async () => {
+    renderPage();
+    await screen.findByTestId('page-key-figure');
+    expectPageHeading('/expenses', /100,00\s€ de retraits/);
   });
 });
