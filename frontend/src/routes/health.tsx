@@ -150,7 +150,9 @@ function BlockCard({
       {children}
       {detailEntries.length > 0 && (
         <details className="mt-3 text-xs text-fg-dim">
-          <summary className="cursor-pointer select-none hover:text-fg-muted">Détails</summary>
+          {/* L174 (WCAG 2.5.8) : 24 px de haut (py-1 autour d'une ligne de 16 px), -my-1 rend les
+              4 px gagnés en haut et en bas : la carte garde sa hauteur, ouverte comme fermée. */}
+          <summary className="-my-1 py-1 cursor-pointer select-none hover:text-fg-muted">Détails</summary>
           <div className="mt-2 space-y-1">
             {detailEntries.map(([k, v]) => (
               <div key={k} className="flex items-center justify-between gap-3">

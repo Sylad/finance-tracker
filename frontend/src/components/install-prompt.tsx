@@ -58,7 +58,9 @@ export function InstallPrompt() {
           <button onClick={onDismiss} className="btn-ghost text-xs">Plus tard</button>
         </div>
       </div>
-      <button onClick={onDismiss} className="text-fg-muted hover:text-fg shrink-0" aria-label="Fermer">
+      {/* L174 (WCAG 2.5.8) : zone cliquable de 24 × 24 px (p-1 autour de l'icône de 16 px) ;
+          la marge négative -m-1 rend les 4 px gagnés de chaque côté : la mise en page ne bouge pas. */}
+      <button onClick={onDismiss} className="-m-1 p-1 rounded text-fg-muted hover:text-fg shrink-0" aria-label="Fermer">
         <X className="h-4 w-4" />
       </button>
     </div>
