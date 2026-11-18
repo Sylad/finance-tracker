@@ -1964,7 +1964,7 @@ lots:
     finished: 2026-11-18
   - id: L172
     title: "Barre du bas à 390 px : « Plus » ne doit pas paraître actif sur la 404 (Nielsen 1, revue UX L169)"
-    status: doing
+    status: done
     estimate: 0.25
     visible: true
     created: 2026-11-18
@@ -1973,6 +1973,7 @@ lots:
     ux: { date: 2026-11-18, verdict: "conforme : grille 5/5, aucun onglet allumé sur 404, /plans, /historyx ; « Plus » seul sur /loans, /plan, /about, /nouveautes ; captures 375-1440 vues par le lead" }
     notes:
       - { date: 2026-11-18, text: "Revue UX 18-11, mineur antérieur au lot : aucun aria-current dans la barre du bas quand « Plus » est allumé (/loans, /plan, /about, /nouveautes) — un lecteur d'écran n'apprend pas la page courante (WCAG 1.3.1) ; correctif S : texte sr-only dans « Plus »" }
+    finished: 2026-11-18
   - id: L173
     title: Titre d'onglet du détail d'un relevé « Octobre 2026 — Historique » au lieu de « Historique » seul (WCAG 2.4.2, revue UX L169)
     status: todo

@@ -663,8 +663,9 @@
     {
       "id": "L172",
       "title": "Page introuvable : plus aucun onglet allumé au téléphone",
-      "status": "doing",
-      "started": "2026-11-18"
+      "status": "done",
+      "started": "2026-11-18",
+      "finished": "2026-11-18"
     }
   ]
 }
