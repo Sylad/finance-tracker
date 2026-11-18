@@ -1935,6 +1935,30 @@ lots:
     visible: true
     created: 2026-11-18
     started: 2026-11-18
+  - id: L170
+    title: "Graduations et légendes des graphiques à 12 px minimum (revue UX L169) : fontSize 9 à 11 dans amortization-chart, yearly-charts, loans-monthly-chart, balance-trend, score-trend…"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-11-18
+  - id: L171
+    title: "Un h1 qui nomme la page sur Revenus, Épargne, Crédits, Abonnements et Dépenses (WCAG 2.4.6, revue UX L169) : le h1 est aujourd'hui un montant"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-11-18
+  - id: L172
+    title: "Barre du bas à 390 px : « Plus » ne doit pas paraître actif sur la 404 (Nielsen 1, revue UX L169)"
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-11-18
+  - id: L173
+    title: Titre d'onglet du détail d'un relevé « Octobre 2026 — Historique » au lieu de « Historique » seul (WCAG 2.4.2, revue UX L169)
+    status: todo
+    estimate: 0.25
+    visible: true
+    created: 2026-11-18
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
