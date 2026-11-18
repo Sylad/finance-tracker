@@ -1942,10 +1942,11 @@ lots:
     finished: 2026-11-18
   - id: L170
     title: "Graduations et légendes des graphiques à 12 px minimum (revue UX L169) : fontSize 9 à 11 dans amortization-chart, yearly-charts, loans-monthly-chart, balance-trend, score-trend…"
-    status: todo
+    status: doing
     estimate: 0.25
     visible: true
     created: 2026-11-18
+    started: 2026-11-18
   - id: L171
     title: "Un h1 qui nomme la page sur Revenus, Épargne, Crédits, Abonnements et Dépenses (WCAG 2.4.6, revue UX L169) : le h1 est aujourd'hui un montant"
     status: todo
