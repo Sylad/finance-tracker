@@ -37,9 +37,9 @@ describe('<ScoreBadge />', () => {
 });
 
 describe('<ScoreRing /> petite taille (L21/t12)', () => {
-  it('« / 100 » jamais sous 11 px (anneau 96 px : 7,7 px avant)', () => {
+  it('« / 100 » jamais sous 12 px (anneau 96 px : 7,7 px avant L21, 11 px avant L169)', () => {
     render(<ScoreRing score={75} size={96} />);
-    expect(screen.getByText('/ 100')).toHaveStyle({ fontSize: '11px' });
+    expect(screen.getByText('/ 100')).toHaveStyle({ fontSize: '12px' });
   });
   it('grand anneau : proportionnel (180 px → 14,4 px)', () => {
     render(<ScoreRing score={75} size={180} />);

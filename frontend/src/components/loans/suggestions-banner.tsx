@@ -70,7 +70,7 @@ export function SuggestionsBanner({ onAccept }: { onAccept: (s: LoanSuggestion) 
                   {s.label}
                   {s.installment && n != null && (
                     <span
-                      className="inline-flex items-center px-1.5 py-0.5 rounded bg-accent/15 text-accent-bright text-[10px] font-mono font-semibold border border-accent/30 shrink-0"
+                      className="inline-flex items-center px-1.5 py-0.5 rounded bg-accent/15 text-accent-bright text-xs font-mono font-semibold border border-accent/30 shrink-0"
                       title={
                         isEstimated
                           ? `${n} échéances estimées — seules ${s.installment.dates.length} ont été observées à ce jour`

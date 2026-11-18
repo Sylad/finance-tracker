@@ -18,6 +18,11 @@ describe('<LoginPage /> — revue UX L22', () => {
     verifyPin.mockReset();
   });
 
+  it('L169 — la page de connexion pose son titre d’onglet', () => {
+    render(<LoginPage />);
+    expect(document.title).toBe('Connexion — Finance Tracker');
+  });
+
   it('t1 — le PIN invalide est annoncé (role alert) et relié au champ', async () => {
     verifyPin.mockResolvedValue(false);
     const user = userEvent.setup();

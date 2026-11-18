@@ -10,7 +10,7 @@ const SORTIES_STROKE = 'hsl(0 84% 60%)';
 /** Légende du « Cash flow mensuel » : reproduit le trait et le marqueur de chaque courbe (WCAG 1.4.1). */
 export function CashFlowLegend() {
   return (
-    <ul data-testid="cashflow-legend" className="mt-1 flex justify-center gap-4 text-[11px] text-fg-dim">
+    <ul data-testid="cashflow-legend" className="mt-1 flex justify-center gap-4 text-xs text-fg-dim">
       <li className="flex items-center gap-1.5">
         <svg width={24} height={10} aria-hidden="true">
           <line x1={0} y1={5} x2={24} y2={5} stroke={ENTREES_STROKE} strokeWidth={2} />

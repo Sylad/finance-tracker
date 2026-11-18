@@ -58,7 +58,14 @@ describe('<AppShell /> (L40)', () => {
     expect(pageTitle('/')).toBe('Tableau de bord — Finance Tracker');
     expect(pageTitle('/plan')).toBe('Plan de travail — Finance Tracker');
     expect(pageTitle('/history/2026-03')).toBe('Historique — Finance Tracker');
-    expect(pageTitle('/inconnue')).toBe('Finance Tracker');
+    expect(pageTitle('/inconnue')).toBe('Page introuvable — Finance Tracker');
+  });
+
+  it('R2 (L169) — toute route du routeur a son titre : « Page introuvable » reste réservé au 404', async () => {
+    const { router } = await import('@/router');
+    const paths = Object.keys(router.routesByPath).filter((p) => !['/login', '/recurring'].includes(p));
+    expect(paths.length).toBeGreaterThan(15);
+    for (const p of paths) expect(pageTitle(p.replace('$id', '2026-03')), p).not.toMatch(/introuvable/);
   });
 
   it('R3 — le bandeau démo (forcé) est annoncé en role=status', async () => {
@@ -81,8 +88,8 @@ describe('<AppShell /> (L40)', () => {
     await renderShell();
     const roots = [document.querySelector('aside'), document.querySelector('nav[aria-label="Navigation principale"]')] as HTMLElement[];
     for (const root of roots) {
-      const small = [...root.querySelectorAll<HTMLElement>('[class*="text-[10px]"], [class*="text-[11px]"]')]
-        .filter((el) => !el.hasAttribute('data-news-badge') && !el.closest('kbd'));
+      const small = [...root.querySelectorAll<HTMLElement>('[class*="text-[9px]"], [class*="text-[10px]"], [class*="text-[11px]"]')]
+        .filter((el) => !el.hasAttribute('data-news-badge'));
       expect(small.map((e) => e.textContent)).toEqual([]);
     }
   });

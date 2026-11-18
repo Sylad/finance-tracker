@@ -164,7 +164,7 @@ function Group({ id, title, hint, lots, empty, slugs, target, footer }: {
 }
 
 const NewsLink = ({ children }: { children: React.ReactNode }) => (
-  <Link to="/nouveautes" className="text-accent-bright hover:underline">{children}</Link>
+  <Link to="/nouveautes" className="text-accent-bright underline underline-offset-2 hover:text-accent">{children}</Link>
 );
 
 export function PlanPage() {

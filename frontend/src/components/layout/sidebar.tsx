@@ -139,7 +139,7 @@ export function Sidebar() {
             title="Ouvrir la recherche rapide (⌘K / Ctrl+K)"
           >
             <span>Recherche rapide</span>
-            <kbd className="font-sans normal-case text-[10px] tracking-normal border border-border rounded px-1.5 py-[1px] text-fg-muted">⌘K</kbd>
+            <kbd className="font-sans normal-case text-xs tracking-normal border border-border rounded px-1.5 py-[1px] text-fg-muted">⌘K</kbd>
           </button>
           <div className="px-3 pt-2 text-xs uppercase tracking-[0.14em] text-fg-dim">v2.0</div>
         </div>

@@ -177,7 +177,7 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
           {columns.map((_, i) => {
             const tick = monthTicks.find((t) => t.col === i);
             return (
-              <div key={i} style={{ width: 14 }} className="text-[11px] text-fg-dim h-4">
+              <div key={i} style={{ width: 14 }} className="text-xs text-fg-dim h-4">
                 {tick?.label ?? ''}
               </div>
             );
@@ -187,7 +187,7 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
         <div className="flex">
           <div className="flex flex-col mr-1.5" style={{ width: 16 }}>
             {DAY_LABELS.map((d, i) => (
-              <div key={i} className="h-3.5 text-[11px] text-fg-dim flex items-center" style={{ marginBottom: 2 }}>
+              <div key={i} className="h-3.5 text-xs text-fg-dim flex items-center" style={{ marginBottom: 2 }}>
                 {i % 2 === 1 ? d : ''}
               </div>
             ))}
@@ -228,7 +228,7 @@ export function SpendingHeatmap({ byDay, from, to }: Props) {
             : 'Touche ou survole une case pour lire le jour et son montant.'}
         </div>
         {/* Legend */}
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mt-3 text-[11px] text-fg-dim">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mt-3 text-xs text-fg-dim">
           <div>
             {daysCovered} jour{daysCovered > 1 ? 's' : ''} avec débit · total {formatEUR(total)}
           </div>

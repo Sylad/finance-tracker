@@ -192,7 +192,7 @@ export function CommandPalette() {
             placeholder="Aller à un mois, une page, lancer une action…"
             className="bg-transparent flex-1 outline-none text-sm text-fg placeholder:text-fg-dim"
           />
-          <kbd className="text-[10px] text-fg-dim border border-border rounded px-1.5 py-0.5 hidden sm:inline">esc</kbd>
+          <kbd className="text-xs text-fg-dim border border-border rounded px-1.5 py-0.5 hidden sm:inline">esc</kbd>
         </div>
         <div className="max-h-[50vh] overflow-auto py-2">
           {filtered.length === 0 && (
@@ -202,7 +202,7 @@ export function CommandPalette() {
           )}
           {(['navigation', 'mois', 'actions'] as const).map((g) => groups[g].length > 0 && (
             <div key={g} className="mb-2">
-              <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wider text-fg-dim font-semibold">
+              <div className="px-4 pt-2 pb-1 text-xs uppercase tracking-wider text-fg-dim font-semibold">
                 {g === 'mois' ? 'Mois' : g === 'navigation' ? 'Navigation' : 'Actions'}
               </div>
               {groups[g].map((a) => {
@@ -221,14 +221,14 @@ export function CommandPalette() {
                   >
                     <Icon className="h-4 w-4 shrink-0 text-fg-muted" />
                     <span className="flex-1 truncate">{a.label}</span>
-                    {a.hint && <span className="text-[10px] text-fg-dim truncate max-w-xs">{a.hint}</span>}
+                    {a.hint && <span className="text-xs text-fg-dim truncate max-w-xs">{a.hint}</span>}
                   </button>
                 );
               })}
             </div>
           ))}
         </div>
-        <div className="px-4 py-2 border-t border-border text-[10px] text-fg-dim flex items-center justify-between">
+        <div className="px-4 py-2 border-t border-border text-xs text-fg-dim flex items-center justify-between">
           <span><kbd className="border border-border rounded px-1">↑</kbd> <kbd className="border border-border rounded px-1">↓</kbd> naviguer · <kbd className="border border-border rounded px-1">↵</kbd> sélectionner</span>
           <span><kbd className="border border-border rounded px-1">⌘ K</kbd> / <kbd className="border border-border rounded px-1">Ctrl K</kbd></span>
         </div>

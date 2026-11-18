@@ -9,7 +9,7 @@ export function RecentStatements({ summaries }: { summaries: StatementSummary[] 
     <div className="card p-4 md:p-5 lg:col-span-2">
       <div className="flex items-center justify-between mb-4">
         <div className="stat-label">Relevés récents</div>
-        <Link to="/history" className="text-xs text-accent-bright hover:text-accent flex items-center gap-1 font-medium">
+        <Link to="/history" className="text-xs text-accent-bright hover:text-accent flex items-center gap-1 font-medium min-h-6">
           Voir tout <ArrowRight className="h-3 w-3" />
         </Link>
       </div>

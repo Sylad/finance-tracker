@@ -20,7 +20,7 @@ export function ClosedCard({ loan, onEdit, onDelete }: { loan: Loan; onEdit: () 
               {loan.contractRef && <span className="text-xs text-fg-dim font-mono ml-2">#{loan.contractRef}</span>}
             </div>
             {loan.rumRefs && loan.rumRefs.length > 0 && (
-              <div className="text-[11px] text-fg-muted font-mono mt-0.5 break-all" title="Mandats SEPA (RUM) connus pour ce crédit">
+              <div className="text-xs text-fg-muted font-mono mt-0.5 break-all" title="Mandats SEPA (RUM) connus pour ce crédit">
                 RUM: {loan.rumRefs.join(' · ')}
               </div>
             )}

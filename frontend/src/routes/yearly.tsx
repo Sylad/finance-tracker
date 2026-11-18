@@ -247,7 +247,8 @@ export function YearlyPage() {
 
           <section className="card p-5 mt-6">
             <h2 className="stat-label mb-4">Détail mois par mois</h2>
-            <div className="overflow-x-auto">
+            {/* Région défilante au téléphone : focusable pour défiler au clavier (WCAG 2.1.1). */}
+            <div className="overflow-x-auto rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" tabIndex={0} role="region" aria-label="Détail mois par mois">
               <table className="w-full text-sm tabular">
                 <caption className="sr-only">Détail mois par mois</caption>
                 <thead>

@@ -221,7 +221,7 @@ function SegmentedControl({
             disabled={disabled}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider transition-colors',
+              'px-2.5 py-1 text-xs font-semibold uppercase tracking-wider transition-colors',
               active ? `bg-surface-3 ${opt.tone}` : 'text-fg-dim hover:text-fg hover:bg-surface-2',
               disabled && 'opacity-50 cursor-not-allowed',
             )}

@@ -67,7 +67,7 @@ function IncomeRow({ c, ended = false }: { c: RecurringCredit; ended?: boolean }
         <div className={cn('font-display text-base font-semibold', ended ? 'text-fg-muted' : 'text-positive')}>
           {formatEUR(c.monthlyAmount)}
         </div>
-        <div className="text-[10px] text-fg-dim uppercase tracking-wider">/ mois</div>
+        <div className="text-xs text-fg-dim uppercase tracking-wider">/ mois</div>
       </div>
     </div>
   );

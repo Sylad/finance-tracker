@@ -181,10 +181,12 @@ export function ExpensesPage() {
         <div className="grid lg:grid-cols-2 gap-4 mb-4">
           <div className="card p-5 min-w-0">
             <h3 className="font-display text-sm font-semibold text-fg-bright mb-2">Répartition des retraits</h3>
-            <div className="h-64">
+            {/* Le camembert double la légende cliquable ci-dessous : masqué aux lecteurs d'écran et hors tabulation (WCAG 1.1.1, 4.1.2). */}
+            <div className="h-64" aria-hidden="true">
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
+                    rootTabIndex={-1}
                     data={slices}
                     dataKey="value"
                     nameKey="label"
@@ -220,7 +222,7 @@ export function ExpensesPage() {
                     <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: s.color }} />
                     <span className="flex-1 text-left truncate">{s.label}</span>
                     <span className="font-mono text-xs">{formatEUR(s.value)}</span>
-                    <span className="text-[10px] text-fg-dim w-12 text-right">
+                    <span className="text-xs text-fg-dim w-12 text-right">
                       {(data.totalDebits > 0 ? (s.value / data.totalDebits) * 100 : 0).toFixed(1).replace('.', ',')} %
                     </span>
                   </button>
@@ -290,7 +292,7 @@ export function ExpensesPage() {
                     <li key={s.key} className={cn('rounded-md border px-3 py-2', s.cuttable ? 'border-accent/30 bg-accent/5' : 'border-border')}>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="flex-1 truncate text-fg" title={s.label}>{s.label}</span>
-                        {s.cuttable && <span className="text-[10px] uppercase tracking-wide text-accent border border-accent/40 rounded px-1.5">coupable</span>}
+                        {s.cuttable && <span className="text-xs uppercase tracking-wide text-accent border border-accent/40 rounded px-1.5">coupable</span>}
                         <span className="font-mono text-xs text-fg-bright whitespace-nowrap">~{formatEUR(s.monthlyEstimate)}/mois</span>
                       </div>
                       <div className="text-xs text-fg-muted mt-0.5">

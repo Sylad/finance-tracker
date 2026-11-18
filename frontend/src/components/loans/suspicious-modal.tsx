@@ -123,7 +123,7 @@ export function SuspiciousModal({ onClose }: Props) {
                             <span className="text-fg-dim">· dernière {formatDate(l.lastOccurrenceDate)}</span>
                           )}
                         </div>
-                        <div className="text-[11px] text-warning mt-1 italic">{l.reason}</div>
+                        <div className="text-xs text-warning mt-1 italic">{l.reason}</div>
                       </div>
                       <button
                         onClick={() => handleConvert(l.id, l.name)}

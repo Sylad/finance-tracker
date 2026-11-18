@@ -197,7 +197,7 @@ function GoalCard({ g, onDelete }: { g: GoalWithProgress; onDelete: () => void }
           <div className="font-display text-lg font-semibold text-fg-bright mt-1">{g.name}</div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={cn('text-[10px] uppercase tracking-wider font-bold border rounded-full px-2 py-0.5', projColor)}>
+          <span className={cn('text-xs uppercase tracking-wider font-bold border rounded-full px-2 py-0.5', projColor)}>
             {projLabel}
           </span>
           <button type="button" onClick={onDelete} className="text-fg-muted hover:text-negative p-1" aria-label={`Supprimer l’objectif ${g.name}`} title="Supprimer">

@@ -151,7 +151,7 @@ export function StatementDetailPage() {
     <>
       <Link
         to="/history"
-        className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg mb-4"
+        className="inline-flex items-center gap-2 min-h-6 text-sm text-fg-muted hover:text-fg mb-4"
       >
         <ArrowLeft className="h-4 w-4" /> Historique
       </Link>
@@ -211,7 +211,7 @@ export function StatementDetailPage() {
               <div className="stat-label flex items-center gap-2">
                 Score
                 {scoreDelta != null && scoreDelta !== 0 && (
-                  <span className={cn('text-[10px] font-semibold tabular', scoreDelta > 0 ? 'text-positive' : 'text-negative')}>
+                  <span className={cn('text-xs font-semibold tabular', scoreDelta > 0 ? 'text-positive' : 'text-negative')}>
                     {scoreDelta > 0 ? '↑+' : '↓'}{scoreDelta} pts
                   </span>
                 )}
@@ -264,10 +264,12 @@ export function StatementDetailPage() {
           <h2 className="stat-label mb-4">Répartition des dépenses</h2>
           {categoryBreakdown.length > 0 ? (
             <>
-              <div className="h-44">
+              {/* Le camembert double la liste de catégories ci-dessous : masqué aux lecteurs d'écran et hors tabulation (WCAG 1.1.1, 4.1.2). */}
+              <div className="h-44" aria-hidden="true">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
+                      rootTabIndex={-1}
                       data={categoryBreakdown}
                       dataKey="value"
                       nameKey="label"
@@ -325,7 +327,7 @@ export function StatementDetailPage() {
                       <span className="h-2.5 w-2.5 rounded-sm shrink-0 bg-fg-dim" />
                       <span className="text-fg-muted truncate italic">{CATEGORY_LABELS[cat]}</span>
                     </span>
-                    <span className="text-positive text-[10px] tabular">disparu</span>
+                    <span className="text-positive text-xs tabular">disparu</span>
                   </div>
                 ))}
               </div>
@@ -345,7 +347,7 @@ export function StatementDetailPage() {
               {activeCat && (
                 <button
                   onClick={() => setActiveCat(null)}
-                  className="ml-2 badge-info text-[10px]"
+                  className="ml-2 badge-info text-xs"
                 >
                   {CATEGORY_LABELS[activeCat]} ✕
                 </button>
@@ -471,15 +473,15 @@ function categoriesAbsentThisMonth(
 
 function CategoryDelta({ prevValue, delta, deltaPct }: { prevValue: number | null; delta: number | null; deltaPct: number | null }) {
   if (prevValue == null) {
-    return <span className="text-[10px] uppercase tracking-wider text-positive font-semibold">nouveau</span>;
+    return <span className="text-xs uppercase tracking-wider text-positive font-semibold">nouveau</span>;
   }
   if (delta == null || Math.abs(delta) < 0.01) {
-    return <span className="text-[10px] tabular text-fg-dim">=</span>;
+    return <span className="text-xs tabular text-fg-dim">=</span>;
   }
   const up = delta > 0;
   // For expenses, going UP is bad (red), going DOWN is good (green).
   return (
-    <span className={cn('text-[10px] tabular font-semibold', up ? 'text-negative' : 'text-positive')}>
+    <span className={cn('text-xs tabular font-semibold', up ? 'text-negative' : 'text-positive')}>
       {up ? '↑' : '↓'}{deltaPct != null ? `${Math.abs(Math.round(deltaPct))}%` : formatEUR(Math.abs(delta))}
     </span>
   );
@@ -487,13 +489,13 @@ function CategoryDelta({ prevValue, delta, deltaPct }: { prevValue: number | nul
 
 function DeltaBadge({ delta, pct, prevMonth, invertColors }: { delta: number; pct: number | null; prevMonth: string; invertColors?: boolean }) {
   if (Math.abs(delta) < 0.01) {
-    return <div className="text-[10px] text-fg-dim mt-1">= vs {prevMonth}</div>;
+    return <div className="text-xs text-fg-dim mt-1">= vs {prevMonth}</div>;
   }
   const up = delta > 0;
   // For debits we invert: more debits = bad (red), less = good (green).
   const isBad = invertColors ? up : !up;
   return (
-    <div className={cn('text-[10px] tabular font-semibold mt-1', isBad ? 'text-negative' : 'text-positive')}>
+    <div className={cn('text-xs tabular font-semibold mt-1', isBad ? 'text-negative' : 'text-positive')}>
       {up ? '↑+' : '↓'}{pct != null ? `${Math.abs(Math.round(pct))}%` : ''} {formatEUR(Math.abs(delta))} vs {prevMonth}
     </div>
   );

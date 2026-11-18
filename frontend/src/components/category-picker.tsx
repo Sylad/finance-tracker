@@ -261,7 +261,7 @@ export function CategoryPicker({ statementId, tx, onClose }: Props) {
                     value={pattern}
                     onChange={(e) => setPattern(e.target.value)}
                   />
-                  <div className="text-[10px] text-fg-dim mt-1">
+                  <div className="text-xs text-fg-dim mt-1">
                     Sensible à la casse désactivée (flag i). Ajusté à la description normalisée par défaut.
                   </div>
                 </div>}

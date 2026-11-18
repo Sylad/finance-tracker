@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Loader2, Lock } from 'lucide-react';
 import { authStore } from '@/lib/auth';
@@ -14,6 +14,8 @@ export function LoginPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const submitting = useRef(false);
   const errorId = useId();
+  // Hors gabarit (AppShell) : la page de connexion pose son propre titre d'onglet (WCAG 2.4.2).
+  useEffect(() => { document.title = 'Connexion — Finance Tracker'; }, []);
 
   const fail = (message: string) => {
     submitting.current = false;
@@ -98,7 +100,7 @@ export function LoginPage() {
           </button>
         </form>
 
-        <div className="text-center text-[10px] uppercase tracking-[0.18em] text-fg-dim mt-6">
+        <div className="text-center text-xs uppercase tracking-[0.18em] text-fg-dim mt-6">
           v2.0 · Vibe coded with Claude Code
         </div>
       </div>

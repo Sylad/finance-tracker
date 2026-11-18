@@ -9,6 +9,7 @@ import { Navigate } from '@tanstack/react-router';
 import { Root } from './components/layout/root';
 import { LoadingState } from '@/components/loading-state';
 import { RouteError } from '@/components/route-error';
+import { NotFound } from '@/components/not-found';
 
 // Route components are lazy-loaded so each becomes its own chunk. The Root
 // layout shell, providers and LoadingState stay on the critical path.
@@ -248,6 +249,7 @@ export const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
   defaultErrorComponent: RouteError,
+  defaultNotFoundComponent: NotFound,
 });
 
 declare module '@tanstack/react-router' {

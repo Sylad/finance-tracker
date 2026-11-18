@@ -525,7 +525,7 @@ function SubscriptionRow({
 
 function CategoryBadge({ category }: { category: SubscriptionCategory }) {
   return (
-    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-surface-2 text-fg-muted border border-border">
+    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium uppercase tracking-wider bg-surface-2 text-fg-muted border border-border">
       {SUBSCRIPTION_CATEGORY_LABELS[category]}
     </span>
   );

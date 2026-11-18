@@ -142,29 +142,29 @@ export function HistoryPage() {
                           <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
                           {formatEUR(s.totalCredits)}
                         </div>
-                        <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5">crédits</div>
+                        <div className="text-xs text-fg-dim uppercase tracking-wider mt-0.5">crédits</div>
                       </div>
                       <div className="col-span-3 sm:col-span-2 text-sm tabular">
                         <div className="text-negative flex items-center gap-1">
                           <ArrowDownRight className="h-3 w-3" aria-hidden="true" />
                           {formatEUR(s.totalDebits)}
                         </div>
-                        <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5">débits</div>
+                        <div className="text-xs text-fg-dim uppercase tracking-wider mt-0.5">débits</div>
                       </div>
                       <div className="hidden sm:block sm:col-span-2 text-sm tabular text-fg">
                         <span className={net >= 0 ? 'text-positive' : 'text-negative'}>
                           {formatEUR(net, true)}
                         </span>
-                        <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5">net</div>
+                        <div className="text-xs text-fg-dim uppercase tracking-wider mt-0.5">net</div>
                       </div>
                       <div className="hidden sm:block sm:col-span-2 text-sm tabular text-fg-bright">
                         {formatEUR(s.closingBalance)}
-                        <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5">solde</div>
+                        <div className="text-xs text-fg-dim uppercase tracking-wider mt-0.5">solde</div>
                       </div>
                       <div className="col-span-3 sm:col-span-2 flex items-center justify-end gap-2">
                         <div className="text-right">
                           <ScoreBadge score={s.healthScore} />
-                          <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5 whitespace-nowrap">score /100</div>
+                          <div className="text-xs text-fg-dim uppercase tracking-wider mt-0.5 whitespace-nowrap">score /100</div>
                         </div>
                         <ArrowRight className="hidden sm:block h-3.5 w-3.5 text-fg-dim" aria-hidden="true" />
                       </div>

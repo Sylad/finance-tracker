@@ -170,7 +170,7 @@ export function AutoCategorizeModal({ statementId, onClose }: Props) {
                   {previewData.suggestions.length > 1 ? 's' : ''} de Claude
                 </span>
                 {previewData.warnings.length > 0 && (
-                  <span className="badge-info text-[10px] cursor-help" title={previewData.warnings.join('\n')}>
+                  <span className="badge-info text-xs cursor-help" title={previewData.warnings.join('\n')}>
                     {previewData.warnings.length} avertissement{previewData.warnings.length > 1 ? 's' : ''}
                   </span>
                 )}
@@ -246,7 +246,7 @@ function PreviewCta({ onLaunch }: { onLaunch: () => void }) {
         Claude va analyser chaque transaction "Autre" et te proposer une catégorie + une règle réutilisable.
         Tu garderas le dernier mot avant d'appliquer quoi que ce soit.
       </p>
-      <p className="text-[11px] text-fg-dim max-w-md">
+      <p className="text-xs text-fg-dim max-w-md">
         Coût Anthropic : ~0,01-0,05 € par relevé. Désactivé en mode démo.
       </p>
       <button onClick={onLaunch} className="btn-primary text-sm mt-2">
@@ -307,11 +307,11 @@ function SuggestionRow({
         <div className="col-span-7 min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="text-sm font-medium text-fg truncate">{row.s.description}</span>
-            <span className={cn('text-[10px] uppercase tracking-wider font-semibold', tone.color)}>
+            <span className={cn('text-xs uppercase tracking-wider font-semibold', tone.color)}>
               {tone.label} ({Math.round(row.s.confidence * 100)}%)
             </span>
           </div>
-          <div className="text-[11px] text-fg-dim mt-0.5">
+          <div className="text-xs text-fg-dim mt-0.5">
             {formatDate(row.s.date)} · <span className="tabular">{formatEUR(row.s.amount)}</span>
           </div>
           <div className="text-xs text-fg-muted mt-1 italic line-clamp-2">{row.s.reasoning}</div>
@@ -329,7 +329,7 @@ function SuggestionRow({
             ))}
           </select>
           {row.s.proposedRulePattern && !contradicts && (
-            <label className="flex items-start gap-1.5 cursor-pointer text-[11px] text-fg-muted">
+            <label className="flex items-start gap-1.5 cursor-pointer text-xs text-fg-muted">
               <input
                 type="checkbox"
                 checked={row.createRule}
@@ -338,19 +338,19 @@ function SuggestionRow({
               />
               <span>
                 Créer la règle{' '}
-                <code className="text-[10px] bg-surface-3 px-1 py-0.5 rounded text-fg">
+                <code className="text-xs bg-surface-3 px-1 py-0.5 rounded text-fg">
                   {row.rulePattern || row.s.proposedRulePattern}
                 </code>
               </span>
             </label>
           )}
           {contradicts && (
-            <p className="text-[11px] text-fg-dim">
+            <p className="text-xs text-fg-dim">
               Pas de règle : cette catégorie contredit le marchand reconnu.
             </p>
           )}
           {row.createRule && (
-            <label className="flex items-start gap-1.5 cursor-pointer text-[11px] text-fg-muted ml-4">
+            <label className="flex items-start gap-1.5 cursor-pointer text-xs text-fg-muted ml-4">
               <input
                 type="checkbox"
                 checked={row.replayAll}

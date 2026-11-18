@@ -167,7 +167,7 @@ export function CategoryRulesPage() {
           personnelles supplémentaires utilisables dans le picker et les règles.
         </p>
 
-        <div className="text-[10px] uppercase tracking-wider text-fg-dim font-semibold mb-2">
+        <div className="text-xs uppercase tracking-wider text-fg-dim font-semibold mb-2">
           Prédéfinies
         </div>
         <div className="flex flex-wrap gap-1.5 mb-4">
@@ -182,7 +182,7 @@ export function CategoryRulesPage() {
           ))}
         </div>
 
-        <div className="text-[10px] uppercase tracking-wider text-fg-dim font-semibold mb-2">
+        <div className="text-xs uppercase tracking-wider text-fg-dim font-semibold mb-2">
           Personnelles ({userCats.length})
         </div>
         <div className="flex flex-wrap gap-1.5 mb-3">

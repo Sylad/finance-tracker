@@ -167,7 +167,7 @@ function DedupeGroupCard({
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-display font-semibold text-fg-bright">{l.name}</span>
                       {i === 0 && (
-                        <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-accent/15 text-accent">
+                        <span className="text-xs uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-accent/15 text-accent">
                           plus récent
                         </span>
                       )}
@@ -183,7 +183,7 @@ function DedupeGroupCard({
                       <span className="text-fg-dim">· créé {formatShortDate(l.createdAt)}</span>
                     </div>
                     {l.rumRefs && l.rumRefs.length > 0 && (
-                      <div className="text-[11px] text-fg-muted font-mono mt-0.5 break-all">
+                      <div className="text-xs text-fg-muted font-mono mt-0.5 break-all">
                         RUM: {l.rumRefs.join(' · ')}
                       </div>
                     )}
@@ -251,7 +251,7 @@ function SegmentedControl({
             disabled={disabled}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider transition-colors',
+              'px-2.5 py-1 text-xs font-semibold uppercase tracking-wider transition-colors',
               active ? `bg-surface-3 ${opt.tone}` : 'text-fg-dim hover:text-fg hover:bg-surface-2',
               disabled && 'opacity-50 cursor-not-allowed',
             )}

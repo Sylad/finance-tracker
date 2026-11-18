@@ -159,11 +159,11 @@ export function ForecastPage() {
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs mb-3">
               <div>
-                <div className="stat-label text-[9px]">Entrées</div>
+                <div className="stat-label text-xs">Entrées</div>
                 <div className="tabular text-positive font-semibold">{formatEUR(m.income)}</div>
               </div>
               <div>
-                <div className="stat-label text-[9px]">Sorties</div>
+                <div className="stat-label text-xs">Sorties</div>
                 <div className="tabular text-negative font-semibold">{formatEUR(m.expense)}</div>
               </div>
             </div>

@@ -97,7 +97,7 @@ export function HealthChip({ loan, now }: Props) {
   const panelId = useId();
   if (!loan.health) return null;
   const cfg = LABELS[loan.health];
-  const base = `inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-mono uppercase tracking-wider ${cfg.tone}`;
+  const base = `inline-flex items-center gap-1 min-h-6 px-1.5 py-0.5 rounded border text-xs font-mono uppercase tracking-wider ${cfg.tone}`;
 
   if (loan.health === 'complete') {
     return (

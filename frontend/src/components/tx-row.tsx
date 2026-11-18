@@ -37,7 +37,7 @@ function MerchantAvatar({ merchant, fallback }: { merchant: { name: string } | n
   // Pas de logo distant (L69) : carré avec l'initiale, aucune requête tierce.
   const initial = (merchant?.name ?? fallback).trim().match(/[A-Za-z0-9]/)?.[0]?.toUpperCase() ?? '?';
   return (
-    <div className="h-6 w-6 rounded shrink-0 flex items-center justify-center bg-surface-2 text-fg-muted text-[10px] font-bold">
+    <div className="h-6 w-6 rounded shrink-0 flex items-center justify-center bg-surface-2 text-fg-muted text-xs font-bold">
       {initial}
     </div>
   );
@@ -64,8 +64,8 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
         <MerchantAvatar merchant={merchant} fallback={t.description} />
         <div className="min-w-0 flex-1">
           <div className="break-words text-fg font-medium">{merchant?.name ?? t.description}</div>
-          <div className="text-[10px] text-fg-dim uppercase tracking-wider mt-0.5 break-words">
-            {merchant ? <><span className="normal-case lowercase italic text-fg-dim/80">{t.description}</span>{' '}</> : null}
+          <div className="text-xs text-fg-dim uppercase tracking-wider mt-0.5 break-words">
+            {merchant ? <><span className="normal-case lowercase italic text-fg-dim">{t.description}</span>{' '}</> : null}
             {categoryLabelFr(t.subcategory || label)}
             {t.isRecurring && <>{' '}<span className="text-accent-bright">·&nbsp;récurrent</span></>}
           </div>
@@ -74,7 +74,7 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
       <div className="row-start-2 col-start-2 justify-self-end md:row-start-auto md:col-start-auto md:justify-self-auto md:col-span-2">
         <button
           onClick={() => onPickCategory(t)}
-          className="badge text-[10px] cursor-pointer hover:ring-1 hover:ring-accent transition"
+          className="badge text-xs min-h-6 cursor-pointer hover:ring-1 hover:ring-accent transition"
           style={{ background: `color-mix(in srgb, ${color} 12.5%, transparent)`, color: textColor }}
           title="Modifier la catégorie"
         >
@@ -88,7 +88,7 @@ export function TxRow({ t, onPickCategory }: { t: Transaction; onPickCategory: (
         <span className="whitespace-nowrap md:whitespace-normal">{formatEUR(t.amount, positive)}</span>
         {t.exceptionalAmount != null && t.exceptionalAmount > 0 && (
           <div
-            className="w-0 min-w-full md:w-auto md:min-w-0 text-[10px] font-normal text-warning normal-case"
+            className="w-0 min-w-full md:w-auto md:min-w-0 text-xs font-normal text-warning normal-case"
             title="Solde de tout compte, prime ou rappel : cette part n'entre ni dans le score, ni dans le revenu récurrent, ni dans les prévisions"
           >
             dont {formatEUR(t.exceptionalAmount)} exceptionnel
