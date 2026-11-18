@@ -1965,6 +1965,12 @@ lots:
     estimate: 0.25
     visible: true
     created: 2026-11-18
+  - id: L174
+    title: "Cibles de 16 px (QA de L169, WCAG 2.5.8) : « Fermer » du bandeau d'installation et « Détails » sur /health — zone cliquable de 24 px au moins"
+    status: todo
+    estimate: 0.1
+    visible: true
+    created: 2026-11-18
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
