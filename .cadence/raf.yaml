@@ -1958,6 +1958,8 @@ lots:
     visible: true
     created: 2026-11-18
     started: 2026-11-18
+    review: { date: 2026-11-18, verdict: "conforme : 1 seul h1 par page qui la nomme, 6 tests rouges sans la correction, 47/47 verts ; note : h1 de l'état d'erreur de Comptes épargne non testé", commit: 4b9914af6195a57361ddba2616e3534022358be3 }
+    ux: { date: 2026-11-18, verdict: "conforme (lead, captures regardées) : titre de page au-dessus du chiffre clé, qui garde sa place ; mise en page inchangée" }
   - id: L172
     title: "Barre du bas à 390 px : « Plus » ne doit pas paraître actif sur la 404 (Nielsen 1, revue UX L169)"
     status: todo
