@@ -2020,6 +2020,7 @@ lots:
     status: done
     estimate: 1
     visible: true
+    delivered: { date: 2026-11-19, sha: 6853a016977e4fe547c303eabbc0e257b47b6c06 }
     created: 2026-11-18
     started: 2026-11-18
     review: { date: 2026-11-19, verdict: "conforme : 940de1c ne régénère que les Nouveautés et le plan publiés (fichiers générés), revu par le lead le 18-11", commit: 940de1cd2cce8b45a340b1d3a8bd84499af82bb2 }
