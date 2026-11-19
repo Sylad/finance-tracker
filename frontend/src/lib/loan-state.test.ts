@@ -155,7 +155,7 @@ describe('computeLoanState — estimatedFromOccurrences + gap (with schedule)', 
     expect(state.capitalRemaining.estimatedFromOccurrences).toBe(9598);
   });
 
-  it('deux prélèvements dans un mois puis des mois suivants : chacun compte une échéance, une seule fois (L180, D-1)', () => {
+  it('deux prélèvements dans un mois, mois voisins déjà prélevés : le second n’est pas rattaché (L180, D-1, revue)', () => {
     const loan = makeLoan({
       initialPrincipal: 10000,
       amortizationSchedule: schedule,
@@ -166,8 +166,11 @@ describe('computeLoanState — estimatedFromOccurrences + gap (with schedule)', 
       ],
     });
     const state = computeLoanState(loan, '2026-02-28');
-    // Trois prélèvements = trois échéances (janvier, février, mars) : 10000 − 200 − 202 − 204.
-    expect(state.capitalRemaining.estimatedFromOccurrences).toBe(9394);
+    // Le 25 janvier ne glisse pas en février : février a son propre prélèvement
+    // (le décaler repousserait toute la suite d'une échéance). Janvier et
+    // février comptent une fois chacun : 10000 − 200 − 202.
+    expect(state.capitalRemaining.estimatedFromOccurrences).toBe(9598);
+    expect(matchDebitsToSchedule(loan).map((m) => m.lineIndex)).toEqual([0, null, 1]);
   });
 
   it('gap is negative when a payment month is skipped (behind schedule)', () => {
@@ -234,6 +237,28 @@ describe('matchDebitsToSchedule — prélèvements décalés (L180, D-1)', () =>
     expect(slots(dates)).toEqual(['2026-01', '2026-02', null, '2026-03', '2026-04', '2026-05', '2026-06']);
     // Sept prélèvements, six échéances : le capital ne descend pas sous zéro, aucune échéance comptée deux fois.
     expect(computeLoanState(loanWith(dates), '2026-12-31').capitalRemaining.estimatedFromOccurrences).toBe(0);
+  });
+
+  it('débit en trop au MILIEU du tableau : non rattaché, la suite garde chacun son mois (revue L180)', () => {
+    const twelve = Array.from({ length: 12 }, (_, i) =>
+      sched(`2026-${String(i + 1).padStart(2, '0')}-05`, 12000 - 1000 * (i + 1), 1000),
+    );
+    const dates = ['2026-01-05', '2026-02-05', '2026-02-20', '2026-03-05', '2026-04-05', '2026-05-05', '2026-06-05'];
+    const loan = makeLoan({ initialPrincipal: 12000, amortizationSchedule: twelve, occurrencesDetected: dates.map((d) => occ(d, -1050, d)) });
+    const months = matchDebitsToSchedule(loan).map((m) => (m.lineIndex == null ? null : twelve[m.lineIndex].date.slice(0, 7)));
+    expect(months).toEqual(['2026-01', '2026-02', null, '2026-03', '2026-04', '2026-05', '2026-06']);
+    // Six échéances payées (janvier → juin), pas sept : juillet n'est pas payé.
+    expect(computeLoanState(loan, '2026-12-31').capitalRemaining.estimatedFromOccurrences).toBe(6000);
+  });
+
+  it('jamais de chaîne de décalages pour rattacher un prélèvement de plus', () => {
+    // Le 25 janvier ne peut glisser qu'en février, qui a déjà le sien : il reste
+    // non rattaché, au lieu de pousser février en mars et mars en avril.
+    expect(slots(['2026-01-05', '2026-01-25', '2026-02-05', '2026-03-05'])).toEqual(['2026-01', null, '2026-02', '2026-03']);
+  });
+
+  it('dernière échéance payée en avance (27 mai pour juin, rien en juin) : rattachée à juin', () => {
+    expect(slots(['2026-04-05', '2026-05-05', '2026-05-27'])).toEqual(['2026-04', '2026-05', '2026-06']);
   });
 
   it('dernière échéance prélevée le mois suivant, hors tableau : rattachée à la dernière échéance', () => {

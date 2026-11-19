@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { AmortizationLine, Loan, LoanOccurrence } from '@/types/api';
-import { computeLoanState } from '@/lib/loan-state';
 import { mensualitesCount } from './utils';
+import { formatMonth } from '@/lib/utils';
 import { buildAmortizationSeries } from '@/lib/amortization-series';
-import { AmortizationChart, AmortizationTooltip } from './amortization-chart';
+import { AmortizationChart, AmortizationTooltip, deMois } from './amortization-chart';
 
 // jsdom ne mesure rien : ResponsiveContainer rendrait un graphique de taille 0,
 // sans aucun tracé. On lui donne une taille fixe pour lire les chemins SVG.
@@ -28,8 +28,13 @@ function occ(date: string, amount: number): LoanOccurrence {
   return { id: date, statementId: 's', date, amount, transactionId: null };
 }
 
-/** 6 échéances de 1 000 € de capital, prélèvements connus de janvier à mars (février manquant). */
+/** 6 échéances de 1 000 € de capital (le 5 de janvier à juin 2026). */
 function loan(occurrences: LoanOccurrence[]): Loan {
+  return loanN(6, occurrences);
+}
+
+/** `n` échéances de 1 000 € de capital, le 5 de chaque mois à partir de janvier 2026. */
+function loanN(n: number, occurrences: LoanOccurrence[]): Loan {
   return {
     id: 'cetelem',
     name: 'CETELEM auto',
@@ -38,15 +43,11 @@ function loan(occurrences: LoanOccurrence[]): Loan {
     monthlyPayment: 1050,
     matchPattern: 'CETELEM',
     isActive: true,
-    initialPrincipal: 6000,
-    amortizationSchedule: [
-      line('2026-01-05', 5000, 1000),
-      line('2026-02-05', 4000, 1000),
-      line('2026-03-05', 3000, 1000),
-      line('2026-04-05', 2000, 1000),
-      line('2026-05-05', 1000, 1000),
-      line('2026-06-05', 0, 1000),
-    ],
+    initialPrincipal: 1000 * n,
+    amortizationSchedule: Array.from({ length: n }, (_, i) => {
+      const d = new Date(Date.UTC(2026, i, 5));
+      return line(d.toISOString().slice(0, 10), 1000 * (n - i - 1), 1000);
+    }),
     occurrencesDetected: occurrences,
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
@@ -180,8 +181,9 @@ describe('Graphique d’amortissement — trous et prélèvements hors échéanc
     const juillet = points.find((p) => p.month === '2026-07');
     expect(juillet).toMatchObject({ scheduled: false, reel: 0, prevu: 0, missing: false, countedFor: ['2026-06'] });
     // L180 (D-1) : le prélèvement de juillet est l'échéance de juin, payée en
-    // retard — juin n'est plus un faux trou, il porte ce prélèvement.
-    expect(points.find((p) => p.month === '2026-06')).toMatchObject({ missing: false, reel: 0, paidIn: ['2026-07'] });
+    // retard — juin n'est pas un trou « aucun prélèvement », mais n'a pas de
+    // point Réel : aucun débit n'a eu lieu en juin (revue L180).
+    expect(points.find((p) => p.month === '2026-06')).toMatchObject({ missing: false, reel: null, paidIn: ['2026-07'] });
   });
 
   it('la phrase cite le mois du dernier prélèvement, pas la dernière échéance', () => {
@@ -206,94 +208,194 @@ describe('Graphique d’amortissement — trous et prélèvements hors échéanc
 describe('Graphique d’amortissement — prélèvements décalés d’un mois (L180, D-1)', () => {
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
 
+  const debitsLe5 = (months: string[]) => months.map((m) => occ(`2026-${m}-05`, -1050));
+
   /** Février prélevé le 2 mars : deux prélèvements en mars, aucun en février. */
   const fevrierEnRetard = () =>
     loan([occ('2026-01-05', -1050), occ('2026-03-02', -1050), occ('2026-03-30', -1050), occ('2026-04-05', -1050)]);
+  /** 12 échéances ; débits le 5 de janvier à juin, plus un débit en trop le 20 février (doublon, régularisation). */
+  const enTropAuMilieu = () => loanN(12, debitsLe5(['01', '02', '03', '04', '05', '06']).concat(occ('2026-02-20', -1050)));
+  /** Dernière échéance connue payée en avance : mars prélevé le 27 février, rien en mars. */
+  const marsPayeEnAvance = () => loan([occ('2026-01-05', -1050), occ('2026-02-05', -1050), occ('2026-02-27', -1050)]);
 
-  const jeux: Record<string, () => Loan> = {
-    'février prélevé en mars': fevrierEnRetard,
-    'mars prélevé en avance fin février': () =>
-      loan([occ('2026-01-05', -1050), occ('2026-02-05', -1050), occ('2026-02-27', -1050), occ('2026-04-05', -1050)]),
-    'décalages en chaîne, puis un mois vide': () =>
-      loan([occ('2026-01-05', -1050), occ('2026-03-01', -1050), occ('2026-03-31', -1050), occ('2026-04-30', -1050)]),
-    'dernière échéance prélevée hors tableau': () =>
-      loan([occ('2026-01-08', -1050), occ('2026-02-08', -1050), occ('2026-03-08', -1050), occ('2026-04-08', -1050), occ('2026-05-08', -1050), occ('2026-07-02', -1050)]),
-    'prélèvement en trop, voisins pleins': () =>
-      loan(['01', '02', '03', '04', '05', '06'].map((m) => occ(`2026-${m}-05`, -1050)).concat(occ('2026-02-20', -1050))),
-  };
+  function open(l: Loan) {
+    const r = render(<AmortizationChart loan={l} />);
+    fireEvent.click(screen.getByRole('button', { name: /tableau d'amortissement/i }));
+    return r;
+  }
+  const note = () => screen.getByTestId('amortization-reel-note').textContent ?? '';
+  const reelPathOf = (container: HTMLElement) =>
+    ([...container.querySelectorAll('.recharts-line-curve')][1] as SVGPathElement).getAttribute('d') ?? '';
 
-  it('un prélèvement décalé comble le mois resté vide : ni trou ni courbe décalée d’une échéance', () => {
-    const { points } = buildAmortizationSeries(fevrierEnRetard());
+  it('février prélevé le 2 mars : février n’est pas un trou, mais n’a pas de point Réel (aucun débit ce mois-là)', () => {
+    const { points, lastKnownMonth } = buildAmortizationSeries(fevrierEnRetard());
     expect(points.map((p) => p.missing)).toEqual([false, false, false, false, false, false]);
-    // Réel suit Prévu échéance par échéance, au lieu d'avoir 1 000 € de retard dès mars.
-    expect(points.slice(0, 4).map((p) => p.reel)).toEqual([5000, 4000, 3000, 2000]);
+    // Réel seulement aux mois prélevés ; mars compte février (payé le 2 mars) et mars.
+    expect(points.slice(0, 4).map((p) => p.reel)).toEqual([5000, null, 3000, 2000]);
     expect(points.slice(0, 4).map((p) => p.prevu)).toEqual([5000, 4000, 3000, 2000]);
     expect(points[1].paidIn).toEqual(['2026-03']);
     expect(points[2].countedFor).toEqual(['2026-02']);
+    expect(lastKnownMonth).toBe('2026-04');
   });
 
-  it('la courbe Réel reste d’un seul tenant et la phrase ne cite aucun trou', () => {
-    const { container } = render(<AmortizationChart loan={fevrierEnRetard()} />);
-    fireEvent.click(screen.getByRole('button', { name: /tableau d'amortissement/i }));
-    const paths = [...container.querySelectorAll('.recharts-line-curve')];
-    expect(paths[1].getAttribute('d')?.match(/M/g)).toHaveLength(1);
-    expect(screen.getByTestId('amortization-reel-note').textContent).toBe(
-      "Réel (estimé) : jusqu'au dernier prélèvement connu, avril 2026.",
+  it('la phrase dit quelle échéance a été prélevée un autre mois, sans l’annoncer manquante', () => {
+    open(fevrierEnRetard());
+    expect(note()).toBe(
+      "Réel (estimé) : jusqu'au dernier prélèvement connu, avril 2026. Échéance de février 2026 prélevée en mars 2026.",
     );
   });
 
   it('l’infobulle dit où l’échéance a été prélevée, et pour quelle échéance compte le prélèvement', () => {
     const { points } = buildAmortizationSeries(fevrierEnRetard());
     const { unmount } = render(<AmortizationTooltip point={points[1]} />);
-    expect(screen.getByTestId('amortization-tooltip').textContent).toContain('Réel (estimé) : 4');
-    expect(screen.getByTestId('amortization-tooltip').textContent).toContain('Échéance prélevée en mars 2026');
-    expect(screen.getByTestId('amortization-tooltip').textContent).not.toContain('aucun prélèvement');
+    const fev = screen.getByTestId('amortization-tooltip').textContent ?? '';
+    expect(fev).toContain('Échéance prélevée en mars 2026');
+    expect(fev).not.toContain('Réel');
+    expect(fev).not.toContain('aucun prélèvement');
     unmount();
     render(<AmortizationTooltip point={points[2]} />);
     expect(screen.getByTestId('amortization-tooltip').textContent).toContain('Prélèvement compté pour l’échéance de février 2026');
   });
 
-  it('un prélèvement sans échéance libre est dit dans la phrase, pas compté deux fois', () => {
-    const l = jeux['prélèvement en trop, voisins pleins']();
-    const { unmatchedCount, points } = buildAmortizationSeries(l);
+  it('débit en trop au milieu du tableau : rien n’est décalé, la courbe s’arrête au dernier débit réel (juin)', () => {
+    const { points, lastKnownMonth, unmatchedCount } = buildAmortizationSeries(enTropAuMilieu());
     expect(unmatchedCount).toBe(1);
-    expect(points[points.length - 1].reel).toBe(0);
-    render(<AmortizationChart loan={l} />);
-    fireEvent.click(screen.getByRole('button', { name: /tableau d'amortissement/i }));
-    expect(screen.getByTestId('amortization-reel-note').textContent).toBe(
+    expect(lastKnownMonth).toBe('2026-06');
+    expect(points.slice(0, 7).map((p) => p.reel)).toEqual([11000, 10000, 9000, 8000, 7000, 6000, null]);
+    expect(points.every((p) => p.paidIn.length === 0 && p.countedFor.length === 0)).toBe(true);
+    const { container } = open(enTropAuMilieu());
+    expect(note()).toBe(
       "Réel (estimé) : jusqu'au dernier prélèvement connu, juin 2026. 1 prélèvement sans échéance correspondante, non compté dans le capital.",
+    );
+    expect(reelPathOf(container).match(/M/g)).toHaveLength(1);
+  });
+
+  it('dernière échéance payée en avance (27 février pour mars) : dernier prélèvement connu = février', () => {
+    const { points, lastKnownMonth } = buildAmortizationSeries(marsPayeEnAvance());
+    expect(lastKnownMonth).toBe('2026-02');
+    // Le point de février compte l'argent versé en février : janvier, février et mars.
+    expect(points.slice(0, 3).map((p) => p.reel)).toEqual([5000, 3000, null]);
+    expect(points[2]).toMatchObject({ missing: false, paidIn: ['2026-02'] });
+    open(marsPayeEnAvance());
+    expect(note()).toBe(
+      "Réel (estimé) : jusqu'au dernier prélèvement connu, février 2026. Échéance de mars 2026 prélevée en février 2026.",
     );
   });
 
-  for (const [nom, make] of Object.entries(jeux)) {
-    it(`cohérence des chiffres — ${nom}`, () => {
+  it('un mois sans débit (échéance prélevée le mois suivant) interrompt la courbe ; chaque bord a son point', () => {
+    const { container } = open(fevrierEnRetard());
+    // Janvier (isolé), puis mars → avril.
+    expect(reelPathOf(container).match(/M/g)).toHaveLength(2);
+    expect(container.querySelectorAll('circle[fill="#10b981"]')).toHaveLength(3);
+  });
+
+  /**
+   * Jeux de cohérence (D-1 : « il faut juste que ça reste cohérent »). Chaque
+   * vérification lit ce que l'ÉCRAN affiche — la phrase sous le graphique et
+   * l'infobulle de chaque mois (le composant que le graphique rend au survol) —
+   * et le compteur « mensualités prélevées » de la carte, contre les débits
+   * du jeu.
+   */
+  const jeux: Record<string, { make: () => Loan; trous: string[] }> = {
+    'février prélevé en mars': { make: fevrierEnRetard, trous: [] },
+    'mars prélevé en avance fin février': {
+      make: () => loan([occ('2026-01-05', -1050), occ('2026-02-05', -1050), occ('2026-02-27', -1050), occ('2026-04-05', -1050)]),
+      trous: [],
+    },
+    'deux mois chargés puis un mois vide': {
+      make: () => loan([occ('2026-01-05', -1050), occ('2026-03-01', -1050), occ('2026-03-31', -1050), occ('2026-04-30', -1050)]),
+      trous: [],
+    },
+    'dernière échéance prélevée hors tableau': {
+      make: () => loan(debitsLe5(['01', '02', '03', '04', '05']).concat(occ('2026-07-02', -1050))),
+      trous: [],
+    },
+    'prélèvement en trop en fin de tableau': {
+      make: () => loan(debitsLe5(['01', '02', '03', '04', '05', '06']).concat(occ('2026-06-20', -1050))),
+      trous: [],
+    },
+    'débit en trop au milieu du tableau': { make: enTropAuMilieu, trous: [] },
+    'dernière échéance payée en avance': { make: marsPayeEnAvance, trous: [] },
+    'décalage puis vrai trou': {
+      // Mars payé le 27 février ; avril sans aucun prélèvement : vrai trou.
+      make: () =>
+        loan([occ('2026-01-05', -1050), occ('2026-02-05', -1050), occ('2026-02-27', -1050), occ('2026-05-05', -1050), occ('2026-06-05', -1050)]),
+      trous: ['avril 2026'],
+    },
+    'vrai trou sans décalage': { make: () => loan(debitsLe5(['01', '03', '04'])), trous: ['février 2026'] },
+  };
+
+  const label = (month: string) => formatMonth(Number(month.slice(5, 7)), Number(month.slice(0, 4))).toLowerCase();
+  it('élision devant un mois à voyelle : « d’août », « d’avril », « d’octobre »', () => {
+    expect(deMois('août 2026')).toBe('d’août 2026');
+    expect(deMois('avril 2026')).toBe('d’avril 2026');
+    expect(deMois('octobre 2026')).toBe('d’octobre 2026');
+    expect(deMois('mars 2026')).toBe('de mars 2026');
+  });
+
+  const euros = (text: string) => Number(text.replace(/[^\d,]/g, '').replace(',', '.'));
+
+  for (const [nom, { make, trous }] of Object.entries(jeux)) {
+    it(`cohérence de ce que l’écran affiche — ${nom}`, () => {
       const l = make();
       const debits = l.occurrencesDetected.filter((o) => o.amount < 0);
-      const series = buildAmortizationSeries(l);
-      const state = computeLoanState(l, '2099-12-31');
-      // (1) chaque prélèvement compté une fois : total prélevé = somme des prélèvements.
-      expect(state.totalPaid).toBe(debits.reduce((s, o) => s + Math.abs(o.amount), 0));
-      // Mensualités prélevées (carte) = prélèvements rattachés + non rattachés.
-      const rattaches = series.points.reduce((n, p) => n + p.paidIn.length, 0);
+      const debitMonths = new Set(debits.map((o) => o.date.slice(0, 7)));
+      const { points } = buildAmortizationSeries(l);
+
+      // Infobulle de chaque mois, telle que rendue au survol.
+      const tips = new Map<string, string>();
+      for (const p of points) {
+        const { unmount } = render(<AmortizationTooltip point={p} />);
+        tips.set(p.month, screen.getByTestId('amortization-tooltip').textContent ?? '');
+        unmount();
+      }
+      const reelOf = (month: string) => {
+        const m = tips.get(month)!.match(/Réel \(estimé\) : ([\d\s  ,]+€)/);
+        return m ? euros(m[1]) : null;
+      };
+
+      // (1) Un point Réel exactement aux mois où un débit a eu lieu.
+      for (const p of points) expect([p.month, reelOf(p.month) != null]).toEqual([p.month, debitMonths.has(p.month)]);
+
+      open(l);
+      const phrase = note();
+      // (2) « Dernier prélèvement connu » = mois du dernier débit réel.
+      const dernierDebit = debits.map((o) => o.date).sort().at(-1)!;
+      expect(phrase).toContain(`dernier prélèvement connu, ${label(dernierDebit)}.`);
+
+      // (3) Mensualités prélevées (carte) = échéances rattachées + prélèvements
+      // non rattachés (phrase). Les rattachées se lisent sur le dernier Réel
+      // affiché : capital initial − 1 000 € par échéance payée.
+      const nonRattaches = Number(phrase.match(/(\d+) prélèvements? sans échéance/)?.[1] ?? 0);
+      const dernierReel = reelOf(dernierDebit.slice(0, 7))!;
+      const rattachees = (l.initialPrincipal! - dernierReel) / 1000;
       expect(mensualitesCount(l)).toBe(debits.length);
-      expect(rattaches).toBeLessThanOrEqual(debits.length);
-      // Capital restant : dernier point Réel = capital estimé du crédit = capital
-      // initial − 1 000 € par échéance rattachée (aucune comptée deux fois).
-      const dernier = series.points.filter((p) => p.reel != null).at(-1)!;
-      expect(dernier.month).toBe(series.lastKnownMonth);
-      expect(dernier.reel).toBe(Math.round(state.capitalRemaining.estimatedFromOccurrences!));
-      expect(dernier.reel).toBe(Math.max(0, 6000 - 1000 * (debits.length - series.unmatchedCount)));
-      // Réel ne remonte jamais et ne passe jamais sous zéro.
-      const reels = series.points.map((p) => p.reel).filter((r): r is number => r != null);
+      expect(rattachees + nonRattaches).toBe(mensualitesCount(l));
+
+      // (4) Trous : la phrase et les infobulles citent les mêmes mois, et ce
+      // sont les mois attendus du jeu.
+      const enPhrase = phrase.match(/Interrompue en (.+?) : aucun prélèvement/)?.[1] ?? '';
+      const enInfobulle = points.filter((p) => tips.get(p.month)!.includes('aucun prélèvement trouvé')).map((p) => label(p.month));
+      expect(enInfobulle).toEqual(trous);
+      for (const t of trous) expect(enPhrase).toContain(t);
+      if (trous.length === 0) expect(phrase).not.toContain('Interrompue');
+
+      // (5) Un décalage se lit des deux côtés : « Échéance prélevée en Y » en X
+      // ⇔ « Prélèvement compté pour l’échéance de X » en Y, et la phrase le cite.
+      for (const p of points) {
+        for (const y of p.paidIn) {
+          expect(tips.get(p.month)).toContain(`Échéance prélevée en ${label(y)}`);
+          expect(tips.get(y)).toContain(`Prélèvement compté pour l’échéance ${deMois(label(p.month))}`);
+          expect(phrase).toContain(`${label(p.month)} prélevée en ${label(y)}`);
+        }
+      }
+
+      // (6) Réel ne remonte jamais et ne passe jamais sous zéro.
+      const reels = points.map((p) => reelOf(p.month)).filter((r): r is number => r != null);
       reels.forEach((r, i) => {
         expect(r).toBeGreaterThanOrEqual(0);
         if (i > 0) expect(r).toBeLessThanOrEqual(reels[i - 1]);
       });
-      // Aucun mois d'échéance porteur d'un prélèvement n'est annoncé manquant.
-      for (const p of series.points) if (p.missing) expect(p.reel).toBeNull();
-      // Phrase et infobulle d'accord : un mois cité « manquant » est exactement un mois sans Réel.
-      const missing = series.points.filter((p) => p.missing).map((p) => p.month);
-      expect(missing).toEqual([]);
     });
   }
 });

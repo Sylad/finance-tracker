@@ -1,4 +1,8 @@
-import { computeLoanState, matchDebitsToSchedule, __test } from './loans-state.helper';
+import {
+  computeLoanState,
+  matchDebitsToSchedule,
+  __test,
+} from './loans-state.helper';
 import type { Loan } from '../../models/loan.model';
 
 const baseLoan: Loan = {
@@ -29,10 +33,34 @@ describe('computeLoanState', () => {
     const loan: Loan = {
       ...baseLoan,
       occurrencesDetected: [
-        { id: 'o1', statementId: 's1', date: '2026-01-15', amount: -240, transactionId: null },
-        { id: 'o2', statementId: 's2', date: '2026-02-15', amount: -240, transactionId: null },
-        { id: 'o3', statementId: 's3', date: '2026-03-15', amount: -240, transactionId: null },
-        { id: 'o4', statementId: 's4', date: '2026-04-15', amount: -240, transactionId: null }, // après asOf
+        {
+          id: 'o1',
+          statementId: 's1',
+          date: '2026-01-15',
+          amount: -240,
+          transactionId: null,
+        },
+        {
+          id: 'o2',
+          statementId: 's2',
+          date: '2026-02-15',
+          amount: -240,
+          transactionId: null,
+        },
+        {
+          id: 'o3',
+          statementId: 's3',
+          date: '2026-03-15',
+          amount: -240,
+          transactionId: null,
+        },
+        {
+          id: 'o4',
+          statementId: 's4',
+          date: '2026-04-15',
+          amount: -240,
+          transactionId: null,
+        }, // après asOf
       ],
     };
     const state = computeLoanState(loan, '2026-03-31');
@@ -47,9 +75,24 @@ describe('computeLoanState', () => {
       startDate: '2024-06-01',
       endDate: '2028-05-01',
       amortizationSchedule: [
-        { date: '2024-06-01', capitalRemaining: 11800, capitalPaid: 200, interestPaid: 40 },
-        { date: '2024-07-01', capitalRemaining: 11599, capitalPaid: 201, interestPaid: 39 },
-        { date: '2024-08-01', capitalRemaining: 11397, capitalPaid: 202, interestPaid: 38 },
+        {
+          date: '2024-06-01',
+          capitalRemaining: 11800,
+          capitalPaid: 200,
+          interestPaid: 40,
+        },
+        {
+          date: '2024-07-01',
+          capitalRemaining: 11599,
+          capitalPaid: 201,
+          interestPaid: 39,
+        },
+        {
+          date: '2024-08-01',
+          capitalRemaining: 11397,
+          capitalPaid: 202,
+          interestPaid: 38,
+        },
       ],
     };
     const state = computeLoanState(loan, '2024-07-15');
@@ -63,12 +106,34 @@ describe('computeLoanState', () => {
       startDate: '2024-06-01',
       endDate: '2028-05-01',
       amortizationSchedule: [
-        { date: '2024-06-01', capitalRemaining: 11800, capitalPaid: 200, interestPaid: 40 },
-        { date: '2024-07-01', capitalRemaining: 11599, capitalPaid: 201, interestPaid: 39 },
+        {
+          date: '2024-06-01',
+          capitalRemaining: 11800,
+          capitalPaid: 200,
+          interestPaid: 40,
+        },
+        {
+          date: '2024-07-01',
+          capitalRemaining: 11599,
+          capitalPaid: 201,
+          interestPaid: 39,
+        },
       ],
       occurrencesDetected: [
-        { id: 'o1', statementId: 's1', date: '2024-06-15', amount: -240, transactionId: null },
-        { id: 'o2', statementId: 's2', date: '2024-07-15', amount: -240, transactionId: null },
+        {
+          id: 'o1',
+          statementId: 's1',
+          date: '2024-06-15',
+          amount: -240,
+          transactionId: null,
+        },
+        {
+          id: 'o2',
+          statementId: 's2',
+          date: '2024-07-15',
+          amount: -240,
+          transactionId: null,
+        },
       ],
     };
     const state = computeLoanState(loan, '2024-07-31');
@@ -83,7 +148,13 @@ describe('computeLoanState', () => {
       ...baseLoan,
       initialPrincipal: 12000,
       occurrencesDetected: [
-        { id: 'o1', statementId: 's1', date: '2024-06-15', amount: -240, transactionId: null },
+        {
+          id: 'o1',
+          statementId: 's1',
+          date: '2024-06-15',
+          amount: -240,
+          transactionId: null,
+        },
       ],
     };
     const state = computeLoanState(loan, '2024-12-31');
@@ -109,12 +180,35 @@ describe('computeLoanState', () => {
       ...baseLoan,
       initialPrincipal: 10000,
       amortizationSchedule: [
-        { date: '2026-01-05', capitalRemaining: 9800, capitalPaid: 200, interestPaid: 40 },
-        { date: '2026-02-05', capitalRemaining: 9600, capitalPaid: 200, interestPaid: 40 },
+        {
+          date: '2026-01-05',
+          capitalRemaining: 9800,
+          capitalPaid: 200,
+          interestPaid: 40,
+        },
+        {
+          date: '2026-02-05',
+          capitalRemaining: 9600,
+          capitalPaid: 200,
+          interestPaid: 40,
+        },
       ],
       occurrencesDetected: [
-        { id: 'o1', statementId: 's1', date: '2026-01-05', amount: -240, transactionId: 't1' },
-        { id: 'o2', statementId: 's1', date: '2026-01-20', amount: -5000, transactionId: 't2', source: 'early_repayment' },
+        {
+          id: 'o1',
+          statementId: 's1',
+          date: '2026-01-05',
+          amount: -240,
+          transactionId: 't1',
+        },
+        {
+          id: 'o2',
+          statementId: 's1',
+          date: '2026-01-20',
+          amount: -5000,
+          transactionId: 't2',
+          source: 'early_repayment',
+        },
       ],
     };
     const state = computeLoanState(loan, '2026-01-31');
@@ -128,12 +222,28 @@ describe('computeLoanState', () => {
       ...baseLoan,
       initialPrincipal: 1000,
       amortizationSchedule: [
-        { date: '2024-06-01', capitalRemaining: 800, capitalPaid: 200, interestPaid: 10 },
-        { date: '2024-07-01', capitalRemaining: 600, capitalPaid: 200, interestPaid: 9 },
+        {
+          date: '2024-06-01',
+          capitalRemaining: 800,
+          capitalPaid: 200,
+          interestPaid: 10,
+        },
+        {
+          date: '2024-07-01',
+          capitalRemaining: 600,
+          capitalPaid: 200,
+          interestPaid: 9,
+        },
       ],
       occurrencesDetected: [
         // 1 occurrence sur 2 attendues à juillet → en retard
-        { id: 'o1', statementId: 's1', date: '2024-06-15', amount: -210, transactionId: null },
+        {
+          id: 'o1',
+          statementId: 's1',
+          date: '2024-06-15',
+          amount: -210,
+          transactionId: null,
+        },
       ],
     };
     const state = computeLoanState(loan, '2024-07-15');
@@ -157,12 +267,31 @@ describe('helper internals', () => {
 
   it('findScheduleLineForMonth retourne la dernière ligne ≤ month', () => {
     const schedule = [
-      { date: '2024-06-01', capitalRemaining: 100, capitalPaid: 10, interestPaid: 1 },
-      { date: '2024-07-01', capitalRemaining: 90, capitalPaid: 10, interestPaid: 1 },
-      { date: '2024-09-01', capitalRemaining: 70, capitalPaid: 10, interestPaid: 1 },
+      {
+        date: '2024-06-01',
+        capitalRemaining: 100,
+        capitalPaid: 10,
+        interestPaid: 1,
+      },
+      {
+        date: '2024-07-01',
+        capitalRemaining: 90,
+        capitalPaid: 10,
+        interestPaid: 1,
+      },
+      {
+        date: '2024-09-01',
+        capitalRemaining: 70,
+        capitalPaid: 10,
+        interestPaid: 1,
+      },
     ];
-    expect(__test.findScheduleLineForMonth(schedule, '2024-08')?.date).toBe('2024-07-01');
-    expect(__test.findScheduleLineForMonth(schedule, '2024-09')?.date).toBe('2024-09-01');
+    expect(__test.findScheduleLineForMonth(schedule, '2024-08')?.date).toBe(
+      '2024-07-01',
+    );
+    expect(__test.findScheduleLineForMonth(schedule, '2024-09')?.date).toBe(
+      '2024-09-01',
+    );
     expect(__test.findScheduleLineForMonth(schedule, '2024-05')).toBeNull();
   });
 });
@@ -178,34 +307,136 @@ describe('matchDebitsToSchedule — prélèvements décalés (L180, D-1, miroir 
     ...baseLoan,
     initialPrincipal: 6000,
     amortizationSchedule: schedule,
-    occurrencesDetected: dates.map((date) => ({ id: date, statementId: 's', date, amount: -1050, transactionId: null })),
+    occurrencesDetected: dates.map((date) => ({
+      id: date,
+      statementId: 's',
+      date,
+      amount: -1050,
+      transactionId: null,
+    })),
   });
   const slots = (dates: string[]) =>
-    matchDebitsToSchedule(loanWith(dates)).map((m) => (m.lineIndex == null ? null : schedule[m.lineIndex].date.slice(0, 7)));
+    matchDebitsToSchedule(loanWith(dates)).map((m) =>
+      m.lineIndex == null ? null : schedule[m.lineIndex].date.slice(0, 7),
+    );
 
   it('février prélevé le 2 mars : rattaché à février, chaque prélèvement compte une fois', () => {
-    expect(slots(['2026-01-05', '2026-03-02', '2026-03-30', '2026-04-05'])).toEqual(['2026-01', '2026-02', '2026-03', '2026-04']);
-    const state = computeLoanState(loanWith(['2026-01-05', '2026-03-02', '2026-03-30', '2026-04-05']), '2026-04-30');
+    expect(
+      slots(['2026-01-05', '2026-03-02', '2026-03-30', '2026-04-05']),
+    ).toEqual(['2026-01', '2026-02', '2026-03', '2026-04']);
+    const state = computeLoanState(
+      loanWith(['2026-01-05', '2026-03-02', '2026-03-30', '2026-04-05']),
+      '2026-04-30',
+    );
     expect(state.capitalRemaining.estimatedFromOccurrences).toBe(2000);
     expect(state.capitalRemaining.gap).toBe(0);
     expect(state.totalPaid).toBe(4200);
   });
 
   it('décalages en chaîne puis un mois vide : tout est rattaché', () => {
-    expect(slots(['2026-01-05', '2026-03-01', '2026-03-31', '2026-04-30'])).toEqual(['2026-01', '2026-02', '2026-03', '2026-04']);
+    expect(
+      slots(['2026-01-05', '2026-03-01', '2026-03-31', '2026-04-30']),
+    ).toEqual(['2026-01', '2026-02', '2026-03', '2026-04']);
   });
 
   it('un vrai trou reste un trou', () => {
-    expect(slots(['2026-01-05', '2026-03-05', '2026-04-05'])).toEqual(['2026-01', '2026-03', '2026-04']);
+    expect(slots(['2026-01-05', '2026-03-05', '2026-04-05'])).toEqual([
+      '2026-01',
+      '2026-03',
+      '2026-04',
+    ]);
   });
 
   it('prélèvement en trop, voisins pleins : non rattaché, aucune échéance comptée deux fois', () => {
-    const dates = ['2026-01-05', '2026-02-05', '2026-02-20', '2026-03-05', '2026-04-05', '2026-05-05', '2026-06-05'];
-    expect(slots(dates)).toEqual(['2026-01', '2026-02', null, '2026-03', '2026-04', '2026-05', '2026-06']);
-    expect(computeLoanState(loanWith(dates), '2026-12-31').capitalRemaining.estimatedFromOccurrences).toBe(0);
+    const dates = [
+      '2026-01-05',
+      '2026-02-05',
+      '2026-02-20',
+      '2026-03-05',
+      '2026-04-05',
+      '2026-05-05',
+      '2026-06-05',
+    ];
+    expect(slots(dates)).toEqual([
+      '2026-01',
+      '2026-02',
+      null,
+      '2026-03',
+      '2026-04',
+      '2026-05',
+      '2026-06',
+    ]);
+    expect(
+      computeLoanState(loanWith(dates), '2026-12-31').capitalRemaining
+        .estimatedFromOccurrences,
+    ).toBe(0);
+  });
+
+  it('débit en trop au MILIEU du tableau : non rattaché, la suite garde chacun son mois (revue L180)', () => {
+    const twelve = Array.from({ length: 12 }, (_, i) => ({
+      date: `2026-${String(i + 1).padStart(2, '0')}-05`,
+      capitalRemaining: 12000 - 1000 * (i + 1),
+      capitalPaid: 1000,
+      interestPaid: 50,
+    }));
+    const dates = [
+      '2026-01-05',
+      '2026-02-05',
+      '2026-02-20',
+      '2026-03-05',
+      '2026-04-05',
+      '2026-05-05',
+      '2026-06-05',
+    ];
+    const loan: Loan = {
+      ...baseLoan,
+      initialPrincipal: 12000,
+      amortizationSchedule: twelve,
+      occurrencesDetected: dates.map((date) => ({
+        id: date,
+        statementId: 's',
+        date,
+        amount: -1050,
+        transactionId: null,
+      })),
+    };
+    const months = matchDebitsToSchedule(loan).map((m) =>
+      m.lineIndex == null ? null : twelve[m.lineIndex].date.slice(0, 7),
+    );
+    expect(months).toEqual([
+      '2026-01',
+      '2026-02',
+      null,
+      '2026-03',
+      '2026-04',
+      '2026-05',
+      '2026-06',
+    ]);
+    expect(
+      computeLoanState(loan, '2026-12-31').capitalRemaining
+        .estimatedFromOccurrences,
+    ).toBe(6000);
+  });
+
+  it('jamais de chaîne de décalages pour rattacher un prélèvement de plus', () => {
+    expect(
+      slots(['2026-01-05', '2026-01-25', '2026-02-05', '2026-03-05']),
+    ).toEqual(['2026-01', null, '2026-02', '2026-03']);
+  });
+
+  it('dernière échéance payée en avance (27 mai pour juin, rien en juin) : rattachée à juin', () => {
+    expect(slots(['2026-04-05', '2026-05-05', '2026-05-27'])).toEqual([
+      '2026-04',
+      '2026-05',
+      '2026-06',
+    ]);
   });
 
   it('dernière échéance prélevée le mois suivant, hors tableau : rattachée à la dernière échéance', () => {
-    expect(slots(['2026-04-05', '2026-05-05', '2026-07-02'])).toEqual(['2026-04', '2026-05', '2026-06']);
+    expect(slots(['2026-04-05', '2026-05-05', '2026-07-02'])).toEqual([
+      '2026-04',
+      '2026-05',
+      '2026-06',
+    ]);
   });
 });

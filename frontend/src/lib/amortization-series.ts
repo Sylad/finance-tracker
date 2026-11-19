@@ -14,19 +14,22 @@ export interface AmortizationPoint {
   scheduled: boolean;
   /**
    * Capital restant estimé d'après les prélèvements détectés, à la fin du
-   * mois : capital initial − part capital des échéances payées jusqu'à ce
-   * mois (chaque prélèvement rattaché à UNE échéance, L180) − remboursements
-   * anticipés. `null` pour tout mois sans prélèvement (L177) : avant le
-   * premier, après le dernier et dans les trous — la courbe ne prolonge
-   * jamais une valeur au-delà de ce que l'on sait, et l'infobulle n'en
-   * invente pas.
+   * mois : capital initial − part capital des échéances dont le prélèvement
+   * a eu lieu jusqu'à ce mois (chaque prélèvement rattaché à UNE échéance,
+   * L180 ; une échéance payée en avance compte dès le mois du débit, une
+   * échéance payée en retard au mois du débit) − remboursements anticipés.
+   * `null` pour tout mois SANS débit (L177, revue L180) : avant le premier,
+   * après le dernier, dans les trous et dans le mois d'une échéance prélevée
+   * le mois voisin — la courbe ne montre jamais une valeur pour un mois où
+   * rien n'a été prélevé, et l'infobulle n'en invente pas.
    */
   reel: number | null;
   /**
    * Mois d'échéance sans prélèvement trouvé ENTRE le premier et le dernier
    * prélèvement connus (L178) : la courbe Réel s'interrompt là, et
-   * l'infobulle dit qu'aucun prélèvement n'a été trouvé. Un prélèvement
-   * décalé rattaché à ce mois (L180) n'en fait plus un trou.
+   * l'infobulle dit qu'aucun prélèvement n'a été trouvé. Une échéance
+   * prélevée le mois voisin (L180) n'est pas un trou : pas de point Réel ce
+   * mois-là, mais l'infobulle et la phrase disent où elle a été prélevée.
    */
   missing: boolean;
   /** Mois (`YYYY-MM`) où a été prélevée l'échéance de ce mois, quand c'est un autre mois (L180). */
@@ -37,7 +40,7 @@ export interface AmortizationPoint {
 
 export interface AmortizationSeries {
   points: AmortizationPoint[];
-  /** Mois (`YYYY-MM`) du dernier prélèvement placé sur la courbe, ou null. */
+  /** Mois (`YYYY-MM`) du dernier débit réel (dernier point de la courbe Réel), ou null. */
   lastKnownMonth: string | null;
   /**
    * Mensualités prélevées sans échéance libre à ± 1 mois (L180) : comptées
@@ -70,7 +73,8 @@ export function buildAmortizationSeries(loan: Loan): AmortizationSeries {
     .filter((o) => o.amount < 0 && o.source === 'early_repayment')
     .map((o) => ({ month: monthOf(o.date), amount: Math.abs(o.amount) }));
 
-  // Mois qui portent un prélèvement (mensualité, rattachée ou non, ou anticipé).
+  // Mois qui portent un débit (mensualité, rattachée ou non, ou anticipé) :
+  // les seuls à avoir un point Réel.
   const debitMonths = new Set<string>();
   for (const o of loan.occurrencesDetected ?? []) if (o.amount < 0) debitMonths.add(monthOf(o.date));
   const matchedSlots = new Set(paid.map((p) => p.slotMonth));
@@ -91,16 +95,12 @@ export function buildAmortizationSeries(loan: Loan): AmortizationSeries {
     const scheduled = plannedByMonth.has(month);
     if (scheduled) lastPlanned = plannedByMonth.get(month)!;
     let reel: number | null = null;
-    // Un mois d'échéance est connu s'il a son prélèvement (le sien ou un
-    // décalé) ; tout mois où un prélèvement a eu lieu l'est aussi.
-    const known = (scheduled && matchedSlots.has(month)) || debitMonths.has(month);
-    if (principal != null && known) {
-      // Mois d'échéance : les échéances jusqu'à ce mois. Mois sans échéance :
-      // s'y ajoutent les prélèvements faits ce mois-ci (rattachés à une
-      // échéance suivante), pour que le point dise l'argent déjà versé.
-      const counts = (p: (typeof paid)[number]) => p.slotMonth <= month || (!scheduled && p.debitMonth <= month);
+    // Revue L180 : un point Réel seulement dans un mois où un débit a eu lieu
+    // (jamais au-delà de ce que l'on sait, L177). Il compte l'argent versé
+    // jusqu'à ce mois : chaque échéance rattachée, au mois de son débit.
+    if (principal != null && debitMonths.has(month)) {
       const capitalPaid =
-        paid.filter(counts).reduce((s, p) => s + p.capital, 0) +
+        paid.filter((p) => p.debitMonth <= month).reduce((s, p) => s + p.capital, 0) +
         early.filter((e) => e.month <= month).reduce((s, e) => s + e.amount, 0);
       reel = Math.round(Math.max(0, principal - capitalPaid));
       lastKnownMonth = month;
@@ -117,11 +117,11 @@ export function buildAmortizationSeries(loan: Loan): AmortizationSeries {
     });
   }
 
-  // Trous au milieu de la courbe : échéance sans prélèvement, entre le
-  // premier et le dernier prélèvement connus.
+  // Trous au milieu de la courbe : échéance sans aucun prélèvement rattaché,
+  // entre le premier et le dernier prélèvement connus.
   if (firstKnownMonth != null && lastKnownMonth != null) {
     for (const p of points) {
-      if (p.scheduled && p.reel == null && p.month > firstKnownMonth && p.month < lastKnownMonth) {
+      if (p.scheduled && p.reel == null && !matchedSlots.has(p.month) && p.month > firstKnownMonth && p.month < lastKnownMonth) {
         p.missing = true;
       }
     }

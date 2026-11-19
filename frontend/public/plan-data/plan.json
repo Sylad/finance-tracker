@@ -687,6 +687,11 @@
       "status": "done",
       "started": "2026-11-19",
       "finished": "2026-11-19"
+    },
+    {
+      "id": "L180",
+      "title": "Crédits : chaque prélèvement compte une fois, même si sa date glisse d'un mois",
+      "status": "todo"
     }
   ]
 }

@@ -1,4 +1,8 @@
-import type { Loan, AmortizationLine, LoanOccurrence } from '../../models/loan.model';
+import type {
+  Loan,
+  AmortizationLine,
+  LoanOccurrence,
+} from '../../models/loan.model';
 import { monthKey } from '../../common/month-key';
 
 /**
@@ -86,7 +90,12 @@ function monthRank(iso: string): number {
 }
 
 function dayDistance(aIso: string, bIso: string): number {
-  return Math.abs(Date.parse(aIso.slice(0, 10) + 'T00:00:00Z') - Date.parse(bIso.slice(0, 10) + 'T00:00:00Z')) / 86_400_000;
+  return (
+    Math.abs(
+      Date.parse(aIso.slice(0, 10) + 'T00:00:00Z') -
+        Date.parse(bIso.slice(0, 10) + 'T00:00:00Z'),
+    ) / 86_400_000
+  );
 }
 
 /** Un prélèvement rattaché (ou non) à une ligne du tableau d'amortissement. */
@@ -104,37 +113,63 @@ export interface DebitMatch {
  * peut les décaler »).
  *
  * Appariement ordonné (le n-ième prélèvement ne passe jamais avant le
- * (n−1)-ième), chaque prélèvement restant dans son mois ou glissant au mois
- * voisin (± 1 mois). Parmi les appariements possibles : le plus de
- * prélèvements rattachés, puis le moins de décalages, puis les dates les
- * plus proches des échéances. Un prélèvement en retard qui tombe dans le mois
- * de l'échéance suivante est donc rattaché au mois resté vide, au lieu d'être
- * écarté ; un vrai trou (aucun prélèvement à rattacher) reste un trou.
- * Un prélèvement sans échéance libre à ± 1 mois reste non rattaché
- * (`lineIndex: null`) : il compte dans le total prélevé, pas dans le capital.
+ * (n−1)-ième). Un prélèvement est rattaché à l'échéance de SON mois, ou —
+ * décalé — à celle d'un mois voisin (± 1 mois) qui n'a AUCUN prélèvement
+ * (revue L180). Un mois voisin déjà prélevé n'est jamais pris : un débit en
+ * trop (doublon, régularisation) ne pousse pas les échéances suivantes d'un
+ * mois, il n'y a donc jamais de chaîne de décalages. Parmi les appariements
+ * permis : le plus de prélèvements rattachés, puis le moins de décalages,
+ * puis les dates les plus proches des échéances. Un prélèvement en retard
+ * qui tombe dans le mois de l'échéance suivante est rattaché au mois resté
+ * vide ; un vrai trou (aucun prélèvement à rattacher) reste un trou.
+ * Un prélèvement sans échéance permise reste non rattaché (`lineIndex:
+ * null`) : il compte une fois dans le total prélevé, pas dans le capital.
  *
  * Miroir exact de `matchDebitsToSchedule` côté frontend (lib/loan-state.ts).
  */
-export function matchDebitsToSchedule(loan: Pick<Loan, 'occurrencesDetected' | 'amortizationSchedule'>): DebitMatch[] {
+export function matchDebitsToSchedule(
+  loan: Pick<Loan, 'occurrencesDetected' | 'amortizationSchedule'>,
+): DebitMatch[] {
   const debits = (loan.occurrencesDetected ?? [])
     .filter((o) => o.amount < 0 && o.source !== 'early_repayment')
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
-  const lines = (loan.amortizationSchedule ?? []).map((line, index) => ({ line, index }));
-  lines.sort((a, b) => a.line.date.localeCompare(b.line.date) || a.index - b.index);
+  const lines = (loan.amortizationSchedule ?? []).map((line, index) => ({
+    line,
+    index,
+  }));
+  lines.sort(
+    (a, b) => a.line.date.localeCompare(b.line.date) || a.index - b.index,
+  );
   const n = debits.length;
   const m = lines.length;
   if (n === 0) return [];
-  if (m === 0) return debits.map((occurrence) => ({ occurrence, lineIndex: null }));
+  if (m === 0)
+    return debits.map((occurrence) => ({ occurrence, lineIndex: null }));
+  // Mois qui portent un prélèvement (tout débit, remboursement anticipé compris) :
+  // aucun prélèvement décalé n'y est rattaché.
+  const debitMonths = new Set(
+    (loan.occurrencesDetected ?? [])
+      .filter((o) => o.amount < 0)
+      .map((o) => o.date.slice(0, 7)),
+  );
 
   // Score d'un préfixe : [rattachés, décalages, jours d'écart] — on maximise
   // le premier, puis on minimise les deux autres.
   type Score = [number, number, number];
   const better = (a: Score, b: Score) =>
-    a[0] !== b[0] ? a[0] > b[0] : a[1] !== b[1] ? a[1] < b[1] : a[2] < b[2] - 1e-9;
-  const score: Score[][] = Array.from({ length: n + 1 }, () => Array.from({ length: m + 1 }, () => [0, 0, 0] as Score));
+    a[0] !== b[0]
+      ? a[0] > b[0]
+      : a[1] !== b[1]
+        ? a[1] < b[1]
+        : a[2] < b[2] - 1e-9;
+  const score: Score[][] = Array.from({ length: n + 1 }, () =>
+    Array.from({ length: m + 1 }, () => [0, 0, 0] as Score),
+  );
   // 0 = prélèvement i non rattaché, 1 = échéance j sans prélèvement, 2 = i ↔ j.
-  const move: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
+  const move: number[][] = Array.from({ length: n + 1 }, () =>
+    new Array<number>(m + 1).fill(0),
+  );
   for (let i = 0; i <= n; i++) {
     for (let j = 0; j <= m; j++) {
       if (i === 0 && j === 0) continue;
@@ -152,9 +187,16 @@ export function matchDebitsToSchedule(loan: Pick<Loan, 'occurrencesDetected' | '
         const d = debits[i - 1];
         const l = lines[j - 1].line;
         const shift = Math.abs(monthRank(d.date) - monthRank(l.date));
-        if (shift <= 1) {
+        if (
+          shift === 0 ||
+          (shift === 1 && !debitMonths.has(l.date.slice(0, 7)))
+        ) {
           const prev = score[i - 1][j - 1];
-          const cand: Score = [prev[0] + 1, prev[1] + shift, prev[2] + dayDistance(d.date, l.date)];
+          const cand: Score = [
+            prev[0] + 1,
+            prev[1] + shift,
+            prev[2] + dayDistance(d.date, l.date),
+          ];
           if (best == null || better(cand, best)) {
             best = cand;
             how = 2;
@@ -191,18 +233,24 @@ export function computeLoanState(loan: Loan, asOfDate?: string): LoanState {
   // Filtrer les occurrences ≤ asOfDate
   const occBeforeDate = occurrences.filter((o) => o.date <= asOf);
   // Débits only : les tirages (amount > 0) sont de la dette ajoutée, pas payée.
-  const totalPaid = occBeforeDate.filter((o) => o.amount < 0).reduce((s, o) => s + Math.abs(o.amount), 0);
+  const totalPaid = occBeforeDate
+    .filter((o) => o.amount < 0)
+    .reduce((s, o) => s + Math.abs(o.amount), 0);
 
   // Mois actifs (depuis startDate jusqu'à asOfDate, ou 0 si pas de startDate)
   const monthsActive = loan.startDate ? monthsBetween(loan.startDate, asOf) : 0;
-  const monthsRemaining = loan.endDate ? monthsBetween(asOf, loan.endDate) : null;
+  const monthsRemaining = loan.endDate
+    ? monthsBetween(asOf, loan.endDate)
+    : null;
 
   // Capital restant — plannedFromSchedule
   let plannedFromSchedule: number | null = null;
   if (loan.amortizationSchedule && loan.amortizationSchedule.length > 0) {
     const asOfMonth = monthOf(asOf);
     const line = findScheduleLineForMonth(loan.amortizationSchedule, asOfMonth);
-    plannedFromSchedule = line ? line.capitalRemaining : loan.amortizationSchedule[0].capitalRemaining;
+    plannedFromSchedule = line
+      ? line.capitalRemaining
+      : loan.amortizationSchedule[0].capitalRemaining;
   }
 
   // Capital restant — estimatedFromOccurrences (via cumul capitalPaid des lignes
@@ -217,12 +265,17 @@ export function computeLoanState(loan: Loan, asOfDate?: string): LoanState {
       const schedule = loan.amortizationSchedule;
       let cumulCapitalPaid = 0;
       for (const occ of occBeforeDate) {
-        if (occ.source === 'early_repayment' && occ.amount < 0) cumulCapitalPaid += Math.abs(occ.amount);
+        if (occ.source === 'early_repayment' && occ.amount < 0)
+          cumulCapitalPaid += Math.abs(occ.amount);
       }
       for (const { occurrence, lineIndex } of matchDebitsToSchedule(loan)) {
-        if (lineIndex != null && occurrence.date <= asOf) cumulCapitalPaid += schedule[lineIndex].capitalPaid;
+        if (lineIndex != null && occurrence.date <= asOf)
+          cumulCapitalPaid += schedule[lineIndex].capitalPaid;
       }
-      estimatedFromOccurrences = Math.max(0, loan.initialPrincipal - cumulCapitalPaid);
+      estimatedFromOccurrences = Math.max(
+        0,
+        loan.initialPrincipal - cumulCapitalPaid,
+      );
     } else {
       // Fallback naïf : initialPrincipal - sum(amount). Inclut les intérêts,
       // donc sous-estime le capital restant. Mais pas de meilleur calcul.
@@ -250,4 +303,9 @@ export function computeLoanState(loan: Loan, asOfDate?: string): LoanState {
 }
 
 // Export aussi utility pour tests
-export const __test = { monthsBetween, findScheduleLineForMonth, monthOf, monthRank };
+export const __test = {
+  monthsBetween,
+  findScheduleLineForMonth,
+  monthOf,
+  monthRank,
+};

@@ -77,14 +77,17 @@ export interface DebitMatch {
  * peut les décaler »).
  *
  * Appariement ordonné (le n-ième prélèvement ne passe jamais avant le
- * (n−1)-ième), chaque prélèvement restant dans son mois ou glissant au mois
- * voisin (± 1 mois). Parmi les appariements possibles : le plus de
- * prélèvements rattachés, puis le moins de décalages, puis les dates les
- * plus proches des échéances. Un prélèvement en retard qui tombe dans le mois
- * de l'échéance suivante est donc rattaché au mois resté vide, au lieu d'être
- * écarté ; un vrai trou (aucun prélèvement à rattacher) reste un trou.
- * Un prélèvement sans échéance libre à ± 1 mois reste non rattaché
- * (`lineIndex: null`) : il compte dans le total prélevé, pas dans le capital.
+ * (n−1)-ième). Un prélèvement est rattaché à l'échéance de SON mois, ou —
+ * décalé — à celle d'un mois voisin (± 1 mois) qui n'a AUCUN prélèvement
+ * (revue L180). Un mois voisin déjà prélevé n'est jamais pris : un débit en
+ * trop (doublon, régularisation) ne pousse pas les échéances suivantes d'un
+ * mois, il n'y a donc jamais de chaîne de décalages. Parmi les appariements
+ * permis : le plus de prélèvements rattachés, puis le moins de décalages,
+ * puis les dates les plus proches des échéances. Un prélèvement en retard
+ * qui tombe dans le mois de l'échéance suivante est rattaché au mois resté
+ * vide ; un vrai trou (aucun prélèvement à rattacher) reste un trou.
+ * Un prélèvement sans échéance permise reste non rattaché (`lineIndex:
+ * null`) : il compte une fois dans le total prélevé, pas dans le capital.
  *
  * Miroir exact de `matchDebitsToSchedule` côté backend (loans-state.helper.ts).
  */
@@ -99,6 +102,11 @@ export function matchDebitsToSchedule(loan: Pick<Loan, 'occurrencesDetected' | '
   const m = lines.length;
   if (n === 0) return [];
   if (m === 0) return debits.map((occurrence) => ({ occurrence, lineIndex: null }));
+  // Mois qui portent un prélèvement (tout débit, remboursement anticipé compris) :
+  // aucun prélèvement décalé n'y est rattaché.
+  const debitMonths = new Set(
+    (loan.occurrencesDetected ?? []).filter((o) => o.amount < 0).map((o) => o.date.slice(0, 7)),
+  );
 
   // Score d'un préfixe : [rattachés, décalages, jours d'écart] — on maximise
   // le premier, puis on minimise les deux autres.
@@ -125,7 +133,7 @@ export function matchDebitsToSchedule(loan: Pick<Loan, 'occurrencesDetected' | '
         const d = debits[i - 1];
         const l = lines[j - 1].line;
         const shift = Math.abs(monthRank(d.date) - monthRank(l.date));
-        if (shift <= 1) {
+        if (shift === 0 || (shift === 1 && !debitMonths.has(l.date.slice(0, 7)))) {
           const prev = score[i - 1][j - 1];
           const cand: Score = [prev[0] + 1, prev[1] + shift, prev[2] + dayDistance(d.date, l.date)];
           if (best == null || better(cand, best)) {

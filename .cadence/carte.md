@@ -13,3 +13,9 @@
 ## Décisions (L173)
 - Titre d'onglet du détail d'un relevé : « <Mois Année> — Historique — Finance Tracker » (« Relevé introuvable — Historique » si absent, titre parent pendant le chargement) ; nom posé par `usePageTitleDetail`, lu par AppShell. README.md (paragraphe L169) décrit ce titre.
 - Texte de la Nouveauté L173 : le titre d'onglet est lu par un lecteur d'écran à l'OUVERTURE de la page (URL directe, nouvel onglet, rechargement), pas en navigation interne : l'app n'a ni annonceur de route ni focus déplacé (focus sur BODY après un clic, revue UX L173). Un annonceur de route serait un lot à part, pour toute l'app.
+
+## Décisions (L180, D-1 — échéancier réel d'un crédit, carte Crédits > Tableau d'amortissement)
+- `matchDebitsToSchedule` (front `lib/loan-state.ts`, miroir back `loans-state.helper.ts`, mêmes tests des deux côtés) : un prélèvement va à l'échéance de SON mois, ou à celle d'un mois voisin qui n'a AUCUN débit. Un mois voisin déjà prélevé n'est jamais pris : un débit en trop reste non rattaché (compté une fois dans les mensualités, pas dans le capital), jamais de chaîne de décalages.
+- Courbe Réel (`lib/amortization-series.ts`) : un point seulement dans un mois où un débit a eu lieu ; il compte chaque échéance rattachée au mois de SON débit (avance comprise). « Dernier prélèvement connu » = mois du dernier débit réel. Une échéance prélevée le mois voisin n'est pas un trou (pas de « aucun prélèvement ») : pas de point ce mois-là, l'infobulle dit « Échéance prélevée en … » / « Prélèvement compté pour l'échéance de/d'… », la phrase « Échéance de/d'X prélevée en Y ».
+- Tests de cohérence (`amortization-chart.test.tsx`) : lus sur ce que l'écran rend (phrase, infobulles) contre les débits du jeu.
+- Nouveautés compilées à la main (même format que `cadence news build`) quand cadence n'est pas disponible, puis `nouveautes-tailles.mjs` et `npm run plan`.
