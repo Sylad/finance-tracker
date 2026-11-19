@@ -677,8 +677,9 @@
     {
       "id": "L177",
       "title": "Crédits : la courbe « Réel » s'arrête au dernier prélèvement connu",
-      "status": "doing",
-      "started": "2026-11-18"
+      "status": "done",
+      "started": "2026-11-18",
+      "finished": "2026-11-19"
     }
   ]
 }

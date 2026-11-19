@@ -2017,13 +2017,14 @@ lots:
       - { date: 2026-11-18, text: "Livraison 63aea44 : titres publics livrés « Relevé : l'onglet du navigateur nomme le mois affiché ». Article : ../claude-code-codex/frontend/src/pages/case-studies/finance-tracker.astro. Sections à relire : (aucun titre trouvé : relire tout l'article). Réécrire ce que ces changements rendent faux ou incomplet, sans rien inventer ; les commits du dépôt ../claude-code-codex citent le lot et « finance-tracker »." }
   - id: L177
     title: "Graphique d'amortissement : la courbe « Réel (estimé) » s'arrête au dernier prélèvement connu au lieu de rester plate jusqu'à la fin du crédit (vu sur la capture de L175 : ligne verte à 6 749 € jusqu'en 2029, lue comme un capital qui ne baisse plus) — amortization-chart.tsx"
-    status: doing
+    status: done
     estimate: 1
     visible: true
     created: 2026-11-18
     started: 2026-11-18
-    review: { date: 2026-11-18, verdict: "conforme (r1) : courbe arrêtée au dernier prélèvement, prélèvement décalé et virement entrant testés, légende et unités justes ; 6/6 tests ciblés. Mineurs reportés en lot. Rapport scratchpad/revues/finance-L177-r1.md", commit: 7ac53c052b6541a29c0b236b3556460cc790c2ae }
+    review: { date: 2026-11-19, verdict: "conforme : 940de1c ne régénère que les Nouveautés et le plan publiés (fichiers générés), revu par le lead le 18-11", commit: 940de1cd2cce8b45a340b1d3a8bd84499af82bb2 }
     ux: { date: 2026-11-18, verdict: "conforme (lead, captures 1440/390) : courbe Réel arrêtée en 10/2026 avec point, phrase sous le graphique, infobulle « Prévu » seul après le dernier prélèvement ; rien ne déborde au téléphone" }
+    finished: 2026-11-19
   - id: L178
     title: "Graphique d'amortissement : dire l'absence de prélèvement d'un mois manquant au milieu de la courbe Réel (infobulle muette, la ligne traverse le trou) ; et dernier prélèvement tombé dans un mois sans échéance : point absent, phrase qui cite un mois trop tôt (revue r1 de L177)"
     status: todo
