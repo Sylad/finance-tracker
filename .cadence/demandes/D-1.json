@@ -3,11 +3,11 @@
  "texte": "la logique c'est que chaque virement soit retiré qu'une fois au crédits, après les \"retard\" qui sont juste que les débits ne se font pas toujours exactement à la même date, oui on peu les décaler",
  "date": "2026-11-19",
  "origine": "session du lead : question sur la règle métier relevée hors lot par la revue de L178 (un prélèvement en retard qui tombe un mois ayant déjà le sien n'est pas compté)",
- "etat": "ouverte",
+ "etat": "livrée",
  "lots": [
   "L180"
  ],
- "preuve": "",
+ "preuve": "L180 livré en prod (démo) b96cc67 le 19-11 : revues code r2 et UX conformes, cadence deliver vert",
  "precisions": [
   {
    "date": "2026-11-19",
