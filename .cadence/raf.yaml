@@ -2047,12 +2047,21 @@ lots:
     created: 2026-11-19
   - id: L180
     title: "Échéancier réel d'un crédit (D-1) : chaque prélèvement compte une fois et une seule ; un prélèvement décalé (date qui glisse d'un mois à l'autre) est rattaché au mois voisin sans prélèvement au lieu d'être écarté — plus de faux trou « aucun prélèvement » ni de courbe Réel décalée d'une échéance (règle de Sylvain du 19-11, relevé hors lot de la revue de L178, amortization-series.ts)"
-    status: todo
+    status: done
     estimate: 0.5
     visible: true
     created: 2026-11-19
     notes:
       - { date: 2026-11-19, text: "19-11, précision de Sylvain : « il faut juste que ça reste cohérent » — le décalage ne doit jamais rendre les chiffres contradictoires : somme des prélèvements comptés = total prélevé, nombre de mensualités prélevées, capital restant, % écoulé, mois restants, infobulle et phrase d'accord entre eux ; un test le vérifie sur des jeux avec décalages." }
+    started: 2026-11-19
+    review: { date: 2026-11-19, verdict: "conforme (r2) : un prélèvement en trop ne décale plus rien, Réel seulement aux mois prélevés, dernier prélèvement connu = dernier débit (avance comprise) ; Nouveautés régénérées ; porte verte à a5cc2e2 ; suite L181 (remboursement anticipé)", commit: a5cc2e2a3f5066c230225f74d5e66380807734be }
+    ux: { date: 2026-11-19, verdict: "conforme : 5 jeux (nominal, retard, avance, vrai trou + 2 en trop, disputé) à 1440 et 390 px, chiffres / infobulle / phrase d'accord ; contraste 6,96-7,47:1 ; captures vues par le lead ; mineurs en notes (mois du prélèvement non rattaché, apostrophes mêlées, infobulle large à 390 px)" }
+    finished: 2026-11-19
+  - id: L181
+    title: "Échéancier réel : un remboursement anticipé seul dans un mois empêche d'y rattacher la mensualité décalée (suite de la revue r2 de L180, D-1)"
+    status: todo
+    estimate: 1
+    created: 2026-11-19
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
