@@ -37,6 +37,10 @@ interface Props {
  *   avait baissé normalement ; son infobulle dit qu'aucun prélèvement n'a été
  *   trouvé, et la phrase sous le graphique le cite. Un prélèvement tombé dans
  *   un mois sans échéance a son propre point (L178).
+ *   Chaque prélèvement est rattaché à UNE échéance (L180, D-1) : un
+ *   prélèvement dont la date a glissé dans le mois voisin compte pour le mois
+ *   resté vide — pas de faux trou ni de courbe décalée d'une échéance — et
+ *   l'infobulle dit où il a été prélevé.
  *
  * Affiché collapsed par défaut, déplie au click.
  */
@@ -44,7 +48,7 @@ export function AmortizationChart({ loan }: Props) {
   const [open, setOpen] = useState(false);
   const schedule = loan.amortizationSchedule;
 
-  const { points: data, lastKnownMonth } = useMemo(() => buildAmortizationSeries(loan), [loan]);
+  const { points: data, lastKnownMonth, unmatchedCount } = useMemo(() => buildAmortizationSeries(loan), [loan]);
   const missingMonths = data.filter((p) => p.missing).map((p) => p.month);
 
   if (!schedule || schedule.length === 0) return null;
@@ -110,7 +114,7 @@ export function AmortizationChart({ loan }: Props) {
             </ResponsiveContainer>
           </div>
           <p className="mt-1 text-xs text-fg-muted" data-testid="amortization-reel-note">
-            {reelNote(lastKnownMonth, missingMonths)}
+            {reelNote(lastKnownMonth, missingMonths, unmatchedCount)}
           </p>
         </>
       )}
@@ -126,13 +130,19 @@ function showReelDot(points: AmortizationPoint[], index: number, lastKnownMonth:
   return Boolean(points[index - 1]?.missing || points[index + 1]?.missing);
 }
 
-function reelNote(lastKnownMonth: string | null, missingMonths: string[]): string {
+function reelNote(lastKnownMonth: string | null, missingMonths: string[], unmatchedCount = 0): string {
   if (!lastKnownMonth) return 'Réel (estimé) : aucun prélèvement détecté pour ce crédit.';
   const base = `Réel (estimé) : jusqu'au dernier prélèvement connu, ${monthLabel(lastKnownMonth)}.`;
-  if (missingMonths.length === 0) return base;
+  // L180 : un prélèvement sans échéance libre à ± 1 mois compte dans les
+  // mensualités prélevées mais pas dans le capital — la phrase le dit.
+  const extra =
+    unmatchedCount > 0
+      ? ` ${unmatchedCount} prélèvement${unmatchedCount > 1 ? 's' : ''} sans échéance correspondante, non compté${unmatchedCount > 1 ? 's' : ''} dans le capital.`
+      : '';
+  if (missingMonths.length === 0) return base + extra;
   const list = missingMonths.map(monthLabel);
   const listed = list.length <= 3 ? joinFr(list) : `${joinFr(list.slice(0, 3))} et ${list.length - 3} autre${list.length - 3 > 1 ? 's' : ''}`;
-  return `${base} Interrompue en ${listed} : aucun prélèvement trouvé${list.length > 1 ? ' ces mois-là' : ' ce mois-là'}.`;
+  return `${base} Interrompue en ${listed} : aucun prélèvement trouvé${list.length > 1 ? ' ces mois-là' : ' ce mois-là'}.${extra}`;
 }
 
 function joinFr(items: string[]): string {
@@ -159,6 +169,13 @@ export function AmortizationTooltip({ point }: { point: AmortizationPoint }) {
         // L178 : un trou au milieu de la courbe se dit, l'infobulle ne reste pas muette.
         <p style={{ color: '#fbbf24' }}>Réel (estimé) : aucun prélèvement trouvé ce mois-ci</p>
       ) : null}
+      {/* L180 : prélèvement décalé d'un mois, rattaché à l'échéance restée vide. */}
+      {point.paidIn.length > 0 && (
+        <p className="text-fg-muted">Échéance prélevée en {joinFr(point.paidIn.map(monthLabel))}</p>
+      )}
+      {point.countedFor.length > 0 && (
+        <p className="text-fg-muted">Prélèvement compté pour l’échéance de {joinFr(point.countedFor.map(monthLabel))}</p>
+      )}
     </div>
   );
 }

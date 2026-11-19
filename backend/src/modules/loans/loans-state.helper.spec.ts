@@ -1,4 +1,4 @@
-import { computeLoanState, __test } from './loans-state.helper';
+import { computeLoanState, matchDebitsToSchedule, __test } from './loans-state.helper';
 import type { Loan } from '../../models/loan.model';
 
 const baseLoan: Loan = {
@@ -164,5 +164,48 @@ describe('helper internals', () => {
     expect(__test.findScheduleLineForMonth(schedule, '2024-08')?.date).toBe('2024-07-01');
     expect(__test.findScheduleLineForMonth(schedule, '2024-09')?.date).toBe('2024-09-01');
     expect(__test.findScheduleLineForMonth(schedule, '2024-05')).toBeNull();
+  });
+});
+
+describe('matchDebitsToSchedule — prélèvements décalés (L180, D-1, miroir du frontend)', () => {
+  const schedule = ['01', '02', '03', '04', '05', '06'].map((m, i) => ({
+    date: `2026-${m}-05`,
+    capitalRemaining: 6000 - 1000 * (i + 1),
+    capitalPaid: 1000,
+    interestPaid: 50,
+  }));
+  const loanWith = (dates: string[]): Loan => ({
+    ...baseLoan,
+    initialPrincipal: 6000,
+    amortizationSchedule: schedule,
+    occurrencesDetected: dates.map((date) => ({ id: date, statementId: 's', date, amount: -1050, transactionId: null })),
+  });
+  const slots = (dates: string[]) =>
+    matchDebitsToSchedule(loanWith(dates)).map((m) => (m.lineIndex == null ? null : schedule[m.lineIndex].date.slice(0, 7)));
+
+  it('février prélevé le 2 mars : rattaché à février, chaque prélèvement compte une fois', () => {
+    expect(slots(['2026-01-05', '2026-03-02', '2026-03-30', '2026-04-05'])).toEqual(['2026-01', '2026-02', '2026-03', '2026-04']);
+    const state = computeLoanState(loanWith(['2026-01-05', '2026-03-02', '2026-03-30', '2026-04-05']), '2026-04-30');
+    expect(state.capitalRemaining.estimatedFromOccurrences).toBe(2000);
+    expect(state.capitalRemaining.gap).toBe(0);
+    expect(state.totalPaid).toBe(4200);
+  });
+
+  it('décalages en chaîne puis un mois vide : tout est rattaché', () => {
+    expect(slots(['2026-01-05', '2026-03-01', '2026-03-31', '2026-04-30'])).toEqual(['2026-01', '2026-02', '2026-03', '2026-04']);
+  });
+
+  it('un vrai trou reste un trou', () => {
+    expect(slots(['2026-01-05', '2026-03-05', '2026-04-05'])).toEqual(['2026-01', '2026-03', '2026-04']);
+  });
+
+  it('prélèvement en trop, voisins pleins : non rattaché, aucune échéance comptée deux fois', () => {
+    const dates = ['2026-01-05', '2026-02-05', '2026-02-20', '2026-03-05', '2026-04-05', '2026-05-05', '2026-06-05'];
+    expect(slots(dates)).toEqual(['2026-01', '2026-02', null, '2026-03', '2026-04', '2026-05', '2026-06']);
+    expect(computeLoanState(loanWith(dates), '2026-12-31').capitalRemaining.estimatedFromOccurrences).toBe(0);
+  });
+
+  it('dernière échéance prélevée le mois suivant, hors tableau : rattachée à la dernière échéance', () => {
+    expect(slots(['2026-04-05', '2026-05-05', '2026-07-02'])).toEqual(['2026-04', '2026-05', '2026-06']);
   });
 });
