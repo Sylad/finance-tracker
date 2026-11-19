@@ -2032,6 +2032,7 @@ lots:
     status: done
     estimate: 1
     visible: true
+    delivered: { date: 2026-11-19, sha: 28d815889eff8e1601713fb8d0b4ec590be7ffd2 }
     created: 2026-11-18
     started: 2026-11-19
     review: { date: 2026-11-19, verdict: "conforme (revue 19-11 : 15 tests verts, 9 échecs sans le correctif ; 7 mineurs → L179)", commit: c522b790bc57aacf414d815963c8211d6fb11429 }
