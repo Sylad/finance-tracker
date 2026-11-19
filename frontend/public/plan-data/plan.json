@@ -684,8 +684,9 @@
     {
       "id": "L178",
       "title": "Crédits : un mois sans prélèvement se voit sur la courbe « Réel »",
-      "status": "doing",
-      "started": "2026-11-19"
+      "status": "done",
+      "started": "2026-11-19",
+      "finished": "2026-11-19"
     }
   ]
 }

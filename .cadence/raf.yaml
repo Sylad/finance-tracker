@@ -2029,11 +2029,20 @@ lots:
     finished: 2026-11-19
   - id: L178
     title: "Graphique d'amortissement : dire l'absence de prélèvement d'un mois manquant au milieu de la courbe Réel (infobulle muette, la ligne traverse le trou) ; et dernier prélèvement tombé dans un mois sans échéance : point absent, phrase qui cite un mois trop tôt (revue r1 de L177)"
-    status: doing
+    status: done
     estimate: 1
     visible: true
     created: 2026-11-18
     started: 2026-11-19
+    review: { date: 2026-11-19, verdict: "conforme (revue 19-11 : 15 tests verts, 9 échecs sans le correctif ; 7 mineurs → L179)", commit: c522b790bc57aacf414d815963c8211d6fb11429 }
+    ux: { date: 2026-11-19, verdict: "conforme (lead, captures 1440/390 : courbe Réel interrompue en juillet, point d'octobre, phrase juste ; mineur : infobulle « ce mois-ci » pour un mois passé → « ce mois-là », L179)" }
+    finished: 2026-11-19
+  - id: L179
+    title: "Graphique d'amortissement, suites de L178 : infobulle « ce mois-ci » → « ce mois-là » ; montants de l'infobulle arrondis à l'euro sans centimes (formatEURRounded, invariant 2) ; double « et » au-delà de 3 mois manquants ; mois écrit d'une seule façon (axe, infobulle, phrase) et axe Y en formatEURCompact ; « pas d'échéance ce mois » aussi avant la 1re échéance ; Nouveauté juste pour plusieurs mois manquants de suite ; tests du point de juillet et du branchement de l'infobulle"
+    status: todo
+    estimate: 0.5
+    visible: true
+    created: 2026-11-19
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
