@@ -2050,6 +2050,7 @@ lots:
     status: done
     estimate: 0.5
     visible: true
+    delivered: { date: 2026-11-19, sha: b96cc674ab2ad44004209ed312d7c187893349c7 }
     created: 2026-11-19
     notes:
       - { date: 2026-11-19, text: "19-11, précision de Sylvain : « il faut juste que ça reste cohérent » — le décalage ne doit jamais rendre les chiffres contradictoires : somme des prélèvements comptés = total prélevé, nombre de mensualités prélevées, capital restant, % écoulé, mois restants, infobulle et phrase d'accord entre eux ; un test le vérifie sur des jeux avec décalages." }
