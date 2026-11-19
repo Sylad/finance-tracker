@@ -20,8 +20,17 @@ code { font-size: 13px; padding: 1px 4px; border-radius: 4px; background: var(--
 </style>
 </head>
 <body>
-<header><h1>finance-tracker — nouveautés</h1><p class="meta">Généré le 2026-11-18 17:38 par cadence</p></header>
+<header><h1>finance-tracker — nouveautés</h1><p class="meta">Généré le 2026-11-19 09:19 par cadence</p></header>
 <main>
+<article id="2026-11-19-amortissement-mois-sans-prelevement">
+  <h2>Crédits : un mois sans prélèvement se voit sur la courbe « Réel »</h2>
+  <p class="meta"><time datetime="2026-11-19">2026-11-19</time> · L178</p>
+  <p>Dans le tableau d'amortissement d'un crédit, si un mois n'a aucun prélèvement retrouvé dans tes relevés alors que les mois d'avant et d'après en ont un, la courbe verte « Réel (estimé) » s'interrompt sur ce mois au lieu de le traverser comme si le capital avait baissé normalement. Au survol, l'infobulle de ce mois le dit : « aucun prélèvement trouvé ce mois-ci ». La phrase sous le graphique cite aussi les mois interrompus.</p>
+<p>Quand le dernier prélèvement tombe un mois où le tableau ne prévoit pas d'échéance (une mensualité prélevée en retard, par exemple), il a maintenant son propre point sur la courbe, et la phrase cite bien ce mois-là. L'infobulle précise alors « pas d'échéance ce mois ».</p>
+  <a href="captures/2026-11-19-amortissement-trou-courbe.png"><img src="captures/2026-11-19-amortissement-trou-courbe.png" alt="Graphique d'amortissement du crédit CETELEM : la courbe verte Réel (estimé) s'interrompt en juillet 2026 entre deux points, puis reprend jusqu'au dernier prélèvement d'octobre 2026 ; la phrase dessous cite le mois interrompu." loading="lazy"></a>
+  <a href="captures/2026-11-19-amortissement-infobulle-mois-manquant.png"><img src="captures/2026-11-19-amortissement-infobulle-mois-manquant.png" alt="Infobulle de juillet 2026 : Prévu 7 379,00 €, et en orange « Réel (estimé) : aucun prélèvement trouvé ce mois-ci »." loading="lazy"></a>
+  <a href="captures/2026-11-19-amortissement-prelevement-hors-echeance-390.png"><img src="captures/2026-11-19-amortissement-prelevement-hors-echeance-390.png" alt="Sur téléphone, infobulle d'octobre 2026, mois sans échéance au tableau : Prévu 6 960,00 € (pas d'échéance ce mois), Réel (estimé) 6 958,00 €." loading="lazy"></a>
+</article>
 <article id="2026-11-18-amortissement-courbe-reel-dernier-prelevement">
   <h2>Crédits : la courbe « Réel » s'arrête au dernier prélèvement connu</h2>
   <p class="meta"><time datetime="2026-11-18">2026-11-18</time> · L177</p>
