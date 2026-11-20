@@ -3,7 +3,8 @@ import { BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { chartTick, chartLegendStyle } from '@/lib/chart-theme';
 import type { Loan } from '@/types/api';
-import { formatEUR, formatEURCompact, chartTooltipProps, formatMonthShort } from '@/lib/utils';
+import { formatEUR, formatEURCompact, chartTooltipProps } from '@/lib/utils';
+import { monthAxisLabel, monthLabel } from '@/lib/month-label';
 import { LOAN_COLORS, chartSeriesNames, monthlyCharge } from './utils';
 
 /**
@@ -42,10 +43,7 @@ export function LoansMonthlyChart({ loans, statementMonths }: { loans: Loan[]; s
 
   const uncoveredLabels = data
     .filter((row) => isUncovered(row.month as string))
-    .map((row) => {
-      const [y, mm] = (row.month as string).split('-');
-      return formatMonthShort(Number(mm), Number(y));
-    })
+    .map((row) => monthLabel(row.month as string))
     .join(', ');
 
   const names = useMemo(() => chartSeriesNames(visibleLoans), [visibleLoans]);
@@ -81,10 +79,8 @@ export function LoansMonthlyChart({ loans, statementMonths }: { loans: Loan[]; s
             <XAxis
               dataKey="month"
               tick={chartTick}
-              tickFormatter={(m: string) => {
-                const [y, mm] = m.split('-');
-                return formatMonthShort(Number(mm), Number(y));
-              }}
+              // L182 : forme courte sur l'axe seulement (la place manque à 12 barres).
+              tickFormatter={monthAxisLabel}
             />
             <YAxis
               tick={chartTick}
@@ -94,10 +90,7 @@ export function LoansMonthlyChart({ loans, statementMonths }: { loans: Loan[]; s
             />
             <Tooltip
               {...chartTooltipProps}
-              labelFormatter={(m: string) => {
-                const [y, mm] = m.split('-');
-                return formatMonthShort(Number(mm), Number(y));
-              }}
+              labelFormatter={monthLabel}
               formatter={(v: number, name: string) => [formatEUR(v), seriesName(name)]}
             />
             <Legend
@@ -134,11 +127,10 @@ export function LoansMonthlyChart({ loans, statementMonths }: { loans: Loan[]; s
           </thead>
           <tbody>
             {data.map((row) => {
-              const [y, mm] = (row.month as string).split('-');
               return (
                 <tr key={row.month as string}>
                   <th scope="row">
-                    {formatMonthShort(Number(mm), Number(y))}
+                    {monthLabel(row.month as string)}
                     {isUncovered(row.month as string) ? ' (sans relevé)' : ''}
                   </th>
                   {visibleLoans.map((l) => {

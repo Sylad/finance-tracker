@@ -12,7 +12,8 @@ import {
 } from 'recharts';
 import { CHART_FONT_SIZE, chartTickCurrentColor, chartLegendStyle } from '@/lib/chart-theme';
 import type { Loan } from '@/types/api';
-import { formatEURCompact, formatEURRounded, formatMonth } from '@/lib/utils';
+import { formatEURCompact, formatEURRounded } from '@/lib/utils';
+import { monthAxisLabel, monthLabel } from '@/lib/month-label';
 import { buildAmortizationSeries, type AmortizationPoint } from '@/lib/amortization-series';
 
 interface Props {
@@ -81,8 +82,9 @@ export function AmortizationChart({ loan }: Props) {
                   axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                   interval="preserveStartEnd"
                   minTickGap={12}
-                  // L179 : le mois s'écrit comme dans l'infobulle et la phrase (« juillet 2026 »).
-                  tickFormatter={monthLabel}
+                  // L182 : forme courte d'axe, la même que l'autre graphique de /loans
+                  // (« Juil 26 ») ; infobulle et phrase gardent « juillet 2026 ».
+                  tickFormatter={monthAxisLabel}
                 />
                 <YAxis
                   tick={chartTickCurrentColor}
@@ -234,8 +236,3 @@ export function deMois(label: string): string {
   return /^[aeiouyàâéèêîôûœ]/i.test(label) ? `d’${label}` : `de ${label}`;
 }
 
-/** Le mois d'un point, écrit d'une seule façon (axe, infobulle, phrase) : « juillet 2026 ». */
-export function monthLabel(month: string): string {
-  const [y, m] = month.split('-').map(Number);
-  return formatMonth(m, y).toLowerCase();
-}

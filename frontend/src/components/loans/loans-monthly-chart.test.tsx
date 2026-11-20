@@ -4,6 +4,7 @@ import type { Loan } from '@/types/api';
 import { LoansMonthlyChart } from './loans-monthly-chart';
 import { chartSeriesNames } from './utils';
 import { formatEURCompact } from '@/lib/utils';
+import { monthAxisLabel, monthLabel } from '@/lib/month-label';
 
 function monthKey(offset: number): string {
   const d = new Date(new Date().getFullYear(), new Date().getMonth() - offset, 1);
@@ -112,4 +113,18 @@ describe('Crédits — graphe des mensualités (L136, WCAG 1.4.1 / 1.1.1)', () =
 vi.mock('recharts', async (orig) => {
   const m = await orig<typeof import('recharts')>();
   return { ...m, ResponsiveContainer: () => null };
+});
+
+describe('L182 — une seule forme de mois hors de l’axe', () => {
+  it('note visible et tableau écrivent « juillet 2026 », jamais la forme d’axe', () => {
+    const couverts = new Set([monthKey(0), monthKey(1)]);
+    render(<LoansMonthlyChart loans={[cofidisA]} statementMonths={couverts} />);
+    const note = screen.getByTestId('loans-chart-uncovered-note').textContent ?? '';
+    expect(note).toContain(monthLabel(monthKey(11)));
+    expect(note).not.toContain(monthAxisLabel(monthKey(11)));
+    const table = screen.getByRole('table', { name: /charge crédits/i });
+    const heads = within(table).getAllByRole('rowheader').map((h) => h.textContent ?? '');
+    expect(heads).toHaveLength(12);
+    heads.forEach((h, i) => expect(h.startsWith(monthLabel(monthKey(11 - i)))).toBe(true));
+  });
 });

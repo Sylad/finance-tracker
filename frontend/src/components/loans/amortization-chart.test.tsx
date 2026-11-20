@@ -4,7 +4,8 @@ import type { AmortizationLine, Loan, LoanOccurrence } from '@/types/api';
 import { mensualitesCount } from './utils';
 import { formatEURCompact, formatMonth } from '@/lib/utils';
 import { buildAmortizationSeries } from '@/lib/amortization-series';
-import { AmortizationChart, AmortizationTooltip, deMois, listFr, monthLabel } from './amortization-chart';
+import { AmortizationChart, AmortizationTooltip, deMois, listFr } from './amortization-chart';
+import { monthAxisLabel, monthLabel } from '@/lib/month-label';
 
 // jsdom ne mesure rien : ResponsiveContainer rendrait un graphique de taille 0,
 // sans aucun tracé. On lui donne une taille fixe pour lire les chemins SVG.
@@ -196,7 +197,7 @@ describe('Graphique d’amortissement — trous et prélèvements hors échéanc
     );
     // Le point final (juillet) est dessiné.
     const ticks = [...container.querySelectorAll('.recharts-cartesian-axis-tick-value')].map((t) => t.textContent);
-    expect(ticks).toContain('juillet 2026');
+    expect(ticks).toContain(monthAxisLabel('2026-07'));
     expect(container.querySelectorAll('circle[fill="#10b981"]').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -490,14 +491,14 @@ describe('Graphique d’amortissement — écriture des mois et des montants (L1
     expect(jan).not.toMatch(/,\d\d\s?€/);
   });
 
-  it('le mois s’écrit d’une seule façon : axe, infobulle et phrase', () => {
+  it('L182 — axe en forme courte (« Jan 26 »), infobulle et phrase en forme de texte (« février 2026 »)', () => {
     const l = loan([occ('2026-01-08', -1050), occ('2026-03-08', -1050), occ('2026-04-08', -1050)]);
     const { container } = open(l);
     const ticks = xTicks(container);
     expect(ticks.length).toBeGreaterThan(0);
-    for (const t of ticks) expect(t).toMatch(/^[a-zéû]+ \d{4}$/);
-    expect(ticks).toContain('janvier 2026');
-    // Février : l'axe (s'il l'affiche), l'infobulle et la phrase écrivent « février 2026 ».
+    for (const t of ticks) expect(t).toMatch(/^[A-ZÉ][a-zéû]{2,3} \d{2}$/);
+    expect(ticks).toContain(monthAxisLabel('2026-01'));
+    // Février : l'infobulle et la phrase écrivent « février 2026 ».
     expect(tipOf(l, '2026-02').startsWith('février 2026')).toBe(true);
     expect(screen.getByTestId('amortization-reel-note').textContent).toContain('Interrompue en février 2026');
     expect(monthLabel('2026-02')).toBe('février 2026');
@@ -540,7 +541,7 @@ describe('Graphique d’amortissement — écriture des mois et des montants (L1
   it('le point de juillet est dessiné à l’abscisse de juillet, au niveau de 0 €', () => {
     const { container } = open(juilletHorsTableau());
     const tick = [...container.querySelectorAll('.recharts-xAxis .recharts-cartesian-axis-tick')].find(
-      (t) => t.textContent === 'juillet 2026',
+      (t) => t.textContent === monthAxisLabel('2026-07'),
     );
     expect(tick).toBeDefined();
     const tickX = Number(tick!.querySelector('text')!.getAttribute('x'));
@@ -557,7 +558,7 @@ describe('Graphique d’amortissement — écriture des mois et des montants (L1
   it('branchement de l’infobulle : survoler le graphique affiche l’infobulle du mois survolé', () => {
     const { container } = open(juilletHorsTableau());
     const tick = [...container.querySelectorAll('.recharts-xAxis .recharts-cartesian-axis-tick')].find(
-      (t) => t.textContent === 'juillet 2026',
+      (t) => t.textContent === monthAxisLabel('2026-07'),
     )!;
     const x = Number(tick.querySelector('text')!.getAttribute('x'));
     expect(screen.queryByTestId('amortization-tooltip')).toBeNull();

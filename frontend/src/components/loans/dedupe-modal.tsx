@@ -6,7 +6,7 @@ import {
   type LoanDuplicateGroup,
 } from '@/lib/queries';
 import { Dialog } from '@/components/dialog';
-import { formatEUR, cn } from '@/lib/utils';
+import { formatEUR, formatDate, cn } from '@/lib/utils';
 
 type RowStatus = 'keep' | 'merge' | 'ignore';
 
@@ -180,7 +180,7 @@ function DedupeGroupCard({
                       <span className={l.isActive ? 'text-positive' : 'text-fg-dim'}>
                         · {l.isActive ? 'actif' : 'archivé'}
                       </span>
-                      <span className="text-fg-dim">· créé {formatShortDate(l.createdAt)}</span>
+                      <span className="text-fg-dim">· créé {formatDate(l.createdAt)}</span>
                     </div>
                     {l.rumRefs && l.rumRefs.length > 0 && (
                       <div className="text-xs text-fg-muted font-mono mt-0.5 break-all">
@@ -220,11 +220,6 @@ function DedupeGroupCard({
   );
 }
 
-function formatShortDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
-}
 
 function SegmentedControl({
   value,

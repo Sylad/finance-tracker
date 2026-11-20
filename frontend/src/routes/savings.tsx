@@ -18,7 +18,8 @@ import {
   type SavingsAccountType,
   SAVINGS_TYPE_LABELS,
 } from '@/types/api';
-import { formatEUR, formatMonth, formatRatePercent, maskAccountNumber, ratePercentInput } from '@/lib/utils';
+import { formatEUR, formatRatePercent, maskAccountNumber, ratePercentInput } from '@/lib/utils';
+import { monthLabel } from '@/lib/month-label';
 import { savingsCurve } from '@/lib/savings-curve';
 import { lastMovement, movementRows } from '@/lib/savings-last-movement';
 
@@ -117,7 +118,6 @@ function toInput(a: SavingsAccount): SavingsAccountInput {
   };
 }
 
-const monthLabel = (ym: string) => formatMonth(Number(ym.slice(5, 7)), Number(ym.slice(0, 4))).toLowerCase();
 
 function SavingsCard({ account, onEdit, onDelete }: { account: SavingsAccount; onEdit: () => void; onDelete: () => void }) {
   const { data: hist } = useSavingsHistory(account.id, 12);
