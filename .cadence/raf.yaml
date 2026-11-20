@@ -2067,6 +2067,7 @@ lots:
     notes:
       - { date: 2026-11-19, text: "QA prod du 19-11 (L180) : /loans conforme à 1440 et 390 px ; ajouter à docs/qa/expectations.md une ligne /loans sur le tableau d'amortissement (phrase « dernier prélèvement connu », courbe Réel) — à faire avec ce lot" }
     started: 2026-11-20
+    review: { date: 2026-11-20, verdict: "conforme : 0 bloquant, 0 suite (revue r1 du 20-11, b61ea63)", commit: b61ea63c2728e60df75d41d7dd8e57c3e13a7e92 }
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
