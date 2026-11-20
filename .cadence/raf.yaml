@@ -2086,6 +2086,7 @@ lots:
     visible: true
     created: 2026-11-20
     started: 2026-11-20
+    review: { date: 2026-11-20, verdict: "non conforme : 2 majeurs — Nouveauté L182 absente et Nouveauté L179 qui annonce encore « juillet 2026 » sur l'axe ; infobulle de Charge crédits (loans-monthly-chart.tsx:93) sans test ; 2 mineurs — garde month-label contournable (référence, import renommé, mois en dur autres que juillet), date de dedupe-modal non testée (revue r1 du 20-11)", commit: 62ea4df4fac757771c8e37d792faa5bb14457452 }
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
