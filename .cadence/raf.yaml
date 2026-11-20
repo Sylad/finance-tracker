@@ -2048,6 +2048,7 @@ lots:
     visible: true
     created: 2026-11-19
     started: 2026-11-20
+    review: { date: 2026-11-20, verdict: "conforme : 0 bloquant, 0 suite (revue r1 du 20-11, 09c5575)", commit: 09c5575f02a076c43e2693f774e42b0da10fe0b7 }
   - id: L180
     title: "Échéancier réel d'un crédit (D-1) : chaque prélèvement compte une fois et une seule ; un prélèvement décalé (date qui glisse d'un mois à l'autre) est rattaché au mois voisin sans prélèvement au lieu d'être écarté — plus de faux trou « aucun prélèvement » ni de courbe Réel décalée d'une échéance (règle de Sylvain du 19-11, relevé hors lot de la revue de L178, amortization-series.ts)"
     status: done
