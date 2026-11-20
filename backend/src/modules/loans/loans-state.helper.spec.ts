@@ -432,6 +432,53 @@ describe('matchDebitsToSchedule — prélèvements décalés (L180, D-1, miroir 
     ]);
   });
 
+  it('remboursement anticipé seul en février, février prélevé le 2 mars : la mensualité décalée va à février (L181)', () => {
+    const loan: Loan = {
+      ...loanWith(['2026-01-05', '2026-03-02', '2026-03-30', '2026-04-05']),
+    };
+    loan.occurrencesDetected = [
+      ...loan.occurrencesDetected,
+      {
+        id: 'anticipe',
+        statementId: 's',
+        date: '2026-02-15',
+        amount: -500,
+        transactionId: null,
+        source: 'early_repayment',
+      },
+    ];
+    expect(
+      matchDebitsToSchedule(loan).map((m) =>
+        m.lineIndex == null ? null : schedule[m.lineIndex].date.slice(0, 7),
+      ),
+    ).toEqual(['2026-01', '2026-02', '2026-03', '2026-04']);
+    const state = computeLoanState(loan, '2026-04-30');
+    expect(state.capitalRemaining.estimatedFromOccurrences).toBe(1500);
+    expect(state.totalPaid).toBe(4 * 1050 + 500);
+  });
+
+  it('un mois avec une mensualité ET un anticipé reste pris : pas de décalage vers lui (L181)', () => {
+    const loan = loanWith([
+      '2026-01-05',
+      '2026-01-25',
+      '2026-02-05',
+      '2026-03-05',
+    ]);
+    loan.occurrencesDetected.push({
+      id: 'anticipe',
+      statementId: 's',
+      date: '2026-02-15',
+      amount: -500,
+      transactionId: null,
+      source: 'early_repayment',
+    });
+    expect(
+      matchDebitsToSchedule(loan).map((m) =>
+        m.lineIndex == null ? null : schedule[m.lineIndex].date.slice(0, 7),
+      ),
+    ).toEqual(['2026-01', null, '2026-02', '2026-03']);
+  });
+
   it('dernière échéance prélevée le mois suivant, hors tableau : rattachée à la dernière échéance', () => {
     expect(slots(['2026-04-05', '2026-05-05', '2026-07-02'])).toEqual([
       '2026-04',

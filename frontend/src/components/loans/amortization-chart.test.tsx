@@ -399,3 +399,54 @@ describe('Graphique d’amortissement — prélèvements décalés d’un mois (
     });
   }
 });
+
+describe('Graphique d’amortissement — remboursement anticipé seul dans un mois (L181, D-1)', () => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+
+  /**
+   * Anticipé de 500 € le 15 février (seul débit de février) ; la mensualité de
+   * février glisse au 2 mars, celle de mars le 30 mars, avril le 5.
+   */
+  const anticipeSeulEnFevrier = () =>
+    loan([
+      occ('2026-01-05', -1050),
+      { ...occ('2026-02-15', -500), source: 'early_repayment' },
+      occ('2026-03-02', -1050),
+      occ('2026-03-30', -1050),
+      occ('2026-04-05', -1050),
+    ]);
+
+  it('la mensualité décalée est rattachée à février : aucun prélèvement non rattaché, le Réel suit les quatre échéances', () => {
+    const { points, lastKnownMonth, unmatchedCount } = buildAmortizationSeries(anticipeSeulEnFevrier());
+    expect(unmatchedCount).toBe(0);
+    expect(lastKnownMonth).toBe('2026-04');
+    // Février a un point (l'anticipé est un débit) : 6 000 − 1 000 (janv.) − 500 (anticipé).
+    // Mars compte février (payé le 2 mars) et mars ; avril, la sienne.
+    expect(points.slice(0, 4).map((p) => p.reel)).toEqual([5000, 4500, 2500, 1500]);
+    expect(points[1]).toMatchObject({ missing: false, paidIn: ['2026-03'] });
+    expect(points[2].countedFor).toEqual(['2026-02']);
+  });
+
+  it('la phrase et les infobulles disent que février a été prélevé en mars, sans prélèvement « sans échéance »', () => {
+    render(<AmortizationChart loan={anticipeSeulEnFevrier()} />);
+    fireEvent.click(screen.getByRole('button', { name: /tableau d'amortissement/i }));
+    const phrase = screen.getByTestId('amortization-reel-note').textContent ?? '';
+    expect(phrase).toBe(
+      "Réel (estimé) : jusqu'au dernier prélèvement connu, avril 2026. Échéance de février 2026 prélevée en mars 2026.",
+    );
+    const { points } = buildAmortizationSeries(anticipeSeulEnFevrier());
+    const { unmount } = render(<AmortizationTooltip point={points[1]} />);
+    expect(screen.getByTestId('amortization-tooltip').textContent).toContain('Échéance prélevée en mars 2026');
+    unmount();
+    render(<AmortizationTooltip point={points[2]} />);
+    expect(screen.getByTestId('amortization-tooltip').textContent).toContain('Prélèvement compté pour l’échéance de février 2026');
+  });
+
+  it('cohérence : mensualités prélevées = échéances rattachées ; capital = initial − échéances − anticipé', () => {
+    const l = anticipeSeulEnFevrier();
+    const { points } = buildAmortizationSeries(l);
+    expect(mensualitesCount(l)).toBe(4);
+    const dernierReel = points.find((p) => p.month === '2026-04')!.reel!;
+    expect((l.initialPrincipal! - 500 - dernierReel) / 1000).toBe(mensualitesCount(l));
+  });
+});

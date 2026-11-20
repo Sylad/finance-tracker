@@ -114,8 +114,8 @@ export interface DebitMatch {
  *
  * Appariement ordonné (le n-ième prélèvement ne passe jamais avant le
  * (n−1)-ième). Un prélèvement est rattaché à l'échéance de SON mois, ou —
- * décalé — à celle d'un mois voisin (± 1 mois) qui n'a AUCUN prélèvement
- * (revue L180). Un mois voisin déjà prélevé n'est jamais pris : un débit en
+ * décalé — à celle d'un mois voisin (± 1 mois) qui n'a AUCUNE mensualité
+ * prélevée (revue L180 ; un remboursement anticipé ne compte pas, L181). Un mois voisin déjà prélevé n'est jamais pris : un débit en
  * trop (doublon, régularisation) ne pousse pas les échéances suivantes d'un
  * mois, il n'y a donc jamais de chaîne de décalages. Parmi les appariements
  * permis : le plus de prélèvements rattachés, puis le moins de décalages,
@@ -146,13 +146,11 @@ export function matchDebitsToSchedule(
   if (n === 0) return [];
   if (m === 0)
     return debits.map((occurrence) => ({ occurrence, lineIndex: null }));
-  // Mois qui portent un prélèvement (tout débit, remboursement anticipé compris) :
-  // aucun prélèvement décalé n'y est rattaché.
-  const debitMonths = new Set(
-    (loan.occurrencesDetected ?? [])
-      .filter((o) => o.amount < 0)
-      .map((o) => o.date.slice(0, 7)),
-  );
+  // Mois qui portent une MENSUALITÉ prélevée : aucun prélèvement décalé n'y est
+  // rattaché. Un remboursement anticipé n'est pas une mensualité (100 % capital,
+  // hors tableau) : seul dans un mois, il ne prend pas la place de l'échéance,
+  // qui reste libre pour la mensualité décalée (L181).
+  const debitMonths = new Set(debits.map((o) => o.date.slice(0, 7)));
 
   // Score d'un préfixe : [rattachés, décalages, jours d'écart] — on maximise
   // le premier, puis on minimise les deux autres.

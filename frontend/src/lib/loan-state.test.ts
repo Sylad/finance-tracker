@@ -265,6 +265,44 @@ describe('matchDebitsToSchedule — prélèvements décalés (L180, D-1)', () =>
     expect(slots(['2026-04-05', '2026-05-05', '2026-07-02'])).toEqual(['2026-04', '2026-05', '2026-06']);
   });
 
+  it('remboursement anticipé seul en février, février prélevé le 2 mars : la mensualité décalée va à février (L181)', () => {
+    const loan = makeLoan({
+      initialPrincipal: 6000,
+      amortizationSchedule: schedule,
+      occurrencesDetected: [
+        occ('2026-01-05', -1050),
+        { ...occ('2026-02-15', -500), source: 'early_repayment' },
+        occ('2026-03-02', -1050),
+        occ('2026-03-30', -1050),
+        occ('2026-04-05', -1050),
+      ],
+    });
+    const months = matchDebitsToSchedule(loan).map((m) => (m.lineIndex == null ? null : schedule[m.lineIndex].date.slice(0, 7)));
+    // L'anticipé n'est pas une mensualité : il n'est pas apparié et ne bloque pas février.
+    expect(months).toEqual(['2026-01', '2026-02', '2026-03', '2026-04']);
+    const state = computeLoanState(loan, '2026-04-30');
+    // 4 échéances × 1 000 € + 500 € d'anticipé = 4 500 € de capital remboursé.
+    expect(state.capitalRemaining.estimatedFromOccurrences).toBe(1500);
+    expect(state.totalPaid).toBe(4 * 1050 + 500);
+  });
+
+  it('un mois avec une mensualité ET un anticipé reste pris : pas de décalage vers lui (L181)', () => {
+    const loan = makeLoan({
+      initialPrincipal: 6000,
+      amortizationSchedule: schedule,
+      occurrencesDetected: [
+        occ('2026-01-05', -1050),
+        occ('2026-01-25', -1050),
+        occ('2026-02-05', -1050),
+        { ...occ('2026-02-15', -500), source: 'early_repayment' },
+        occ('2026-03-05', -1050),
+      ],
+    });
+    // Le 25 janvier ne peut glisser qu'en février, qui a déjà sa mensualité.
+    const months = matchDebitsToSchedule(loan).map((m) => (m.lineIndex == null ? null : schedule[m.lineIndex].date.slice(0, 7)));
+    expect(months).toEqual(['2026-01', null, '2026-02', '2026-03']);
+  });
+
   it('cohérence : capital estimé = capital initial − part capital des seules échéances rattachées', () => {
     const loan = loanWith(['2026-01-05', '2026-03-02', '2026-03-30', '2026-04-05']);
     const state = computeLoanState(loan, '2026-04-30');
