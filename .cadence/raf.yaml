@@ -2084,6 +2084,7 @@ lots:
     status: done
     estimate: 0.25
     visible: true
+    delivered: { date: 2026-11-20, sha: d9bc416f4530acc00d464c44096917eca1cbd0e8 }
     created: 2026-11-20
     started: 2026-11-20
     review: { date: 2026-11-20, verdict: "conforme : 2 majeurs et 2 mineurs de r1 traités — Nouveauté L182 avec captures (= cadence news build hors horodatage), L179 corrigée (« Juil 26 » sur l'axe), infobulle remise en forme courte → 2 tests échouent, garde robuste, date des doublons testée ; note : option month par variable non vue par la garde (revue r2 du 20-11)", commit: d9bc416f4530acc00d464c44096917eca1cbd0e8 }
