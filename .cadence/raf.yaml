@@ -2061,11 +2061,12 @@ lots:
     finished: 2026-11-19
   - id: L181
     title: "Échéancier réel : un remboursement anticipé seul dans un mois empêche d'y rattacher la mensualité décalée (suite de la revue r2 de L180, D-1)"
-    status: todo
+    status: doing
     estimate: 1
     created: 2026-11-19
     notes:
       - { date: 2026-11-19, text: "QA prod du 19-11 (L180) : /loans conforme à 1440 et 390 px ; ajouter à docs/qa/expectations.md une ligne /loans sur le tableau d'amortissement (phrase « dernier prélèvement connu », courbe Réel) — à faire avec ce lot" }
+    started: 2026-11-20
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
