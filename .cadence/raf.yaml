@@ -2043,10 +2043,11 @@ lots:
     finished: 2026-11-19
   - id: L179
     title: "Graphique d'amortissement, suites de L178 : infobulle « ce mois-ci » → « ce mois-là » ; montants de l'infobulle arrondis à l'euro sans centimes (formatEURRounded, invariant 2) ; double « et » au-delà de 3 mois manquants ; mois écrit d'une seule façon (axe, infobulle, phrase) et axe Y en formatEURCompact ; « pas d'échéance ce mois » aussi avant la 1re échéance ; Nouveauté juste pour plusieurs mois manquants de suite ; tests du point de juillet et du branchement de l'infobulle"
-    status: todo
+    status: doing
     estimate: 0.5
     visible: true
     created: 2026-11-19
+    started: 2026-11-20
   - id: L180
     title: "Échéancier réel d'un crédit (D-1) : chaque prélèvement compte une fois et une seule ; un prélèvement décalé (date qui glisse d'un mois à l'autre) est rattaché au mois voisin sans prélèvement au lieu d'être écarté — plus de faux trou « aucun prélèvement » ni de courbe Réel décalée d'une échéance (règle de Sylvain du 19-11, relevé hors lot de la revue de L178, amortization-series.ts)"
     status: done
