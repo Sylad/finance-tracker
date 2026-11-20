@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { CHART_FONT_SIZE, chartTickCurrentColor, chartLegendStyle } from '@/lib/chart-theme';
 import type { Loan } from '@/types/api';
-import { formatEUR, formatMonth } from '@/lib/utils';
+import { formatEURCompact, formatEURRounded, formatMonth } from '@/lib/utils';
 import { buildAmortizationSeries, type AmortizationPoint } from '@/lib/amortization-series';
 
 interface Props {
@@ -80,13 +80,18 @@ export function AmortizationChart({ loan }: Props) {
                   tickLine={false}
                   axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                   interval="preserveStartEnd"
+                  minTickGap={12}
+                  // L179 : le mois s'écrit comme dans l'infobulle et la phrase (« juillet 2026 »).
+                  tickFormatter={monthLabel}
                 />
                 <YAxis
                   tick={chartTickCurrentColor}
                   tickLine={false}
                   axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                  tickFormatter={(v: number) => `${Math.round(v / 1000)}k`}
-                  width={40}
+                  allowDecimals={false}
+                  // L179 : graduations des autres graphiques (« 7 000 € », « 12,5 k € »).
+                  tickFormatter={formatEURCompact}
+                  width={64}
                 />
                 <Tooltip
                   content={({ active, payload }) => {
@@ -168,9 +173,14 @@ function reelNote(
   return `${base} Interrompue en ${listFr(list)} : aucun prélèvement trouvé${list.length > 1 ? ' ces mois-là' : ' ce mois-là'}.${shiftedNote}${extra}`;
 }
 
-/** Liste en français, limitée aux trois premiers éléments (« … et 2 autres »). */
-function listFr(list: string[]): string {
-  return list.length <= 3 ? joinFr(list) : `${joinFr(list.slice(0, 3))} et ${list.length - 3} autre${list.length - 3 > 1 ? 's' : ''}`;
+/**
+ * Liste en français, limitée aux trois premiers éléments : « a, b, c et
+ * 2 autres » (un seul « et », L179).
+ */
+export function listFr(list: string[]): string {
+  if (list.length <= 3) return joinFr(list);
+  const rest = list.length - 3;
+  return `${list.slice(0, 3).join(', ')} et ${rest} autre${rest > 1 ? 's' : ''}`;
 }
 
 function joinFr(items: string[]): string {
@@ -181,21 +191,32 @@ export function AmortizationTooltip({ point }: { point: AmortizationPoint }) {
   return (
     <div
       className="rounded px-2 py-1 text-fg-bright"
-      style={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid rgba(148,163,184,0.2)', fontSize: CHART_FONT_SIZE }}
+      // Largeur bornée : à 390 px, l'infobulle débordait de l'écran (revue UX L180).
+      style={{
+        backgroundColor: 'rgba(15,23,42,0.95)',
+        border: '1px solid rgba(148,163,184,0.2)',
+        fontSize: CHART_FONT_SIZE,
+        maxWidth: 220,
+        whiteSpace: 'normal',
+      }}
       data-testid="amortization-tooltip"
     >
-      <p className="mb-0.5">{formatMonth(Number(point.month.slice(5, 7)), Number(point.month.slice(0, 4)))}</p>
-      {point.prevu != null && (
+      <p className="mb-0.5">{monthLabel(point.month)}</p>
+      {/* L179 : euros entiers, comme les valeurs arrondies du graphique (invariant 2). */}
+      {point.prevu != null ? (
         <p style={{ color: '#94a3b8' }}>
-          Prévu : {formatEUR(point.prevu)}
+          Prévu : {formatEURRounded(point.prevu)}
           {!point.scheduled && ' (pas d’échéance ce mois)'}
         </p>
+      ) : (
+        // L179 : prélèvement avant la 1re échéance — pas de capital prévu, on le dit.
+        !point.scheduled && <p style={{ color: '#94a3b8' }}>Prévu : pas d’échéance ce mois</p>
       )}
       {point.reel != null ? (
-        <p style={{ color: '#10b981' }}>Réel (estimé) : {formatEUR(point.reel)}</p>
+        <p style={{ color: '#10b981' }}>Réel (estimé) : {formatEURRounded(point.reel)}</p>
       ) : point.missing ? (
         // L178 : un trou au milieu de la courbe se dit, l'infobulle ne reste pas muette.
-        <p style={{ color: '#fbbf24' }}>Réel (estimé) : aucun prélèvement trouvé ce mois-ci</p>
+        <p style={{ color: '#fbbf24' }}>Réel (estimé) : aucun prélèvement trouvé ce mois-là</p>
       ) : null}
       {/* L180 : prélèvement décalé d'un mois, rattaché à l'échéance restée vide. */}
       {point.paidIn.length > 0 && (
@@ -213,7 +234,8 @@ export function deMois(label: string): string {
   return /^[aeiouyàâéèêîôûœ]/i.test(label) ? `d’${label}` : `de ${label}`;
 }
 
-function monthLabel(month: string): string {
+/** Le mois d'un point, écrit d'une seule façon (axe, infobulle, phrase) : « juillet 2026 ». */
+export function monthLabel(month: string): string {
   const [y, m] = month.split('-').map(Number);
   return formatMonth(m, y).toLowerCase();
 }

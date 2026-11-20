@@ -1,7 +1,24 @@
 {
   "project": "finance-tracker",
-  "generated": "2026-11-19 12:34",
+  "generated": "2026-11-20 09:00",
   "entries": [
+    {
+      "slug": "2026-11-20-amortissement-mois-et-montants",
+      "title": "Crédits : graphique d'amortissement, mois et montants écrits pareil partout",
+      "date": "2026-11-20",
+      "lots": [
+        "L179"
+      ],
+      "captures": [
+        "captures/2026-11-20-amortissement-plusieurs-mois-manquants.png",
+        "captures/2026-11-20-amortissement-infobulle-390.png"
+      ],
+      "alts": [
+        "Graphique d'amortissement du crédit CETELEM : axe des mois écrit « mai 2026 », « décembre 2026 »…, axe des montants « 0 € » à « 8 000 € » ; infobulle de juillet 2026 : Prévu 7 379 €, « Réel (estimé) : aucun prélèvement trouvé ce mois-là » ; la phrase dessous dit « Interrompue en juin 2026, juillet 2026, août 2026 et 1 autre : aucun prélèvement trouvé ces mois-là ».",
+        "Sur téléphone, la même infobulle de juillet 2026 tient dans l'écran, son texte passe à la ligne."
+      ],
+      "html": "<p>Le graphique du tableau d'amortissement parle maintenant la même langue partout. Un mois s'écrit de la même façon sur l'axe, dans l'infobulle et dans la phrase sous le graphique (« juillet 2026 »), et l'axe des montants affiche des euros (« 6 000 € ») au lieu de « 6k ».</p>\n<p>Dans l'infobulle, les montants sont en euros entiers, comme les valeurs de la courbe : « Prévu : 7 379 € » au lieu de « 7 379,00 € », qui laissait croire à une précision au centime. Un mois passé sans prélèvement se lit « aucun prélèvement trouvé ce mois-là ». Un prélèvement tombé avant la première échéance du tableau le dit aussi : « Prévu : pas d'échéance ce mois ». Sur téléphone, l'infobulle ne sort plus de l'écran.</p>\n<p>Quand plusieurs mois de suite manquent, la phrase sous le graphique les cite sans répéter « et » : « Interrompue en juin 2026, juillet 2026, août 2026 et 1 autre ».</p>"
+    },
     {
       "slug": "2026-11-19-amortissement-prelevement-decale",
       "title": "Crédits : chaque prélèvement compte une fois, même si sa date glisse d'un mois",
@@ -36,7 +53,7 @@
         "Infobulle de juillet 2026 : Prévu 7 379,00 €, et en orange « Réel (estimé) : aucun prélèvement trouvé ce mois-ci ».",
         "Sur téléphone, infobulle d'octobre 2026, mois sans échéance au tableau : Prévu 6 960,00 € (pas d'échéance ce mois), Réel (estimé) 6 958,00 €."
       ],
-      "html": "<p>Dans le tableau d'amortissement d'un crédit, si un mois n'a aucun prélèvement retrouvé dans tes relevés alors que les mois d'avant et d'après en ont un, la courbe verte « Réel (estimé) » s'interrompt sur ce mois au lieu de le traverser comme si le capital avait baissé normalement. Au survol, l'infobulle de ce mois le dit : « aucun prélèvement trouvé ce mois-ci ». La phrase sous le graphique cite aussi les mois interrompus.</p>\n<p>Quand le dernier prélèvement tombe un mois où le tableau ne prévoit pas d'échéance (une mensualité prélevée en retard, par exemple), il a maintenant son propre point sur la courbe, et la phrase cite bien ce mois-là. L'infobulle précise alors « pas d'échéance ce mois ».</p>"
+      "html": "<p>Dans le tableau d'amortissement d'un crédit, si un mois, ou plusieurs mois de suite, n'ont aucun prélèvement retrouvé dans tes relevés entre deux mois qui en ont un, la courbe verte « Réel (estimé) » s'interrompt sur ces mois au lieu de les traverser comme si le capital avait baissé normalement. Au survol, l'infobulle de chacun de ces mois le dit : « aucun prélèvement trouvé ce mois-là ». La phrase sous le graphique cite aussi les mois interrompus.</p>\n<p>Quand le dernier prélèvement tombe un mois où le tableau ne prévoit pas d'échéance (une mensualité prélevée en retard, par exemple), il a maintenant son propre point sur la courbe, et la phrase cite bien ce mois-là. L'infobulle précise alors « pas d'échéance ce mois ».</p>"
     },
     {
       "slug": "2026-11-18-amortissement-courbe-reel-dernier-prelevement",

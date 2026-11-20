@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { AmortizationLine, Loan, LoanOccurrence } from '@/types/api';
 import { mensualitesCount } from './utils';
-import { formatMonth } from '@/lib/utils';
+import { formatEURCompact, formatMonth } from '@/lib/utils';
 import { buildAmortizationSeries } from '@/lib/amortization-series';
-import { AmortizationChart, AmortizationTooltip, deMois } from './amortization-chart';
+import { AmortizationChart, AmortizationTooltip, deMois, listFr, monthLabel } from './amortization-chart';
 
 // jsdom ne mesure rien : ResponsiveContainer rendrait un graphique de taille 0,
 // sans aucun tracé. On lui donne une taille fixe pour lire les chemins SVG.
@@ -142,10 +142,12 @@ describe('Graphique d’amortissement — trous et prélèvements hors échéanc
   it('l’infobulle d’un mois manquant dit qu’aucun prélèvement n’a été trouvé', () => {
     const { points } = buildAmortizationSeries(avecTrou());
     render(<AmortizationTooltip point={points[1]} />);
-    const tip = screen.getByTestId('amortization-tooltip').textContent ?? '';
-    expect(tip).toContain('Février 2026');
-    expect(tip).toContain('Prévu : 4');
-    expect(tip).toContain('aucun prélèvement trouvé');
+    const tip = (screen.getByTestId('amortization-tooltip').textContent ?? '').replace(/[\u00a0\u202f]/g, ' ');
+    expect(tip).toContain('février 2026');
+    expect(tip).toContain('Prévu : 4 000 €');
+    // L179 : un mois passé, pas « ce mois-ci ».
+    expect(tip).toContain('aucun prélèvement trouvé ce mois-là');
+    expect(tip).not.toContain('ce mois-ci');
   });
 
   it('après le dernier prélèvement, l’infobulle ne donne que Prévu (rien d’inventé, L177)', () => {
@@ -194,7 +196,7 @@ describe('Graphique d’amortissement — trous et prélèvements hors échéanc
     );
     // Le point final (juillet) est dessiné.
     const ticks = [...container.querySelectorAll('.recharts-cartesian-axis-tick-value')].map((t) => t.textContent);
-    expect(ticks).toContain('2026-07');
+    expect(ticks).toContain('juillet 2026');
     expect(container.querySelectorAll('circle[fill="#10b981"]').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -448,5 +450,122 @@ describe('Graphique d’amortissement — remboursement anticipé seul dans un m
     expect(mensualitesCount(l)).toBe(4);
     const dernierReel = points.find((p) => p.month === '2026-04')!.reel!;
     expect((l.initialPrincipal! - 500 - dernierReel) / 1000).toBe(mensualitesCount(l));
+  });
+});
+
+describe('Graphique d’amortissement — écriture des mois et des montants (L179)', () => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+
+  function open(l: Loan) {
+    const r = render(<AmortizationChart loan={l} />);
+    fireEvent.click(screen.getByRole('button', { name: /tableau d'amortissement/i }));
+    return r;
+  }
+  const tipOf = (l: Loan, month: string) => {
+    const { points } = buildAmortizationSeries(l);
+    const { unmount } = render(<AmortizationTooltip point={points.find((p) => p.month === month)!} />);
+    const text = sp(screen.getByTestId('amortization-tooltip').textContent ?? '');
+    unmount();
+    return text;
+  };
+  /** Espaces insécables d'Intl (avant €, séparateur de milliers) → espace simple. */
+  const sp = (t: string) => t.replace(/[\u00a0\u202f]/g, ' ');
+  const xTicks = (c: HTMLElement) =>
+    [...c.querySelectorAll('.recharts-xAxis .recharts-cartesian-axis-tick-value')].map((t) => t.textContent ?? '');
+  const yTicks = (c: HTMLElement) =>
+    [...c.querySelectorAll('.recharts-yAxis .recharts-cartesian-axis-tick-value')].map((t) => t.textContent ?? '');
+
+  /** Capital à centimes : 5 432,67 € restant après janvier. */
+  const aCentimes = (): Loan => {
+    const l = loan([occ('2026-01-08', -1050), occ('2026-03-08', -1050)]);
+    l.initialPrincipal = 6432.67;
+    l.amortizationSchedule = l.amortizationSchedule!.map((x, i) => ({ ...x, capitalRemaining: 5432.67 - 1000 * i }));
+    return l;
+  };
+
+  it('infobulle : montants en euros entiers, sans centimes (même arrondi que la courbe)', () => {
+    const jan = tipOf(aCentimes(), '2026-01');
+    expect(jan).toContain('Prévu : 5 433 €');
+    expect(jan).toContain('Réel (estimé) : 5 433 €');
+    expect(jan).not.toMatch(/,\d\d\s?€/);
+  });
+
+  it('le mois s’écrit d’une seule façon : axe, infobulle et phrase', () => {
+    const l = loan([occ('2026-01-08', -1050), occ('2026-03-08', -1050), occ('2026-04-08', -1050)]);
+    const { container } = open(l);
+    const ticks = xTicks(container);
+    expect(ticks.length).toBeGreaterThan(0);
+    for (const t of ticks) expect(t).toMatch(/^[a-zéû]+ \d{4}$/);
+    expect(ticks).toContain('janvier 2026');
+    // Février : l'axe (s'il l'affiche), l'infobulle et la phrase écrivent « février 2026 ».
+    expect(tipOf(l, '2026-02').startsWith('février 2026')).toBe(true);
+    expect(screen.getByTestId('amortization-reel-note').textContent).toContain('Interrompue en février 2026');
+    expect(monthLabel('2026-02')).toBe('février 2026');
+  });
+
+  it('axe Y : graduations en euros (formatEURCompact), plus de « 5k »', () => {
+    const { container } = open(loanN(24, [occ('2026-01-08', -1050)]));
+    const ticks = yTicks(container);
+    expect(ticks.length).toBeGreaterThan(1);
+    for (const t of ticks) expect(t).toMatch(/€$/);
+    expect(ticks.some((t) => /k$/.test(t))).toBe(false);
+    expect(ticks).toContain(formatEURCompact(24_000));
+  });
+
+  it('cinq mois manquants : un seul « et » dans la phrase', () => {
+    expect(listFr(['a', 'b', 'c', 'd', 'e'])).toBe('a, b, c et 2 autres');
+    expect(listFr(['a', 'b', 'c', 'd'])).toBe('a, b, c et 1 autre');
+    expect(listFr(['a', 'b', 'c'])).toBe('a, b et c');
+    open(loanN(12, [occ('2026-01-05', -1050), occ('2026-07-05', -1050)]));
+    const phrase = screen.getByTestId('amortization-reel-note').textContent ?? '';
+    expect(phrase).toContain('Interrompue en février 2026, mars 2026, avril 2026 et 2 autres : aucun prélèvement trouvé ces mois-là.');
+    expect(phrase.match(/ et /g)).toHaveLength(1);
+  });
+
+  it('prélèvement avant la 1re échéance : l’infobulle dit « pas d’échéance ce mois »', () => {
+    // Échéance de janvier prélevée le 29 décembre, avant la première ligne du tableau.
+    const l = loan([occ('2025-12-29', -1050), occ('2026-02-05', -1050)]);
+    const { points } = buildAmortizationSeries(l);
+    expect(points[0]).toMatchObject({ month: '2025-12', scheduled: false, prevu: null, reel: 5000 });
+    const tip = tipOf(l, '2025-12');
+    expect(tip).toContain('Prévu : pas d’échéance ce mois');
+    expect(tip).toContain('Réel (estimé) : 5 000');
+    expect(tip).toContain('Prélèvement compté pour l’échéance de janvier 2026');
+  });
+
+  /** Échéances de janvier à juin ; juin prélevée en retard, le 2 juillet (mois sans échéance). */
+  const juilletHorsTableau = () =>
+    loan(['01', '02', '03', '04', '05'].map((m) => occ(`2026-${m}-08`, -1050)).concat(occ('2026-07-02', -1050)));
+
+  it('le point de juillet est dessiné à l’abscisse de juillet, au niveau de 0 €', () => {
+    const { container } = open(juilletHorsTableau());
+    const tick = [...container.querySelectorAll('.recharts-xAxis .recharts-cartesian-axis-tick')].find(
+      (t) => t.textContent === 'juillet 2026',
+    );
+    expect(tick).toBeDefined();
+    const tickX = Number(tick!.querySelector('text')!.getAttribute('x'));
+    const dots = [...container.querySelectorAll('circle[fill="#10b981"]')];
+    const last = dots.map((d) => ({ x: Number(d.getAttribute('cx')), y: Number(d.getAttribute('cy')) })).sort((a, b) => a.x - b.x).at(-1)!;
+    expect(last.x).toBeCloseTo(tickX, 0);
+    // 0 € : le bas de la zone de tracé, là où est la graduation « 0 € ».
+    const zero = [...container.querySelectorAll('.recharts-yAxis .recharts-cartesian-axis-tick')].find(
+      (t) => t.textContent === formatEURCompact(0),
+    )!;
+    expect(last.y).toBeCloseTo(Number(zero.querySelector('text')!.getAttribute('y')), 0);
+  });
+
+  it('branchement de l’infobulle : survoler le graphique affiche l’infobulle du mois survolé', () => {
+    const { container } = open(juilletHorsTableau());
+    const tick = [...container.querySelectorAll('.recharts-xAxis .recharts-cartesian-axis-tick')].find(
+      (t) => t.textContent === 'juillet 2026',
+    )!;
+    const x = Number(tick.querySelector('text')!.getAttribute('x'));
+    expect(screen.queryByTestId('amortization-tooltip')).toBeNull();
+    fireEvent.mouseMove(container.querySelector('.recharts-wrapper')!, { clientX: x, clientY: 80 });
+    const tip = sp(screen.getByTestId('amortization-tooltip').textContent ?? '');
+    expect(tip.startsWith('juillet 2026')).toBe(true);
+    expect(tip).toContain('Prévu : 0 € (pas d’échéance ce mois)');
+    expect(tip).toContain('Réel (estimé) : 0 €');
+    expect(tip).toContain('Prélèvement compté pour l’échéance de juin 2026');
   });
 });

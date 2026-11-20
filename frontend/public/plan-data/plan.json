@@ -689,6 +689,12 @@
       "finished": "2026-11-19"
     },
     {
+      "id": "L179",
+      "title": "Crédits : graphique d'amortissement, mois et montants écrits pareil partout",
+      "status": "doing",
+      "started": "2026-11-20"
+    },
+    {
       "id": "L180",
       "title": "Crédits : chaque prélèvement compte une fois, même si sa date glisse d'un mois",
       "status": "done",
