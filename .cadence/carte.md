@@ -20,3 +20,9 @@
 - Tests de cohérence (`amortization-chart.test.tsx`) : lus sur ce que l'écran rend (phrase, infobulles) contre les débits du jeu.
 - Nouveautés compilées à la main (même format que `cadence news build`) quand cadence n'est pas disponible, puis `nouveautes-tailles.mjs` et `npm run plan`.
 - L181 : seuls les mois qui portent une MENSUALITÉ prélevée bloquent un rattachement décalé. Un remboursement anticipé seul dans un mois (hors tableau, 100 % capital) ne prend pas la place de l'échéance : la mensualité décalée y est rattachée. Le mois de l'anticipé garde son point Réel (c'est un débit) ; la phrase dit « Échéance de X prélevée en Y ».
+
+## Décisions (L182 — une forme de mois par usage sur /loans)
+- `lib/month-label.ts` : `monthLabel` (« juillet 2026 ») pour tout ce qui se lit (infobulles, phrase, note des mois sans relevé, tableau accessible) ; `monthAxisLabel` (« Juil 26 ») réservé aux axes des deux graphiques. Dates de jour (doublons « créé 08/07/2026 ») : `formatDate`.
+- Garde de source (`lib/month-label.test.ts`) : fichiers de /loans + modules `@/lib/*` qu'ils importent (hors `month-label` et `utils`) ; interdit le NOM `formatMonth(Short)` (appel, référence, import renommé), l'option `month` textuelle (guillemets ou gabarit), `Intl.DateTimeFormat`, tout nom de mois français en dur. Ses motifs sont eux-mêmes testés sur les contournements connus et sur les usages légitimes.
+- Infobulle de « Charge crédits » testée par un `Tooltip` relais (displayName `Tooltip`, recharts le reconnaît) qui garde ses propriétés : `labelFormatter` est appelé comme l'écran l'appelle.
+- Nouveautés L179 : captures refaites (axe « Mai 26 ») et texte corrigé ; entrée L182 avec deux captures. Compilées à la main au format de cadence news.

@@ -110,9 +110,25 @@ describe('Crédits — graphe des mensualités (L136, WCAG 1.4.1 / 1.1.1)', () =
   });
 });
 
+// jsdom ne mesure rien : le graphique reçoit une taille fixe pour que recharts
+// rende ses enfants. L'infobulle est remplacée par un relais qui garde les
+// propriétés que le graphique lui passe (recharts la reconnaît à son
+// displayName) : son labelFormatter est ainsi appelé tel que l'écran l'appelle.
+const tooltipProps = vi.hoisted(() => ({ last: null as null | Record<string, unknown> }));
 vi.mock('recharts', async (orig) => {
   const m = await orig<typeof import('recharts')>();
-  return { ...m, ResponsiveContainer: () => null };
+  const { cloneElement } = await import('react');
+  const Tooltip = (props: Record<string, unknown>) => {
+    tooltipProps.last = props;
+    return null;
+  };
+  Tooltip.displayName = 'Tooltip';
+  return {
+    ...m,
+    ResponsiveContainer: ({ children }: { children: React.ReactElement }) =>
+      cloneElement(children, { width: 800, height: 288 } as Record<string, unknown>),
+    Tooltip,
+  };
 });
 
 describe('L182 — une seule forme de mois hors de l’axe', () => {
@@ -126,5 +142,17 @@ describe('L182 — une seule forme de mois hors de l’axe', () => {
     const heads = within(table).getAllByRole('rowheader').map((h) => h.textContent ?? '');
     expect(heads).toHaveLength(12);
     heads.forEach((h, i) => expect(h.startsWith(monthLabel(monthKey(11 - i)))).toBe(true));
+  });
+
+  it('l’infobulle titre le mois en « juillet 2026 », pas en forme d’axe', () => {
+    tooltipProps.last = null;
+    render(<LoansMonthlyChart loans={[cofidisA]} />);
+    expect(tooltipProps.last).not.toBeNull();
+    const labelFormatter = tooltipProps.last!.labelFormatter as (label: string, payload: unknown[]) => unknown;
+    expect(typeof labelFormatter).toBe('function');
+    for (const m of [monthKey(0), monthKey(5), monthKey(11)]) {
+      expect(labelFormatter(m, [])).toBe(monthLabel(m));
+      expect(labelFormatter(m, [])).not.toBe(monthAxisLabel(m));
+    }
   });
 });
