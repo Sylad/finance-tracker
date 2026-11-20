@@ -705,8 +705,9 @@
     {
       "id": "L182",
       "title": "Crédits : un mois s'écrit en entier, et en court seulement sous les graphiques",
-      "status": "doing",
-      "started": "2026-11-20"
+      "status": "done",
+      "started": "2026-11-20",
+      "finished": "2026-11-20"
     }
   ]
 }
