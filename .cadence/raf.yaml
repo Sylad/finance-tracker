@@ -2008,7 +2008,7 @@ lots:
     finished: 2026-11-18
   - id: L176
     title: Article finance-tracker à rafraîchir
-    status: doing
+    status: done
     estimate: 0.5
     created: 2026-11-18
     repos: [ { path: ../claude-code-codex, cite: finance-tracker } ]
@@ -2022,6 +2022,8 @@ lots:
       - { date: 2026-11-20, text: "Livraison 09c5575 : titres publics livrés « Crédits : graphique d'amortissement, mois et montants écrits pareil partout ». Article : ../claude-code-codex/frontend/src/pages/case-studies/finance-tracker.astro. Sections à relire : (aucun titre trouvé : relire tout l'article). Réécrire ce que ces changements rendent faux ou incomplet, sans rien inventer ; les commits du dépôt ../claude-code-codex citent le lot et « finance-tracker »." }
       - { date: 2026-11-20, text: "Livraison d9bc416 : titres publics livrés « Crédits : un mois s'écrit en entier, et en court seulement sous les graphiques ». Article : ../claude-code-codex/frontend/src/pages/case-studies/finance-tracker.astro. Sections à relire : (aucun titre trouvé : relire tout l'article). Réécrire ce que ces changements rendent faux ou incomplet, sans rien inventer ; les commits du dépôt ../claude-code-codex citent le lot et « finance-tracker »." }
     started: 2026-11-21
+    review: { date: 2026-11-21, verdict: "conforme (lead, article claude-code-codex 8f1f56e : section « Novembre 2026 » tirée des Nouveautés L177-L182 et vérifiée dans le code, retouches L172/L173, date et chiffres mis à jour ; aucune donnée réelle ; test e2e de 5 règles)", commit: null, repos: { ../claude-code-codex: 8f1f56e361790b6ee2ae394273ccb880bfd8f822 } }
+    finished: 2026-11-21
   - id: L177
     title: "Graphique d'amortissement : la courbe « Réel (estimé) » s'arrête au dernier prélèvement connu au lieu de rester plate jusqu'à la fin du crédit (vu sur la capture de L175 : ligne verte à 6 749 € jusqu'en 2029, lue comme un capital qui ne baisse plus) — amortization-chart.tsx"
     status: done
