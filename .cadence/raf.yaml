@@ -2094,6 +2094,11 @@ lots:
     review: { date: 2026-11-20, verdict: "conforme : 2 majeurs et 2 mineurs de r1 traités — Nouveauté L182 avec captures (= cadence news build hors horodatage), L179 corrigée (« Juil 26 » sur l'axe), infobulle remise en forme courte → 2 tests échouent, garde robuste, date des doublons testée ; note : option month par variable non vue par la garde (revue r2 du 20-11)", commit: d9bc416f4530acc00d464c44096917eca1cbd0e8 }
     ux: { date: 2026-11-20, verdict: "conforme (lead, captures 1440 de d9bc416) : forme courte seulement sur les graduations des deux axes (« Oct 26 », « Mai 26 »), forme longue dans l'infobulle (« octobre 2026 », « juillet 2026 »), la note des mois sans relevé et la phrase sous l'amortissement — invariant 2 tenu ; 390 px non capturé pour Charge crédits (scrollWidth 380 mesuré par le run)" }
     finished: 2026-11-20
+  - id: L183
+    title: "D-31 du registre parent : adopter cadence analyse (L801, cadence ≥ 2.0.18) — déclarer analyse: dans cadence.yaml avec les outils de la pile du projet (JS/TS : ESLint + typescript-eslint + eslint-plugin-sonarjs avec les seuils de cadence : max-lines 400, max-lines-per-function 80, max-depth 4, max-params 5, complexity 15, cognitive-complexity 15, plus tsc ; Python : ruff), base figée à l'existant (cadence analyse --init), aucune correction de l'existant ; la porte de cadence run le joue ensuite à chaque lot. Mesurer le temps ajouté à la porte (cible < 1 min) et le nombre de violations figées par outil, à rendre dans le rapport"
+    status: todo
+    estimate: 1
+    created: 2026-11-24
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
