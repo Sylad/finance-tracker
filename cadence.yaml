@@ -64,3 +64,30 @@ docs:
   articles:
     - repo: ../claude-code-codex
       file: frontend/src/pages/case-studies/finance-tracker.astro
+
+# Analyse statique à cliquet (cadence analyse, L801 de cadence ; L183, D-31 du registre parent) : la porte de chaque
+# `cadence run` la joue après le build ; l'existant est figé dans .cadence/analyse/<name>.json, seules les violations
+# nouvelles échouent. Seuils de lisibilité de cadence (max-lines 400, max-lines-per-function 80, max-depth 4,
+# max-params 5, complexity 15, sonarjs/cognitive-complexity 15) dans eslint.analyse.mjs de chaque paquet : pas de règles
+# typées ni de prettier (le formatage n'est pas jugé, les types le sont par tsc). Pas de Python dans le dépôt, donc pas de ruff.
+analyse:
+  - name: eslint-backend
+    dir: backend
+    command: npx eslint -c eslint.analyse.mjs -f json .
+    format: eslint-json
+    configs: [backend/eslint.analyse.mjs]
+  - name: tsc-backend
+    dir: backend
+    command: npx tsc --noEmit --pretty false
+    format: tsc
+    configs: [backend/tsconfig.json]
+  - name: eslint-frontend
+    dir: frontend
+    command: npx eslint -c eslint.analyse.mjs -f json .
+    format: eslint-json
+    configs: [frontend/eslint.analyse.mjs]
+  - name: tsc-frontend
+    dir: frontend
+    command: npx tsc --noEmit --pretty false
+    format: tsc
+    configs: [frontend/tsconfig.json]

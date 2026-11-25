@@ -83,6 +83,13 @@ App perso de suivi financier perso : instance aux vraies données en local sur B
   reste à défiler) — et, au téléphone, dans la bande collante en bas du panneau « Plus »
   (3 cases icône + libellé, juste au-dessus de la barre du bas, visibles sans défiler à
   320×568) ; les pages principales viennent d'abord dans le panneau, focus sur la première.
+- **Analyse statique à cliquet** (L183, `analyse:` de `cadence.yaml`) : quatre outils, ESLint et tsc par paquet
+  (`eslint-backend`, `tsc-backend`, `eslint-frontend`, `tsc-frontend`), joués par la porte de chaque `cadence run`.
+  Les seuils (max-lines 400, max-lines-per-function 80, max-depth 4, max-params 5, complexity 15,
+  sonarjs/cognitive-complexity 15) vivent dans `backend/eslint.analyse.mjs` et `frontend/eslint.analyse.mjs`, séparés de
+  `backend/eslint.config.mjs` (prettier, règles typées, pour `npm run lint`). L'existant est figé dans `.cadence/analyse/` :
+  une violation neuve, ou une fonction déjà trop longue qui grandit encore (clé `|total`), fait échouer la porte. On
+  corrige le code, jamais la base ni le seuil (ces fichiers ne changent que dans un lot `config: true`).
 - L'instance déployée (finance.sladoire.dev, ns `preprod` de dark-blue) ne contient
   que des données de démo ; les vraies données restent en local sur Big-Blue.
 
