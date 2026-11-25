@@ -2096,10 +2096,12 @@ lots:
     finished: 2026-11-20
   - id: L183
     title: "D-31 du registre parent : adopter cadence analyse (L801, cadence ≥ 2.0.18) — déclarer analyse: dans cadence.yaml avec les outils de la pile du projet (JS/TS : ESLint + typescript-eslint + eslint-plugin-sonarjs avec les seuils de cadence : max-lines 400, max-lines-per-function 80, max-depth 4, max-params 5, complexity 15, cognitive-complexity 15, plus tsc ; Python : ruff), base figée à l'existant (cadence analyse --init), aucune correction de l'existant ; la porte de cadence run le joue ensuite à chaque lot. Mesurer le temps ajouté à la porte (cible < 1 min) et le nombre de violations figées par outil, à rendre dans le rapport"
-    status: doing
+    status: done
     estimate: 1
     created: 2026-11-24
     started: 2026-11-25
+    review: { date: 2026-11-25, verdict: "conforme Relu par le lead : 4 outils (eslint/tsc par paquet, dir:), seuils dans eslint.analyse.mjs figés par configs:, devDependencies seules, aucun code applicatif ; porte du run verte avec l'analyse ; à noter : cadence analyse a tourné dans le run (base écrite par le run)", commit: 12bda824f37d59e139ed10568e72d2ee7347c494 }
+    finished: 2026-11-25
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
