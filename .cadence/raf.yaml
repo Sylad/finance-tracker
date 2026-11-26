@@ -2125,6 +2125,7 @@ lots:
     title: "Backend : un JSON invalide ou trop gros renvoie 404 « Cannot POST » au lieu de 400 / 413 (vu par L184 le 26-11, antérieur) ; test e2e sur les deux cas"
     status: done
     estimate: 1
+    delivered: { date: 2026-11-26, sha: 112e5afb3818b49b079e3178ca2887d3ea0d8c23 }
     created: 2026-11-26
     started: 2026-11-26
     review: { date: 2026-11-26, verdict: "conforme : correctif fdf460d relu par le lead — BODY_LIMIT validé au démarrage (vide → 100kb, 2m refusé), 6 e2e et 24 unitaires ajoutés, les 4 mineurs traités ; BODY_LIMIT absent du chart prod", commit: fdf460d4dff66fa88613fbf5cf3ad99b9a75f3b8 }
