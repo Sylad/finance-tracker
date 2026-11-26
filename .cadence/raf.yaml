@@ -2132,10 +2132,12 @@ lots:
     finished: 2026-11-26
   - id: L187
     title: "Fiche d'écran dictionnaire-marchands invalide : cadence spec check docs/specs/dictionnaire-marchands/fiche.yaml échoue (✗ C3 : nominal doit être une liste non vide d'étapes) — vu par le run L185 le 26-11 ; mesure : spec check rc 0"
-    status: doing
+    status: done
     estimate: 1
     created: 2026-11-26
     started: 2026-11-26
+    review: { date: 2026-11-26, verdict: "conforme — relu par le lead : une ligne YAML mise entre guillemets, aucun mot changé ; spec check rc 0", commit: f34c657410230662336138a723d5a0b7136eb993 }
+    finished: 2026-11-26
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
