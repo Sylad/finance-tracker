@@ -2127,6 +2127,7 @@ lots:
     estimate: 1
     created: 2026-11-26
     started: 2026-11-26
+    review: { date: 2026-11-26, verdict: "conforme après 1 correction : 1 majeur (BODY_LIMIT jamais testé, valeur vide plante le démarrage, « 2m » vaut 2 octets ; configuration.ts:18, app-setup.ts:29), 4 mineurs (test « rien n'est écrit » qui ne peut pas échouer, ordre 403/400 et 415 non testés, message 413 faux au-delà de 1000 champs, ux-demo.spec.ts sans configureApp)", commit: 4ae8693c6fecb963ee4fb44b0516290f46cf862c }
   - id: L187
     title: "Fiche d'écran dictionnaire-marchands invalide : cadence spec check docs/specs/dictionnaire-marchands/fiche.yaml échoue (✗ C3 : nominal doit être une liste non vide d'étapes) — vu par le run L185 le 26-11 ; mesure : spec check rc 0"
     status: todo
