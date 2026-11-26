@@ -12,6 +12,10 @@ export default () => ({
   ollamaDetectionModel: process.env.OLLAMA_DETECTION_MODEL ?? 'qwen3:32b',
   dataDir: process.env.DATA_DIR ?? './data',
   uploadDir: process.env.UPLOAD_DIR ?? './data/uploads',
+  // Limite des corps JSON / urlencoded (syntaxe de body-parser : '100kb', '1mb').
+  // Au-delà : 413 (L186). Absente : DEFAULT_BODY_LIMIT (100kb, celui
+  // d'express.json), appliqué par configureApp.
+  bodyLimit: process.env.BODY_LIMIT,
   maxFileSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB ?? '20', 10),
   appPin: process.env.APP_PIN ?? '',
   // Opt-in explicite pour démarrer sans APP_PIN en production. Sans ça,
