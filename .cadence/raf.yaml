@@ -2105,11 +2105,23 @@ lots:
     finished: 2026-11-25
   - id: L184
     title: "Failles connues (D-32 du registre parent) : corriger les failles critiques et hautes des dépendances relevées le 25-11 (Dependabot 8 critiques 37 hautes ; npm audit backend 2/9 dont production 1/4, frontend 4/8 dont production 1/0), production d'abord ; npm audit fix sans --force, toute montée majeure une par une avec ses tests ; les alertes Dependabot ouvertes du dépôt comme liste de contrôle. Mesure : 0 critique, hautes en baisse au relevé suivant (scripts/releve-securite.py)"
-    status: doing
+    status: done
     estimate: 1
+    delivered: { date: 2026-11-26, sha: 63f720074d1d26f5caa9de0f73b053849d01f9eb }
     created: 2026-11-25
     started: 2026-11-26
     review: { date: 2026-11-26, verdict: "conforme (2 notes mineures : voie overrides non citée pour les 19 modérées de dev, contournement rollup musl du frontend/Dockerfile devenu redondant) — npm audit --omit=dev 0 des deux côtés rejoué, npm ci + build + tests ciblés sous Node 20.20.2 / npm 10.8.2, docker build frontend vert", commit: 63f720074d1d26f5caa9de0f73b053849d01f9eb }
+    finished: 2026-11-26
+  - id: L185
+    title: "Image backend sans outils de développement : backend/Dockerfile copie tout node_modules (installer avec --omit=dev en étape finale) — vu par L184 le 26-11 ; mesure : taille de l'image et npm ls dans l'image"
+    status: todo
+    estimate: 1
+    created: 2026-11-26
+  - id: L186
+    title: "Backend : un JSON invalide ou trop gros renvoie 404 « Cannot POST » au lieu de 400 / 413 (vu par L184 le 26-11, antérieur) ; test e2e sur les deux cas"
+    status: todo
+    estimate: 1
+    created: 2026-11-26
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
