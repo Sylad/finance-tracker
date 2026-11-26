@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { LoanSuggestion, Subscription } from '@/types/api';
@@ -27,7 +27,7 @@ const h = vi.hoisted(() => ({
 
 // `h.gates` : promesse à attendre avant la réponse de chaque appel successif, pour faire se
 // chevaucher deux appels sans dépendre de l'horloge (la réponse part quand le test la libère).
-const failing = (fn: ReturnType<typeof vi.fn>) => async (arg: unknown) => {
+const failing = (fn: Mock<(arg: unknown) => void>) => async (arg: unknown) => {
   fn(arg);
   await h.gates.shift();
   if (h.fail) throw new Error('Serveur indisponible');
