@@ -2116,6 +2116,7 @@ lots:
     title: "Image backend sans outils de développement : backend/Dockerfile copie tout node_modules (installer avec --omit=dev en étape finale) — vu par L184 le 26-11 ; mesure : taille de l'image et npm ls dans l'image"
     status: done
     estimate: 1
+    delivered: { date: 2026-11-26, sha: cc7a49a411fd406cf4cf0775be8ad7112de0b114 }
     created: 2026-11-26
     started: 2026-11-26
     review: { date: 2026-11-26, verdict: "conforme (0 défaut ; note : CLAUDE.md:154 et README.md:111 disent encore Vite 5)", commit: 438fcedd7db32c76bf0da16ad242ffb900613ace }
