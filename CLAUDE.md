@@ -154,6 +154,8 @@ CORS_ORIGIN=http://localhost:4200
 - React 18.3 · Vite 5 · TanStack Router 1.78 · TanStack Query 5.59 · Recharts 2.13 · Tailwind 3.4 · Lucide
 - NestJS 11 · Anthropic SDK 0.91 · multer 2 · uuid 14
 - Docker multi-stage (`node:20-alpine` builder → `nginx:alpine` runtime côté frontend)
+- Image backend (L185) : l'étape finale réinstalle les seules dépendances de production (`npm ci --omit=dev`), jamais le `node_modules` du builder — aucun jest, `@nestjs/cli` ni typescript dans l'image (529 → 254 Mo). Elle démarre par `node dist/main` (`nest start` est un outil de dev). Un module importé par `src/` doit donc être dans `dependencies`, sinon l'image plante au démarrage alors que les tests passent.
+- Image frontend : plus de contournement rollup musl depuis vite 6 (L185) ; le lockfile porte `@rollup/rollup-linux-x64-musl` et `npm ci` l'installe sous Alpine.
 
 ## Règles projet (durables)
 
