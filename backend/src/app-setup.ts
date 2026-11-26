@@ -6,7 +6,7 @@ import { DemoWriteGuard } from './guards/demo-write.guard';
 import { RequestDataDirService } from './modules/demo/request-data-dir.service';
 import {
   BodyParserErrorInterceptor,
-  DEFAULT_BODY_LIMIT,
+  parseBodyLimit,
   registerBodyParsers,
 } from './common/body-parser-errors';
 
@@ -24,10 +24,8 @@ export function configureApp(app: NestExpressApplication): void {
   const config = app.get(ConfigService);
 
   app.setGlobalPrefix('api');
-  registerBodyParsers(
-    app,
-    config.get<string>('bodyLimit') ?? DEFAULT_BODY_LIMIT,
-  );
+  // Valeur invalide → erreur ici, au démarrage (parseBodyLimit).
+  registerBodyParsers(app, parseBodyLimit(config.get<string>('bodyLimit')));
   app.useGlobalGuards(
     new PinGuard(config),
     new DemoWriteGuard(app.get(RequestDataDirService)),

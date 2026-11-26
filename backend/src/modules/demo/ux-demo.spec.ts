@@ -6,9 +6,7 @@ import * as path from 'path';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from '../../app.module';
-import { PinGuard } from '../../guards/pin.guard';
-import { DemoWriteGuard } from '../../guards/demo-write.guard';
-import { RequestDataDirService } from './request-data-dir.service';
+import { APP_OPTIONS, configureApp } from '../../app-setup';
 
 /**
  * L60 : démo locale isolée pour la revue UX automatique (`local/ux-demo.sh`,
@@ -144,9 +142,12 @@ describe('démo locale isolée (L60) — le backend n’ouvre aucun fichier de d
       record(n, realFs.promises as unknown as Record<string, unknown>);
     }
 
-    app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: false });
-    app.setGlobalPrefix('api');
-    app.useGlobalGuards(new PinGuard(app.get(require('@nestjs/config').ConfigService)), new DemoWriteGuard(app.get(RequestDataDirService)));
+    // Montée comme main.ts (préfixe, parseurs, gardes, intercepteur) : CLAUDE.md, L186.
+    app = await NestFactory.create<NestExpressApplication>(AppModule, {
+      ...APP_OPTIONS,
+      logger: false,
+    });
+    configureApp(app);
     await app.init();
   });
 

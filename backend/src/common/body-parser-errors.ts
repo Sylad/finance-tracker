@@ -35,6 +35,53 @@ import { Observable } from 'rxjs';
 /** Limite par défaut d'express.json, inchangée (surcharge : BODY_LIMIT). */
 export const DEFAULT_BODY_LIMIT = '100kb';
 
+/** Limite validée : octets pour body-parser, libellé pour les messages. */
+export interface BodyLimit {
+  bytes: number;
+  label: string;
+}
+
+const UNITS: Record<string, number> = {
+  '': 1,
+  b: 1,
+  kb: 1024,
+  mb: 1024 ** 2,
+  gb: 1024 ** 3,
+};
+
+/**
+ * Lit BODY_LIMIT au démarrage. Formats acceptés : un nombre d'octets entier
+ * (`102400`) ou un nombre suivi de b, kb, mb ou gb, casse indifférente
+ * (`100kb`, `2mb`, `1.5MB`) — base 1024, comme body-parser.
+ * - absente, vide ou blanche → DEFAULT_BODY_LIMIT (une variable laissée vide
+ *   dans un .env ou un values.yaml faisait planter body-parser) ;
+ * - toute autre valeur (`2m`, `abc`, `0`, `-1kb`) → erreur au démarrage qui
+ *   cite la valeur : `bytes` lit `2m` comme 2 octets, et un repli silencieux
+ *   masquerait la faute de frappe ; on refuse, comme sans APP_PIN.
+ */
+export function parseBodyLimit(raw: string | undefined): BodyLimit {
+  const value = (raw ?? '').trim();
+  if (value === '') return parseBodyLimit(DEFAULT_BODY_LIMIT);
+  const m = /^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/i.exec(value);
+  const unit = (m?.[2] ?? '').toLowerCase();
+  const bytes = m ? Math.floor(Number(m[1]) * UNITS[unit]) : NaN;
+  if (
+    !Number.isFinite(bytes) ||
+    bytes < 1 ||
+    (unit === '' && m?.[1].includes('.'))
+  ) {
+    throw new Error(
+      `BODY_LIMIT invalide : « ${raw} ». Formats acceptés : un nombre d'octets ` +
+        `(102400) ou un nombre suivi de b, kb, mb ou gb (100kb, 2mb). ` +
+        `Vide ou absente : ${DEFAULT_BODY_LIMIT}.`,
+    );
+  }
+  return { bytes, label: value };
+}
+
+/** Nombre de champs d'un formulaire urlencoded (défaut de body-parser). */
+export const PARAMETER_LIMIT = 1000;
+
 const deferred = new WeakMap<Request, HttpException>();
 
 interface BodyParserError {
@@ -69,8 +116,16 @@ export function toHttpException(
         },
         HttpStatus.BAD_REQUEST,
       );
-    case 'entity.too.large':
     case 'parameters.too.many':
+      return new HttpException(
+        {
+          statusCode: 413,
+          error: 'Payload Too Large',
+          message: `Le formulaire contient trop de champs (${PARAMETER_LIMIT} au plus).`,
+        },
+        HttpStatus.PAYLOAD_TOO_LARGE,
+      );
+    case 'entity.too.large':
       return new HttpException(
         {
           statusCode: 413,
@@ -110,13 +165,17 @@ export function toHttpException(
  */
 export function registerBodyParsers(
   app: NestExpressApplication,
-  limit: string,
+  limit: BodyLimit,
 ): void {
-  app.useBodyParser('json', { limit });
-  app.useBodyParser('urlencoded', { extended: true, limit });
+  app.useBodyParser('json', { limit: limit.bytes });
+  app.useBodyParser('urlencoded', {
+    extended: true,
+    limit: limit.bytes,
+    parameterLimit: PARAMETER_LIMIT,
+  });
   app.use((err: unknown, req: Request, _res: Response, next: NextFunction) => {
     if (!isBodyParserError(err)) return next(err);
-    deferred.set(req, toHttpException(err, limit));
+    deferred.set(req, toHttpException(err, limit.label));
     next();
   });
 }
