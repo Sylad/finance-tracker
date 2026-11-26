@@ -2114,10 +2114,12 @@ lots:
     finished: 2026-11-26
   - id: L185
     title: "Image backend sans outils de développement : backend/Dockerfile copie tout node_modules (installer avec --omit=dev en étape finale) — vu par L184 le 26-11 ; mesure : taille de l'image et npm ls dans l'image"
-    status: doing
+    status: done
     estimate: 1
     created: 2026-11-26
     started: 2026-11-26
+    review: { date: 2026-11-26, verdict: "conforme (0 défaut ; note : CLAUDE.md:154 et README.md:111 disent encore Vite 5)", commit: 438fcedd7db32c76bf0da16ad242ffb900613ace }
+    finished: 2026-11-26
   - id: L186
     title: "Backend : un JSON invalide ou trop gros renvoie 404 « Cannot POST » au lieu de 400 / 413 (vu par L184 le 26-11, antérieur) ; test e2e sur les deux cas"
     status: todo
