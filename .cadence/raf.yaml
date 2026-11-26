@@ -2108,6 +2108,7 @@ lots:
     estimate: 1
     created: 2026-11-25
     started: 2026-11-26
+    review: { date: 2026-11-26, verdict: "conforme (2 notes mineures : voie overrides non citée pour les 19 modérées de dev, contournement rollup musl du frontend/Dockerfile devenu redondant) — npm audit --omit=dev 0 des deux côtés rejoué, npm ci + build + tests ciblés sous Node 20.20.2 / npm 10.8.2, docker build frontend vert", commit: 63f720074d1d26f5caa9de0f73b053849d01f9eb }
 acknowledged:
   - { sha: 487ccaec0bbf090edcdc06d999d44d12e973805e, subject: "config: précheck d'orchestrate sur le modèle local de cadence (décision du lead 24-10)", date: 2026-10-24, reason: "réglage d'outillage (précheck local de cadence), pas un lot du projet — lead 24-10" }
   - { sha: 891e2e947368deeba5caf8cc2046311c4bb94d1b, subject: "config: la documentation suit le code (docs.sync) et l'étude de cas du projet est déclarée (docs.articles) — outillage cadence, lead 24-10", date: 2026-10-24, reason: "réglage d'outillage cadence (docs.sync, docs.articles), pas un lot du projet — lead 24-10" }
