@@ -66,7 +66,7 @@ cas:
       - le corps porte une catégorie valide et memorizeMerchant à true
     nominal:
       - Le service applique la catégorie à la transaction et sauvegarde le relevé.
-      - Il détermine les mots du motif (R15) : ceux de l'enseigne que le dictionnaire reconnaît dans le libellé, sinon la clé de marchand entière ; la clé entière aussi quand la catégorie choisie contredit celle du dictionnaire.
+      - "Il détermine les mots du motif (R15) : ceux de l'enseigne que le dictionnaire reconnaît dans le libellé, sinon la clé de marchand entière ; la clé entière aussi quand la catégorie choisie contredit celle du dictionnaire."
       - Il crée une règle utilisateur (priorité 100, ou supérieure à celle des règles qui reconnaissent déjà le libellé, R13) dont le motif cible cette clé ; aucune règle existante n'est modifiée.
       - Si replayAll est vrai, la règle est rejouée sur tous les relevés stockés.
       - La réponse renvoie la transaction, la règle créée et le nombre de relevés rejoués.
